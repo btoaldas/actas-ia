@@ -38,7 +38,7 @@ def setup_celery_logging():
         
         # Los signals ya están conectados en el archivo helpers/celery_logging.py
         # Esta función existe para asegurar que se importen al inicializar Celery
-        print("✅ Sistema de auditoría Celery configurado correctamente")
+       # print("✅ Sistema de auditoría Celery configurado correctamente")
         
     except ImportError as e:
         print(f"⚠️  No se pudo cargar el sistema de auditoría Celery: {e}")

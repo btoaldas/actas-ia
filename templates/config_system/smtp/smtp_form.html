@@ -1,0 +1,320 @@
+{% extends "config_system/base.html" %}
+{% load static %}
+
+{% block page_title %}{% if config %}Editar SMTP{% else %}Nueva Configuración SMTP{% endif %}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .proveedor-preview {
+        display: none;
+        background-color: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-radius: 0.25rem;
+        padding: 15px;
+        margin-top: 10px;
+    }
+    .proveedor-preview.active {
+        display: block;
+    }
+    .config-section {
+        background-color: #ffffff;
+        border: 1px solid #e3e6f0;
+        border-radius: 0.35rem;
+        padding: 20px;
+        margin-bottom: 20px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <div class="row align-items-center">
+                    <div class="col">
+                        <h4 class="card-title mb-0">
+                            <i class="fas fa-envelope"></i> 
+                            {% if config %}
+                                Editar Configuración SMTP: {{ config.nombre }}
+                            {% else %}
+                                Nueva Configuración SMTP
+                            {% endif %}
+                        </h4>
+                    </div>
+                    <div class="col-auto">
+                        <a href="{% url 'config_system:smtp_list' %}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left"></i> Volver
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card-body">
+                <form method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    
+                    <div class="row">
+                        <!-- Configuración Básica -->
+                        <div class="col-lg-6">
+                            <div class="config-section">
+                                <h5><i class="fas fa-info-circle text-primary"></i> Información Básica</h5>
+                                
+                                <div class="form-group">
+                                    <label for="{{ form.nombre.id_for_label }}">{{ form.nombre.label }}</label>
+                                    {{ form.nombre }}
+                                    {% if form.nombre.errors %}
+                                        <div class="text-danger small">{{ form.nombre.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="{{ form.proveedor.id_for_label }}">{{ form.proveedor.label }}</label>
+                                    {{ form.proveedor }}
+                                    {% if form.proveedor.errors %}
+                                        <div class="text-danger small">{{ form.proveedor.errors.0 }}</div>
+                                    {% endif %}
+                                    
+                                    <!-- Preview de configuración predefinida -->
+                                    <div id="office365-preview" class="proveedor-preview">
+                                        <strong>Office 365 - Configuración Predefinida:</strong><br>
+                                        Servidor: smtp-mail.outlook.com | Puerto: 587 | TLS: Sí
+                                    </div>
+                                    <div id="gmail-preview" class="proveedor-preview">
+                                        <strong>Gmail - Configuración Predefinida:</strong><br>
+                                        Servidor: smtp.gmail.com | Puerto: 587 | TLS: Sí
+                                    </div>
+                                    <div id="sendgrid-preview" class="proveedor-preview">
+                                        <strong>SendGrid - Configuración Predefinida:</strong><br>
+                                        Servidor: smtp.sendgrid.net | Puerto: 587 | TLS: Sí
+                                    </div>
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label for="{{ form.prioridad.id_for_label }}">{{ form.prioridad.label }}</label>
+                                            {{ form.prioridad }}
+                                            <small class="form-text text-muted">1 = Mayor prioridad</small>
+                                            {% if form.prioridad.errors %}
+                                                <div class="text-danger small">{{ form.prioridad.errors.0 }}</div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label for="{{ form.limite_diario.id_for_label }}">{{ form.limite_diario.label }}</label>
+                                            {{ form.limite_diario }}
+                                            {% if form.limite_diario.errors %}
+                                                <div class="text-danger small">{{ form.limite_diario.errors.0 }}</div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        <div class="form-check">
+                                            {{ form.activo }}
+                                            <label class="form-check-label" for="{{ form.activo.id_for_label }}">
+                                                {{ form.activo.label }}
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-check">
+                                            {{ form.por_defecto }}
+                                            <label class="form-check-label" for="{{ form.por_defecto.id_for_label }}">
+                                                {{ form.por_defecto.label }}
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Configuración SMTP -->
+                        <div class="col-lg-6">
+                            <div class="config-section">
+                                <h5><i class="fas fa-server text-info"></i> Configuración SMTP</h5>
+                                
+                                <div class="form-group">
+                                    <label for="{{ form.servidor_smtp.id_for_label }}">{{ form.servidor_smtp.label }}</label>
+                                    {{ form.servidor_smtp }}
+                                    {% if form.servidor_smtp.errors %}
+                                        <div class="text-danger small">{{ form.servidor_smtp.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="{{ form.puerto.id_for_label }}">{{ form.puerto.label }}</label>
+                                    {{ form.puerto }}
+                                    {% if form.puerto.errors %}
+                                        <div class="text-danger small">{{ form.puerto.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="{{ form.usuario_smtp.id_for_label }}">{{ form.usuario_smtp.label }}</label>
+                                    {{ form.usuario_smtp }}
+                                    {% if form.usuario_smtp.errors %}
+                                        <div class="text-danger small">{{ form.usuario_smtp.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="{{ form.password_smtp.id_for_label }}">{{ form.password_smtp.label }}</label>
+                                    {{ form.password_smtp }}
+                                    <small class="form-text text-muted">
+                                        {% if config %}La contraseña actual se mantendrá si no se cambia{% endif %}
+                                    </small>
+                                    {% if form.password_smtp.errors %}
+                                        <div class="text-danger small">{{ form.password_smtp.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="form-check">
+                                            {{ form.usa_tls }}
+                                            <label class="form-check-label" for="{{ form.usa_tls.id_for_label }}">
+                                                {{ form.usa_tls.label }}
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-check">
+                                            {{ form.usa_ssl }}
+                                            <label class="form-check-label" for="{{ form.usa_ssl.id_for_label }}">
+                                                {{ form.usa_ssl.label }}
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Configuración de Remitente -->
+                    <div class="config-section">
+                        <h5><i class="fas fa-user text-success"></i> Configuración de Remitente</h5>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="{{ form.email_remitente.id_for_label }}">{{ form.email_remitente.label }}</label>
+                                    {{ form.email_remitente }}
+                                    {% if form.email_remitente.errors %}
+                                        <div class="text-danger small">{{ form.email_remitente.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="{{ form.nombre_remitente.id_for_label }}">{{ form.nombre_remitente.label }}</label>
+                                    {{ form.nombre_remitente }}
+                                    {% if form.nombre_remitente.errors %}
+                                        <div class="text-danger small">{{ form.nombre_remitente.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Errores del formulario -->
+                    {% if form.non_field_errors %}
+                        <div class="alert alert-danger">
+                            {{ form.non_field_errors }}
+                        </div>
+                    {% endif %}
+
+                    <!-- Botones de acción -->
+                    <div class="text-right">
+                        <a href="{% url 'config_system:smtp_list' %}" class="btn btn-secondary mr-2">
+                            <i class="fas fa-times"></i> Cancelar
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> 
+                            {% if config %}Actualizar{% else %}Crear{% endif %} Configuración
+                        </button>
+                        {% if config %}
+                            <a href="{% url 'config_system:smtp_test_single' config.pk %}" class="btn btn-success ml-2">
+                                <i class="fas fa-paper-plane"></i> Probar
+                            </a>
+                        {% endif %}
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    // Mostrar configuración predefinida según proveedor seleccionado
+    $('#id_proveedor').change(function() {
+        $('.proveedor-preview').removeClass('active');
+        
+        var proveedor = $(this).val();
+        $('#' + proveedor + '-preview').addClass('active');
+        
+        // Aplicar configuración predefinida
+        var configs = {
+            'office365': {
+                'servidor_smtp': 'smtp-mail.outlook.com',
+                'puerto': 587,
+                'usa_tls': true,
+                'usa_ssl': false
+            },
+            'gmail': {
+                'servidor_smtp': 'smtp.gmail.com',
+                'puerto': 587,
+                'usa_tls': true,
+                'usa_ssl': false
+            },
+            'sendgrid': {
+                'servidor_smtp': 'smtp.sendgrid.net',
+                'puerto': 587,
+                'usa_tls': true,
+                'usa_ssl': false
+            },
+            'mailgun': {
+                'servidor_smtp': 'smtp.mailgun.org',
+                'puerto': 587,
+                'usa_tls': true,
+                'usa_ssl': false
+            },
+            'ses': {
+                'servidor_smtp': 'email-smtp.us-east-1.amazonaws.com',
+                'puerto': 587,
+                'usa_tls': true,
+                'usa_ssl': false
+            }
+        };
+        
+        if (configs[proveedor]) {
+            var config = configs[proveedor];
+            if ($('#id_servidor_smtp').val() === '' || confirm('¿Aplicar configuración predefinida para ' + proveedor + '?')) {
+                $('#id_servidor_smtp').val(config.servidor_smtp);
+                $('#id_puerto').val(config.puerto);
+                $('#id_usa_tls').prop('checked', config.usa_tls);
+                $('#id_usa_ssl').prop('checked', config.usa_ssl);
+            }
+        }
+    });
+    
+    // Trigger inicial
+    $('#id_proveedor').trigger('change');
+    
+    // Validación de TLS/SSL
+    $('#id_usa_tls, #id_usa_ssl').change(function() {
+        if ($('#id_usa_tls').is(':checked') && $('#id_usa_ssl').is(':checked')) {
+            alert('No se puede usar TLS y SSL simultáneamente');
+            $(this).prop('checked', false);
+        }
+    });
+});
+</script>
+{% endblock %}

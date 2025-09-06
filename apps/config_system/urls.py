@@ -7,6 +7,30 @@ urlpatterns = [
     # Dashboard
     path('', views.dashboard, name='dashboard'),
     
+    # ==================== CONFIGURACIONES SMTP ====================
+    path('smtp/', views.smtp_list, name='smtp_list'),
+    path('smtp/create/', views.smtp_create, name='smtp_create'),  # Cambié 'crear' por 'create'
+    path('smtp/test/', views.smtp_test_form, name='smtp_test'),    # Cambié para formulario de test
+    path('smtp/logs/', views.email_logs, name='smtp_logs'),       # Agregué ruta logs
+    path('smtp/<int:pk>/', views.smtp_detail, name='smtp_detail'),
+    path('smtp/<int:pk>/edit/', views.smtp_edit, name='smtp_edit'), # Cambié 'editar' por 'edit'
+    path('smtp/<int:pk>/delete/', views.smtp_delete, name='smtp_delete'), # Cambié 'eliminar' por 'delete'
+    path('smtp/<int:pk>/toggle-active/', views.smtp_toggle_active, name='smtp_toggle_active'),
+    path('smtp/<int:pk>/set-default/', views.smtp_set_default, name='smtp_set_default'),
+    path('smtp/<int:pk>/test/', views.smtp_test_single, name='smtp_test_single'),
+    
+    # Configuración general de email
+    path('email-config/', views.email_config, name='email_config'),
+    path('email-test/', views.email_test, name='email_test'),
+    
+    # Logs de envío
+    path('email-logs/', views.email_logs, name='email_logs'),
+    path('email-logs/<int:pk>/', views.email_log_detail, name='email_log_detail'),
+    
+    # Estadísticas SMTP
+    path('smtp-stats/', views.smtp_stats, name='smtp_stats'),
+    path('api/smtp-stats/', views.api_smtp_stats, name='api_smtp_stats'),
+    
     # Configuraciones IA
     path('ia/', views.ConfiguracionIAListView.as_view(), name='ia_list'),
     path('ia/crear/', views.ConfiguracionIACreateView.as_view(), name='ia_create'),

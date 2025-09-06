@@ -432,6 +432,24 @@
                         </a>
                     </li>
                     <li class="nav-item">
+                        <a href="{% url 'config_system:smtp_list' %}" class="nav-link {% if 'smtp' in segment %} active {% endif %}">
+                            <i class="far fa-dot-circle nav-icon"></i>
+                            <p>📧 Config SMTP</p>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{% url 'config_system:email_config' %}" class="nav-link {% if 'email-config' in segment %} active {% endif %}">
+                            <i class="far fa-dot-circle nav-icon"></i>
+                            <p>✉️ Config Emails</p>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{% url 'config_system:email_logs' %}" class="nav-link {% if 'email-logs' in segment %} active {% endif %}">
+                            <i class="far fa-dot-circle nav-icon"></i>
+                            <p>📋 Logs Email</p>
+                        </a>
+                    </li>
+                    <li class="nav-item">
                         <a href="{% url 'config_system:usuarios_list' %}" class="nav-link {% if 'usuarios' in segment %} active {% endif %}">
                             <i class="far fa-dot-circle nav-icon"></i>
                             <p>👥 Usuarios Config</p>

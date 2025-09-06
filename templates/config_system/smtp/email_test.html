@@ -1,0 +1,219 @@
+{% extends "config_system/base.html" %}
+{% load static %}
+
+{% block page_title %}Enviar Email de Prueba{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-8 mx-auto">
+        <div class="card">
+            <div class="card-header">
+                <div class="row align-items-center">
+                    <div class="col">
+                        <h4 class="card-title mb-0">
+                            <i class="fas fa-paper-plane"></i> Enviar Email de Prueba
+                        </h4>
+                    </div>
+                    <div class="col-auto">
+                        <a href="{% url 'config_system:smtp_list' %}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left"></i> Volver
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card-body">
+                <!-- Información del sistema -->
+                <div class="alert alert-info">
+                    <h5><i class="fas fa-info-circle"></i> Información</h5>
+                    <p class="mb-2">Este formulario permite enviar un email de prueba para verificar que la configuración SMTP funcione correctamente.</p>
+                    <ul class="mb-0">
+                        <li>Si seleccionas una configuración específica, solo se usará esa configuración</li>
+                        <li>Si no seleccionas ninguna, se usará el sistema automático de failover</li>
+                        <li>El email incluirá información técnica sobre el envío</li>
+                    </ul>
+                </div>
+
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <div class="form-group">
+                        <label for="{{ form.email_destino.id_for_label }}">
+                            <i class="fas fa-envelope"></i> {{ form.email_destino.label }}
+                        </label>
+                        {{ form.email_destino }}
+                        {% if form.email_destino.errors %}
+                            <div class="text-danger small">{{ form.email_destino.errors.0 }}</div>
+                        {% endif %}
+                        <small class="form-text text-muted">
+                            Email donde se enviará la prueba. Recomendado usar tu email personal para verificar la recepción.
+                        </small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="{{ form.configuracion_smtp.id_for_label }}">
+                            <i class="fas fa-server"></i> {{ form.configuracion_smtp.label }}
+                        </label>
+                        {{ form.configuracion_smtp }}
+                        {% if form.configuracion_smtp.errors %}
+                            <div class="text-danger small">{{ form.configuracion_smtp.errors.0 }}</div>
+                        {% endif %}
+                        <small class="form-text text-muted">
+                            Deja vacío para usar el sistema automático que probará varios proveedores hasta que uno funcione.
+                        </small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="{{ form.asunto.id_for_label }}">
+                            <i class="fas fa-heading"></i> {{ form.asunto.label }}
+                        </label>
+                        {{ form.asunto }}
+                        {% if form.asunto.errors %}
+                            <div class="text-danger small">{{ form.asunto.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="form-group">
+                        <label for="{{ form.mensaje_personalizado.id_for_label }}">
+                            <i class="fas fa-comment"></i> {{ form.mensaje_personalizado.label }}
+                        </label>
+                        {{ form.mensaje_personalizado }}
+                        {% if form.mensaje_personalizado.errors %}
+                            <div class="text-danger small">{{ form.mensaje_personalizado.errors.0 }}</div>
+                        {% endif %}
+                        <small class="form-text text-muted">
+                            Mensaje adicional que se incluirá en el email de prueba (opcional).
+                        </small>
+                    </div>
+
+                    <!-- Preview del email -->
+                    <div class="card bg-light">
+                        <div class="card-header">
+                            <h6 class="mb-0"><i class="fas fa-eye"></i> Vista Previa del Email</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="email-preview">
+                                <div class="mb-2">
+                                    <strong>Para:</strong> <span id="preview-destino">{{ form.email_destino.value|default:"tu-email@ejemplo.com" }}</span>
+                                </div>
+                                <div class="mb-2">
+                                    <strong>Asunto:</strong> <span id="preview-asunto">{{ form.asunto.value|default:"🧪 Email de Prueba - Sistema Actas Municipales" }}</span>
+                                </div>
+                                <div class="mb-3">
+                                    <strong>Configuración:</strong> 
+                                    <span id="preview-config">
+                                        {% if form.configuracion_smtp.value %}
+                                            {{ form.configuracion_smtp.value }}
+                                        {% else %}
+                                            Sistema automático (failover)
+                                        {% endif %}
+                                    </span>
+                                </div>
+                                <div class="border p-3 bg-white">
+                                    <h6>🧪 Email de Prueba</h6>
+                                    <p>Este es un email de prueba del Sistema de Actas Municipales de Pastaza.</p>
+                                    <div id="preview-mensaje-personalizado" style="display: none;">
+                                        <div class="alert alert-info">
+                                            <h6>📝 Mensaje personalizado:</h6>
+                                            <p id="preview-mensaje-texto"></p>
+                                        </div>
+                                    </div>
+                                    <div class="alert alert-secondary">
+                                        <h6>ℹ️ Información del test:</h6>
+                                        <ul>
+                                            <li><strong>Fecha y hora:</strong> {{ "now"|date:"d/m/Y H:i:s" }}</li>
+                                            <li><strong>Configuración SMTP:</strong> <span id="preview-config-info"></span></li>
+                                            <li><strong>Email de destino:</strong> <span id="preview-destino-info"></span></li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Errores del formulario -->
+                    {% if form.non_field_errors %}
+                        <div class="alert alert-danger">
+                            {{ form.non_field_errors }}
+                        </div>
+                    {% endif %}
+
+                    <!-- Botones de acción -->
+                    <div class="text-right mt-4">
+                        <a href="{% url 'config_system:smtp_list' %}" class="btn btn-secondary mr-2">
+                            <i class="fas fa-times"></i> Cancelar
+                        </a>
+                        <button type="submit" class="btn btn-success">
+                            <i class="fas fa-paper-plane"></i> Enviar Email de Prueba
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Ayuda adicional -->
+        <div class="card mt-4">
+            <div class="card-header">
+                <h6 class="mb-0"><i class="fas fa-question-circle"></i> ¿Qué verifica esta prueba?</h6>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>✅ Aspectos técnicos:</h6>
+                        <ul>
+                            <li>Conexión al servidor SMTP</li>
+                            <li>Autenticación con credenciales</li>
+                            <li>Envío efectivo del mensaje</li>
+                            <li>Renderizado del template HTML</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>📊 Información registrada:</h6>
+                        <ul>
+                            <li>Tiempo de procesamiento</li>
+                            <li>Proveedor utilizado</li>
+                            <li>Estado del envío</li>
+                            <li>Posibles errores</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="alert alert-warning mt-3">
+                    <strong>Nota:</strong> Si el email no llega, verifica la bandeja de spam y revisa los logs del sistema en 
+                    <a href="{% url 'config_system:email_logs' %}">Logs de Email</a>.
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    // Actualizar preview en tiempo real
+    function updatePreview() {
+        var destino = $('#id_email_destino').val() || 'tu-email@ejemplo.com';
+        var asunto = $('#id_asunto').val() || '🧪 Email de Prueba - Sistema Actas Municipales';
+        var configuracion = $('#id_configuracion_smtp option:selected').text() || 'Sistema automático (failover)';
+        var mensajePersonalizado = $('#id_mensaje_personalizado').val();
+        
+        $('#preview-destino, #preview-destino-info').text(destino);
+        $('#preview-asunto').text(asunto);
+        $('#preview-config, #preview-config-info').text(configuracion);
+        
+        if (mensajePersonalizado.trim()) {
+            $('#preview-mensaje-personalizado').show();
+            $('#preview-mensaje-texto').text(mensajePersonalizado);
+        } else {
+            $('#preview-mensaje-personalizado').hide();
+        }
+    }
+    
+    // Event listeners para actualizar preview
+    $('#id_email_destino, #id_asunto, #id_configuracion_smtp, #id_mensaje_personalizado').on('input change', updatePreview);
+    
+    // Actualizar preview inicial
+    updatePreview();
+});
+</script>
+{% endblock %}

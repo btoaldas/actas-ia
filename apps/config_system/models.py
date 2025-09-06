@@ -515,3 +515,269 @@ class PermisosDetallados(models.Model):
             
         permisos.save()
         return permisos
+
+
+# ==================== MODELOS SMTP ====================
+
+class ConfiguracionSMTP(models.Model):
+    """Configuración de proveedores SMTP múltiples con failover"""
+    nombre = models.CharField(max_length=100, verbose_name="Nombre del proveedor")
+    activo = models.BooleanField(default=True, verbose_name="Activo")
+    por_defecto = models.BooleanField(default=False, verbose_name="Proveedor por defecto")
+    prioridad = models.IntegerField(default=1, verbose_name="Prioridad (1=mayor prioridad)")
+    
+    # Configuración básica SMTP
+    servidor_smtp = models.CharField(max_length=255, verbose_name="Servidor SMTP")
+    puerto = models.IntegerField(default=587, verbose_name="Puerto")
+    usuario_smtp = models.CharField(max_length=255, verbose_name="Usuario SMTP")
+    password_smtp = models.CharField(max_length=255, verbose_name="Contraseña SMTP")
+    
+    # Configuración de seguridad
+    usa_tls = models.BooleanField(default=True, verbose_name="Usar TLS")
+    usa_ssl = models.BooleanField(default=False, verbose_name="Usar SSL")
+    
+    # Configuración de remitente
+    email_remitente = models.EmailField(verbose_name="Email remitente")
+    nombre_remitente = models.CharField(max_length=255, verbose_name="Nombre del remitente")
+    
+    # Límites
+    limite_diario = models.IntegerField(default=1000, verbose_name="Límite diario de emails")
+    emails_enviados_hoy = models.IntegerField(default=0, verbose_name="Emails enviados hoy")
+    ultima_actualizacion_contador = models.DateField(auto_now=True, verbose_name="Última actualización contador")
+    
+    # Configuración específica por proveedor
+    proveedor = models.CharField(
+        max_length=50,
+        choices=[
+            ('office365', 'Office 365'),
+            ('gmail', 'Gmail'),
+            ('yahoo', 'Yahoo'),
+            ('sendgrid', 'SendGrid'),
+            ('mailgun', 'Mailgun'),
+            ('ses', 'Amazon SES'),
+            ('smtp2go', 'SMTP2GO'),
+            ('custom', 'Personalizado'),
+        ],
+        default='office365',
+        verbose_name="Tipo de proveedor"
+    )
+    
+    # Configuraciones adicionales (JSON)
+    configuraciones_extra = models.JSONField(default=dict, blank=True, verbose_name="Configuraciones adicionales")
+    
+    # Estado y monitoreo
+    ultimo_test = models.DateTimeField(null=True, blank=True, verbose_name="Último test")
+    test_exitoso = models.BooleanField(default=False, verbose_name="Último test exitoso")
+    mensaje_error = models.TextField(blank=True, null=True, verbose_name="Último mensaje de error")
+    
+    # Metadatos
+    creado_por = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, verbose_name="Creado por")
+    fecha_creacion = models.DateTimeField(auto_now_add=True, verbose_name="Fecha de creación")
+    fecha_modificacion = models.DateTimeField(auto_now=True, verbose_name="Fecha de modificación")
+    
+    class Meta:
+        verbose_name = "Configuración SMTP"
+        verbose_name_plural = "Configuraciones SMTP"
+        ordering = ['prioridad', 'nombre']
+    
+    def __str__(self):
+        status = "✅" if self.activo else "❌"
+        default = "⭐" if self.por_defecto else ""
+        return f"{status} {default} {self.nombre} ({self.proveedor})"
+    
+    def save(self, *args, **kwargs):
+        # Solo un proveedor puede ser por defecto
+        if self.por_defecto:
+            ConfiguracionSMTP.objects.filter(por_defecto=True).update(por_defecto=False)
+        super().save(*args, **kwargs)
+    
+    def reset_contador_diario(self):
+        """Resetea el contador diario si cambió el día"""
+        from datetime import date
+        if self.ultima_actualizacion_contador < date.today():
+            self.emails_enviados_hoy = 0
+            self.ultima_actualizacion_contador = date.today()
+            self.save()
+    
+    def puede_enviar_email(self):
+        """Verifica si puede enviar un email más"""
+        self.reset_contador_diario()
+        return self.activo and self.emails_enviados_hoy < self.limite_diario
+    
+    def incrementar_contador(self):
+        """Incrementa el contador de emails enviados"""
+        self.reset_contador_diario()
+        self.emails_enviados_hoy += 1
+        self.save()
+    
+    @property
+    def configuracion_predefinida(self):
+        """Retorna configuración predefinida según el proveedor"""
+        configuraciones = {
+            'office365': {
+                'servidor_smtp': 'smtp-mail.outlook.com',
+                'puerto': 587,
+                'usa_tls': True,
+                'usa_ssl': False,
+            },
+            'gmail': {
+                'servidor_smtp': 'smtp.gmail.com',
+                'puerto': 587,
+                'usa_tls': True,
+                'usa_ssl': False,
+            },
+            'yahoo': {
+                'servidor_smtp': 'smtp.mail.yahoo.com',
+                'puerto': 587,
+                'usa_tls': True,
+                'usa_ssl': False,
+            },
+            'sendgrid': {
+                'servidor_smtp': 'smtp.sendgrid.net',
+                'puerto': 587,
+                'usa_tls': True,
+                'usa_ssl': False,
+            },
+            'mailgun': {
+                'servidor_smtp': 'smtp.mailgun.org',
+                'puerto': 587,
+                'usa_tls': True,
+                'usa_ssl': False,
+            },
+            'ses': {
+                'servidor_smtp': 'email-smtp.us-east-1.amazonaws.com',
+                'puerto': 587,
+                'usa_tls': True,
+                'usa_ssl': False,
+            },
+            'smtp2go': {
+                'servidor_smtp': 'mail.smtp2go.com',
+                'puerto': 587,
+                'usa_tls': True,
+                'usa_ssl': False,
+            }
+        }
+        return configuraciones.get(self.proveedor, {})
+
+
+class ConfiguracionEmail(models.Model):
+    """Configuración global del sistema de emails"""
+    nombre_aplicacion = models.CharField(max_length=255, default="Sistema de Actas Municipales", verbose_name="Nombre de la aplicación")
+    logo_email = models.ImageField(upload_to='config/email/', blank=True, null=True, verbose_name="Logo para emails")
+    
+    # Plantilla HTML base
+    template_html_base = models.TextField(
+        default="""
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>{{asunto}}</title>
+    <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+        .header { background-color: #1e3a8a; color: white; padding: 20px; text-align: center; }
+        .content { padding: 20px; }
+        .footer { background-color: #f8f9fa; padding: 15px; text-align: center; font-size: 12px; color: #666; }
+        .logo { max-width: 200px; height: auto; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        {% if logo_url %}<img src="{{logo_url}}" alt="Logo" class="logo">{% endif %}
+        <h1>{{nombre_aplicacion}}</h1>
+    </div>
+    <div class="content">
+        {{contenido}}
+    </div>
+    <div class="footer">
+        {{pie_pagina}}
+    </div>
+</body>
+</html>
+        """,
+        verbose_name="Template HTML base"
+    )
+    
+    # Pie de página
+    pie_pagina = models.TextField(
+        default="""
+<p><strong>Municipio de Pastaza</strong><br>
+Puyo, Pastaza - Ecuador<br>
+Teléfono: (03) 2885-133<br>
+Email: info@puyo.gob.ec</p>
+<p><small>Este es un mensaje automático del Sistema de Actas Municipales. Por favor no responder a este email.</small></p>
+        """,
+        verbose_name="Pie de página"
+    )
+    
+    # Configuración de envío
+    email_respuesta = models.EmailField(default="noreply@puyo.gob.ec", verbose_name="Email de no respuesta")
+    email_soporte = models.EmailField(default="soporte@puyo.gob.ec", verbose_name="Email de soporte")
+    
+    # URLs del sistema
+    url_sistema = models.URLField(default="http://localhost:8000", verbose_name="URL del sistema")
+    url_publica = models.URLField(default="http://puyo.gob.ec", verbose_name="URL pública del municipio")
+    
+    # Configuraciones de comportamiento
+    reintentos_maximos = models.IntegerField(default=3, verbose_name="Máximo reintentos por email")
+    tiempo_espera_reintento = models.IntegerField(default=300, verbose_name="Tiempo de espera entre reintentos (segundos)")
+    
+    # Control de activación
+    sistema_activo = models.BooleanField(default=True, verbose_name="Sistema de emails activo")
+    
+    # Metadatos
+    fecha_creacion = models.DateTimeField(auto_now_add=True)
+    fecha_modificacion = models.DateTimeField(auto_now=True)
+    modificado_por = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+    
+    class Meta:
+        verbose_name = "Configuración de Email"
+        verbose_name_plural = "Configuración de Email"
+    
+    def __str__(self):
+        return f"Configuración Email - {self.nombre_aplicacion}"
+    
+    def save(self, *args, **kwargs):
+        # Solo debe existir una configuración
+        if not self.pk and ConfiguracionEmail.objects.exists():
+            self.pk = ConfiguracionEmail.objects.first().pk
+        super().save(*args, **kwargs)
+
+
+class LogEnvioEmail(models.Model):
+    """Log de envíos de email para auditoría y debugging"""
+    configuracion_smtp = models.ForeignKey(ConfiguracionSMTP, on_delete=models.SET_NULL, null=True, blank=True)
+    
+    # Datos del email
+    destinatario = models.EmailField(verbose_name="Destinatario")
+    asunto = models.CharField(max_length=255, verbose_name="Asunto")
+    contenido_texto = models.TextField(blank=True, verbose_name="Contenido en texto")
+    contenido_html = models.TextField(blank=True, verbose_name="Contenido HTML")
+    
+    # Estado del envío
+    ESTADOS = [
+        ('pendiente', 'Pendiente'),
+        ('enviado', 'Enviado'),
+        ('error', 'Error'),
+        ('reintentando', 'Reintentando'),
+    ]
+    estado = models.CharField(max_length=20, choices=ESTADOS, default='pendiente')
+    
+    # Detalles del resultado
+    enviado_en = models.DateTimeField(null=True, blank=True)
+    mensaje_error = models.TextField(blank=True, null=True)
+    intentos_realizados = models.IntegerField(default=0)
+    tiempo_procesamiento = models.FloatField(null=True, blank=True, verbose_name="Tiempo de procesamiento (segundos)")
+    
+    # Metadatos
+    fecha_creacion = models.DateTimeField(auto_now_add=True)
+    ip_origen = models.GenericIPAddressField(null=True, blank=True)
+    usuario_solicitante = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+    
+    class Meta:
+        verbose_name = "Log de Envío de Email"
+        verbose_name_plural = "Logs de Envío de Email"
+        ordering = ['-fecha_creacion']
+    
+    def __str__(self):
+        return f"{self.estado.upper()} - {self.destinatario} - {self.asunto[:50]}"

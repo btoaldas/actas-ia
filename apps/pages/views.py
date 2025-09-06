@@ -1723,6 +1723,7 @@ def eventos_nuevo(request):
     from .models import DocumentoEvento, InvitacionExterna
     from django.contrib import messages
     from django.core.mail import send_mail
+    from apps.config_system.smtp_service import enviar_email_evento
     from django.conf import settings
     import uuid
     import os
@@ -1773,33 +1774,17 @@ def eventos_nuevo(request):
                     )
                     invitacion.save()
                     
-                    # Enviar email de invitación
+                    # Enviar email de invitación usando el servicio SMTP personalizado
                     try:
-                        subject = f'Invitación al evento: {evento.titulo}'
-                        message = f"""
-Hola,
-
-Has sido invitado al evento "{evento.titulo}".
-
-Detalles del evento:
-- Fecha: {evento.fecha_inicio.strftime('%d/%m/%Y %H:%M')}
-- Ubicación: {evento.ubicacion}
-- Descripción: {evento.descripcion}
-
-Para confirmar tu asistencia, haz clic en el siguiente enlace:
-{request.build_absolute_uri(f'/eventos/{evento.pk}/confirmar-externa/{invitacion.token}/')}
-
-Saludos,
-{request.user.get_full_name() or request.user.username}
-                        """
-                        
-                        send_mail(
-                            subject,
-                            message,
-                            settings.DEFAULT_FROM_EMAIL,
-                            [email],
-                            fail_silently=True
+                        exito, mensaje = enviar_email_evento(
+                            destinatario=email,
+                            evento=evento,
+                            tipo_notificacion='invitacion',
+                            usuario_solicitante=request.user
                         )
+                        
+                        if not exito:
+                            messages.warning(request, f'Error enviando invitación a {email}: {mensaje}')
                         # El estado se mantiene como 'enviada' que es el default
                     except Exception as e:
                         messages.warning(request, f'Error enviando invitación a {email}: {str(e)}')

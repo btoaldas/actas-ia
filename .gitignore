@@ -239,3 +239,4 @@ package-lock.json
 yarn.lock
 webpack-stats.json
 frontend/static/frontend/*
+SISTEMA_SMTP_COMPLETADO.md

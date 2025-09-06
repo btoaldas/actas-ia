@@ -1,0 +1,228 @@
+{% extends "layouts/base.html" %}
+{% load static %}
+
+{% block title %}Configuración Global de Email{% endblock %}
+
+{% block content %}
+<!-- Content Wrapper. Contains page content -->
+<div class="content-wrapper">
+    <!-- Content Header (Page header) -->
+    <div class="content-header">
+        <div class="container-fluid">
+            <div class="row mb-2">
+                <div class="col-sm-6">
+                    <h1 class="m-0">Configuración Global de Email</h1>
+                </div>
+                <div class="col-sm-6">
+                    <ol class="breadcrumb float-sm-right">
+                        <li class="breadcrumb-item"><a href="{% url 'config_system:dashboard' %}">Dashboard</a></li>
+                        <li class="breadcrumb-item"><a href="{% url 'config_system:smtp_list' %}">SMTP</a></li>
+                        <li class="breadcrumb-item active">Configuración Email</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main content -->
+    <section class="content">
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-12">
+            <div class="card">
+                <div class="card-header pb-0">
+                    <div class="d-flex align-items-center">
+                        <div>
+                            <h6>Configuración Global de Email</h6>
+                            <p class="text-sm mb-0">
+                                Configura los parámetros globales para el sistema de envío de emails
+                            </p>
+                        </div>
+                        <div class="ms-auto">
+                            <a href="{% url 'config_system:smtp_list' %}" class="btn btn-sm btn-outline-primary">
+                                <i class="fas fa-arrow-left me-1"></i>
+                                Volver a SMTP
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <form method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        
+                        <div class="row">
+                            <!-- Información básica -->
+                            <div class="col-md-6">
+                                <h6 class="text-primary">Información de la Aplicación</h6>
+                                
+                                <div class="mb-3">
+                                    <label for="{{ form.nombre_aplicacion.id_for_label }}" class="form-label">
+                                        Nombre de la Aplicación
+                                    </label>
+                                    {{ form.nombre_aplicacion }}
+                                    {% if form.nombre_aplicacion.errors %}
+                                        <div class="text-danger small">{{ form.nombre_aplicacion.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="{{ form.logo_url.id_for_label }}" class="form-label">
+                                        URL del Logo
+                                    </label>
+                                    {{ form.logo_url }}
+                                    {% if form.logo_url.errors %}
+                                        <div class="text-danger small">{{ form.logo_url.errors.0 }}</div>
+                                    {% endif %}
+                                    <div class="form-text">URL completa del logo para emails</div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="{{ form.sitio_web.id_for_label }}" class="form-label">
+                                        Sitio Web
+                                    </label>
+                                    {{ form.sitio_web }}
+                                    {% if form.sitio_web.errors %}
+                                        <div class="text-danger small">{{ form.sitio_web.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="{{ form.email_soporte.id_for_label }}" class="form-label">
+                                        Email de Soporte
+                                    </label>
+                                    {{ form.email_soporte }}
+                                    {% if form.email_soporte.errors %}
+                                        <div class="text-danger small">{{ form.email_soporte.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            <!-- Configuración avanzada -->
+                            <div class="col-md-6">
+                                <h6 class="text-primary">Configuración Avanzada</h6>
+                                
+                                <div class="mb-3">
+                                    <label for="{{ form.direccion_fisica.id_for_label }}" class="form-label">
+                                        Dirección Física
+                                    </label>
+                                    {{ form.direccion_fisica }}
+                                    {% if form.direccion_fisica.errors %}
+                                        <div class="text-danger small">{{ form.direccion_fisica.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="{{ form.telefono_contacto.id_for_label }}" class="form-label">
+                                        Teléfono de Contacto
+                                    </label>
+                                    {{ form.telefono_contacto }}
+                                    {% if form.telefono_contacto.errors %}
+                                        <div class="text-danger small">{{ form.telefono_contacto.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+
+                                <div class="mb-3">
+                                    <div class="form-check">
+                                        {{ form.reintento_automatico }}
+                                        <label class="form-check-label" for="{{ form.reintento_automatico.id_for_label }}">
+                                            Reintento Automático
+                                        </label>
+                                    </div>
+                                    {% if form.reintento_automatico.errors %}
+                                        <div class="text-danger small">{{ form.reintento_automatico.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="{{ form.max_reintentos.id_for_label }}" class="form-label">
+                                                Máximo Reintentos
+                                            </label>
+                                            {{ form.max_reintentos }}
+                                            {% if form.max_reintentos.errors %}
+                                                <div class="text-danger small">{{ form.max_reintentos.errors.0 }}</div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="{{ form.tiempo_espera_reintento.id_for_label }}" class="form-label">
+                                                Tiempo Espera (seg)
+                                            </label>
+                                            {{ form.tiempo_espera_reintento }}
+                                            {% if form.tiempo_espera_reintento.errors %}
+                                                <div class="text-danger small">{{ form.tiempo_espera_reintento.errors.0 }}</div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <div class="form-check">
+                                        {{ form.activo }}
+                                        <label class="form-check-label" for="{{ form.activo.id_for_label }}">
+                                            Sistema Activo
+                                        </label>
+                                    </div>
+                                    {% if form.activo.errors %}
+                                        <div class="text-danger small">{{ form.activo.errors.0 }}</div>
+                                    {% endif %}
+                                    <div class="form-text">Desactivar temporalmente el sistema de emails</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Pie de página -->
+                        <div class="row mt-4">
+                            <div class="col-12">
+                                <h6 class="text-primary">Pie de Página para Emails</h6>
+                                
+                                <div class="mb-3">
+                                    <label for="{{ form.pie_pagina.id_for_label }}" class="form-label">
+                                        Contenido del Pie de Página (HTML)
+                                    </label>
+                                    {{ form.pie_pagina }}
+                                    {% if form.pie_pagina.errors %}
+                                        <div class="text-danger small">{{ form.pie_pagina.errors.0 }}</div>
+                                    {% endif %}
+                                    <div class="form-text">
+                                        HTML que aparecerá al final de todos los emails
+                                    </div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="{{ form.mensaje_confidencialidad.id_for_label }}" class="form-label">
+                                        Mensaje de Confidencialidad
+                                    </label>
+                                    {{ form.mensaje_confidencialidad }}
+                                    {% if form.mensaje_confidencialidad.errors %}
+                                        <div class="text-danger small">{{ form.mensaje_confidencialidad.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Botones de acción -->
+                        <div class="row mt-4">
+                            <div class="col-12">
+                                <div class="d-flex justify-content-between">
+                                    <a href="{% url 'config_system:smtp_list' %}" class="btn btn-outline-secondary">
+                                        <i class="fas fa-times me-1"></i>
+                                        Cancelar
+                                    </a>
+                                    <button type="submit" class="btn btn-success">
+                                        <i class="fas fa-save me-1"></i>
+                                        Guardar Configuración
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        </div>
+    </section>
+</div>
+{% endblock %}

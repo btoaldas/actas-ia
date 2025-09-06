@@ -1,0 +1,209 @@
+{% extends "layouts/base.html" %}
+{% load static %}
+
+{% block title %}Logs de Email{% endblock %}
+
+{% block content %}
+<!-- Content Wrapper. Contains page content -->
+<div class="content-wrapper">
+    <!-- Content Header (Page header) -->
+    <div class="content-header">
+        <div class="container-fluid">
+            <div class="row mb-2">
+                <div class="col-sm-6">
+                    <h1 class="m-0">Logs de Email</h1>
+                </div>
+                <div class="col-sm-6">
+                    <ol class="breadcrumb float-sm-right">
+                        <li class="breadcrumb-item"><a href="{% url 'config_system:dashboard' %}">Dashboard</a></li>
+                        <li class="breadcrumb-item"><a href="{% url 'config_system:smtp_list' %}">SMTP</a></li>
+                        <li class="breadcrumb-item active">Logs</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main content -->
+    <section class="content">
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-12">
+            <div class="card">
+                <div class="card-header pb-0">
+                    <div class="d-flex align-items-center">
+                        <div>
+                            <h6>Logs de Envío de Email</h6>
+                            <p class="text-sm mb-0">
+                                Historial completo de emails enviados por el sistema
+                            </p>
+                        </div>
+                        <div class="ms-auto">
+                            <a href="{% url 'config_system:smtp_list' %}" class="btn btn-sm btn-outline-primary">
+                                <i class="fas fa-arrow-left me-1"></i>
+                                Volver a SMTP
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    
+                    <!-- Estadísticas rápidas -->
+                    {% if stats %}
+                    <div class="row mb-4">
+                        <div class="col-md-3">
+                            <div class="card text-center">
+                                <div class="card-body py-3">
+                                    <h5 class="text-primary mb-1">{{ stats.total }}</h5>
+                                    <small class="text-muted">Total Logs</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card text-center">
+                                <div class="card-body py-3">
+                                    <h5 class="text-success mb-1">{{ stats.enviados }}</h5>
+                                    <small class="text-muted">Enviados</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card text-center">
+                                <div class="card-body py-3">
+                                    <h5 class="text-danger mb-1">{{ stats.errores }}</h5>
+                                    <small class="text-muted">Errores</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card text-center">
+                                <div class="card-body py-3">
+                                    <h5 class="text-warning mb-1">{{ stats.pendientes }}</h5>
+                                    <small class="text-muted">Pendientes</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Filtros -->
+                    <form method="get" class="mb-4">
+                        <div class="row">
+                            <div class="col-md-2">
+                                {{ form.fecha_desde }}
+                                <label class="form-label small">Desde</label>
+                            </div>
+                            <div class="col-md-2">
+                                {{ form.fecha_hasta }}
+                                <label class="form-label small">Hasta</label>
+                            </div>
+                            <div class="col-md-3">
+                                {{ form.destinatario }}
+                                <label class="form-label small">Destinatario</label>
+                            </div>
+                            <div class="col-md-2">
+                                {{ form.estado }}
+                                <label class="form-label small">Estado</label>
+                            </div>
+                            <div class="col-md-2">
+                                {{ form.configuracion_smtp }}
+                                <label class="form-label small">Proveedor</label>
+                            </div>
+                            <div class="col-md-1">
+                                <button type="submit" class="btn btn-sm btn-primary w-100">
+                                    <i class="fas fa-search"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+
+                    <!-- Tabla de logs -->
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Fecha</th>
+                                    <th>Destinatario</th>
+                                    <th>Asunto</th>
+                                    <th>Estado</th>
+                                    <th>Proveedor</th>
+                                    <th>Usuario</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for log in logs %}
+                                <tr>
+                                    <td>
+                                        <small>{{ log.fecha_creacion|date:"d/m/Y H:i" }}</small>
+                                    </td>
+                                    <td>{{ log.destinatario }}</td>
+                                    <td>
+                                        <div class="text-truncate" style="max-width: 200px;" title="{{ log.asunto }}">
+                                            {{ log.asunto }}
+                                        </div>
+                                    </td>
+                                    <td>
+                                        {% if log.estado == 'enviado' %}
+                                            <span class="badge bg-success">
+                                                <i class="fas fa-check"></i> Enviado
+                                            </span>
+                                        {% elif log.estado == 'error' %}
+                                            <span class="badge bg-danger">
+                                                <i class="fas fa-times"></i> Error
+                                            </span>
+                                        {% elif log.estado == 'pendiente' %}
+                                            <span class="badge bg-warning">
+                                                <i class="fas fa-clock"></i> Pendiente
+                                            </span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">{{ log.estado }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if log.configuracion_smtp %}
+                                            <small>{{ log.configuracion_smtp.nombre }}</small>
+                                        {% else %}
+                                            <small class="text-muted">Sistema</small>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if log.usuario_solicitante %}
+                                            <small>{{ log.usuario_solicitante.username }}</small>
+                                        {% else %}
+                                            <small class="text-muted">-</small>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <a href="{% url 'config_system:email_log_detail' log.pk %}" 
+                                           class="btn btn-sm btn-outline-info">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="7" class="text-center text-muted">
+                                        <i class="fas fa-inbox fa-2x mb-2"></i>
+                                        <br>
+                                        No hay logs registrados
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    {% if logs|length == 100 %}
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-1"></i>
+                        Mostrando los primeros 100 resultados. Usa los filtros para refinar la búsqueda.
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        </div>
+    </section>
+</div>
+{% endblock %}
