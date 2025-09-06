@@ -1,21 +1,36 @@
-# 🏛️ Sistema de Actas Municipales - Municipio de Pastaza
+# 🏛️ Actas IA - Sistema Municipal de Pastaza
 
-**Sistema Integral de Gestión de Actas Municipales** desarrollado sobre **[Django Actas IA PRO](https://app-generator.dev/product/adminlte-pro/django/)**, diseñado específicamente para el Municipio de Pastaza, Ecuador.
+[![Made with Django](https://img.shields.io/badge/Made%20with-Django-092E20.svg)](https://www.djangoproject.com/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15-336791.svg)](https://www.postgresql.org/)
+[![Docker](https://img.shields.io/badge/Docker-Compose-2496ED.svg)](https://www.docker.com/)
 
-## 🚀 Características Premium Activas
+**Sistema Integral de Gestión de Actas Municipales con IA** desarrollado específicamente para el **Municipio de Pastaza, Ecuador**.
 
-- ✅ **OAuth Authentication** - GitHub y Google
-- ✅ **Celery Async Tasks** - Procesamiento asíncrono 
-- ✅ **CI/CD for Render** - Despliegue automático
+## 🌟 Características Principales
 
-## 🏛️ Funcionalidades Municipales
+### 📋 Gestión de Actas Municipales
+- ✅ **Gestión Completa de Actas** - Creación, edición y control de versiones
+- ✅ **Transcripción con IA** - Procesamiento automático de audio con Whisper + Claude
+- ✅ **Workflow de Aprobación** - Proceso formal de revisión y aprobación
+- ✅ **Generación de PDFs** - Documentos oficiales automáticos
 
-- **Gestión de Actas de Sesiones** - Registro completo de sesiones municipales
-- **Procesamiento de Audio** - Transcripción automática con IA
-- **Workflow de Aprobación** - Proceso formal de revisión y aprobación
-- **Notificaciones Automáticas** - Email y webhook para funcionarios
-- **Dashboard Municipal** - Estadísticas y reportes ejecutivos
-- **Gestión de Asistentes** - Control de participantes y quórum
+### � Portal de Transparencia
+- ✅ **Dashboard Público** - Visualización de información municipal
+- ✅ **Métricas Interactivas** - Gráficos dinámicos con ApexCharts
+- ✅ **Búsqueda Avanzada** - Sistema de búsqueda completo
+- ✅ **Indicadores de Gestión** - Estadísticas municipales en tiempo real
+
+### 📅 Sistema de Eventos
+- ✅ **Calendario Interactivo** - Eventos municipales con FullCalendar
+- ✅ **Gestión de Documentos** - Organización jerárquica por fecha y tipo
+- ✅ **Invitaciones Internas/Externas** - Sistema completo de convocatorias
+- ✅ **Confirmación de Asistencia** - Control de participantes
+
+### 🔐 Seguridad y Auditoría
+- ✅ **OAuth Authentication** - GitHub y Google integrados
+- ✅ **Sistema de Auditoría** - Registro completo con Celery
+- ✅ **Roles y Permisos** - Control granular de acceso
+- ✅ **Backup Automático** - Respaldo de base de datos
 
 <br /> 
 
