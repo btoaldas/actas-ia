@@ -1,0 +1,90 @@
+{% extends "config_system/base.html" %}
+{% load static %}
+
+{% block page_title %}Gestión de Usuarios{% endblock %}
+{% block breadcrumb_active %}Usuarios{% endblock %}
+
+{% block main_content %}
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">
+                    <i class="fas fa-users text-primary"></i>
+                    Usuarios con Permisos de Configuración
+                </h3>
+            </div>
+            <div class="card-body">
+                {% if usuarios %}
+                    <div class="table-responsive">
+                        <table class="table table-striped datatable">
+                            <thead>
+                                <tr>
+                                    <th>Usuario</th>
+                                    <th>Nombre Completo</th>
+                                    <th>Email</th>
+                                    <th>Superadmin</th>
+                                    <th>Último Acceso</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for usuario in usuarios %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ usuario.username }}</strong>
+                                        {% if usuario.is_active %}
+                                            <span class="badge badge-success ml-1">Activo</span>
+                                        {% else %}
+                                            <span class="badge badge-danger ml-1">Inactivo</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {{ usuario.get_full_name|default:"-" }}
+                                    </td>
+                                    <td>
+                                        {{ usuario.email|default:"-" }}
+                                    </td>
+                                    <td>
+                                        {% if usuario.is_superuser %}
+                                            <i class="fas fa-crown text-warning" title="Superadministrador"></i>
+                                        {% else %}
+                                            <i class="far fa-user text-muted" title="Usuario normal"></i>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if usuario.last_login %}
+                                            {{ usuario.last_login|date:"d/m/Y H:i" }}
+                                        {% else %}
+                                            <span class="text-muted">Nunca</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="btn-group" role="group">
+                                            <a href="{% url 'config_system:gestionar_permisos' usuario.pk %}" 
+                                               class="btn btn-sm btn-outline-primary" title="Gestionar permisos">
+                                                <i class="fas fa-user-cog"></i>
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-users fa-5x text-muted mb-4"></i>
+                        <h4 class="text-muted">No hay usuarios con permisos especiales</h4>
+                        <p class="text-muted mb-4">
+                            Los usuarios con permisos de configuración aparecerán aquí.
+                        </p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+{% csrf_token %}
+{% endblock main_content %}

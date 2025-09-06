@@ -1,0 +1,394 @@
+{% extends "config_system/base.html" %}
+{% load static %}
+
+{% block page_title %}
+    {% if form.instance.pk %}
+        Editar Configuración Whisper
+    {% else %}
+        Nueva Configuración Whisper
+    {% endif %}
+{% endblock %}
+
+{% block breadcrumb_active %}
+    {% if form.instance.pk %}Editar Config Whisper{% else %}Nueva Config Whisper{% endif %}
+{% endblock %}
+
+{% block main_content %}
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">
+                    <i class="fas fa-microphone text-success"></i>
+                    {% if form.instance.pk %}
+                        Editar Configuración Whisper: {{ form.instance.nombre }}
+                    {% else %}
+                        Nueva Configuración de Whisper
+                    {% endif %}
+                </h3>
+            </div>
+            <form method="post" novalidate>
+                {% csrf_token %}
+                <div class="card-body">
+                    {% if form.non_field_errors %}
+                        <div class="alert alert-danger">
+                            {{ form.non_field_errors }}
+                        </div>
+                    {% endif %}
+
+                    <!-- Información básica -->
+                    <div class="form-group row">
+                        <label for="{{ form.nombre.id_for_label }}" class="col-sm-3 col-form-label">
+                            <strong>{{ form.nombre.label }} *</strong>
+                        </label>
+                        <div class="col-sm-9">
+                            {{ form.nombre }}
+                            {% if form.nombre.errors %}
+                                <div class="invalid-feedback d-block">{{ form.nombre.errors.0 }}</div>
+                            {% endif %}
+                            <small class="form-text text-muted">Nombre descriptivo para esta configuración</small>
+                        </div>
+                    </div>
+
+                    <div class="form-group row">
+                        <div class="col-sm-3">
+                            <strong>Estado</strong>
+                        </div>
+                        <div class="col-sm-9">
+                            <div class="form-check">
+                                {{ form.activo }}
+                                <label class="form-check-label" for="{{ form.activo.id_for_label }}">
+                                    {{ form.activo.label }}
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Configuración del modelo Whisper -->
+                    <hr>
+                    <h5 class="text-success">
+                        <i class="fas fa-cog"></i> Configuración de Whisper
+                    </h5>
+
+                    <div class="form-group row">
+                        <label for="{{ form.modelo_whisper.id_for_label }}" class="col-sm-3 col-form-label">
+                            <strong>{{ form.modelo_whisper.label }} *</strong>
+                        </label>
+                        <div class="col-sm-9">
+                            {{ form.modelo_whisper }}
+                            {% if form.modelo_whisper.errors %}
+                                <div class="invalid-feedback d-block">{{ form.modelo_whisper.errors.0 }}</div>
+                            {% endif %}
+                            <small class="form-text text-muted">Modelo de Whisper a utilizar</small>
+                        </div>
+                    </div>
+
+                    <div class="form-group row">
+                        <label for="{{ form.idioma.id_for_label }}" class="col-sm-3 col-form-label">
+                            <strong>{{ form.idioma.label }}</strong>
+                        </label>
+                        <div class="col-sm-9">
+                            {{ form.idioma }}
+                            {% if form.idioma.errors %}
+                                <div class="invalid-feedback d-block">{{ form.idioma.errors.0 }}</div>
+                            {% endif %}
+                            <small class="form-text text-muted">Código de idioma (es, en, fr, etc.). Dejar vacío para auto-detección</small>
+                        </div>
+                    </div>
+
+                    <div class="form-group row">
+                        <label for="{{ form.temperatura.id_for_label }}" class="col-sm-3 col-form-label">
+                            <strong>{{ form.temperatura.label }}</strong>
+                        </label>
+                        <div class="col-sm-9">
+                            {{ form.temperatura }}
+                            {% if form.temperatura.errors %}
+                                <div class="invalid-feedback d-block">{{ form.temperatura.errors.0 }}</div>
+                            {% endif %}
+                            <small class="form-text text-muted">Temperatura para la transcripción (0.0 - 1.0)</small>
+                        </div>
+                    </div>
+
+                    <!-- Configuración de VAD -->
+                    <hr>
+                    <h5 class="text-success">
+                        <i class="fas fa-volume-up"></i> Detección de Actividad de Voz (VAD)
+                    </h5>
+
+                    <div class="form-group row">
+                        <div class="col-sm-3">
+                            <strong>VAD</strong>
+                        </div>
+                        <div class="col-sm-9">
+                            <div class="form-check">
+                                {{ form.usar_vad }}
+                                <label class="form-check-label" for="{{ form.usar_vad.id_for_label }}">
+                                    {{ form.usar_vad.label }}
+                                </label>
+                                <small class="form-text text-muted">Mejora la precisión filtrando silencios</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Configuración de Pyannote -->
+                    <hr>
+                    <h5 class="text-success">
+                        <i class="fas fa-users"></i> Diarización de Hablantes (Pyannote)
+                    </h5>
+
+                    <div class="form-group row">
+                        <div class="col-sm-3">
+                            <strong>Pyannote</strong>
+                        </div>
+                        <div class="col-sm-9">
+                            <div class="form-check">
+                                {{ form.usar_pyannote }}
+                                <label class="form-check-label" for="{{ form.usar_pyannote.id_for_label }}">
+                                    {{ form.usar_pyannote.label }}
+                                </label>
+                                <small class="form-text text-muted">Identificar y separar diferentes hablantes</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="pyannote-config" style="display: none;">
+                        <div class="form-group row">
+                            <label for="{{ form.modelo_pyannote.id_for_label }}" class="col-sm-3 col-form-label">
+                                <strong>{{ form.modelo_pyannote.label }}</strong>
+                            </label>
+                            <div class="col-sm-9">
+                                {{ form.modelo_pyannote }}
+                                {% if form.modelo_pyannote.errors %}
+                                    <div class="invalid-feedback d-block">{{ form.modelo_pyannote.errors.0 }}</div>
+                                {% endif %}
+                                <small class="form-text text-muted">Modelo de Pyannote para diarización</small>
+                            </div>
+                        </div>
+
+                        <div class="form-group row">
+                            <label for="{{ form.min_speakers.id_for_label }}" class="col-sm-3 col-form-label">
+                                <strong>{{ form.min_speakers.label }}</strong>
+                            </label>
+                            <div class="col-sm-9">
+                                {{ form.min_speakers }}
+                                {% if form.min_speakers.errors %}
+                                    <div class="invalid-feedback d-block">{{ form.min_speakers.errors.0 }}</div>
+                                {% endif %}
+                                <small class="form-text text-muted">Número mínimo de hablantes esperados</small>
+                            </div>
+                        </div>
+
+                        <div class="form-group row">
+                            <label for="{{ form.max_speakers.id_for_label }}" class="col-sm-3 col-form-label">
+                                <strong>{{ form.max_speakers.label }}</strong>
+                            </label>
+                            <div class="col-sm-9">
+                                {{ form.max_speakers }}
+                                {% if form.max_speakers.errors %}
+                                    <div class="invalid-feedback d-block">{{ form.max_speakers.errors.0 }}</div>
+                                {% endif %}
+                                <small class="form-text text-muted">Número máximo de hablantes esperados</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Configuración de Failover -->
+                    <hr>
+                    <h5 class="text-success">
+                        <i class="fas fa-shield-alt"></i> Configuración de Failover
+                    </h5>
+
+                    <div class="form-group row">
+                        <div class="col-sm-3">
+                            <strong>Failover</strong>
+                        </div>
+                        <div class="col-sm-9">
+                            <div class="form-check">
+                                {{ form.tiene_failover }}
+                                <label class="form-check-label" for="{{ form.tiene_failover.id_for_label }}">
+                                    {{ form.tiene_failover.label }}
+                                </label>
+                                <small class="form-text text-muted">Activar método de respaldo en caso de error</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="failover-config" style="display: none;">
+                        <div class="form-group row">
+                            <label for="{{ form.failover_metodo.id_for_label }}" class="col-sm-3 col-form-label">
+                                <strong>{{ form.failover_metodo.label }}</strong>
+                            </label>
+                            <div class="col-sm-9">
+                                {{ form.failover_metodo }}
+                                {% if form.failover_metodo.errors %}
+                                    <div class="invalid-feedback d-block">{{ form.failover_metodo.errors.0 }}</div>
+                                {% endif %}
+                                <small class="form-text text-muted">Método de respaldo a utilizar</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card-footer">
+                    <div class="row">
+                        <div class="col-sm-9 offset-sm-3">
+                            <button type="submit" class="btn btn-success">
+                                <i class="fas fa-save"></i>
+                                {% if form.instance.pk %}Actualizar{% else %}Crear{% endif %} Configuración
+                            </button>
+                            <a href="{% url 'config_system:whisper_list' %}" class="btn btn-secondary ml-2">
+                                <i class="fas fa-times"></i> Cancelar
+                            </a>
+                            {% if form.instance.pk %}
+                                <a href="{% url 'config_system:whisper_test' form.instance.pk %}" class="btn btn-info ml-2">
+                                    <i class="fas fa-vial"></i> Probar Configuración
+                                </a>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Panel de ayuda -->
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title">
+                    <i class="fas fa-question-circle text-info"></i>
+                    Ayuda y Configuraciones
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="accordion" id="helpAccordion">
+                    <!-- Modelos Whisper -->
+                    <div class="card">
+                        <div class="card-header" id="whisperModelsHelp">
+                            <h6 class="mb-0">
+                                <button class="btn btn-link" type="button" data-toggle="collapse" data-target="#collapseWhisperModels">
+                                    Modelos Whisper
+                                </button>
+                            </h6>
+                        </div>
+                        <div id="collapseWhisperModels" class="collapse show" data-parent="#helpAccordion">
+                            <div class="card-body">
+                                <p><strong>Modelos disponibles:</strong></p>
+                                <ul>
+                                    <li><code>tiny</code> - Más rápido, menos preciso</li>
+                                    <li><code>base</code> - Balance velocidad/calidad</li>
+                                    <li><code>small</code> - Buena calidad general</li>
+                                    <li><code>medium</code> - Alta calidad</li>
+                                    <li><code>large</code> - Máxima calidad</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- VAD Info -->
+                    <div class="card">
+                        <div class="card-header" id="vadHelp">
+                            <h6 class="mb-0">
+                                <button class="btn btn-link collapsed" type="button" data-toggle="collapse" data-target="#collapseVAD">
+                                    VAD (Voice Activity Detection)
+                                </button>
+                            </h6>
+                        </div>
+                        <div id="collapseVAD" class="collapse" data-parent="#helpAccordion">
+                            <div class="card-body">
+                                <p>VAD mejora la transcripción:</p>
+                                <ul>
+                                    <li>Filtra silencios largos</li>
+                                    <li>Reduce alucinaciones</li>
+                                    <li>Mejora la segmentación</li>
+                                </ul>
+                                <p><strong>Recomendado:</strong> Activar para audios con silencios largos.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Pyannote Info -->
+                    <div class="card">
+                        <div class="card-header" id="pyannoteHelp">
+                            <h6 class="mb-0">
+                                <button class="btn btn-link collapsed" type="button" data-toggle="collapse" data-target="#collapsePyannote">
+                                    Pyannote (Diarización)
+                                </button>
+                            </h6>
+                        </div>
+                        <div id="collapsePyannote" class="collapse" data-parent="#helpAccordion">
+                            <div class="card-body">
+                                <p>Pyannote identifica hablantes:</p>
+                                <ul>
+                                    <li>Separa intervenciones por hablante</li>
+                                    <li>Útil para reuniones y debates</li>
+                                    <li>Mejora la estructura del acta</li>
+                                </ul>
+                                <p><strong>Configuración típica:</strong></p>
+                                <ul>
+                                    <li>Min speakers: 2</li>
+                                    <li>Max speakers: 8-10</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Failover Info -->
+                    <div class="card">
+                        <div class="card-header" id="failoverHelp">
+                            <h6 class="mb-0">
+                                <button class="btn btn-link collapsed" type="button" data-toggle="collapse" data-target="#collapseFailover">
+                                    Failover
+                                </button>
+                            </h6>
+                        </div>
+                        <div id="collapseFailover" class="collapse" data-parent="#helpAccordion">
+                            <div class="card-body">
+                                <p>Métodos de respaldo disponibles:</p>
+                                <ul>
+                                    <li><strong>Modelo más pequeño:</strong> Usar un modelo Whisper más rápido</li>
+                                    <li><strong>Sin VAD:</strong> Desactivar VAD temporalmente</li>
+                                    <li><strong>Sin Pyannote:</strong> Transcribir sin diarización</li>
+                                    <li><strong>Básico:</strong> Configuración mínima</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock main_content %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    // Mostrar/ocultar configuración de Pyannote
+    function togglePyannoteConfig() {
+        if ($('#{{ form.usar_pyannote.id_for_label }}').is(':checked')) {
+            $('.pyannote-config').show();
+        } else {
+            $('.pyannote-config').hide();
+        }
+    }
+
+    // Mostrar/ocultar configuración de Failover
+    function toggleFailoverConfig() {
+        if ($('#{{ form.tiene_failover.id_for_label }}').is(':checked')) {
+            $('.failover-config').show();
+        } else {
+            $('.failover-config').hide();
+        }
+    }
+
+    // Eventos de cambio
+    $('#{{ form.usar_pyannote.id_for_label }}').change(togglePyannoteConfig);
+    $('#{{ form.tiene_failover.id_for_label }}').change(toggleFailoverConfig);
+
+    // Inicializar estado
+    togglePyannoteConfig();
+    toggleFailoverConfig();
+});
+</script>
+{% endblock extra_js %}

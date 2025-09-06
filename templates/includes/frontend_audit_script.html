@@ -1,0 +1,69 @@
+{% comment %}
+============================================================================
+Template para incluir sistema de auditoría frontend
+Uso: {% include 'includes/frontend_audit_script.html' %}
+============================================================================
+{% endcomment %}
+
+{% load static %}
+
+<!-- Sistema de Auditoría Frontend - Actas Municipales -->
+<script>
+    // Configuración global para el sistema de auditoría
+    window.AUDIT_CONFIG = {
+        apiEndpoint: '{% url "frontend_logs_api" %}',
+        userId: {% if user.is_authenticated %}{{ user.id }}{% else %}null{% endif %},
+        sessionId: '{{ request.session.session_key|default:"" }}',
+        csrfToken: '{{ csrf_token }}',
+        trackingEnabled: {% if user.is_authenticated %}true{% else %}false{% endif %},
+        debugMode: {% if debug %}true{% else %}false{% endif %}
+    };
+    
+    // Configurar user ID en el HTML para que el script lo detecte
+    {% if user.is_authenticated %}
+    document.documentElement.setAttribute('data-user-id', '{{ user.id }}');
+    {% endif %}
+</script>
+
+<!-- Cargar el script principal de auditoría -->
+<script src="{% static 'js/frontend-audit-logger.js' %}" defer></script>
+
+<!-- Script de inicialización específico para la página actual -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    if (window.frontendLogger) {
+        // Log evento de carga de página específica
+        window.frontendLogger.trackCustomEvent('PAGE_LOADED', 'NAVEGACION', {
+            page_type: '{{ request.resolver_match.view_name|default:"unknown" }}',
+            app_name: '{{ request.resolver_match.app_name|default:"" }}',
+            url_name: '{{ request.resolver_match.url_name|default:"" }}',
+            template_name: '{{ template_name|default:"" }}',
+            user_authenticated: {% if user.is_authenticated %}true{% else %}false{% endif %},
+            user_is_staff: {% if user.is_staff %}true{% else %}false{% endif %}
+        });
+        
+        {% if debug %}
+        console.log('🔍 Sistema de auditoría frontend activado');
+        console.log('Usuario:', window.AUDIT_CONFIG.userId);
+        console.log('Sesión:', window.AUDIT_CONFIG.sessionId);
+        {% endif %}
+    }
+});
+</script>
+
+{% comment %}
+Para páginas específicas que requieran tracking especial, 
+puedes añadir scripts adicionales después de incluir este template:
+
+<script>
+// Ejemplo: Tracking específico para formularios de actas
+document.querySelectorAll('form[data-track="acta"]').forEach(form => {
+    form.addEventListener('submit', function(e) {
+        logCustomEvent('ACTA_FORM_SUBMIT', 'MUNICIPAL', {
+            form_type: this.dataset.formType || 'unknown',
+            acta_id: this.dataset.actaId || null
+        });
+    });
+});
+</script>
+{% endcomment %}

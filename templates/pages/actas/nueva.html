@@ -1,0 +1,313 @@
+{% extends 'layouts/base.html' %}
+
+{% block title %} {{ page_title }} - Sistema de Actas Municipales {% endblock title %}
+
+{% block content %}
+<!-- Content Wrapper -->
+<div class="content-wrapper">
+    <!-- Content Header -->
+    <div class="content-header">
+        <div class="container-fluid">
+            <div class="row mb-2">
+                <div class="col-sm-6">
+                    <h1 class="m-0">📄 {{ page_title }}</h1>
+                </div>
+                <div class="col-sm-6">
+                    <ol class="breadcrumb float-sm-right">
+                        <li class="breadcrumb-item"><a href="/">Dashboard</a></li>
+                        <li class="breadcrumb-item"><a href="{% url 'actas_listado' %}">Gestión de Actas</a></li>
+                        <li class="breadcrumb-item active">Nueva Acta</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main content -->
+    <section class="content">
+        <div class="container-fluid">
+            
+            <div class="row">
+                <!-- Formulario Principal -->
+                <div class="col-md-8">
+                    <div class="card card-primary">
+                        <div class="card-header">
+                            <h3 class="card-title">
+                                <i class="fas fa-plus mr-2"></i>
+                                Crear Nueva Acta Municipal
+                            </h3>
+                        </div>
+                        
+                        <form role="form">
+                            <div class="card-body">
+                                <!-- Información Básica -->
+                                <div class="form-group">
+                                    <label for="numero_acta">Número de Acta *</label>
+                                    <input type="text" class="form-control" id="numero_acta" 
+                                           placeholder="Ej: ACT-2024-004" value="ACT-2024-004" readonly>
+                                    <small class="form-text text-muted">Número generado automáticamente</small>
+                                </div>
+                                
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label for="fecha_sesion">Fecha de Sesión *</label>
+                                            <input type="date" class="form-control" id="fecha_sesion" required>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label for="hora_inicio">Hora de Inicio *</label>
+                                            <input type="time" class="form-control" id="hora_inicio" required>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="tipo_sesion">Tipo de Sesión *</label>
+                                    <select class="form-control" id="tipo_sesion" required>
+                                        <option value="">Seleccione el tipo de sesión</option>
+                                        {% for tipo in tipos_sesion %}
+                                        <option value="{{ tipo }}">{{ tipo }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="presidente">Presidente de la Sesión *</label>
+                                    <select class="form-control" id="presidente" required>
+                                        <option value="">Seleccione el presidente</option>
+                                        {% for funcionario in funcionarios %}
+                                        <option value="{{ funcionario.id }}">{{ funcionario.nombre }} - {{ funcionario.cargo }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="lugar_sesion">Lugar de la Sesión</label>
+                                    <input type="text" class="form-control" id="lugar_sesion" 
+                                           placeholder="Ej: Salón de Sesiones del Municipio" 
+                                           value="Salón de Sesiones del Municipio">
+                                </div>
+
+                                <!-- Contenido de la Sesión -->
+                                <hr>
+                                <h5><i class="fas fa-list mr-2"></i>Orden del Día</h5>
+                                
+                                <div class="form-group">
+                                    <label for="orden_dia">Puntos del Orden del Día</label>
+                                    <textarea class="form-control" id="orden_dia" rows="6" 
+                                              placeholder="Ingrese los puntos del orden del día, uno por línea">1. Verificación del quórum
+2. Lectura y aprobación del acta anterior
+3. Aprobación del presupuesto municipal 2024
+4. Autorización de obras de infraestructura vial
+5. Asuntos varios
+6. Clausura de la sesión</textarea>
+                                </div>
+
+                                <!-- Archivos Adjuntos -->
+                                <hr>
+                                <h5><i class="fas fa-paperclip mr-2"></i>Documentos y Archivos</h5>
+                                
+                                <div class="form-group">
+                                    <label for="archivo_audio">Grabación de Audio</label>
+                                    <div class="input-group">
+                                        <div class="custom-file">
+                                            <input type="file" class="custom-file-input" id="archivo_audio" 
+                                                   accept="audio/*">
+                                            <label class="custom-file-label" for="archivo_audio">Seleccionar archivo de audio</label>
+                                        </div>
+                                        <div class="input-group-append">
+                                            <button class="btn btn-outline-info" type="button" title="Iniciar grabación">
+                                                <i class="fas fa-microphone"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <small class="form-text text-muted">
+                                        Formatos soportados: MP3, WAV, M4A. El sistema transcribirá automáticamente el audio.
+                                    </small>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="documentos_adicionales">Documentos Adicionales</label>
+                                    <div class="custom-file">
+                                        <input type="file" class="custom-file-input" id="documentos_adicionales" multiple>
+                                        <label class="custom-file-label" for="documentos_adicionales">Seleccionar documentos</label>
+                                    </div>
+                                    <small class="form-text text-muted">
+                                        PDF, DOC, DOCX, XLS, XLSX. Máximo 10 archivos.
+                                    </small>
+                                </div>
+
+                                <!-- Notas -->
+                                <div class="form-group">
+                                    <label for="notas_adicionales">Notas Adicionales</label>
+                                    <textarea class="form-control" id="notas_adicionales" rows="3" 
+                                              placeholder="Observaciones, comentarios o información adicional relevante"></textarea>
+                                </div>
+                            </div>
+                            
+                            <div class="card-footer">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save mr-2"></i>Crear Acta
+                                </button>
+                                <button type="button" class="btn btn-success ml-2">
+                                    <i class="fas fa-robot mr-2"></i>Crear y Procesar con IA
+                                </button>
+                                <button type="button" class="btn btn-secondary ml-2" onclick="window.location.href='{% url 'actas_listado' %}'">
+                                    <i class="fas fa-times mr-2"></i>Cancelar
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Panel de Ayuda -->
+                <div class="col-md-4">
+                    <!-- Asistente IA -->
+                    <div class="card card-info">
+                        <div class="card-header">
+                            <h3 class="card-title">
+                                <i class="fas fa-robot"></i> Asistente IA
+                            </h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="alert alert-info">
+                                <h6><i class="fas fa-lightbulb mr-2"></i>Sugerencia</h6>
+                                <p class="mb-0">Suba una grabación de audio y el sistema generará automáticamente una transcripción inicial del acta.</p>
+                            </div>
+                            
+                            <h6>🎤 Transcripción Automática</h6>
+                            <ul class="list-unstyled">
+                                <li><i class="fas fa-check text-success"></i> Reconocimiento de voz</li>
+                                <li><i class="fas fa-check text-success"></i> Identificación de participantes</li>
+                                <li><i class="fas fa-check text-success"></i> Extracción de decisiones</li>
+                                <li><i class="fas fa-check text-success"></i> Resumen automático</li>
+                            </ul>
+                            
+                            <button class="btn btn-outline-info btn-block">
+                                <i class="fas fa-cog mr-2"></i>Configurar IA
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Plantillas -->
+                    <div class="card card-warning">
+                        <div class="card-header">
+                            <h3 class="card-title">
+                                <i class="fas fa-file-alt"></i> Plantillas
+                            </h3>
+                        </div>
+                        <div class="card-body">
+                            <p>Use plantillas predefinidas para diferentes tipos de sesiones:</p>
+                            
+                            <div class="list-group list-group-flush">
+                                <a href="#" class="list-group-item list-group-item-action" onclick="cargarPlantilla('ordinaria')">
+                                    <i class="fas fa-calendar mr-2"></i>Sesión Ordinaria
+                                </a>
+                                <a href="#" class="list-group-item list-group-item-action" onclick="cargarPlantilla('extraordinaria')">
+                                    <i class="fas fa-exclamation-circle mr-2"></i>Sesión Extraordinaria
+                                </a>
+                                <a href="#" class="list-group-item list-group-item-action" onclick="cargarPlantilla('comision')">
+                                    <i class="fas fa-users mr-2"></i>Sesión de Comisión
+                                </a>
+                                <a href="#" class="list-group-item list-group-item-action" onclick="cargarPlantilla('emergencia')">
+                                    <i class="fas fa-exclamation-triangle mr-2"></i>Sesión de Emergencia
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Historial -->
+                    <div class="card card-secondary">
+                        <div class="card-header">
+                            <h3 class="card-title">
+                                <i class="fas fa-history"></i> Últimas Actas
+                            </h3>
+                        </div>
+                        <div class="card-body p-0">
+                            <ul class="list-group list-group-flush">
+                                <li class="list-group-item">
+                                    <strong>ACT-2024-003</strong><br>
+                                    <small class="text-muted">Sesión de Comisión - 05/02/2024</small>
+                                </li>
+                                <li class="list-group-item">
+                                    <strong>ACT-2024-002</strong><br>
+                                    <small class="text-muted">Sesión Extraordinaria - 22/01/2024</small>
+                                </li>
+                                <li class="list-group-item">
+                                    <strong>ACT-2024-001</strong><br>
+                                    <small class="text-muted">Sesión Ordinaria - 15/01/2024</small>
+                                </li>
+                            </ul>
+                        </div>
+                        <div class="card-footer">
+                            <a href="{% url 'actas_listado' %}" class="btn btn-outline-secondary btn-block">
+                                Ver Todas las Actas
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </section>
+</div>
+
+<script>
+// Funciones JavaScript para mejorar la interactividad
+function cargarPlantilla(tipo) {
+    let ordenDia = '';
+    
+    switch(tipo) {
+        case 'ordinaria':
+            ordenDia = `1. Verificación del quórum
+2. Lectura y aprobación del acta anterior
+3. Informe del Alcalde
+4. Informes de comisiones
+5. Tratamiento de ordenanzas
+6. Asuntos varios
+7. Clausura de la sesión`;
+            break;
+        case 'extraordinaria':
+            ordenDia = `1. Verificación del quórum
+2. Lectura del decreto de convocatoria
+3. [Tema específico de la convocatoria]
+4. Clausura de la sesión`;
+            break;
+        case 'comision':
+            ordenDia = `1. Verificación del quórum
+2. Análisis del tema asignado
+3. Debate y discusión
+4. Elaboración de dictamen
+5. Clausura de la sesión`;
+            break;
+        case 'emergencia':
+            ordenDia = `1. Verificación del quórum
+2. Exposición de la situación de emergencia
+3. Medidas urgentes a adoptar
+4. Autorización de gastos de emergencia
+5. Clausura de la sesión`;
+            break;
+    }
+    
+    document.getElementById('orden_dia').value = ordenDia;
+    document.getElementById('tipo_sesion').value = tipo.charAt(0).toUpperCase() + tipo.slice(1);
+    
+    // Mostrar notificación
+    toastr.success('Plantilla cargada correctamente', 'Éxito');
+}
+
+// Actualizar nombres de archivos al seleccionar
+document.getElementById('archivo_audio').addEventListener('change', function() {
+    const fileName = this.files[0]?.name || 'Seleccionar archivo de audio';
+    this.nextElementSibling.textContent = fileName;
+});
+
+document.getElementById('documentos_adicionales').addEventListener('change', function() {
+    const fileCount = this.files.length;
+    const fileName = fileCount > 1 ? `${fileCount} archivos seleccionados` : this.files[0]?.name || 'Seleccionar documentos';
+    this.nextElementSibling.textContent = fileName;
+});
+</script>
+{% endblock content %}

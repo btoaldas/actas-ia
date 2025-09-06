@@ -1,0 +1,556 @@
+{% extends 'config_system/base.html' %}
+{% load static %}
+
+{% block title %}Gestión de Permisos{% endblock %}
+
+{% block extra_css %}
+<style>
+.permissions-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+    gap: 20px;
+}
+
+.permission-card {
+    border-left: 4px solid #007bff;
+    transition: transform 0.2s ease-in-out;
+}
+
+.permission-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.permission-category {
+    background: linear-gradient(45deg, #007bff, #28a745);
+    color: white;
+    padding: 15px;
+    border-radius: 10px 10px 0 0;
+    margin: -15px -15px 15px -15px;
+}
+
+.permission-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid #eee;
+}
+
+.permission-item:last-child {
+    border-bottom: none;
+}
+
+.permission-summary {
+    background: #f8f9fa;
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 20px;
+}
+
+.user-permission-card {
+    border: 2px solid #e9ecef;
+    border-radius: 10px;
+    margin-bottom: 15px;
+}
+
+.user-header {
+    background: #007bff;
+    color: white;
+    padding: 10px 15px;
+    border-radius: 8px 8px 0 0;
+    margin: -1px -1px 15px -1px;
+}
+
+.permission-count {
+    font-size: 2rem;
+    font-weight: bold;
+}
+
+.quick-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.stat-item {
+    text-align: center;
+    padding: 15px;
+    background: white;
+    border-radius: 10px;
+    border-left: 4px solid #007bff;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="content-wrapper">
+    <div class="content-header">
+        <div class="container-fluid">
+            <div class="row mb-2">
+                <div class="col-sm-6">
+                    <h1 class="m-0">
+                        <i class="fas fa-key"></i> Gestión de Permisos
+                    </h1>
+                </div>
+                <div class="col-sm-6">
+                    <ol class="breadcrumb float-sm-right">
+                        <li class="breadcrumb-item"><a href="{% url 'config_system:dashboard' %}">Dashboard</a></li>
+                        <li class="breadcrumb-item active">Permisos</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="content">
+        <div class="container-fluid">
+            <!-- Estadísticas rápidas -->
+            <div class="quick-stats">
+                <div class="stat-item">
+                    <div class="permission-count text-primary">{{ total_permisos }}</div>
+                    <small class="text-muted">Total Usuarios con Permisos</small>
+                </div>
+                <div class="stat-item">
+                    <div class="permission-count text-success">{{ permisos_activos }}</div>
+                    <small class="text-muted">Perfiles Activos</small>
+                </div>
+                <div class="stat-item">
+                    <div class="permission-count text-warning">{{ permisos_superadmin }}</div>
+                    <small class="text-muted">Super Administradores</small>
+                </div>
+                <div class="stat-item">
+                    <div class="permission-count text-info">{{ permisos_admin }}</div>
+                    <small class="text-muted">Administradores</small>
+                </div>
+                <div class="stat-item">
+                    <div class="permission-count text-secondary">{{ permisos_operadores }}</div>
+                    <small class="text-muted">Operadores</small>
+                </div>
+            </div>
+
+            <!-- Filtros y búsqueda -->
+            <div class="permission-summary">
+                <div class="row">
+                    <div class="col-md-12">
+                        <form method="get" class="form-inline">
+                            <div class="row w-100">
+                                <div class="col-md-3">
+                                    <div class="form-group w-100">
+                                        <input type="text" name="buscar" class="form-control w-100" 
+                                               placeholder="Buscar usuario..." 
+                                               value="{{ request.GET.buscar }}">
+                                    </div>
+                                </div>
+                                <div class="col-md-2">
+                                    <div class="form-group w-100">
+                                        <select name="rol" class="form-control w-100">
+                                            <option value="">Todos los roles</option>
+                                            <option value="superadmin" {% if request.GET.rol == 'superadmin' %}selected{% endif %}>SuperAdmin</option>
+                                            <option value="admin" {% if request.GET.rol == 'admin' %}selected{% endif %}>Administrador</option>
+                                            <option value="supervisor" {% if request.GET.rol == 'supervisor' %}selected{% endif %}>Supervisor</option>
+                                            <option value="operador" {% if request.GET.rol == 'operador' %}selected{% endif %}>Operador</option>
+                                            <option value="consultor" {% if request.GET.rol == 'consultor' %}selected{% endif %}>Consultor</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-md-2">
+                                    <div class="form-group w-100">
+                                        <select name="categoria" class="form-control w-100">
+                                            <option value="">Todas las categorías</option>
+                                            <option value="menus" {% if request.GET.categoria == 'menus' %}selected{% endif %}>Acceso a Menús</option>
+                                            <option value="transcripcion" {% if request.GET.categoria == 'transcripcion' %}selected{% endif %}>Transcripción</option>
+                                            <option value="procesamiento" {% if request.GET.categoria == 'procesamiento' %}selected{% endif %}>Procesamiento</option>
+                                            <option value="administracion" {% if request.GET.categoria == 'administracion' %}selected{% endif %}>Administración</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-md-2">
+                                    <div class="form-group w-100">
+                                        <select name="estado" class="form-control w-100">
+                                            <option value="">Todos los estados</option>
+                                            <option value="activo" {% if request.GET.estado == 'activo' %}selected{% endif %}>Activos</option>
+                                            <option value="inactivo" {% if request.GET.estado == 'inactivo' %}selected{% endif %}>Inactivos</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="fas fa-search"></i> Buscar
+                                    </button>
+                                    <a href="{% url 'config_system:permisos_list' %}" class="btn btn-secondary ml-2">
+                                        <i class="fas fa-times"></i> Limpiar
+                                    </a>
+                                    <div class="dropdown d-inline-block ml-2">
+                                        <button class="btn btn-success dropdown-toggle" type="button" data-toggle="dropdown">
+                                            <i class="fas fa-cogs"></i> Acciones
+                                        </button>
+                                        <div class="dropdown-menu">
+                                            <a class="dropdown-item" href="#" onclick="aplicarPermisosMasivo('operador')">
+                                                Configurar Operadores
+                                            </a>
+                                            <a class="dropdown-item" href="#" onclick="aplicarPermisosMasivo('supervisor')">
+                                                Configurar Supervisores
+                                            </a>
+                                            <a class="dropdown-item" href="#" onclick="aplicarPermisosMasivo('admin')">
+                                                Configurar Administradores
+                                            </a>
+                                            <div class="dropdown-divider"></div>
+                                            <a class="dropdown-item" href="#" onclick="exportarPermisos()">
+                                                <i class="fas fa-download"></i> Exportar Permisos
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Lista de permisos por usuario -->
+            <div class="permissions-grid">
+                {% for permiso in permisos %}
+                <div class="card user-permission-card">
+                    <div class="user-header">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="mb-0">
+                                    {% if permiso.perfil_usuario.usuario %}
+                                        {{ permiso.perfil_usuario.usuario.first_name }} {{ permiso.perfil_usuario.usuario.last_name }}
+                                    {% else %}
+                                        Perfil sin usuario
+                                    {% endif %}
+                                </h6>
+                                <small>
+                                    {% if permiso.perfil_usuario.usuario %}
+                                        @{{ permiso.perfil_usuario.usuario.username }}
+                                    {% endif %}
+                                    | {{ permiso.perfil_usuario.get_rol_display }}
+                                </small>
+                            </div>
+                            <div>
+                                {% if permiso.perfil_usuario.activo %}
+                                    <span class="badge badge-light">Activo</span>
+                                {% else %}
+                                    <span class="badge badge-secondary">Inactivo</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="card-body">
+                        <!-- Resumen de permisos -->
+                        <div class="row text-center mb-3">
+                            <div class="col-4">
+                                <h6 class="text-primary">{{ permiso.total_permisos_activos }}</h6>
+                                <small class="text-muted">Activos</small>
+                            </div>
+                            <div class="col-4">
+                                <h6 class="text-success">{{ permiso.permisos_menus }}</h6>
+                                <small class="text-muted">Menús</small>
+                            </div>
+                            <div class="col-4">
+                                <h6 class="text-info">{{ permiso.permisos_funciones }}</h6>
+                                <small class="text-muted">Funciones</small>
+                            </div>
+                        </div>
+
+                        <!-- Categorías de permisos principales -->
+                        <div class="permission-item">
+                            <span><i class="fas fa-bars"></i> Acceso a Menús</span>
+                            <div>
+                                {% if permiso.ver_menu_transcribir %}<span class="badge badge-success badge-sm">T</span>{% endif %}
+                                {% if permiso.ver_menu_procesamiento %}<span class="badge badge-success badge-sm">P</span>{% endif %}
+                                {% if permiso.ver_menu_digitalizacion %}<span class="badge badge-success badge-sm">D</span>{% endif %}
+                                {% if permiso.ver_menu_generacion %}<span class="badge badge-success badge-sm">G</span>{% endif %}
+                                {% if permiso.ver_menu_publicacion %}<span class="badge badge-success badge-sm">Pub</span>{% endif %}
+                                {% if permiso.ver_menu_config_ia %}<span class="badge badge-success badge-sm">IA</span>{% endif %}
+                            </div>
+                        </div>
+
+                        <div class="permission-item">
+                            <span><i class="fas fa-cogs"></i> Funcionalidades</span>
+                            <div>
+                                {% if permiso.crear_transcripciones %}<i class="fas fa-plus text-success" title="Crear"></i>{% endif %}
+                                {% if permiso.editar_transcripciones %}<i class="fas fa-edit text-warning" title="Editar"></i>{% endif %}
+                                {% if permiso.eliminar_transcripciones %}<i class="fas fa-trash text-danger" title="Eliminar"></i>{% endif %}
+                                {% if permiso.aprobar_transcripciones %}<i class="fas fa-check text-info" title="Aprobar"></i>{% endif %}
+                            </div>
+                        </div>
+
+                        <div class="permission-item">
+                            <span><i class="fas fa-shield-alt"></i> Administración</span>
+                            <div>
+                                {% if permiso.gestionar_usuarios %}<span class="badge badge-warning badge-sm">Users</span>{% endif %}
+                                {% if permiso.configurar_sistema %}<span class="badge badge-danger badge-sm">Config</span>{% endif %}
+                                {% if permiso.ver_reportes %}<span class="badge badge-info badge-sm">Reports</span>{% endif %}
+                                {% if permiso.backup_restaurar %}<span class="badge badge-dark badge-sm">Backup</span>{% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Acciones -->
+                        <div class="mt-3 text-center">
+                            <div class="btn-group">
+                                <a href="{% url 'config_system:permisos_detail' permiso.pk %}" 
+                                   class="btn btn-sm btn-outline-primary" title="Ver detalles">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                                <a href="{% url 'config_system:permisos_edit' permiso.pk %}" 
+                                   class="btn btn-sm btn-outline-warning" title="Editar">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                {% if permiso.perfil_usuario %}
+                                <a href="{% url 'config_system:perfil_detail' permiso.perfil_usuario.pk %}" 
+                                   class="btn btn-sm btn-outline-info" title="Ver perfil">
+                                    <i class="fas fa-id-card"></i>
+                                </a>
+                                {% endif %}
+                                {% if permiso.perfil_usuario.usuario %}
+                                <a href="{% url 'config_system:usuario_detail' permiso.perfil_usuario.usuario.pk %}" 
+                                   class="btn btn-sm btn-outline-success" title="Ver usuario">
+                                    <i class="fas fa-user"></i>
+                                </a>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Última actualización -->
+                        <div class="mt-2 text-center">
+                            <small class="text-muted">
+                                <i class="fas fa-clock"></i> 
+                                Perfil creado: {{ permiso.perfil_usuario.fecha_creacion|date:"d/m/Y" }}
+                            </small>
+                        </div>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-body text-center">
+                            <i class="fas fa-key fa-3x text-muted mb-3"></i>
+                            <h5 class="text-muted">No se encontraron permisos</h5>
+                            <p class="text-muted">
+                                {% if request.GET.buscar or request.GET.rol or request.GET.categoria or request.GET.estado %}
+                                    No hay permisos que coincidan con los filtros aplicados.
+                                {% else %}
+                                    Aún no hay permisos configurados en el sistema.
+                                {% endif %}
+                            </p>
+                            <a href="{% url 'config_system:perfiles_list' %}" class="btn btn-primary">
+                                <i class="fas fa-id-card"></i> Gestionar Perfiles
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- Paginación -->
+            {% if is_paginated %}
+            <div class="row mt-4">
+                <div class="col-12">
+                    <nav aria-label="Navegación de permisos">
+                        <ul class="pagination justify-content-center">
+                            {% if page_obj.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?{% if request.GET.buscar %}buscar={{ request.GET.buscar }}&{% endif %}{% if request.GET.rol %}rol={{ request.GET.rol }}&{% endif %}{% if request.GET.categoria %}categoria={{ request.GET.categoria }}&{% endif %}{% if request.GET.estado %}estado={{ request.GET.estado }}&{% endif %}page={{ page_obj.previous_page_number }}">
+                                    <i class="fas fa-chevron-left"></i> Anterior
+                                </a>
+                            </li>
+                            {% endif %}
+
+                            {% for num in page_obj.paginator.page_range %}
+                            {% if page_obj.number == num %}
+                            <li class="page-item active">
+                                <span class="page-link">{{ num }}</span>
+                            </li>
+                            {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                            <li class="page-item">
+                                <a class="page-link" href="?{% if request.GET.buscar %}buscar={{ request.GET.buscar }}&{% endif %}{% if request.GET.rol %}rol={{ request.GET.rol }}&{% endif %}{% if request.GET.categoria %}categoria={{ request.GET.categoria }}&{% endif %}{% if request.GET.estado %}estado={{ request.GET.estado }}&{% endif %}page={{ num }}">{{ num }}</a>
+                            </li>
+                            {% endif %}
+                            {% endfor %}
+
+                            {% if page_obj.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?{% if request.GET.buscar %}buscar={{ request.GET.buscar }}&{% endif %}{% if request.GET.rol %}rol={{ request.GET.rol }}&{% endif %}{% if request.GET.categoria %}categoria={{ request.GET.categoria }}&{% endif %}{% if request.GET.estado %}estado={{ request.GET.estado }}&{% endif %}page={{ page_obj.next_page_number }}">
+                                    Siguiente <i class="fas fa-chevron-right"></i>
+                                </a>
+                            </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Panel de acciones masivas -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <i class="fas fa-cogs"></i> Herramientas de Gestión Masiva
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <h6>Configuración por Rol:</h6>
+                            <div class="btn-group-vertical w-100">
+                                <button type="button" class="btn btn-outline-primary btn-sm" 
+                                        onclick="aplicarPermisosMasivo('operador')">
+                                    <i class="fas fa-user"></i> Configurar Operadores
+                                </button>
+                                <button type="button" class="btn btn-outline-info btn-sm" 
+                                        onclick="aplicarPermisosMasivo('supervisor')">
+                                    <i class="fas fa-user-tie"></i> Configurar Supervisores
+                                </button>
+                                <button type="button" class="btn btn-outline-warning btn-sm" 
+                                        onclick="aplicarPermisosMasivo('admin')">
+                                    <i class="fas fa-user-shield"></i> Configurar Administradores
+                                </button>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <h6>Mantenimiento:</h6>
+                            <div class="btn-group-vertical w-100">
+                                <button type="button" class="btn btn-outline-success btn-sm" 
+                                        onclick="sincronizarPermisos()">
+                                    <i class="fas fa-sync"></i> Sincronizar Todos
+                                </button>
+                                <button type="button" class="btn btn-outline-danger btn-sm" 
+                                        onclick="limpiarPermisos()">
+                                    <i class="fas fa-broom"></i> Limpiar Inactivos
+                                </button>
+                                <button type="button" class="btn btn-outline-secondary btn-sm" 
+                                        onclick="auditarPermisos()">
+                                    <i class="fas fa-search"></i> Auditar Permisos
+                                </button>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <h6>Exportación:</h6>
+                            <div class="btn-group-vertical w-100">
+                                <button type="button" class="btn btn-outline-info btn-sm" 
+                                        onclick="exportarPermisos('excel')">
+                                    <i class="fas fa-file-excel"></i> Exportar Excel
+                                </button>
+                                <button type="button" class="btn btn-outline-primary btn-sm" 
+                                        onclick="exportarPermisos('pdf')">
+                                    <i class="fas fa-file-pdf"></i> Exportar PDF
+                                </button>
+                                <button type="button" class="btn btn-outline-secondary btn-sm" 
+                                        onclick="exportarPermisos('json')">
+                                    <i class="fas fa-file-code"></i> Exportar JSON
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function aplicarPermisosMasivo(rol) {
+    if (!confirm('¿Aplicar configuración estándar de permisos para todos los usuarios con rol ' + rol + '?')) {
+        return;
+    }
+    
+    $.ajax({
+        url: '{% url "config_system:aplicar_permisos_masivo" %}',
+        method: 'POST',
+        data: {
+            'accion': 'configurar_rol',
+            'rol': rol,
+            'csrfmiddlewaretoken': '{{ csrf_token }}'
+        },
+        success: function(response) {
+            if (response.success) {
+                alert('Permisos aplicados correctamente: ' + response.message);
+                location.reload();
+            } else {
+                alert('Error al aplicar permisos: ' + response.message);
+            }
+        },
+        error: function() {
+            alert('Error en la conexión');
+        }
+    });
+}
+
+function sincronizarPermisos() {
+    if (!confirm('¿Sincronizar todos los permisos con los valores estándar por rol?')) {
+        return;
+    }
+    
+    $.ajax({
+        url: '{% url "config_system:aplicar_permisos_masivo" %}',
+        method: 'POST',
+        data: {
+            'accion': 'sincronizar_todos',
+            'csrfmiddlewaretoken': '{{ csrf_token }}'
+        },
+        success: function(response) {
+            if (response.success) {
+                alert('Sincronización completada: ' + response.message);
+                location.reload();
+            } else {
+                alert('Error en la sincronización: ' + response.message);
+            }
+        },
+        error: function() {
+            alert('Error en la conexión');
+        }
+    });
+}
+
+function limpiarPermisos() {
+    if (!confirm('¿Eliminar permisos de perfiles inactivos?')) {
+        return;
+    }
+    
+    $.ajax({
+        url: '{% url "config_system:aplicar_permisos_masivo" %}',
+        method: 'POST',
+        data: {
+            'accion': 'limpiar_inactivos',
+            'csrfmiddlewaretoken': '{{ csrf_token }}'
+        },
+        success: function(response) {
+            if (response.success) {
+                alert('Limpieza completada: ' + response.message);
+                location.reload();
+            } else {
+                alert('Error en la limpieza: ' + response.message);
+            }
+        },
+        error: function() {
+            alert('Error en la conexión');
+        }
+    });
+}
+
+function auditarPermisos() {
+    if (!confirm('¿Realizar auditoría de permisos del sistema?')) {
+        return;
+    }
+    
+    // Aquí implementarías la lógica de auditoría
+    alert('Función de auditoría en desarrollo...');
+}
+
+function exportarPermisos(formato) {
+    if (!confirm('¿Exportar permisos en formato ' + formato.toUpperCase() + '?')) {
+        return;
+    }
+    
+    // Aquí implementarías la lógica de exportación
+    alert('Función de exportación en desarrollo...');
+}
+</script>
+{% endblock %}

@@ -1,0 +1,419 @@
+{% extends "config_system/base.html" %}
+{% load static %}
+
+{% block page_title %}
+    {% if form.instance.pk %}
+        Editar Configuración IA
+    {% else %}
+        Nueva Configuración IA
+    {% endif %}
+{% endblock %}
+
+{% block breadcrumb_active %}
+    {% if form.instance.pk %}Editar Config IA{% else %}Nueva Config IA{% endif %}
+{% endblock %}
+
+{% block main_content %}
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">
+                    <i class="fas fa-robot text-primary"></i>
+                    {% if form.instance.pk %}
+                        Editar Configuración IA: {{ form.instance.nombre }}
+                    {% else %}
+                        Nueva Configuración de Inteligencia Artificial
+                    {% endif %}
+                </h3>
+            </div>
+            <form method="post" novalidate>
+                {% csrf_token %}
+                <div class="card-body">
+                    {% if form.non_field_errors %}
+                        <div class="alert alert-danger">
+                            {{ form.non_field_errors }}
+                        </div>
+                    {% endif %}
+
+                    <!-- Información básica -->
+                    <div class="form-group row">
+                        <label for="{{ form.nombre.id_for_label }}" class="col-sm-3 col-form-label">
+                            <strong>{{ form.nombre.label }} *</strong>
+                        </label>
+                        <div class="col-sm-9">
+                            {{ form.nombre }}
+                            {% if form.nombre.errors %}
+                                <div class="invalid-feedback d-block">{{ form.nombre.errors.0 }}</div>
+                            {% endif %}
+                            <small class="form-text text-muted">Nombre descriptivo para esta configuración</small>
+                        </div>
+                    </div>
+
+                    <div class="form-group row">
+                        <label for="{{ form.proveedor.id_for_label }}" class="col-sm-3 col-form-label">
+                            <strong>{{ form.proveedor.label }} *</strong>
+                        </label>
+                        <div class="col-sm-9">
+                            {{ form.proveedor }}
+                            {% if form.proveedor.errors %}
+                                <div class="invalid-feedback d-block">{{ form.proveedor.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Estados y configuración principal -->
+                    <div class="form-group row">
+                        <div class="col-sm-3">
+                            <strong>Estados</strong>
+                        </div>
+                        <div class="col-sm-9">
+                            <div class="form-check">
+                                {{ form.activo }}
+                                <label class="form-check-label" for="{{ form.activo.id_for_label }}">
+                                    {{ form.activo.label }}
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                {{ form.es_principal }}
+                                <label class="form-check-label" for="{{ form.es_principal.id_for_label }}">
+                                    {{ form.es_principal.label }}
+                                </label>
+                                <small class="form-text text-muted">Solo puede haber una configuración principal</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Configuración de conexión -->
+                    <hr>
+                    <h5 class="text-primary">
+                        <i class="fas fa-link"></i> Configuración de Conexión
+                    </h5>
+
+                    <div class="form-group row">
+                        <label for="{{ form.api_key.id_for_label }}" class="col-sm-3 col-form-label">
+                            <strong>{{ form.api_key.label }}</strong>
+                        </label>
+                        <div class="col-sm-9">
+                            {{ form.api_key }}
+                            {% if form.api_key.errors %}
+                                <div class="invalid-feedback d-block">{{ form.api_key.errors.0 }}</div>
+                            {% endif %}
+                            <small class="form-text text-muted">API Key del proveedor (no requerida para Ollama)</small>
+                        </div>
+                    </div>
+
+                    <div class="form-group row">
+                        <label for="{{ form.base_url.id_for_label }}" class="col-sm-3 col-form-label">
+                            <strong>{{ form.base_url.label }}</strong>
+                        </label>
+                        <div class="col-sm-9">
+                            {{ form.base_url }}
+                            {% if form.base_url.errors %}
+                                <div class="invalid-feedback d-block">{{ form.base_url.errors.0 }}</div>
+                            {% endif %}
+                            <small class="form-text text-muted">URL base para Ollama (ej: http://localhost:11434)</small>
+                        </div>
+                    </div>
+
+                    <!-- Configuración del modelo -->
+                    <hr>
+                    <h5 class="text-primary">
+                        <i class="fas fa-cog"></i> Configuración del Modelo
+                    </h5>
+
+                    <div class="form-group row">
+                        <label for="{{ form.modelo.id_for_label }}" class="col-sm-3 col-form-label">
+                            <strong>{{ form.modelo.label }} *</strong>
+                        </label>
+                        <div class="col-sm-9">
+                            {{ form.modelo }}
+                            {% if form.modelo.errors %}
+                                <div class="invalid-feedback d-block">{{ form.modelo.errors.0 }}</div>
+                            {% endif %}
+                            <small class="form-text text-muted">Ej: gpt-4, deepseek-chat, llama2</small>
+                        </div>
+                    </div>
+
+                    <div class="form-group row">
+                        <label for="{{ form.temperatura.id_for_label }}" class="col-sm-3 col-form-label">
+                            <strong>{{ form.temperatura.label }}</strong>
+                        </label>
+                        <div class="col-sm-9">
+                            {{ form.temperatura }}
+                            {% if form.temperatura.errors %}
+                                <div class="invalid-feedback d-block">{{ form.temperatura.errors.0 }}</div>
+                            {% endif %}
+                            <small class="form-text text-muted">Creatividad (0.0 - 2.0). Menor = más determinista</small>
+                        </div>
+                    </div>
+
+                    <div class="form-group row">
+                        <label for="{{ form.max_tokens.id_for_label }}" class="col-sm-3 col-form-label">
+                            <strong>{{ form.max_tokens.label }}</strong>
+                        </label>
+                        <div class="col-sm-9">
+                            {{ form.max_tokens }}
+                            {% if form.max_tokens.errors %}
+                                <div class="invalid-feedback d-block">{{ form.max_tokens.errors.0 }}</div>
+                            {% endif %}
+                            <small class="form-text text-muted">Máximo número de tokens a generar</small>
+                        </div>
+                    </div>
+
+                    <!-- Parámetros avanzados -->
+                    <div class="card">
+                        <div class="card-header" data-toggle="collapse" data-target="#advanced-params" aria-expanded="false">
+                            <h6 class="card-title">
+                                <i class="fas fa-chevron-down"></i> Parámetros Avanzados
+                            </h6>
+                        </div>
+                        <div class="collapse" id="advanced-params">
+                            <div class="card-body">
+                                <div class="form-group row">
+                                    <label for="{{ form.top_p.id_for_label }}" class="col-sm-3 col-form-label">
+                                        {{ form.top_p.label }}
+                                    </label>
+                                    <div class="col-sm-9">
+                                        {{ form.top_p }}
+                                        {% if form.top_p.errors %}
+                                            <div class="invalid-feedback d-block">{{ form.top_p.errors.0 }}</div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+
+                                <div class="form-group row">
+                                    <label for="{{ form.frequency_penalty.id_for_label }}" class="col-sm-3 col-form-label">
+                                        {{ form.frequency_penalty.label }}
+                                    </label>
+                                    <div class="col-sm-9">
+                                        {{ form.frequency_penalty }}
+                                        {% if form.frequency_penalty.errors %}
+                                            <div class="invalid-feedback d-block">{{ form.frequency_penalty.errors.0 }}</div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+
+                                <div class="form-group row">
+                                    <label for="{{ form.presence_penalty.id_for_label }}" class="col-sm-3 col-form-label">
+                                        {{ form.presence_penalty.label }}
+                                    </label>
+                                    <div class="col-sm-9">
+                                        {{ form.presence_penalty }}
+                                        {% if form.presence_penalty.errors %}
+                                            <div class="invalid-feedback d-block">{{ form.presence_penalty.errors.0 }}</div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Prompts del sistema -->
+                    <hr>
+                    <h5 class="text-primary">
+                        <i class="fas fa-comments"></i> Prompts del Sistema
+                    </h5>
+
+                    <div class="form-group">
+                        <label for="{{ form.prompt_sistema.id_for_label }}">
+                            <strong>{{ form.prompt_sistema.label }}</strong>
+                        </label>
+                        {{ form.prompt_sistema }}
+                        {% if form.prompt_sistema.errors %}
+                            <div class="invalid-feedback d-block">{{ form.prompt_sistema.errors.0 }}</div>
+                        {% endif %}
+                        <small class="form-text text-muted">Prompt base del sistema para todas las operaciones</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="{{ form.prompt_generacion_acta.id_for_label }}">
+                            <strong>{{ form.prompt_generacion_acta.label }}</strong>
+                        </label>
+                        {{ form.prompt_generacion_acta }}
+                        {% if form.prompt_generacion_acta.errors %}
+                            <div class="invalid-feedback d-block">{{ form.prompt_generacion_acta.errors.0 }}</div>
+                        {% endif %}
+                        <small class="form-text text-muted">Prompt específico para generación de actas</small>
+                    </div>
+
+                    <!-- Configuración de límites -->
+                    <hr>
+                    <h5 class="text-primary">
+                        <i class="fas fa-tachometer-alt"></i> Límites y Rendimiento
+                    </h5>
+
+                    <div class="form-group row">
+                        <label for="{{ form.limite_requests_minuto.id_for_label }}" class="col-sm-3 col-form-label">
+                            <strong>{{ form.limite_requests_minuto.label }}</strong>
+                        </label>
+                        <div class="col-sm-9">
+                            {{ form.limite_requests_minuto }}
+                            {% if form.limite_requests_minuto.errors %}
+                                <div class="invalid-feedback d-block">{{ form.limite_requests_minuto.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="form-group row">
+                        <label for="{{ form.timeout_segundos.id_for_label }}" class="col-sm-3 col-form-label">
+                            <strong>{{ form.timeout_segundos.label }}</strong>
+                        </label>
+                        <div class="col-sm-9">
+                            {{ form.timeout_segundos }}
+                            {% if form.timeout_segundos.errors %}
+                                <div class="invalid-feedback d-block">{{ form.timeout_segundos.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="form-group row">
+                        <label for="{{ form.orden_prioridad.id_for_label }}" class="col-sm-3 col-form-label">
+                            <strong>{{ form.orden_prioridad.label }}</strong>
+                        </label>
+                        <div class="col-sm-9">
+                            {{ form.orden_prioridad }}
+                            {% if form.orden_prioridad.errors %}
+                                <div class="invalid-feedback d-block">{{ form.orden_prioridad.errors.0 }}</div>
+                            {% endif %}
+                            <small class="form-text text-muted">Orden de uso cuando hay múltiples configuraciones</small>
+                        </div>
+                    </div>
+
+                    <!-- Configuraciones extra -->
+                    <div class="form-group">
+                        <label for="{{ form.configuraciones_extra_json.id_for_label }}">
+                            <strong>{{ form.configuraciones_extra_json.label }}</strong>
+                        </label>
+                        {{ form.configuraciones_extra_json }}
+                        {% if form.configuraciones_extra_json.errors %}
+                            <div class="invalid-feedback d-block">{{ form.configuraciones_extra_json.errors.0 }}</div>
+                        {% endif %}
+                        {{ form.configuraciones_extra_json.help_text }}
+                    </div>
+                </div>
+
+                <div class="card-footer">
+                    <div class="row">
+                        <div class="col-sm-9 offset-sm-3">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i>
+                                {% if form.instance.pk %}Actualizar{% else %}Crear{% endif %} Configuración
+                            </button>
+                            <a href="{% url 'config_system:ia_list' %}" class="btn btn-secondary ml-2">
+                                <i class="fas fa-times"></i> Cancelar
+                            </a>
+                            {% if form.instance.pk %}
+                                <a href="{% url 'config_system:ia_test' form.instance.pk %}" class="btn btn-success ml-2">
+                                    <i class="fas fa-vial"></i> Probar Configuración
+                                </a>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Panel de ayuda -->
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title">
+                    <i class="fas fa-question-circle text-info"></i>
+                    Ayuda y Configuraciones
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="accordion" id="helpAccordion">
+                    <!-- OpenAI Help -->
+                    <div class="card">
+                        <div class="card-header" id="openaiHelp">
+                            <h6 class="mb-0">
+                                <button class="btn btn-link collapsed" type="button" data-toggle="collapse" data-target="#collapseOpenAI">
+                                    OpenAI
+                                </button>
+                            </h6>
+                        </div>
+                        <div id="collapseOpenAI" class="collapse" data-parent="#helpAccordion">
+                            <div class="card-body">
+                                <p><strong>Modelos recomendados:</strong></p>
+                                <ul>
+                                    <li><code>gpt-4</code> - Más inteligente</li>
+                                    <li><code>gpt-3.5-turbo</code> - Más rápido</li>
+                                </ul>
+                                <p><strong>API Key:</strong> Inicia con <code>sk-</code></p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- DeepSeek Help -->
+                    <div class="card">
+                        <div class="card-header" id="deepseekHelp">
+                            <h6 class="mb-0">
+                                <button class="btn btn-link collapsed" type="button" data-toggle="collapse" data-target="#collapseDeepseek">
+                                    DeepSeek
+                                </button>
+                            </h6>
+                        </div>
+                        <div id="collapseDeepseek" class="collapse" data-parent="#helpAccordion">
+                            <div class="card-body">
+                                <p><strong>Modelos recomendados:</strong></p>
+                                <ul>
+                                    <li><code>deepseek-chat</code> - General</li>
+                                    <li><code>deepseek-coder</code> - Código</li>
+                                </ul>
+                                <p><strong>API Key:</strong> De tu cuenta DeepSeek</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Ollama Help -->
+                    <div class="card">
+                        <div class="card-header" id="ollamaHelp">
+                            <h6 class="mb-0">
+                                <button class="btn btn-link collapsed" type="button" data-toggle="collapse" data-target="#collapseOllama">
+                                    Ollama (Local)
+                                </button>
+                            </h6>
+                        </div>
+                        <div id="collapseOllama" class="collapse" data-parent="#helpAccordion">
+                            <div class="card-body">
+                                <p><strong>URL Base:</strong> <code>http://localhost:11434</code></p>
+                                <p><strong>Modelos populares:</strong></p>
+                                <ul>
+                                    <li><code>llama2</code></li>
+                                    <li><code>mistral</code></li>
+                                    <li><code>codellama</code></li>
+                                </ul>
+                                <p><small>No requiere API Key</small></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock main_content %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    // Mostrar/ocultar campos según el proveedor
+    $('#{{ form.proveedor.id_for_label }}').change(function() {
+        var proveedor = $(this).val();
+        var apiKeyGroup = $('#{{ form.api_key.id_for_label }}').closest('.form-group');
+        var baseUrlGroup = $('#{{ form.base_url.id_for_label }}').closest('.form-group');
+        
+        if (proveedor === 'ollama') {
+            baseUrlGroup.show();
+            apiKeyGroup.find('label strong').text('API Key (Opcional)');
+        } else {
+            baseUrlGroup.hide();
+            apiKeyGroup.find('label strong').text('API Key *');
+        }
+    }).trigger('change');
+});
+</script>
+{% endblock extra_js %}

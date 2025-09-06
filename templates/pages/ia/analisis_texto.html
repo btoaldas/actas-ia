@@ -1,0 +1,464 @@
+{% extends 'layouts/base.html' %}
+{% load static %}
+
+{% block title %} Análisis de Texto con IA {% endblock title %}
+
+{% block content %}
+
+<div class="content-wrapper">
+    <!-- Content Header (Page header) -->
+    <section class="content-header">
+        <div class="container-fluid">
+            <div class="row mb-2">
+                <div class="col-sm-6">
+                    <h1>
+                        <i class="fas fa-brain mr-2 text-info"></i>
+                        Análisis de Texto con IA
+                    </h1>
+                </div>
+                <div class="col-sm-6">
+                    <ol class="breadcrumb float-sm-right">
+                        <li class="breadcrumb-item"><a href="{% url 'index' %}">Inicio</a></li>
+                        <li class="breadcrumb-item"><a href="#">Procesamiento IA</a></li>
+                        <li class="breadcrumb-item active">Análisis de Texto</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Main content -->
+    <section class="content">
+        <div class="container-fluid">
+            
+            <!-- Información del módulo -->
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="card card-info">
+                        <div class="card-header">
+                            <h3 class="card-title">
+                                <i class="fas fa-info-circle mr-1"></i>
+                                Análisis Inteligente de Contenido
+                            </h3>
+                        </div>
+                        <div class="card-body">
+                            <p class="lead">
+                                El módulo de análisis de texto utiliza inteligencia artificial para procesar y extraer 
+                                información relevante de las actas municipales, identificando temas, decisiones importantes 
+                                y generando resúmenes automáticos.
+                            </p>
+                            <div class="row">
+                                <div class="col-md-3">
+                                    <div class="info-box">
+                                        <span class="info-box-icon bg-info"><i class="fas fa-file-alt"></i></span>
+                                        <div class="info-box-content">
+                                            <span class="info-box-text">Textos Analizados</span>
+                                            <span class="info-box-number">47</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="info-box">
+                                        <span class="info-box-icon bg-success"><i class="fas fa-tags"></i></span>
+                                        <div class="info-box-content">
+                                            <span class="info-box-text">Temas Identificados</span>
+                                            <span class="info-box-number">156</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="info-box">
+                                        <span class="info-box-icon bg-warning"><i class="fas fa-lightbulb"></i></span>
+                                        <div class="info-box-content">
+                                            <span class="info-box-text">Decisiones Detectadas</span>
+                                            <span class="info-box-number">89</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="info-box">
+                                        <span class="info-box-icon bg-danger"><i class="fas fa-exclamation-triangle"></i></span>
+                                        <div class="info-box-content">
+                                            <span class="info-box-text">Alertas Generadas</span>
+                                            <span class="info-box-number">12</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <!-- Panel principal -->
+                <div class="col-lg-8">
+                    
+                    <!-- Selector de acta para análisis -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">
+                                <i class="fas fa-search mr-1"></i>
+                                Seleccionar Acta para Análisis
+                            </h3>
+                        </div>
+                        <div class="card-body">
+                            <form>
+                                <div class="form-group">
+                                    <label>Acta a Analizar</label>
+                                    <select class="form-control" id="actaSelect">
+                                        <option value="">Seleccione un acta...</option>
+                                        <option value="ACT-2024-003">ACT-2024-003 - Sesión Ordinaria 05/02/2024</option>
+                                        <option value="ACT-2024-002" selected>ACT-2024-002 - Sesión Extraordinaria 22/01/2024</option>
+                                        <option value="ACT-2024-001">ACT-2024-001 - Sesión Ordinaria 15/01/2024</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label>Tipo de Análisis</label>
+                                    <div class="row">
+                                        <div class="col-md-3">
+                                            <div class="custom-control custom-checkbox">
+                                                <input class="custom-control-input" type="checkbox" id="analisisTemas" checked>
+                                                <label for="analisisTemas" class="custom-control-label">Identificación de Temas</label>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <div class="custom-control custom-checkbox">
+                                                <input class="custom-control-input" type="checkbox" id="analisisDecisiones" checked>
+                                                <label for="analisisDecisiones" class="custom-control-label">Decisiones y Acuerdos</label>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <div class="custom-control custom-checkbox">
+                                                <input class="custom-control-input" type="checkbox" id="analisisResumen">
+                                                <label for="analisisResumen" class="custom-control-label">Resumen Automático</label>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <div class="custom-control custom-checkbox">
+                                                <input class="custom-control-input" type="checkbox" id="analisisSentimientos">
+                                                <label for="analisisSentimientos" class="custom-control-label">Análisis de Sentimientos</label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <button type="button" class="btn btn-primary" onclick="iniciarAnalisis()">
+                                    <i class="fas fa-play mr-1"></i>
+                                    Iniciar Análisis
+                                </button>
+                                <button type="button" class="btn btn-secondary ml-2">
+                                    <i class="fas fa-download mr-1"></i>
+                                    Exportar Resultados
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- Resultados del análisis -->
+                    <div class="card" id="resultadosAnalisis">
+                        <div class="card-header">
+                            <h3 class="card-title">
+                                <i class="fas fa-chart-bar mr-1"></i>
+                                Resultados del Análisis - ACT-2024-002
+                            </h3>
+                            <div class="card-tools">
+                                <span class="badge badge-success">Análisis Completado</span>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            
+                            <!-- Temas identificados -->
+                            <div class="row mb-4">
+                                <div class="col-12">
+                                    <h5><i class="fas fa-tags text-primary mr-1"></i> Temas Principales Identificados</h5>
+                                    <div class="row">
+                                        <div class="col-md-4">
+                                            <div class="card card-outline card-primary">
+                                                <div class="card-body text-center">
+                                                    <h4>Presupuesto Municipal</h4>
+                                                    <div class="progress progress-sm">
+                                                        <div class="progress-bar bg-primary" style="width: 85%"></div>
+                                                    </div>
+                                                    <small>Relevancia: 85%</small>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <div class="card card-outline card-success">
+                                                <div class="card-body text-center">
+                                                    <h4>Obras Públicas</h4>
+                                                    <div class="progress progress-sm">
+                                                        <div class="progress-bar bg-success" style="width: 72%"></div>
+                                                    </div>
+                                                    <small>Relevancia: 72%</small>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <div class="card card-outline card-warning">
+                                                <div class="card-body text-center">
+                                                    <h4>Servicios Públicos</h4>
+                                                    <div class="progress progress-sm">
+                                                        <div class="progress-bar bg-warning" style="width: 68%"></div>
+                                                    </div>
+                                                    <small>Relevancia: 68%</small>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Decisiones y acuerdos -->
+                            <div class="row mb-4">
+                                <div class="col-12">
+                                    <h5><i class="fas fa-gavel text-success mr-1"></i> Decisiones y Acuerdos</h5>
+                                    <div class="table-responsive">
+                                        <table class="table table-bordered">
+                                            <thead>
+                                                <tr>
+                                                    <th>Decisión</th>
+                                                    <th>Tipo</th>
+                                                    <th>Estado</th>
+                                                    <th>Confianza IA</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr>
+                                                    <td>Aprobación del presupuesto 2024 por $2.5M</td>
+                                                    <td><span class="badge badge-primary">Aprobación</span></td>
+                                                    <td><span class="badge badge-success">Unanime</span></td>
+                                                    <td>
+                                                        <div class="progress progress-xs">
+                                                            <div class="progress-bar bg-success" style="width: 94%"></div>
+                                                        </div>
+                                                        <small>94%</small>
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td>Licitación para reparación de calles</td>
+                                                    <td><span class="badge badge-info">Autorización</span></td>
+                                                    <td><span class="badge badge-warning">Por mayoría</span></td>
+                                                    <td>
+                                                        <div class="progress progress-xs">
+                                                            <div class="progress-bar bg-warning" style="width: 87%"></div>
+                                                        </div>
+                                                        <small>87%</small>
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td>Modificación del reglamento de tránsito</td>
+                                                    <td><span class="badge badge-secondary">Diferido</span></td>
+                                                    <td><span class="badge badge-danger">Sin consenso</span></td>
+                                                    <td>
+                                                        <div class="progress progress-xs">
+                                                            <div class="progress-bar bg-info" style="width: 76%"></div>
+                                                        </div>
+                                                        <small>76%</small>
+                                                    </td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Resumen automático -->
+                            <div class="row">
+                                <div class="col-12">
+                                    <h5><i class="fas fa-file-text text-info mr-1"></i> Resumen Automático</h5>
+                                    <div class="card card-outline card-info">
+                                        <div class="card-body">
+                                            <p class="text-justify">
+                                                <strong>Resumen Generado por IA:</strong><br>
+                                                La sesión extraordinaria del 22 de enero de 2024 se centró principalmente en la 
+                                                aprobación del presupuesto municipal para el año 2024, con un monto total de 
+                                                $2.5 millones. Se discutieron temas relacionados con obras públicas, específicamente 
+                                                la licitación para reparación de calles dañadas por las lluvias del año anterior. 
+                                                También se abordó la modificación del reglamento de tránsito, aunque esta propuesta 
+                                                fue diferida para una sesión posterior debido a la falta de consenso entre los 
+                                                concejales.
+                                            </p>
+                                            <p class="text-justify">
+                                                <strong>Puntos Clave:</strong><br>
+                                                • Aprobación unánime del presupuesto 2024<br>
+                                                • Autorización de licitación para reparación vial<br>
+                                                • Diferimiento de reforma al reglamento de tránsito<br>
+                                                • Participación activa de todos los concejales presentes
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- Panel lateral -->
+                <div class="col-lg-4">
+                    
+                    <!-- Estado del análisis -->
+                    <div class="card card-success">
+                        <div class="card-header">
+                            <h3 class="card-title">
+                                <i class="fas fa-cogs mr-1"></i>
+                                Estado del Procesamiento
+                            </h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <small class="text-muted">Análisis de Temas</small>
+                                <div class="progress progress-sm">
+                                    <div class="progress-bar bg-success" style="width: 100%"></div>
+                                </div>
+                                <small>Completado</small>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <small class="text-muted">Extracción de Decisiones</small>
+                                <div class="progress progress-sm">
+                                    <div class="progress-bar bg-success" style="width: 100%"></div>
+                                </div>
+                                <small>Completado</small>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <small class="text-muted">Generación de Resumen</small>
+                                <div class="progress progress-sm">
+                                    <div class="progress-bar bg-success" style="width: 100%"></div>
+                                </div>
+                                <small>Completado</small>
+                            </div>
+                            
+                            <div class="mb-0">
+                                <small class="text-muted">Análisis de Sentimientos</small>
+                                <div class="progress progress-sm">
+                                    <div class="progress-bar bg-info" style="width: 85%"></div>
+                                </div>
+                                <small>En proceso - 85%</small>
+                            </div>
+                        </div>
+                        <div class="card-footer">
+                            <small class="text-muted">
+                                <i class="fas fa-clock mr-1"></i>
+                                Último análisis: Hace 2 minutos
+                            </small>
+                        </div>
+                    </div>
+
+                    <!-- Configuración de IA -->
+                    <div class="card card-warning">
+                        <div class="card-header">
+                            <h3 class="card-title">
+                                <i class="fas fa-sliders-h mr-1"></i>
+                                Configuración del Análisis
+                            </h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="form-group">
+                                <label>Modelo de IA</label>
+                                <select class="form-control">
+                                    <option>GPT-4 (Recomendado)</option>
+                                    <option>GPT-3.5 Turbo</option>
+                                    <option>Claude-3</option>
+                                    <option>Llama 2</option>
+                                </select>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label>Nivel de Detalle</label>
+                                <select class="form-control">
+                                    <option>Alto (Análisis completo)</option>
+                                    <option selected>Medio (Balanceado)</option>
+                                    <option>Básico (Rápido)</option>
+                                </select>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label>Umbral de Confianza</label>
+                                <input type="range" class="custom-range" min="0" max="100" value="75">
+                                <small class="text-muted">75% - Solo mostrar resultados con alta confianza</small>
+                            </div>
+                            
+                            <button class="btn btn-warning btn-block">
+                                <i class="fas fa-save mr-1"></i>
+                                Guardar Configuración
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Historial de análisis -->
+                    <div class="card card-info">
+                        <div class="card-header">
+                            <h3 class="card-title">
+                                <i class="fas fa-history mr-1"></i>
+                                Historial Reciente
+                            </h3>
+                        </div>
+                        <div class="card-body p-0">
+                            <ul class="list-group list-group-flush">
+                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <h6 class="mb-1">ACT-2024-002</h6>
+                                        <small>Análisis completo</small>
+                                    </div>
+                                    <span class="badge badge-success badge-pill">Completado</span>
+                                </li>
+                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <h6 class="mb-1">ACT-2024-001</h6>
+                                        <small>Análisis básico</small>
+                                    </div>
+                                    <span class="badge badge-success badge-pill">Completado</span>
+                                </li>
+                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <h6 class="mb-1">ACT-2023-045</h6>
+                                        <small>Solo temas</small>
+                                    </div>
+                                    <span class="badge badge-warning badge-pill">En proceso</span>
+                                </li>
+                            </ul>
+                        </div>
+                        <div class="card-footer">
+                            <button class="btn btn-info btn-block btn-sm">Ver historial completo</button>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+        </div>
+    </section>
+    <!-- /.content -->
+</div>
+
+<script>
+function iniciarAnalisis() {
+    // Simulación de inicio de análisis
+    Swal.fire({
+        title: 'Iniciando Análisis',
+        text: 'El sistema de IA está procesando el texto del acta seleccionada...',
+        icon: 'info',
+        showConfirmButton: false,
+        timer: 2000
+    }).then(() => {
+        Swal.fire({
+            title: '¡Análisis Completado!',
+            text: 'El análisis de texto ha sido procesado exitosamente.',
+            icon: 'success',
+            confirmButtonText: 'Ver Resultados'
+        });
+    });
+}
+
+// Simulación de progreso en tiempo real
+$(document).ready(function() {
+    // Aquí iría la lógica para actualizar el progreso en tiempo real
+    console.log('Módulo de Análisis de Texto cargado');
+});
+</script>
+
+{% endblock content %}

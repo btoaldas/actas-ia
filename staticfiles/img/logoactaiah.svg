@@ -1,0 +1,26 @@
+<!-- Este es un placeholder para el logo SVG -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 60" width="200" height="60">
+  <!-- Fondo -->
+  <rect width="200" height="60" fill="#1e3c72" rx="8"/>
+  
+  <!-- Edificio municipal -->
+  <g fill="white">
+    <!-- Base del edificio -->
+    <rect x="30" y="35" width="40" height="20"/>
+    <!-- Columnas -->
+    <rect x="32" y="15" width="4" height="20"/>
+    <rect x="39" y="15" width="4" height="20"/>
+    <rect x="46" y="15" width="4" height="20"/>
+    <rect x="53" y="15" width="4" height="20"/>
+    <rect x="60" y="15" width="4" height="20"/>
+    <!-- Techo -->
+    <polygon points="25,15 75,15 50,5"/>
+    <!-- Puerta -->
+    <rect x="45" y="45" width="10" height="10" fill="#1e3c72"/>
+  </g>
+  
+  <!-- Texto -->
+  <text x="85" y="20" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="white">ACTAS IA</text>
+  <text x="85" y="35" font-family="Arial, sans-serif" font-size="10" fill="#a8c8f0">Municipales</text>
+  <text x="85" y="48" font-family="Arial, sans-serif" font-size="8" fill="#a8c8f0">Pastaza</text>
+</svg>

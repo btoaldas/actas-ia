@@ -1,0 +1,371 @@
+{% extends "layouts/base.html" %}
+{% load static %}
+
+{% block title %}{{ acta.titulo }} - Portal Ciudadano {% endblock title %}
+
+{% block bodyclass %} hold-transition sidebar-mini layout-fixed layout-navbar-fixed layout-footer-fixed {% endblock bodyclass %}
+
+{% block content %}
+  <!-- Content Wrapper. Contains page content -->
+  <div class="content-wrapper">
+    <!-- Content Header (Page header) -->
+    <section class="content-header">
+      <div class="container-fluid">
+        <div class="row mb-2">
+          <div class="col-sm-6">
+            <h1><i class="fas fa-file-alt mr-2 text-primary"></i>Detalle del Acta</h1>
+          </div>
+          <div class="col-sm-6">
+            <ol class="breadcrumb float-sm-right">
+              <li class="breadcrumb-item"><a href="{% url 'index' %}">Inicio</a></li>
+              <li class="breadcrumb-item"><a href="{% url 'portal_ciudadano' %}">Portal Ciudadano</a></li>
+              <li class="breadcrumb-item active">{{ acta.numero_acta }}</li>
+            </ol>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Main content -->
+    <section class="content">
+      <div class="container-fluid">
+        
+        <div class="row">
+          <!-- Contenido principal -->
+          <div class="col-md-8">
+            
+            <!-- Información del acta -->
+            <div class="card card-outline card-primary">
+              <div class="card-header">
+                <h3 class="card-title">
+                  <i class="fas fa-info-circle mr-2"></i>
+                  {{ acta.titulo }}
+                </h3>
+                <div class="card-tools">
+                  <span class="badge" style="background-color: {{ acta.color_estado }};">
+                    {{ acta.estado.get_nombre_display }}
+                  </span>
+                </div>
+              </div>
+              
+              <div class="card-body">
+                <!-- Metadatos principales -->
+                <div class="row mb-4">
+                  <div class="col-md-6">
+                    <dl class="row">
+                      <dt class="col-sm-5">Número de Acta:</dt>
+                      <dd class="col-sm-7"><strong>{{ acta.numero_acta }}</strong></dd>
+                      
+                      <dt class="col-sm-5">Fecha de Sesión:</dt>
+                      <dd class="col-sm-7">{{ acta.fecha_sesion|date:"d/m/Y H:i" }}</dd>
+                      
+                      <dt class="col-sm-5">Tipo de Sesión:</dt>
+                      <dd class="col-sm-7">
+                        <span class="badge badge-info">
+                          {{ acta.tipo_sesion.get_nombre_display }}
+                        </span>
+                      </dd>
+                      
+                      <dt class="col-sm-5">Presidente:</dt>
+                      <dd class="col-sm-7">{{ acta.presidente }}</dd>
+                    </dl>
+                  </div>
+                  
+                  <div class="col-md-6">
+                    <dl class="row">
+                      <dt class="col-sm-5">Nivel de Acceso:</dt>
+                      <dd class="col-sm-7">
+                        <i class="{{ acta.icono_acceso }}"></i>
+                        {{ acta.get_acceso_display }}
+                      </dd>
+                      
+                      <dt class="col-sm-5">Secretario:</dt>
+                      <dd class="col-sm-7">
+                        {% if acta.secretario %}
+                          {{ acta.secretario.get_full_name|default:acta.secretario.username }}
+                        {% else %}
+                          <span class="text-muted">No asignado</span>
+                        {% endif %}
+                      </dd>
+                      
+                      {% if acta.transcripcion_ia %}
+                        <dt class="col-sm-5">Transcripción IA:</dt>
+                        <dd class="col-sm-7">
+                          <i class="fas fa-robot text-info"></i>
+                          {{ acta.precision_ia }}% de precisión
+                        </dd>
+                      {% endif %}
+                      
+                      <dt class="col-sm-5">Fecha de Publicación:</dt>
+                      <dd class="col-sm-7">
+                        {% if acta.fecha_publicacion %}
+                          {{ acta.fecha_publicacion|date:"d/m/Y" }}
+                        {% else %}
+                          <span class="text-muted">No publicada</span>
+                        {% endif %}
+                      </dd>
+                    </dl>
+                  </div>
+                </div>
+                
+                <!-- Vista previa de imagen -->
+                {% if acta.imagen_preview %}
+                  <div class="text-center mb-4">
+                    <img src="{{ acta.imagen_preview.url }}" 
+                         alt="Vista previa del acta" 
+                         class="img-fluid rounded border"
+                         style="max-height: 300px;">
+                  </div>
+                {% endif %}
+                
+                <!-- Resumen -->
+                <div class="mb-4">
+                  <h5><i class="fas fa-clipboard-list mr-2"></i>Resumen Ejecutivo</h5>
+                  <div class="border-left border-primary pl-3">
+                    <p class="text-justify">{{ acta.resumen|linebreaks }}</p>
+                  </div>
+                </div>
+                
+                <!-- Orden del día -->
+                {% if acta.orden_del_dia %}
+                  <div class="mb-4">
+                    <h5><i class="fas fa-list-ol mr-2"></i>Orden del Día</h5>
+                    <div class="bg-light p-3 rounded">
+                      {{ acta.orden_del_dia|linebreaks }}
+                    </div>
+                  </div>
+                {% endif %}
+                
+                <!-- Acuerdos -->
+                {% if acta.acuerdos %}
+                  <div class="mb-4">
+                    <h5><i class="fas fa-handshake mr-2"></i>Acuerdos y Resoluciones</h5>
+                    <div class="border-left border-success pl-3">
+                      {{ acta.acuerdos|linebreaks }}
+                    </div>
+                  </div>
+                {% endif %}
+                
+                <!-- Participantes -->
+                <div class="row">
+                  {% if acta.asistentes %}
+                    <div class="col-md-6">
+                      <h6><i class="fas fa-user-check mr-2 text-success"></i>Asistentes</h6>
+                      <div class="small bg-light p-2 rounded">
+                        {{ acta.asistentes|linebreaks }}
+                      </div>
+                    </div>
+                  {% endif %}
+                  
+                  {% if acta.ausentes %}
+                    <div class="col-md-6">
+                      <h6><i class="fas fa-user-times mr-2 text-warning"></i>Ausentes</h6>
+                      <div class="small bg-light p-2 rounded">
+                        {{ acta.ausentes|linebreaks }}
+                      </div>
+                    </div>
+                  {% endif %}
+                </div>
+                
+                <!-- Palabras clave -->
+                {% if acta.palabras_clave %}
+                  <div class="mt-4">
+                    <h6><i class="fas fa-tags mr-2"></i>Palabras Clave</h6>
+                    {% for palabra in acta.get_palabras_clave_list %}
+                      <span class="badge badge-secondary mr-1">{{ palabra }}</span>
+                    {% endfor %}
+                  </div>
+                {% endif %}
+                
+                <!-- Observaciones -->
+                {% if acta.observaciones %}
+                  <div class="mt-4">
+                    <h6><i class="fas fa-sticky-note mr-2"></i>Observaciones</h6>
+                    <div class="small text-muted">
+                      {{ acta.observaciones|linebreaks }}
+                    </div>
+                  </div>
+                {% endif %}
+              </div>
+            </div>
+            
+            <!-- Contenido completo (si está disponible) -->
+            {% if acta.contenido %}
+              <div class="card">
+                <div class="card-header">
+                  <h3 class="card-title">
+                    <i class="fas fa-file-text mr-2"></i>
+                    Contenido Completo del Acta
+                  </h3>
+                  <div class="card-tools">
+                    <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                      <i class="fas fa-minus"></i>
+                    </button>
+                  </div>
+                </div>
+                <div class="card-body" style="max-height: 500px; overflow-y: auto;">
+                  <div class="text-justify">
+                    {{ acta.contenido|linebreaks }}
+                  </div>
+                </div>
+              </div>
+            {% endif %}
+            
+          </div>
+          
+          <!-- Sidebar derecho -->
+          <div class="col-md-4">
+            
+            <!-- Acciones rápidas -->
+            <div class="card card-outline card-success">
+              <div class="card-header">
+                <h3 class="card-title">
+                  <i class="fas fa-tools mr-2"></i>
+                  Acciones
+                </h3>
+              </div>
+              <div class="card-body">
+                <div class="d-grid gap-2">
+                  {% if puede_descargar %}
+                    <a href="{% url 'acta_pdf_view' acta.pk %}" 
+                       class="btn btn-primary btn-block"
+                       target="_blank">
+                      <i class="fas fa-file-pdf mr-2"></i>
+                      Ver PDF Completo
+                    </a>
+                    
+                    <a href="{% url 'acta_pdf_download' acta.pk %}" 
+                       class="btn btn-success btn-block">
+                      <i class="fas fa-download mr-2"></i>
+                      Descargar PDF
+                    </a>
+                  {% else %}
+                    <div class="alert alert-warning">
+                      <i class="fas fa-lock mr-2"></i>
+                      PDF no disponible o acceso restringido
+                    </div>
+                  {% endif %}
+                  
+                  <a href="{% url 'portal_ciudadano' %}" 
+                     class="btn btn-outline-secondary btn-block">
+                    <i class="fas fa-arrow-left mr-2"></i>
+                    Volver al Portal
+                  </a>
+                  
+                  <button type="button" 
+                          class="btn btn-outline-info btn-block"
+                          onclick="window.print()">
+                    <i class="fas fa-print mr-2"></i>
+                    Imprimir
+                  </button>
+                  
+                  <button type="button" 
+                          class="btn btn-outline-primary btn-block"
+                          onclick="navigator.share ? navigator.share({title: '{{ acta.titulo }}', url: window.location.href}) : copyToClipboard(window.location.href)">
+                    <i class="fas fa-share mr-2"></i>
+                    Compartir
+                  </button>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Información adicional -->
+            <div class="card card-outline card-info">
+              <div class="card-header">
+                <h3 class="card-title">
+                  <i class="fas fa-info mr-2"></i>
+                  Información Técnica
+                </h3>
+              </div>
+              <div class="card-body">
+                <small class="text-muted">
+                  <div class="mb-2">
+                    <strong>Creada:</strong> {{ acta.fecha_creacion|date:"d/m/Y H:i" }}
+                  </div>
+                  <div class="mb-2">
+                    <strong>Actualizada:</strong> {{ acta.fecha_actualizacion|date:"d/m/Y H:i" }}
+                  </div>
+                  {% if acta.tiempo_procesamiento %}
+                    <div class="mb-2">
+                      <strong>Tiempo de procesamiento:</strong> {{ acta.tiempo_procesamiento }}
+                    </div>
+                  {% endif %}
+                  <div class="mb-2">
+                    <strong>Prioridad:</strong> 
+                    <span class="badge badge-secondary">{{ acta.get_prioridad_display }}</span>
+                  </div>
+                </small>
+              </div>
+            </div>
+            
+            <!-- Actas relacionadas -->
+            {% if actas_relacionadas %}
+              <div class="card card-outline card-warning">
+                <div class="card-header">
+                  <h3 class="card-title">
+                    <i class="fas fa-link mr-2"></i>
+                    Actas Relacionadas
+                  </h3>
+                </div>
+                <div class="card-body p-0">
+                  <div class="list-group list-group-flush">
+                    {% for acta_rel in actas_relacionadas %}
+                      <a href="{{ acta_rel.get_absolute_url }}" 
+                         class="list-group-item list-group-item-action">
+                        <div class="d-flex w-100 justify-content-between">
+                          <h6 class="mb-1">{{ acta_rel.numero_acta }}</h6>
+                          <small>{{ acta_rel.fecha_sesion|date:"d/m/Y" }}</small>
+                        </div>
+                        <p class="mb-1 small">{{ acta_rel.titulo|truncatechars:50 }}</p>
+                        <small class="text-muted">{{ acta_rel.tipo_sesion.get_nombre_display }}</small>
+                      </a>
+                    {% endfor %}
+                  </div>
+                </div>
+              </div>
+            {% endif %}
+            
+          </div>
+        </div>
+        
+      </div>
+    </section>
+  </div>
+{% endblock content %}
+
+{% block extra_scripts %}
+  <script>
+    // Función para copiar al portapapeles
+    function copyToClipboard(text) {
+      if (navigator.clipboard) {
+        navigator.clipboard.writeText(text).then(function() {
+          toastr.success('Enlace copiado al portapapeles');
+        });
+      } else {
+        // Fallback para navegadores más antiguos
+        const textarea = document.createElement('textarea');
+        textarea.value = text;
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textarea);
+        toastr.success('Enlace copiado al portapapeles');
+      }
+    }
+    
+    // Mejorar experiencia de impresión
+    window.addEventListener('beforeprint', function() {
+      // Ocultar elementos que no deben imprimirse
+      document.querySelectorAll('.btn, .card-tools, .breadcrumb').forEach(function(el) {
+        el.style.display = 'none';
+      });
+    });
+    
+    window.addEventListener('afterprint', function() {
+      // Restaurar elementos después de imprimir
+      document.querySelectorAll('.btn, .card-tools, .breadcrumb').forEach(function(el) {
+        el.style.display = '';
+      });
+    });
+  </script>
+{% endblock extra_scripts %}

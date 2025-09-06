@@ -1,0 +1,507 @@
+{% extends 'config_system/base.html' %}
+{% load static %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block extra_css %}
+<style>
+.form-section {
+    background: #f8f9fa;
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 20px;
+}
+
+.form-icon {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background: linear-gradient(45deg, #007bff, #28a745);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1.5rem;
+    margin: 0 auto 20px;
+}
+
+.role-info {
+    background: #e3f2fd;
+    border-left: 4px solid #2196f3;
+    padding: 15px;
+    border-radius: 5px;
+    margin: 10px 0;
+}
+
+.preview-card {
+    background: linear-gradient(45deg, #007bff, #28a745);
+    color: white;
+    border-radius: 15px;
+    padding: 20px;
+    text-align: center;
+}
+
+.preview-avatar {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 2rem;
+    margin: 0 auto 15px;
+    border: 3px solid rgba(255, 255, 255, 0.3);
+}
+
+.required-field {
+    color: #dc3545;
+}
+
+.field-help {
+    font-size: 0.875rem;
+    color: #6c757d;
+    margin-top: 5px;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="content-wrapper">
+    <div class="content-header">
+        <div class="container-fluid">
+            <div class="row mb-2">
+                <div class="col-sm-6">
+                    <h1 class="m-0">
+                        {% if perfil %}
+                            <i class="fas fa-edit"></i> Editar Perfil
+                        {% else %}
+                            <i class="fas fa-plus"></i> Crear Perfil
+                        {% endif %}
+                    </h1>
+                </div>
+                <div class="col-sm-6">
+                    <ol class="breadcrumb float-sm-right">
+                        <li class="breadcrumb-item"><a href="{% url 'config_system:dashboard' %}">Dashboard</a></li>
+                        <li class="breadcrumb-item"><a href="{% url 'config_system:perfiles_list' %}">Perfiles</a></li>
+                        <li class="breadcrumb-item active">
+                            {% if perfil %}Editar{% else %}Crear{% endif %}
+                        </li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="content">
+        <div class="container-fluid">
+            <form method="post" novalidate>
+                {% csrf_token %}
+                
+                <div class="row">
+                    <div class="col-md-8">
+                        <!-- Información básica del perfil -->
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="mb-0">
+                                    <i class="fas fa-id-card"></i> Información del Perfil
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label for="{{ form.usuario.id_for_label }}" class="form-label">
+                                                Usuario <span class="required-field">*</span>
+                                            </label>
+                                            {{ form.usuario }}
+                                            {% if form.usuario.errors %}
+                                                <div class="invalid-feedback d-block">
+                                                    {{ form.usuario.errors.0 }}
+                                                </div>
+                                            {% endif %}
+                                            <div class="field-help">
+                                                Selecciona el usuario para este perfil
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label for="{{ form.rol.id_for_label }}" class="form-label">
+                                                Rol <span class="required-field">*</span>
+                                            </label>
+                                            {{ form.rol }}
+                                            {% if form.rol.errors %}
+                                                <div class="invalid-feedback d-block">
+                                                    {{ form.rol.errors.0 }}
+                                                </div>
+                                            {% endif %}
+                                            <div class="field-help">
+                                                Define el nivel de acceso del usuario
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Información del rol seleccionado -->
+                                <div id="role-info" class="role-info" style="display: none;">
+                                    <h6><i class="fas fa-info-circle"></i> Información del Rol</h6>
+                                    <div id="role-description"></div>
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label for="{{ form.departamento.id_for_label }}" class="form-label">
+                                                Departamento
+                                            </label>
+                                            {{ form.departamento }}
+                                            {% if form.departamento.errors %}
+                                                <div class="invalid-feedback d-block">
+                                                    {{ form.departamento.errors.0 }}
+                                                </div>
+                                            {% endif %}
+                                            <div class="field-help">
+                                                Departamento al que pertenece
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label for="{{ form.cargo.id_for_label }}" class="form-label">
+                                                Cargo
+                                            </label>
+                                            {{ form.cargo }}
+                                            {% if form.cargo.errors %}
+                                                <div class="invalid-feedback d-block">
+                                                    {{ form.cargo.errors.0 }}
+                                                </div>
+                                            {% endif %}
+                                            <div class="field-help">
+                                                Cargo específico que desempeña
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label for="{{ form.telefono.id_for_label }}" class="form-label">
+                                                Teléfono
+                                            </label>
+                                            {{ form.telefono }}
+                                            {% if form.telefono.errors %}
+                                                <div class="invalid-feedback d-block">
+                                                    {{ form.telefono.errors.0 }}
+                                                </div>
+                                            {% endif %}
+                                            <div class="field-help">
+                                                Número de contacto directo
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <div class="custom-control custom-switch mt-4">
+                                                {{ form.activo }}
+                                                <label class="custom-control-label" for="{{ form.activo.id_for_label }}">
+                                                    Perfil activo
+                                                </label>
+                                                <div class="field-help">
+                                                    Si está desactivado, el usuario no podrá usar este perfil
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="{{ form.notas.id_for_label }}" class="form-label">
+                                        Notas adicionales
+                                    </label>
+                                    {{ form.notas }}
+                                    {% if form.notas.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.notas.errors.0 }}
+                                        </div>
+                                    {% endif %}
+                                    <div class="field-help">
+                                        Información adicional sobre este perfil
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Información sobre permisos -->
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="mb-0">
+                                    <i class="fas fa-key"></i> Configuración de Permisos
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="alert alert-info">
+                                    <h6><i class="fas fa-lightbulb"></i> Configuración automática de permisos</h6>
+                                    <p class="mb-2">Los permisos se asignarán automáticamente según el rol seleccionado:</p>
+                                    <ul class="mb-0">
+                                        <li><strong>SuperAdmin:</strong> Acceso completo a todas las funcionalidades</li>
+                                        <li><strong>Administrador:</strong> Gestión completa excepto configuraciones críticas</li>
+                                        <li><strong>Supervisor:</strong> Supervisión y aprobación de procesos</li>
+                                        <li><strong>Operador:</strong> Operaciones básicas sin aprobaciones</li>
+                                        <li><strong>Consultor:</strong> Solo lectura y reportes</li>
+                                    </ul>
+                                </div>
+                                
+                                <p class="text-muted">
+                                    Una vez creado el perfil, podrás personalizar los permisos específicos 
+                                    desde la página de detalle del perfil.
+                                </p>
+                                
+                                {% if perfil and perfil.permisos_detallados %}
+                                <div class="mt-3">
+                                    <a href="{% url 'config_system:permisos_edit' perfil.permisos_detallados.pk %}" 
+                                       class="btn btn-outline-primary">
+                                        <i class="fas fa-key"></i> Gestionar Permisos Específicos
+                                    </a>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Panel lateral -->
+                    <div class="col-md-4">
+                        <!-- Vista previa del perfil -->
+                        <div class="card">
+                            <div class="card-body">
+                                <div class="preview-card">
+                                    <div class="preview-avatar" id="preview-avatar">
+                                        <i class="fas fa-user"></i>
+                                    </div>
+                                    <h6 id="preview-name">Nombre del Usuario</h6>
+                                    <p id="preview-email" class="mb-2">usuario@ejemplo.com</p>
+                                    <div>
+                                        <span class="badge badge-light" id="preview-role">Rol</span>
+                                    </div>
+                                    <hr style="border-color: rgba(255,255,255,0.3);">
+                                    <div class="row text-center">
+                                        <div class="col-6">
+                                            <small>Departamento</small>
+                                            <div id="preview-dept">-</div>
+                                        </div>
+                                        <div class="col-6">
+                                            <small>Cargo</small>
+                                            <div id="preview-cargo">-</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Información del usuario seleccionado -->
+                        <div class="card" id="user-info-card" style="display: none;">
+                            <div class="card-header">
+                                <h6 class="mb-0">
+                                    <i class="fas fa-user"></i> Usuario Seleccionado
+                                </h6>
+                            </div>
+                            <div class="card-body" id="user-info-content">
+                                <!-- Se llena dinámicamente -->
+                            </div>
+                        </div>
+
+                        <!-- Ayuda y consejos -->
+                        <div class="card">
+                            <div class="card-header">
+                                <h6 class="mb-0">
+                                    <i class="fas fa-question-circle"></i> Ayuda
+                                </h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="alert alert-info">
+                                    <strong>Consejos:</strong>
+                                    <ul class="mb-0">
+                                        <li>Cada usuario puede tener solo un perfil activo</li>
+                                        <li>Los permisos se pueden personalizar después</li>
+                                        <li>Los perfiles inactivos no tienen acceso al sistema</li>
+                                    </ul>
+                                </div>
+                                
+                                {% if not perfil %}
+                                <div class="alert alert-warning">
+                                    <strong>Siguiente paso:</strong>
+                                    Después de crear el perfil, configura los permisos específicos.
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Botones de acción -->
+                <div class="row">
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-body text-center">
+                                <button type="submit" class="btn btn-primary btn-lg">
+                                    <i class="fas fa-save"></i> 
+                                    {% if perfil %}Actualizar Perfil{% else %}Crear Perfil{% endif %}
+                                </button>
+                                <a href="{% url 'config_system:perfiles_list' %}" class="btn btn-secondary btn-lg ml-2">
+                                    <i class="fas fa-times"></i> Cancelar
+                                </a>
+                                
+                                {% if perfil %}
+                                <div class="mt-3">
+                                    <a href="{% url 'config_system:perfil_detail' perfil.pk %}" 
+                                       class="btn btn-info">
+                                        <i class="fas fa-eye"></i> Ver Detalles
+                                    </a>
+                                    {% if perfil.permisos_detallados %}
+                                    <a href="{% url 'config_system:permisos_edit' perfil.permisos_detallados.pk %}" 
+                                       class="btn btn-success">
+                                        <i class="fas fa-key"></i> Gestionar Permisos
+                                    </a>
+                                    {% endif %}
+                                    {% if perfil.usuario %}
+                                    <a href="{% url 'config_system:usuario_detail' perfil.usuario.pk %}" 
+                                       class="btn btn-warning">
+                                        <i class="fas fa-user"></i> Ver Usuario
+                                    </a>
+                                    {% endif %}
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    // Información de roles
+    const rolesInfo = {
+        'superadmin': {
+            'title': 'Super Administrador',
+            'description': 'Acceso completo a todas las funcionalidades del sistema, incluida la configuración crítica.',
+            'permissions': 'Todos los permisos habilitados'
+        },
+        'admin': {
+            'title': 'Administrador',
+            'description': 'Gestión completa del sistema excepto configuraciones críticas de seguridad.',
+            'permissions': 'Mayoría de permisos, gestión de usuarios, configuración del sistema'
+        },
+        'supervisor': {
+            'title': 'Supervisor',
+            'description': 'Supervisión y aprobación de procesos, sin acceso a configuraciones del sistema.',
+            'permissions': 'Permisos de supervisión, aprobación y reportes'
+        },
+        'operador': {
+            'title': 'Operador',
+            'description': 'Operaciones básicas del día a día sin permisos de aprobación.',
+            'permissions': 'Crear, editar y procesar documentos básicos'
+        },
+        'consultor': {
+            'title': 'Consultor',
+            'description': 'Acceso de solo lectura para consulta y generación de reportes.',
+            'permissions': 'Solo lectura, visualización y exportación de reportes'
+        }
+    };
+
+    // Actualizar información del rol
+    function updateRoleInfo() {
+        const selectedRole = $('#id_rol').val();
+        if (selectedRole && rolesInfo[selectedRole]) {
+            const info = rolesInfo[selectedRole];
+            $('#role-description').html(`
+                <strong>${info.title}:</strong> ${info.description}<br>
+                <strong>Permisos:</strong> ${info.permissions}
+            `);
+            $('#role-info').show();
+            $('#preview-role').text(info.title);
+        } else {
+            $('#role-info').hide();
+            $('#preview-role').text('Rol');
+        }
+    }
+
+    // Actualizar vista previa
+    function updatePreview() {
+        const usuarioSelect = $('#id_usuario');
+        const selectedOption = usuarioSelect.find('option:selected');
+        
+        if (selectedOption.val()) {
+            const userData = selectedOption.text().split(' - ');
+            const username = userData[0];
+            const fullName = userData[1] || username;
+            const email = userData[2] || 'usuario@ejemplo.com';
+            
+            $('#preview-name').text(fullName);
+            $('#preview-email').text(email);
+            
+            // Iniciales para el avatar
+            const initials = fullName.split(' ').map(n => n[0]).join('').substring(0, 2);
+            $('#preview-avatar').text(initials);
+            
+            // Mostrar información del usuario
+            updateUserInfo(selectedOption.val());
+        } else {
+            $('#preview-name').text('Nombre del Usuario');
+            $('#preview-email').text('usuario@ejemplo.com');
+            $('#preview-avatar').html('<i class="fas fa-user"></i>');
+            $('#user-info-card').hide();
+        }
+        
+        // Actualizar departamento y cargo
+        $('#preview-dept').text($('#id_departamento').val() || '-');
+        $('#preview-cargo').text($('#id_cargo').val() || '-');
+    }
+
+    // Actualizar información del usuario
+    function updateUserInfo(userId) {
+        if (!userId) {
+            $('#user-info-card').hide();
+            return;
+        }
+        
+        // Aquí harías una llamada AJAX para obtener información del usuario
+        // Por simplicidad, mostramos información básica
+        $('#user-info-content').html(`
+            <p><strong>ID:</strong> ${userId}</p>
+            <p><small class="text-muted">La información detallada se mostrará después de seleccionar el usuario.</small></p>
+        `);
+        $('#user-info-card').show();
+    }
+
+    // Eventos
+    $('#id_rol').change(updateRoleInfo);
+    $('#id_usuario, #id_departamento, #id_cargo').change(updatePreview);
+    
+    // Inicializar
+    updateRoleInfo();
+    updatePreview();
+    
+    // Validación en tiempo real
+    $('#id_telefono').on('input', function() {
+        const telefono = $(this).val();
+        const regex = /^[\+]?[0-9\s\-\(\)]+$/;
+        
+        if (telefono && !regex.test(telefono)) {
+            $(this).addClass('is-invalid');
+            $(this).next('.invalid-feedback').remove();
+            $(this).after('<div class="invalid-feedback">Formato de teléfono inválido</div>');
+        } else {
+            $(this).removeClass('is-invalid');
+            $(this).next('.invalid-feedback').remove();
+        }
+    });
+});
+</script>
+{% endblock %}

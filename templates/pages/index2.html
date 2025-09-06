@@ -1,0 +1,613 @@
+{% extends 'layouts/base.html' %}
+{% load static %}
+
+{% block title %} Dashboard - Sistema de Actas Municipales IA {% endblock title %}
+
+{% block bodyclass %} hold-transition dark-mode sidebar-mini layout-fixed layout-navbar-fixed layout-footer-fixed {% endblock bodyclass %}
+
+{% block header %}
+  {% include 'includes/navigation-dark.html' %}
+{% endblock header %}
+
+{% block content %}
+  <!-- Content Wrapper. Contains page content -->
+  <div class="content-wrapper">
+    <!-- Content Header (Page header) -->
+    <div class="content-header">
+      <div class="container-fluid">
+        <div class="row mb-2">
+          <div class="col-sm-6">
+            <h1 class="m-0">🏛️ Panel de Control - Actas Municipales</h1>
+          </div><!-- /.col -->
+          <div class="col-sm-6">
+            <ol class="breadcrumb float-sm-right">
+              <li class="breadcrumb-item"><a href="/">Inicio</a></li>
+              <li class="breadcrumb-item active">Dashboard Actas</li>
+            </ol>
+          </div><!-- /.col -->
+        </div><!-- /.row -->
+      </div><!-- /.container-fluid -->
+    </div>
+    <!-- /.content-header -->
+
+    <!-- Main content -->
+    <section class="content">
+      <div class="container-fluid">
+        
+        <!-- Info boxes - Estadísticas principales -->
+        <div class="row">
+          <div class="col-12 col-sm-6 col-md-3">
+            <div class="info-box">
+              <span class="info-box-icon bg-primary elevation-1">
+                <i class="fas fa-file-alt"></i>
+              </span>
+              <div class="info-box-content">
+                <span class="info-box-text">Actas Totales</span>
+                <span class="info-box-number">
+                  {{ estadisticas.actas_totales }}
+                  <small>documentos</small>
+                </span>
+              </div>
+            </div>
+          </div>
+          
+          <div class="col-12 col-sm-6 col-md-3">
+            <div class="info-box mb-3">
+              <span class="info-box-icon bg-success elevation-1">
+                <i class="fas fa-microphone"></i>
+              </span>
+              <div class="info-box-content">
+                <span class="info-box-text">Precisión IA</span>
+                <span class="info-box-number">{{ estadisticas.precision_ia }}%</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-12 col-sm-6 col-md-3">
+            <div class="info-box mb-3">
+              <span class="info-box-icon bg-warning elevation-1">
+                <i class="fas fa-clock"></i>
+              </span>
+              <div class="info-box-content">
+                <span class="info-box-text">Tiempo Promedio</span>
+                <span class="info-box-number">
+                  {{ estadisticas.tiempo_medio_transcripcion }}
+                  <small>min</small>
+                </span>
+              </div>
+            </div>
+          </div>
+          
+          <div class="col-12 col-sm-6 col-md-3">
+            <div class="info-box mb-3">
+              <span class="info-box-icon bg-info elevation-1">
+                <i class="fas fa-users"></i>
+              </span>
+              <div class="info-box-content">
+                <span class="info-box-text">Usuarios Activos</span>
+                <span class="info-box-number">{{ estadisticas.usuarios_activos }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- /.row -->
+
+        <!-- Segunda fila de estadísticas -->
+        <div class="row">
+          <div class="col-12 col-sm-6 col-md-3">
+            <div class="small-box bg-gradient-primary">
+              <div class="inner">
+                <h3>{{ estadisticas.actas_mes_actual }}</h3>
+                <p>Actas este mes</p>
+              </div>
+              <div class="icon">
+                <i class="fas fa-calendar-month"></i>
+              </div>
+            </div>
+          </div>
+          
+          <div class="col-12 col-sm-6 col-md-3">
+            <div class="small-box bg-gradient-danger">
+              <div class="inner">
+                <h3>{{ estadisticas.sesiones_pendientes }}</h3>
+                <p>Sesiones Pendientes</p>
+              </div>
+              <div class="icon">
+                <i class="fas fa-exclamation-triangle"></i>
+              </div>
+            </div>
+          </div>
+          
+          <div class="col-12 col-sm-6 col-md-3">
+            <div class="small-box bg-gradient-success">
+              <div class="inner">
+                <h3>{{ estadisticas.documentos_procesados }}</h3>
+                <p>Docs. Procesados</p>
+              </div>
+              <div class="icon">
+                <i class="fas fa-robot"></i>
+              </div>
+            </div>
+          </div>
+          
+          <div class="col-12 col-sm-6 col-md-3">
+            <div class="small-box bg-gradient-orange">
+              <div class="inner">
+                <h3>{{ estadisticas.almacenamiento_usado }}%</h3>
+                <p>Almacenamiento</p>
+              </div>
+              <div class="icon">
+                <i class="fas fa-hdd"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- /.row -->
+
+        <!-- Gráfico principal y estadísticas -->
+        <div class="row">
+          <div class="col-md-8">
+            <div class="card">
+              <div class="card-header">
+                <h5 class="card-title">
+                  <i class="fas fa-chart-line mr-2"></i>
+                  Resumen Mensual de Actividad - Año 2025
+                </h5>
+                <div class="card-tools">
+                  <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                    <i class="fas fa-minus"></i>
+                  </button>
+                </div>
+              </div>
+              <div class="card-body">
+                <div class="row">
+                  <div class="col-md-12">
+                    <p class="text-center">
+                      <strong>Evolución de Actas Municipales: Enero - Diciembre 2025</strong>
+                    </p>
+                    <div class="chart">
+                      <canvas id="actasChart" height="180" style="height: 180px;"></canvas>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="card-footer">
+                <div class="row">
+                  <div class="col-sm-3 col-6">
+                    <div class="description-block border-right">
+                      <span class="description-percentage text-success">
+                        <i class="fas fa-caret-up"></i> 23%
+                      </span>
+                      <h5 class="description-header">{{ estadisticas.actas_totales }}</h5>
+                      <span class="description-text">TOTAL ACTAS</span>
+                    </div>
+                  </div>
+                  <div class="col-sm-3 col-6">
+                    <div class="description-block border-right">
+                      <span class="description-percentage text-info">
+                        <i class="fas fa-caret-up"></i> 15%
+                      </span>
+                      <h5 class="description-header">{{ estadisticas.precision_ia }}%</h5>
+                      <span class="description-text">PRECISIÓN IA</span>
+                    </div>
+                  </div>
+                  <div class="col-sm-3 col-6">
+                    <div class="description-block border-right">
+                      <span class="description-percentage text-warning">
+                        <i class="fas fa-caret-down"></i> 8%
+                      </span>
+                      <h5 class="description-header">{{ estadisticas.tiempo_medio_transcripcion }} min</h5>
+                      <span class="description-text">TIEMPO MEDIO</span>
+                    </div>
+                  </div>
+                  <div class="col-sm-3 col-6">
+                    <div class="description-block">
+                      <span class="description-percentage text-success">
+                        <i class="fas fa-caret-up"></i> 12%
+                      </span>
+                      <h5 class="description-header">{{ estadisticas.documentos_procesados }}</h5>
+                      <span class="description-text">DOCS PROCESADOS</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Panel de precisión por categorías -->
+          <div class="col-md-4">
+            <div class="card">
+              <div class="card-header">
+                <h5 class="card-title">
+                  <i class="fas fa-bullseye mr-2"></i>
+                  Precisión IA por Categoría
+                </h5>
+              </div>
+              <div class="card-body">
+                {% for categoria, precision in precision_categorias.items %}
+                <div class="progress-group mb-3">
+                  {{ categoria }}
+                  <span class="float-right"><b>{{ precision }}%</b></span>
+                  <div class="progress progress-sm">
+                    <div class="progress-bar 
+                      {% if precision >= 98 %}bg-success
+                      {% elif precision >= 95 %}bg-primary  
+                      {% elif precision >= 90 %}bg-warning
+                      {% else %}bg-danger{% endif %}" 
+                      style="width: {{ precision }}%"></div>
+                  </div>
+                </div>
+                {% endfor %}
+              </div>
+            </div>
+            
+            <!-- Estado del sistema -->
+            <div class="card">
+              <div class="card-header">
+                <h5 class="card-title">
+                  <i class="fas fa-server mr-2"></i>
+                  Estado del Sistema
+                </h5>
+              </div>
+              <div class="card-body">
+                <div class="info-box mb-2">
+                  <span class="info-box-icon bg-success"><i class="fas fa-check"></i></span>
+                  <div class="info-box-content">
+                    <span class="info-box-text">Servicio IA</span>
+                    <span class="info-box-number text-success">Operativo</span>
+                  </div>
+                </div>
+                
+                <div class="info-box mb-2">
+                  <span class="info-box-icon bg-success"><i class="fas fa-database"></i></span>
+                  <div class="info-box-content">
+                    <span class="info-box-text">Base de Datos</span>
+                    <span class="info-box-number text-success">Conectada</span>
+                  </div>
+                </div>
+                
+                <div class="info-box mb-2">
+                  <span class="info-box-icon bg-warning"><i class="fas fa-hdd"></i></span>
+                  <div class="info-box-content">
+                    <span class="info-box-text">Almacenamiento</span>
+                    <span class="info-box-number text-warning">{{ estadisticas.almacenamiento_usado }}%</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- Actividad reciente y próximas sesiones -->
+        <div class="row">
+          <!-- Actividad Reciente -->
+          <div class="col-md-8">
+            <div class="card">
+              <div class="card-header">
+                <h5 class="card-title">
+                  <i class="fas fa-history mr-2"></i>
+                  Actividad Reciente del Sistema
+                </h5>
+                <div class="card-tools">
+                  <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                    <i class="fas fa-minus"></i>
+                  </button>
+                </div>
+              </div>
+              <div class="card-body p-0">
+                <div class="table-responsive">
+                  <table class="table m-0">
+                    <thead>
+                      <tr>
+                        <th>Tipo</th>
+                        <th>Descripción</th>
+                        <th>Usuario</th>
+                        <th>Fecha</th>
+                        <th>Estado</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {% for actividad in actividad_reciente %}
+                      <tr>
+                        <td>
+                          {% if actividad.tipo == 'transcripcion' %}
+                            <i class="fas fa-microphone text-primary"></i>
+                          {% elif actividad.tipo == 'revision' %}
+                            <i class="fas fa-eye text-warning"></i>
+                          {% elif actividad.tipo == 'publicacion' %}
+                            <i class="fas fa-globe text-success"></i>
+                          {% else %}
+                            <i class="fas fa-robot text-info"></i>
+                          {% endif %}
+                        </td>
+                        <td>{{ actividad.descripcion }}</td>
+                        <td>{{ actividad.usuario }}</td>
+                        <td>{{ actividad.fecha|timesince }} ago</td>
+                        <td>
+                          {% if actividad.estado == 'completada' %}
+                            <span class="badge badge-success">Completada</span>
+                          {% elif actividad.estado == 'pendiente' %}
+                            <span class="badge badge-warning">Pendiente</span>
+                          {% elif actividad.estado == 'publicada' %}
+                            <span class="badge badge-info">Publicada</span>
+                          {% else %}
+                            <span class="badge badge-primary">Procesando</span>
+                          {% endif %}
+                        </td>
+                      </tr>
+                      {% endfor %}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+              <div class="card-footer clearfix">
+                <a href="/actividad/" class="btn btn-sm btn-info float-left">Ver Toda la Actividad</a>
+                <a href="/reportes/" class="btn btn-sm btn-secondary float-right">Generar Reporte</a>
+              </div>
+            </div>
+
+            <!-- Próximas Sesiones -->
+            <div class="card">
+              <div class="card-header">
+                <h5 class="card-title">
+                  <i class="fas fa-calendar-alt mr-2"></i>
+                  Próximas Sesiones Programadas
+                </h5>
+              </div>
+              <div class="card-body">
+                {% for sesion in proximas_sesiones %}
+                <div class="post">
+                  <div class="user-block">
+                    <span class="username">
+                      <a href="#">{{ sesion.titulo }}</a>
+                      {% if sesion.tipo == 'ordinaria' %}
+                        <span class="badge badge-primary">Ordinaria</span>
+                      {% elif sesion.tipo == 'extraordinaria' %}
+                        <span class="badge badge-danger">Extraordinaria</span>
+                      {% else %}
+                        <span class="badge badge-warning">Comisión</span>
+                      {% endif %}
+                    </span>
+                    <span class="description">
+                      <i class="fas fa-clock"></i> {{ sesion.fecha|date:"d/m/Y" }} a las {{ sesion.hora }}
+                      <br>
+                      <i class="fas fa-map-marker-alt"></i> {{ sesion.sala }}
+                    </span>
+                  </div>
+                  <div class="post-tools">
+                    <a href="#" class="btn btn-sm btn-primary">
+                      <i class="fas fa-eye"></i> Ver Detalles
+                    </a>
+                    <a href="#" class="btn btn-sm btn-success">
+                      <i class="fas fa-plus"></i> Preparar Grabación
+                    </a>
+                  </div>
+                </div>
+                {% if not forloop.last %}<hr>{% endif %}
+                {% endfor %}
+              </div>
+              <div class="card-footer">
+                <a href="/calendario/" class="btn btn-primary btn-block">
+                  <i class="fas fa-calendar"></i> Ver Calendario Completo
+                </a>
+              </div>
+            </div>
+          </div>
+
+          <!-- Panel lateral derecho -->
+          <div class="col-md-4">
+            <!-- Estadísticas adicionales -->
+            <div class="info-box mb-3 bg-gradient-success">
+              <span class="info-box-icon"><i class="fas fa-file-pdf"></i></span>
+              <div class="info-box-content">
+                <span class="info-box-text">PDFs Generados</span>
+                <span class="info-box-number">{{ estadisticas.documentos_procesados }}</span>
+              </div>
+            </div>
+
+            <div class="info-box mb-3 bg-gradient-warning">
+              <span class="info-box-icon"><i class="fas fa-clock"></i></span>
+              <div class="info-box-content">
+                <span class="info-box-text">Tiempo de Resp.</span>
+                <span class="info-box-number">{{ estadisticas.tiempo_medio_transcripcion }}s</span>
+              </div>
+            </div>
+
+            <div class="info-box mb-3 bg-gradient-danger">
+              <span class="info-box-icon"><i class="fas fa-exclamation-circle"></i></span>
+              <div class="info-box-content">
+                <span class="info-box-text">Alertas Activas</span>
+                <span class="info-box-number">3</span>
+              </div>
+            </div>
+
+            <!-- Accesos Rápidos -->
+            <div class="card">
+              <div class="card-header">
+                <h5 class="card-title">
+                  <i class="fas fa-rocket mr-2"></i>
+                  Accesos Rápidos
+                </h5>
+              </div>
+              <div class="card-body">
+                <div class="row">
+                  <div class="col-6">
+                    <a href="/transcribir/" class="btn btn-primary btn-block mb-2">
+                      <i class="fas fa-microphone"></i><br>
+                      Nueva Transcripción
+                    </a>
+                  </div>
+                  <div class="col-6">
+                    <a href="/buscar/" class="btn btn-info btn-block mb-2">
+                      <i class="fas fa-search"></i><br>
+                      Buscar Actas
+                    </a>
+                  </div>
+                  <div class="col-6">
+                    <a href="/config-system/" class="btn btn-warning btn-block mb-2">
+                      <i class="fas fa-cogs"></i><br>
+                      Configuración
+                    </a>
+                  </div>
+                  <div class="col-6">
+                    <a href="/reportes/" class="btn btn-success btn-block mb-2">
+                      <i class="fas fa-chart-bar"></i><br>
+                      Reportes
+                    </a>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Últimas Actas Procesadas -->
+            <div class="card">
+              <div class="card-header">
+                <h5 class="card-title">
+                  <i class="fas fa-file-alt mr-2"></i>
+                  Últimas Actas Procesadas
+                </h5>
+              </div>
+              <div class="card-body p-0">
+                <ul class="products-list product-list-in-card pl-2 pr-2">
+                  <li class="item">
+                    <div class="product-img">
+                      <i class="fas fa-file-pdf fa-2x text-danger"></i>
+                    </div>
+                    <div class="product-info">
+                      <a href="#" class="product-title">
+                        Acta Consejo Municipal - Septiembre
+                        <span class="badge badge-success float-right">Completada</span>
+                      </a>
+                      <span class="product-description">
+                        Sesión ordinaria del 5 de septiembre. Temas: presupuestos, urbanismo.
+                      </span>
+                    </div>
+                  </li>
+
+                  <li class="item">
+                    <div class="product-img">
+                      <i class="fas fa-file-alt fa-2x text-primary"></i>
+                    </div>
+                    <div class="product-info">
+                      <a href="#" class="product-title">
+                        Comisión de Hacienda
+                        <span class="badge badge-warning float-right">Procesando</span>
+                      </a>
+                      <span class="product-description">
+                        Revisión del presupuesto municipal 2026.
+                      </span>
+                    </div>
+                  </li>
+
+                  <li class="item">
+                    <div class="product-img">
+                      <i class="fas fa-file-word fa-2x text-info"></i>
+                    </div>
+                    <div class="product-info">
+                      <a href="#" class="product-title">
+                        Acta Extraordinaria - Obras
+                        <span class="badge badge-info float-right">Publicada</span>
+                      </a>
+                      <span class="product-description">
+                        Aprobación de nuevas obras de infraestructura.
+                      </span>
+                    </div>
+                  </li>
+                </ul>
+              </div>
+              <div class="card-footer text-center">
+                <a href="/actas/">Ver Todas las Actas</a>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- /.row -->
+
+      </div><!-- /.container-fluid -->
+    </section>
+    <!-- /.content -->
+  </div>
+  <!-- /.content-wrapper -->
+{% endblock content %}
+
+{% block javascripts %}
+  {{ block.super }}
+  <script src="{% static 'plugins/chart.js/Chart.min.js' %}"></script>
+  
+  <script>
+    // Configuración del gráfico de actas mensuales
+    $(function () {
+      var actasData = {
+        labels: {{ meses_json|safe }},
+        datasets: [
+          {
+            label: 'Actas Generadas',
+            backgroundColor: 'rgba(60,141,188,0.9)',
+            borderColor: 'rgba(60,141,188,0.8)',
+            pointRadius: 5,
+            pointColor: '#3b8bba',
+            pointStrokeColor: 'rgba(60,141,188,1)',
+            pointHighlightFill: '#fff',
+            pointHighlightStroke: 'rgba(60,141,188,1)',
+            data: {{ actas_por_mes_json|safe }}
+          },
+          {
+            label: 'Transcripciones IA',
+            backgroundColor: 'rgba(210, 214, 222, 0.9)',
+            borderColor: 'rgba(210, 214, 222, 1)',
+            pointRadius: 5,
+            pointColor: 'rgba(210, 214, 222, 1)',
+            pointStrokeColor: '#c1c7d1',
+            pointHighlightFill: '#fff',
+            pointHighlightStroke: 'rgba(220,220,220,1)',
+            data: {{ transcripciones_ia_json|safe }}
+          }
+        ]
+      };
+
+      var actasOptions = {
+        maintainAspectRatio: false,
+        responsive: true,
+        legend: {
+          display: true
+        },
+        scales: {
+          xAxes: [{
+            gridLines: {
+              display: false
+            }
+          }],
+          yAxes: [{
+            gridLines: {
+              display: false
+            }
+          }]
+        }
+      };
+
+      // Crear el gráfico
+      var actasChartCanvas = $('#actasChart').get(0).getContext('2d');
+      var actasChart = new Chart(actasChartCanvas, {
+        type: 'line',
+        data: actasData,
+        options: actasOptions
+      });
+    });
+  </script>
+{% endblock javascripts %}
+
+  {% block extra_scripts %}
+  
+    <!-- overlayScrollbars -->
+    <script src="{% static 'plugins/overlayScrollbars/js/jquery.overlayScrollbars.min.js' %}"></script>
+    <!-- PAGE PLUGINS -->
+    <!-- jQuery Mapael -->
+    <script src="{% static 'plugins/jquery-mousewheel/jquery.mousewheel.js' %}"></script>
+    <script src="{% static 'plugins/raphael/raphael.min.js' %}"></script>
+    <script src="{% static 'plugins/jquery-mapael/jquery.mapael.min.js' %}"></script>
+    <script src="{% static 'plugins/jquery-mapael/maps/usa_states.min.js' %}"></script>
+    <!-- ChartJS -->
+    <script src="{% static 'plugins/chart.js/Chart.min.js' %}"></script>
+    <!-- Actas IA dashboard demo (This is only for demo purposes) -->
+    <script src="{% static 'dist/js/pages/dashboard2.js' %}"></script>
+
+  {% endblock extra_scripts %}

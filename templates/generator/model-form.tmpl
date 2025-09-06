@@ -1,0 +1,15 @@
+
+class __MODEL_NAME__Form(forms.ModelForm):
+
+    class Meta:
+        model = __MODEL_NAME__
+        fields = '__all__'    
+
+    def __init__(self, *args, **kwargs):
+        super(__MODEL_NAME__Form, self).__init__(*args, **kwargs)
+
+        for field_name, field in self.fields.items():
+            self.fields[field_name].widget.attrs['placeholder'] = field.label
+            self.fields[field_name].widget.attrs['class'] = 'form-control'
+            self.fields[field_name].widget.attrs['required'] = True
+            self.fields[field_name].widget.attrs['rows'] = '1'  

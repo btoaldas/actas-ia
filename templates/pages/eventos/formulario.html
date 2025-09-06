@@ -1,0 +1,456 @@
+{% extends 'layouts/base.html' %}
+{% load static %}
+
+{% block title %}{{ titulo }}{% endblock title %}
+
+{% block extrastyle %}
+  <style>
+    .form-section {
+      background: #f8f9fa;
+      border-left: 4px solid #007bff;
+      padding: 15px;
+      margin-bottom: 20px;
+      border-radius: 4px;
+    }
+    .form-section h5 {
+      color: #007bff;
+      margin-bottom: 15px;
+    }
+    .help-text {
+      font-size: 0.875rem;
+      color: #6c757d;
+    }
+    .required-field::after {
+      content: " *";
+      color: #dc3545;
+    }
+  </style>
+{% endblock extrastyle %}
+
+{% block bodyclass %}hold-transition sidebar-mini{% endblock bodyclass %}
+
+{% block content %}
+  <!-- Content Wrapper. Contains page content -->
+  <div class="content-wrapper">
+    <!-- Content Header (Page header) -->
+    <section class="content-header">
+      <div class="container-fluid">
+        <div class="row mb-2">
+          <div class="col-sm-6">
+            <h1>
+              <i class="fas fa-calendar-plus"></i> {{ titulo }}
+            </h1>
+          </div>
+          <div class="col-sm-6">
+            <ol class="breadcrumb float-sm-right">
+              <li class="breadcrumb-item"><a href="{% url 'transparencia_index' %}">Inicio</a></li>
+              <li class="breadcrumb-item"><a href="{% url 'eventos_calendario' %}">Eventos</a></li>
+              <li class="breadcrumb-item active">{{ titulo }}</li>
+            </ol>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Main content -->
+    <section class="content">
+      <div class="container-fluid">
+        <div class="row justify-content-center">
+          <div class="col-md-8">
+            
+            <!-- Formulario de evento -->
+            <div class="card card-primary">
+              <div class="card-header">
+                <h3 class="card-title">
+                  <i class="fas fa-edit"></i> Información del Evento
+                </h3>
+              </div>
+              
+              <form method="post" enctype="multipart/form-data" novalidate>
+                {% csrf_token %}
+                
+                <div class="card-body">
+                  
+                  <!-- Información básica -->
+                  <div class="form-section">
+                    <h5><i class="fas fa-info-circle"></i> Información Básica</h5>
+                    
+                    <div class="row">
+                      <div class="col-md-12">
+                        <div class="form-group">
+                          <label for="{{ form.titulo.id_for_label }}" class="required-field">
+                            {{ form.titulo.label }}
+                          </label>
+                          {{ form.titulo }}
+                          {% if form.titulo.errors %}
+                            <div class="text-danger">
+                              {% for error in form.titulo.errors %}
+                                <small>{{ error }}</small>
+                              {% endfor %}
+                            </div>
+                          {% endif %}
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div class="row">
+                      <div class="col-md-6">
+                        <div class="form-group">
+                          <label for="{{ form.tipo.id_for_label }}" class="required-field">
+                            {{ form.tipo.label }}
+                          </label>
+                          {{ form.tipo }}
+                          {% if form.tipo.errors %}
+                            <div class="text-danger">
+                              {% for error in form.tipo.errors %}
+                                <small>{{ error }}</small>
+                              {% endfor %}
+                            </div>
+                          {% endif %}
+                        </div>
+                      </div>
+                      <div class="col-md-6">
+                        <div class="form-group">
+                          <label for="{{ form.estado.id_for_label }}" class="required-field">
+                            {{ form.estado.label }}
+                          </label>
+                          {{ form.estado }}
+                          {% if form.estado.errors %}
+                            <div class="text-danger">
+                              {% for error in form.estado.errors %}
+                                <small>{{ error }}</small>
+                              {% endfor %}
+                            </div>
+                          {% endif %}
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div class="form-group">
+                      <label for="{{ form.descripcion.id_for_label }}">
+                        {{ form.descripcion.label }}
+                      </label>
+                      {{ form.descripcion }}
+                      {% if form.descripcion.errors %}
+                        <div class="text-danger">
+                          {% for error in form.descripcion.errors %}
+                            <small>{{ error }}</small>
+                          {% endfor %}
+                        </div>
+                      {% endif %}
+                    </div>
+                  </div>
+
+                  <!-- Fechas y horarios -->
+                  <div class="form-section">
+                    <h5><i class="fas fa-clock"></i> Fechas y Horarios</h5>
+                    
+                    <div class="row">
+                      <div class="col-md-6">
+                        <div class="form-group">
+                          <label for="{{ form.fecha_inicio.id_for_label }}" class="required-field">
+                            {{ form.fecha_inicio.label }}
+                          </label>
+                          {{ form.fecha_inicio }}
+                          {% if form.fecha_inicio.errors %}
+                            <div class="text-danger">
+                              {% for error in form.fecha_inicio.errors %}
+                                <small>{{ error }}</small>
+                              {% endfor %}
+                            </div>
+                          {% endif %}
+                        </div>
+                      </div>
+                      <div class="col-md-6">
+                        <div class="form-group">
+                          <label for="{{ form.fecha_fin.id_for_label }}" class="required-field">
+                            {{ form.fecha_fin.label }}
+                          </label>
+                          {{ form.fecha_fin }}
+                          {% if form.fecha_fin.errors %}
+                            <div class="text-danger">
+                              {% for error in form.fecha_fin.errors %}
+                                <small>{{ error }}</small>
+                              {% endfor %}
+                            </div>
+                          {% endif %}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Ubicación -->
+                  <div class="form-section">
+                    <h5><i class="fas fa-map-marker-alt"></i> Ubicación</h5>
+                    
+                    <div class="row">
+                      <div class="col-md-6">
+                        <div class="form-group">
+                          <label for="{{ form.ubicacion.id_for_label }}" class="required-field">
+                            {{ form.ubicacion.label }}
+                          </label>
+                          {{ form.ubicacion }}
+                          {% if form.ubicacion.errors %}
+                            <div class="text-danger">
+                              {% for error in form.ubicacion.errors %}
+                                <small>{{ error }}</small>
+                              {% endfor %}
+                            </div>
+                          {% endif %}
+                        </div>
+                      </div>
+                      <div class="col-md-6">
+                        <div class="form-group">
+                          <label for="{{ form.direccion.id_for_label }}">
+                            {{ form.direccion.label }}
+                          </label>
+                          {{ form.direccion }}
+                          {% if form.direccion.help_text %}
+                            <small class="help-text">{{ form.direccion.help_text }}</small>
+                          {% endif %}
+                          {% if form.direccion.errors %}
+                            <div class="text-danger">
+                              {% for error in form.direccion.errors %}
+                                <small>{{ error }}</small>
+                              {% endfor %}
+                            </div>
+                          {% endif %}
+                        </div>
+                      </div>
+                      <div class="col-md-6">
+                        <div class="form-group">
+                          <label for="{{ form.responsable.id_for_label }}" class="required-field">
+                            {{ form.responsable.label }}
+                          </label>
+                          {{ form.responsable }}
+                          {% if form.responsable.errors %}
+                            <div class="text-danger">
+                              {% for error in form.responsable.errors %}
+                                <small>{{ error }}</small>
+                              {% endfor %}
+                            </div>
+                          {% endif %}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Configuración de visibilidad -->
+                  <div class="form-section">
+                    <h5><i class="fas fa-eye"></i> Configuración de Visibilidad</h5>
+                    
+                    <div class="row">
+                      <div class="col-md-6">
+                        <div class="form-group">
+                          <label for="{{ form.visibilidad.id_for_label }}" class="required-field">
+                            {{ form.visibilidad.label }}
+                          </label>
+                          {{ form.visibilidad }}
+                          {% if form.visibilidad.errors %}
+                            <div class="text-danger">
+                              {% for error in form.visibilidad.errors %}
+                                <small>{{ error }}</small>
+                              {% endfor %}
+                            </div>
+                          {% endif %}
+                          <small class="help-text">
+                            <strong>Público:</strong> Visible para todos<br>
+                            <strong>Privado:</strong> Solo usuarios invitados<br>
+                            <strong>Restringido:</strong> Solo administradores
+                          </small>
+                        </div>
+                      </div>
+                      <div class="col-md-6">
+                        <div class="form-group">
+                          <label for="{{ form.capacidad_maxima.id_for_label }}">
+                            {{ form.capacidad_maxima.label }}
+                          </label>
+                          {{ form.capacidad_maxima }}
+                          {% if form.capacidad_maxima.help_text %}
+                            <small class="help-text">{{ form.capacidad_maxima.help_text }}</small>
+                          {% endif %}
+                          {% if form.capacidad_maxima.errors %}
+                            <div class="text-danger">
+                              {% for error in form.capacidad_maxima.errors %}
+                                <small>{{ error }}</small>
+                              {% endfor %}
+                            </div>
+                          {% endif %}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="form-group">
+                      <label for="{{ form.asistentes_invitados.id_for_label }}">
+                        {{ form.asistentes_invitados.label }}
+                      </label>
+                      {{ form.asistentes_invitados }}
+                      {% if form.asistentes_invitados.help_text %}
+                        <small class="help-text">{{ form.asistentes_invitados.help_text }}</small>
+                      {% endif %}
+                      {% if form.asistentes_invitados.errors %}
+                        <div class="text-danger">
+                          {% for error in form.asistentes_invitados.errors %}
+                            <small>{{ error }}</small>
+                          {% endfor %}
+                        </div>
+                      {% endif %}
+                    </div>
+                  </div>
+
+                  <!-- Imagen del evento -->
+                  <div class="form-section">
+                    <h5><i class="fas fa-image"></i> Imagen del Evento</h5>
+                    
+                    <div class="form-group">
+                      <label for="{{ form.imagen_evento.id_for_label }}">
+                        {{ form.imagen_evento.label }}
+                      </label>
+                      {{ form.imagen_evento }}
+                      {% if form.imagen_evento.help_text %}
+                        <small class="help-text">{{ form.imagen_evento.help_text }}</small>
+                      {% endif %}
+                      {% if form.imagen_evento.errors %}
+                        <div class="text-danger">
+                          {% for error in form.imagen_evento.errors %}
+                            <small>{{ error }}</small>
+                          {% endfor %}
+                        </div>
+                      {% endif %}
+                      
+                      {% if evento and evento.imagen_evento %}
+                        <div class="mt-2">
+                          <img src="{{ evento.imagen_evento.url }}" alt="Imagen actual" 
+                               class="img-thumbnail" style="max-width: 200px;">
+                          <p class="text-muted mt-1">Imagen actual</p>
+                        </div>
+                      {% endif %}
+                    </div>
+                  </div>
+
+                  <!-- Invitaciones -->
+                  <div class="form-section">
+                    <h5><i class="fas fa-users"></i> Invitaciones</h5>
+                    
+                    <div class="row">
+                      <div class="col-md-6">
+                        <div class="form-group">
+                          <label for="{{ form.asistentes_invitados.id_for_label }}">
+                            {{ form.asistentes_invitados.label }}
+                          </label>
+                          <div style="max-height: 200px; overflow-y: auto; border: 1px solid #ced4da; padding: 10px; border-radius: 4px;">
+                            {{ form.asistentes_invitados }}
+                          </div>
+                          <small class="help-text">
+                            Seleccione los usuarios del sistema que desea invitar.
+                          </small>
+                          {% if form.asistentes_invitados.errors %}
+                            <div class="text-danger">
+                              {% for error in form.asistentes_invitados.errors %}
+                                <small>{{ error }}</small>
+                              {% endfor %}
+                            </div>
+                          {% endif %}
+                        </div>
+                      </div>
+                      
+                      <div class="col-md-6">
+                        <div class="form-group">
+                          <label for="{{ form.invitados_externos.id_for_label }}">
+                            {{ form.invitados_externos.label }}
+                          </label>
+                          {{ form.invitados_externos }}
+                          <small class="help-text">
+                            Las invitaciones se enviarán automáticamente por correo electrónico.
+                          </small>
+                          {% if form.invitados_externos.errors %}
+                            <div class="text-danger">
+                              {% for error in form.invitados_externos.errors %}
+                                <small>{{ error }}</small>
+                              {% endfor %}
+                            </div>
+                          {% endif %}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Errores generales del formulario -->
+                  {% if form.non_field_errors %}
+                    <div class="alert alert-danger">
+                      {% for error in form.non_field_errors %}
+                        <p>{{ error }}</p>
+                      {% endfor %}
+                    </div>
+                  {% endif %}
+                </div>
+
+                <div class="card-footer">
+                  <div class="row">
+                    <div class="col-md-6">
+                      <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> Guardar Evento
+                      </button>
+                      <a href="{% url 'eventos_calendario' %}" class="btn btn-secondary ml-2">
+                        <i class="fas fa-times"></i> Cancelar
+                      </a>
+                    </div>
+                    <div class="col-md-6 text-right">
+                      {% if evento %}
+                        <a href="{% url 'eventos_detalle' evento.pk %}" class="btn btn-info">
+                          <i class="fas fa-eye"></i> Ver Evento
+                        </a>
+                      {% endif %}
+                    </div>
+                  </div>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+{% endblock content %}
+
+{% block extra_scripts %}
+  <script>
+    $(document).ready(function() {
+      // Auto-llenar fecha si viene como parámetro URL
+      const urlParams = new URLSearchParams(window.location.search);
+      const fecha = urlParams.get('fecha');
+      if (fecha && !$('#id_fecha_inicio').val()) {
+        $('#id_fecha_inicio').val(fecha);
+        
+        // Calcular fecha fin (1 hora después)
+        const fechaInicio = new Date(fecha);
+        fechaInicio.setHours(fechaInicio.getHours() + 1);
+        const fechaFin = fechaInicio.toISOString().slice(0, 16);
+        $('#id_fecha_fin').val(fechaFin);
+      }
+      
+      // Validación en tiempo real de fechas
+      $('#id_fecha_inicio, #id_fecha_fin').change(function() {
+        const fechaInicio = new Date($('#id_fecha_inicio').val());
+        const fechaFin = new Date($('#id_fecha_fin').val());
+        
+        if (fechaInicio && fechaFin && fechaFin <= fechaInicio) {
+          alert('La fecha de fin debe ser posterior a la fecha de inicio');
+          $('#id_fecha_fin').focus();
+        }
+      });
+      
+      // Mostrar/ocultar campo de invitados según visibilidad
+      $('#id_visibilidad').change(function() {
+        const visibilidad = $(this).val();
+        const invitadosGroup = $('#id_asistentes_invitados').closest('.form-group');
+        
+        if (visibilidad === 'privado') {
+          invitadosGroup.show();
+        } else {
+          invitadosGroup.hide();
+        }
+      }).trigger('change');
+    });
+  </script>
+{% endblock extra_scripts %}

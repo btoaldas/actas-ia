@@ -1,0 +1,256 @@
+<!-- Widget de Debug de Sesiones solo para superusuarios -->
+{% if user.is_superuser %}
+<div id="session-debug-widget" style="
+    position: fixed; 
+    bottom: 20px; 
+    right: 20px; 
+    z-index: 9999;
+    background: #2c3e50;
+    color: white;
+    padding: 15px;
+    border-radius: 10px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+    min-width: 320px;
+    font-size: 12px;
+    font-family: 'Courier New', monospace;
+    display: none;
+    max-height: 80vh;
+    overflow-y: auto;
+">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+        <h5 style="margin: 0; color: #3498db;">🔧 Debug Sesión</h5>
+        <button onclick="toggleSessionWidget()" style="
+            background: #e74c3c; 
+            border: none; 
+            color: white; 
+            padding: 5px 10px; 
+            border-radius: 5px;
+            cursor: pointer;
+        ">✕</button>
+    </div>
+    
+    <div id="session-info">
+        <div><strong>🍪 Sesión ID:</strong> <span id="session-id">Cargando...</span></div>
+        <div><strong>👤 Usuario:</strong> <span id="session-user">Cargando...</span></div>
+        <div><strong>⏰ Última Actividad:</strong> <span id="session-activity">Cargando...</span></div>
+        <div><strong>🌐 IP:</strong> <span id="session-ip">Cargando...</span></div>
+        <div><strong>⏱️ Tiempo Restante:</strong> <span id="session-expires">Cargando...</span></div>
+        <div><strong>📊 Requests:</strong> <span id="session-requests">Cargando...</span></div>
+    </div>
+    
+    <hr style="border-color: #34495e; margin: 10px 0;">
+    
+    <div id="cookies-info">
+        <strong>🍪 Cookies Activas:</strong>
+        <div id="cookies-list" style="max-height: 150px; overflow-y: auto; margin-top: 5px;">
+            Cargando...
+        </div>
+    </div>
+    
+    <hr style="border-color: #34495e; margin: 10px 0;">
+    
+    <div id="path-history">
+        <strong>🛤️ Historial de Navegación:</strong>
+        <div id="path-list" style="max-height: 100px; overflow-y: auto; margin-top: 5px;">
+            Cargando...
+        </div>
+    </div>
+    
+    <div style="margin-top: 10px;">
+        <button onclick="refreshSessionInfo()" style="
+            background: #27ae60; 
+            border: none; 
+            color: white; 
+            padding: 5px 10px; 
+            border-radius: 3px;
+            cursor: pointer;
+            margin-right: 5px;
+            font-size: 11px;
+        ">🔄 Actualizar</button>
+        
+        <button onclick="clearSessionData()" style="
+            background: #f39c12; 
+            border: none; 
+            color: white; 
+            padding: 5px 10px; 
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 11px;
+        ">🗑️ Limpiar</button>
+    </div>
+</div>
+
+<!-- Botón flotante para mostrar el widget -->
+<div id="session-debug-trigger" style="
+    position: fixed; 
+    bottom: 20px; 
+    right: 20px; 
+    z-index: 9998;
+    background: #3498db;
+    color: white;
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 4px 15px rgba(52, 152, 219, 0.3);
+    font-size: 20px;
+    transition: all 0.3s ease;
+" onclick="toggleSessionWidget()" title="Debug de Sesiones">
+    🔧
+</div>
+
+<script>
+let sessionWidgetVisible = false;
+let sessionRefreshInterval = null;
+
+function toggleSessionWidget() {
+    const widget = document.getElementById('session-debug-widget');
+    const trigger = document.getElementById('session-debug-trigger');
+    
+    sessionWidgetVisible = !sessionWidgetVisible;
+    
+    if (sessionWidgetVisible) {
+        widget.style.display = 'block';
+        trigger.style.display = 'none';
+        refreshSessionInfo();
+        
+        // Auto-refresh cada 30 segundos
+        sessionRefreshInterval = setInterval(refreshSessionInfo, 30000);
+    } else {
+        widget.style.display = 'none';
+        trigger.style.display = 'flex';
+        
+        if (sessionRefreshInterval) {
+            clearInterval(sessionRefreshInterval);
+            sessionRefreshInterval = null;
+        }
+    }
+}
+
+function refreshSessionInfo() {
+    fetch('{% url "auditoria:session_debug_api" %}', {
+        method: 'GET',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        document.getElementById('session-id').textContent = (data.session_key || 'No disponible').substring(0, 20) + '...';
+        document.getElementById('session-user').textContent = data.user || 'Anónimo';
+        document.getElementById('session-activity').textContent = data.last_activity ? new Date(data.last_activity).toLocaleTimeString() : 'No disponible';
+        document.getElementById('session-ip').textContent = data.ip_address || 'No disponible';
+        document.getElementById('session-expires').textContent = data.expires_in || 'No disponible';
+        document.getElementById('session-requests').textContent = data.request_count || '0';
+        
+        // Mostrar cookies
+        const cookiesList = document.getElementById('cookies-list');
+        if (data.cookies && Object.keys(data.cookies).length > 0) {
+            cookiesList.innerHTML = Object.entries(data.cookies)
+                .map(([name, value]) => 
+                    `<div style="background: #34495e; padding: 3px 5px; margin: 2px 0; border-radius: 3px; font-size: 10px;">
+                        <strong>${name}:</strong> ${value.length > 25 ? value.substring(0, 25) + '...' : value}
+                    </div>`
+                ).join('');
+        } else {
+            cookiesList.innerHTML = '<div style="color: #95a5a6; font-size: 10px;">No hay cookies</div>';
+        }
+        
+        // Mostrar historial de navegación
+        const pathList = document.getElementById('path-list');
+        if (data.path_history && data.path_history.length > 0) {
+            pathList.innerHTML = data.path_history.slice(-5).map(pathInfo => {
+                const timestamp = pathInfo.timestamp ? new Date(pathInfo.timestamp).toLocaleTimeString() : '';
+                return `<div style="background: #34495e; padding: 2px 5px; margin: 1px 0; border-radius: 3px; font-size: 10px;">
+                    <strong>${pathInfo.path || pathInfo}</strong> <small style="color: #bdc3c7;">${timestamp}</small>
+                </div>`;
+            }).join('');
+        } else {
+            pathList.innerHTML = '<div style="color: #95a5a6; font-size: 10px;">Sin historial</div>';
+        }
+    })
+    .catch(error => {
+        console.error('Error al obtener información de sesión:', error);
+        document.getElementById('session-id').textContent = 'Error al cargar';
+    });
+}
+
+function clearSessionData() {
+    if (confirm('¿Estás seguro de que quieres limpiar los datos de sesión?')) {
+        fetch('{% url "auditoria:clear_session_data" %}', {
+            method: 'POST',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || ''
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            alert(data.message || 'Datos de sesión limpiados');
+            refreshSessionInfo();
+        })
+        .catch(error => {
+            console.error('Error al limpiar sesión:', error);
+        });
+    }
+}
+
+// Log automático de actividades
+document.addEventListener('DOMContentLoaded', function() {
+    // Log de carga de página
+    logActivity('page_load', {
+        url: window.location.href,
+        title: document.title,
+        timestamp: new Date().toISOString()
+    });
+    
+    // Log de clicks en elementos importantes
+    document.addEventListener('click', function(event) {
+        const target = event.target;
+        
+        // Solo loggear clicks en elementos importantes
+        if (target.tagName === 'A' || target.closest('button') || target.closest('.btn')) {
+            logActivity('click', {
+                element: target.tagName,
+                text: target.textContent?.trim().substring(0, 50),
+                href: target.href || target.closest('a')?.href,
+                timestamp: new Date().toISOString()
+            });
+        }
+    });
+    
+    // Log al salir de la página
+    window.addEventListener('beforeunload', function() {
+        logActivity('page_unload', {
+            url: window.location.href,
+            duration: Date.now() - window.loadTime,
+            timestamp: new Date().toISOString()
+        });
+    });
+    
+    window.loadTime = Date.now();
+});
+
+function logActivity(action, data) {
+    // Solo hacer log si hay token CSRF disponible
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value;
+    if (!csrfToken) return;
+    
+    fetch('{% url "auditoria:log_frontend_activity" %}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrfToken,
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: JSON.stringify({
+            action: action,
+            data: data
+        })
+    }).catch(error => console.log('Log error:', error));
+}
+</script>
+{% endif %}

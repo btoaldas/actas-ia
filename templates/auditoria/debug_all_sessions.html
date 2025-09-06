@@ -1,0 +1,220 @@
+{% extends "layouts/base.html" %}
+
+{% block title %} Todas las Sesiones Activas {% endblock %}
+
+{% block stylesheets %}
+<style>
+    .session-card {
+        border-left: 4px solid #007bff;
+        margin-bottom: 1rem;
+    }
+    .session-expired {
+        border-left-color: #dc3545;
+        opacity: 0.7;
+    }
+    .session-key {
+        font-family: 'Courier New', monospace;
+        font-size: 0.9em;
+        color: #6c757d;
+    }
+    .time-remaining {
+        font-weight: bold;
+    }
+    .time-remaining.expired {
+        color: #dc3545;
+    }
+    .time-remaining.active {
+        color: #28a745;
+    }
+</style>
+{% endblock stylesheets %}
+
+{% block content %}
+
+<div class="content-wrapper">
+    <div class="content-header">
+        <div class="container-fluid">
+            <div class="row mb-2">
+                <div class="col-sm-6">
+                    <h1 class="m-0">🔍 Todas las Sesiones Activas</h1>
+                </div>
+                <div class="col-sm-6">
+                    <ol class="breadcrumb float-sm-right">
+                        <li class="breadcrumb-item"><a href="{% url 'auditoria:dashboard' %}">Auditoría</a></li>
+                        <li class="breadcrumb-item"><a href="{% url 'auditoria:debug_session' %}">Debug Sesión</a></li>
+                        <li class="breadcrumb-item active">Todas las Sesiones</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <section class="content">
+        <div class="container-fluid">
+            
+            <!-- Resumen -->
+            <div class="row">
+                <div class="col-lg-3 col-6">
+                    <div class="small-box bg-info">
+                        <div class="inner">
+                            <h3>{{ total_sessions }}</h3>
+                            <p>Sesiones Activas</p>
+                        </div>
+                        <div class="icon">
+                            <i class="fas fa-users"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-6">
+                    <div class="small-box bg-success">
+                        <div class="inner">
+                            <h3>{{ sessions_info|length }}</h3>
+                            <p>Total Procesadas</p>
+                        </div>
+                        <div class="icon">
+                            <i class="fas fa-check"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-6">
+                    <div class="small-box bg-warning">
+                        <div class="inner">
+                            <h3 id="authenticated-count">0</h3>
+                            <p>Usuarios Autenticados</p>
+                        </div>
+                        <div class="icon">
+                            <i class="fas fa-user-check"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-6">
+                    <div class="small-box bg-danger">
+                        <div class="inner">
+                            <h3 id="anonymous-count">0</h3>
+                            <p>Sesiones Anónimas</p>
+                        </div>
+                        <div class="icon">
+                            <i class="fas fa-user-times"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Controles -->
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">⚙️ Controles</h3>
+                </div>
+                <div class="card-body">
+                    <button class="btn btn-primary" onclick="location.reload()">
+                        <i class="fas fa-sync"></i> Refrescar
+                    </button>
+                    <button class="btn btn-info" onclick="toggleExpiredSessions()">
+                        <i class="fas fa-eye"></i> Mostrar/Ocultar Expiradas
+                    </button>
+                    <a href="{% url 'auditoria:debug_session' %}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left"></i> Volver a Mi Sesión
+                    </a>
+                </div>
+            </div>
+
+            <!-- Lista de Sesiones -->
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">📋 Lista de Sesiones</h3>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        {% for session in sessions_info %}
+                        <div class="col-md-6 col-lg-4">
+                            <div class="card session-card {% if session.is_expired %}session-expired{% endif %}">
+                                <div class="card-body">
+                                    {% if session.error %}
+                                        <h6 class="card-title text-danger">❌ Error en Sesión</h6>
+                                        <p class="session-key">{{ session.session_key }}</p>
+                                        <p class="text-danger">{{ session.error }}</p>
+                                    {% else %}
+                                        <h6 class="card-title">
+                                            {% if session.username == 'Anónimo' %}
+                                                👤 Usuario Anónimo
+                                            {% else %}
+                                                👨‍💼 {{ session.username }}
+                                            {% endif %}
+                                        </h6>
+                                        
+                                        <p class="session-key">{{ session.session_key }}</p>
+                                        
+                                        <div class="session-details">
+                                            <p><strong>Usuario ID:</strong> {{ session.user_id|default:"N/A" }}</p>
+                                            <p><strong>Expira:</strong> {{ session.expire_date }}</p>
+                                            <p><strong>Tiempo restante:</strong> 
+                                                <span class="time-remaining {% if session.is_expired %}expired{% else %}active{% endif %}">
+                                                    {{ session.time_remaining }}
+                                                </span>
+                                            </p>
+                                            <p><strong>Datos:</strong> {{ session.session_data_keys|join:", "|default:"Ninguno" }}</p>
+                                        </div>
+                                        
+                                        {% if session.is_expired %}
+                                            <span class="badge badge-danger">Expirada</span>
+                                        {% else %}
+                                            <span class="badge badge-success">Activa</span>
+                                        {% endif %}
+                                        
+                                        {% if session.username != 'Anónimo' %}
+                                            <span class="badge badge-info">Autenticada</span>
+                                        {% endif %}
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        {% empty %}
+                        <div class="col-12">
+                            <div class="alert alert-info">
+                                <h5><i class="fas fa-info-circle"></i> Sin sesiones</h5>
+                                No hay sesiones activas en este momento.
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </section>
+</div>
+
+{% endblock content %}
+
+{% block javascripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Contar sesiones autenticadas y anónimas
+    let authenticatedCount = 0;
+    let anonymousCount = 0;
+    
+    const sessions = document.querySelectorAll('.session-card');
+    sessions.forEach(card => {
+        if (card.querySelector('.badge-info')) {
+            authenticatedCount++;
+        } else if (!card.querySelector('.text-danger')) {
+            anonymousCount++;
+        }
+    });
+    
+    document.getElementById('authenticated-count').textContent = authenticatedCount;
+    document.getElementById('anonymous-count').textContent = anonymousCount;
+});
+
+function toggleExpiredSessions() {
+    const expiredSessions = document.querySelectorAll('.session-expired');
+    expiredSessions.forEach(session => {
+        if (session.style.display === 'none') {
+            session.style.display = '';
+        } else {
+            session.style.display = 'none';
+        }
+    });
+}
+</script>
+{% endblock javascripts %}

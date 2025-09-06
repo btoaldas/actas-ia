@@ -1,0 +1,337 @@
+{% extends 'layouts/base.html' %}
+{% load static %}
+
+{% block title %}Dashboard de Auditoría{% endblock title %}
+
+{% block extrastyle %}
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- Actas IA Charts -->
+  <link rel="stylesheet" href="{% static 'plugins/chart.js/Chart.min.css' %}">
+{% endblock extrastyle %}
+
+{% block content %}
+<!-- Content Wrapper -->
+<div class="content-wrapper">
+  <!-- Content Header (Page header) -->
+  <section class="content-header">
+    <div class="container-fluid">
+      <div class="row mb-2">
+        <div class="col-sm-6">
+          <h1><i class="fas fa-shield-alt"></i> Dashboard de Auditoría</h1>
+        </div>
+        <div class="col-sm-6">
+          <ol class="breadcrumb float-sm-right">
+            <li class="breadcrumb-item"><a href="/">Inicio</a></li>
+            <li class="breadcrumb-item active">Auditoría</li>
+          </ol>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Main content -->
+  <section class="content">
+    <div class="container-fluid">
+      
+      <!-- Estadísticas de hoy -->
+      <div class="row">
+        <div class="col-lg-3 col-6">
+          <div class="small-box bg-info">
+            <div class="inner">
+              <h3>{{ estadisticas_hoy.logs_sistema }}</h3>
+              <p>Logs del Sistema</p>
+            </div>
+            <div class="icon">
+              <i class="fas fa-server"></i>
+            </div>
+            <a href="{% url 'auditoria:logs_sistema' %}" class="small-box-footer">
+              Ver detalles <i class="fas fa-arrow-circle-right"></i>
+            </a>
+          </div>
+        </div>
+        
+        <div class="col-lg-3 col-6">
+          <div class="small-box bg-success">
+            <div class="inner">
+              <h3>{{ estadisticas_hoy.navegacion }}</h3>
+              <p>Navegación</p>
+            </div>
+            <div class="icon">
+              <i class="fas fa-mouse-pointer"></i>
+            </div>
+            <a href="{% url 'auditoria:logs_navegacion' %}" class="small-box-footer">
+              Ver detalles <i class="fas fa-arrow-circle-right"></i>
+            </a>
+          </div>
+        </div>
+        
+        <div class="col-lg-3 col-6">
+          <div class="small-box bg-warning">
+            <div class="inner">
+              <h3>{{ estadisticas_hoy.errores }}</h3>
+              <p>Errores</p>
+            </div>
+            <div class="icon">
+              <i class="fas fa-exclamation-triangle"></i>
+            </div>
+            <div class="small-box-footer">
+              <span class="text-white">Hoy</span>
+            </div>
+          </div>
+        </div>
+        
+        <div class="col-lg-3 col-6">
+          <div class="small-box bg-danger">
+            <div class="inner">
+              <h3>{{ estadisticas_hoy.cambios_bd }}</h3>
+              <p>Cambios en BD</p>
+            </div>
+            <div class="icon">
+              <i class="fas fa-database"></i>
+            </div>
+            <a href="{% url 'auditoria:auditoria_cambios' %}" class="small-box-footer">
+              Ver auditoría <i class="fas fa-arrow-circle-right"></i>
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Estadísticas semanales -->
+      <div class="row">
+        <div class="col-md-6">
+          <div class="card">
+            <div class="card-header">
+              <h3 class="card-title">
+                <i class="fas fa-chart-pie mr-1"></i>
+                Distribución de Logs por Nivel
+              </h3>
+            </div>
+            <div class="card-body">
+              <canvas id="chartLogsPorNivel" width="400" height="200"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-md-6">
+          <div class="card">
+            <div class="card-header">
+              <h3 class="card-title">
+                <i class="fas fa-chart-line mr-1"></i>
+                Logs por Día (Últimos 7 días)
+              </h3>
+            </div>
+            <div class="card-body">
+              <canvas id="chartLogsPorDia" width="400" height="200"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Últimos eventos -->
+      <div class="row">
+        <div class="col-12">
+          <div class="card">
+            <div class="card-header">
+              <h3 class="card-title">
+                <i class="fas fa-history mr-1"></i>
+                Últimos Eventos del Sistema
+              </h3>
+            </div>
+            <div class="card-body">
+              <div class="table-responsive">
+                <table class="table table-bordered table-striped">
+                  <thead>
+                    <tr>
+                      <th>Hora</th>
+                      <th>Nivel</th>
+                      <th>Categoría</th>
+                      <th>Mensaje</th>
+                      <th>Usuario</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for evento in ultimos_eventos %}
+                    <tr>
+                      <td>{{ evento.4|date:"H:i:s" }}</td>
+                      <td>
+                        <span class="badge 
+                          {% if evento.1 == 'ERROR' %}badge-danger
+                          {% elif evento.1 == 'WARNING' %}badge-warning
+                          {% elif evento.1 == 'INFO' %}badge-info
+                          {% else %}badge-secondary{% endif %}">
+                          {{ evento.1 }}
+                        </span>
+                      </td>
+                      <td>{{ evento.2 }}</td>
+                      <td>{{ evento.3|truncatechars:60 }}</td>
+                      <td>{{ evento.5|default:"Sistema" }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                      <td colspan="5" class="text-center">No hay eventos recientes</td>
+                    </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Comparativa semanal -->
+      <div class="row">
+        <div class="col-12">
+          <div class="card">
+            <div class="card-header">
+              <h3 class="card-title">
+                <i class="fas fa-chart-bar mr-1"></i>
+                Estadísticas Semanales vs Diarias
+              </h3>
+            </div>
+            <div class="card-body">
+              <div class="row">
+                <div class="col-md-2 col-sm-4 col-6">
+                  <div class="description-block border-right">
+                    <span class="description-percentage text-success">
+                      <i class="fas fa-caret-up"></i> 
+                      Hoy: {{ estadisticas_hoy.logs_sistema }}
+                    </span>
+                    <h5 class="description-header">{{ estadisticas_semana.logs_sistema }}</h5>
+                    <span class="description-text">LOGS SISTEMA</span>
+                  </div>
+                </div>
+                
+                <div class="col-md-2 col-sm-4 col-6">
+                  <div class="description-block border-right">
+                    <span class="description-percentage text-info">
+                      <i class="fas fa-caret-up"></i> 
+                      Hoy: {{ estadisticas_hoy.navegacion }}
+                    </span>
+                    <h5 class="description-header">{{ estadisticas_semana.navegacion }}</h5>
+                    <span class="description-text">NAVEGACIÓN</span>
+                  </div>
+                </div>
+                
+                <div class="col-md-2 col-sm-4 col-6">
+                  <div class="description-block border-right">
+                    <span class="description-percentage text-primary">
+                      <i class="fas fa-caret-up"></i> 
+                      Hoy: {{ estadisticas_hoy.api_calls }}
+                    </span>
+                    <h5 class="description-header">{{ estadisticas_semana.api_calls }}</h5>
+                    <span class="description-text">API CALLS</span>
+                  </div>
+                </div>
+                
+                <div class="col-md-2 col-sm-4 col-6">
+                  <div class="description-block border-right">
+                    <span class="description-percentage text-warning">
+                      <i class="fas fa-caret-up"></i> 
+                      Hoy: {{ estadisticas_hoy.errores }}
+                    </span>
+                    <h5 class="description-header">{{ estadisticas_semana.errores }}</h5>
+                    <span class="description-text">ERRORES</span>
+                  </div>
+                </div>
+                
+                <div class="col-md-2 col-sm-4 col-6">
+                  <div class="description-block border-right">
+                    <span class="description-percentage text-success">
+                      <i class="fas fa-caret-up"></i> 
+                      Hoy: {{ estadisticas_hoy.accesos }}
+                    </span>
+                    <h5 class="description-header">{{ estadisticas_semana.accesos }}</h5>
+                    <span class="description-text">ACCESOS</span>
+                  </div>
+                </div>
+                
+                <div class="col-md-2 col-sm-4 col-6">
+                  <div class="description-block">
+                    <span class="description-percentage text-danger">
+                      <i class="fas fa-caret-up"></i> 
+                      Hoy: {{ estadisticas_hoy.cambios_bd }}
+                    </span>
+                    <h5 class="description-header">{{ estadisticas_semana.cambios_bd }}</h5>
+                    <span class="description-text">CAMBIOS BD</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+</div>
+{% endblock content %}
+
+{% block extrajs %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Cargar datos para los gráficos
+    fetch('{% url "auditoria:api_estadisticas" %}')
+        .then(response => response.json())
+        .then(data => {
+            // Gráfico de logs por nivel
+            const ctxNivel = document.getElementById('chartLogsPorNivel').getContext('2d');
+            new Chart(ctxNivel, {
+                type: 'doughnut',
+                data: {
+                    labels: data.logs_por_nivel.map(item => item.nivel),
+                    datasets: [{
+                        data: data.logs_por_nivel.map(item => item.total),
+                        backgroundColor: [
+                            '#f56954', // ERROR - rojo
+                            '#f39c12', // WARNING - amarillo
+                            '#00a65a', // INFO - verde
+                            '#3c8dbc', // DEBUG - azul
+                            '#605ca8'  // otros - púrpura
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+
+            // Gráfico de logs por día
+            const ctxDia = document.getElementById('chartLogsPorDia').getContext('2d');
+            new Chart(ctxDia, {
+                type: 'line',
+                data: {
+                    labels: data.logs_por_dia.map(item => item.fecha),
+                    datasets: [{
+                        label: 'Logs por día',
+                        data: data.logs_por_dia.map(item => item.total),
+                        borderColor: '#3c8dbc',
+                        backgroundColor: 'rgba(60, 141, 188, 0.1)',
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        })
+        .catch(error => {
+            console.error('Error cargando estadísticas:', error);
+        });
+});
+</script>
+{% endblock extrajs %}

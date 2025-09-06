@@ -1,0 +1,119 @@
+{% extends "config_system/base.html" %}
+{% load static %}
+
+{% block page_title %}Gestionar Permisos de {{ usuario.username }}{% endblock %}
+{% block breadcrumb_active %}Permisos de {{ usuario.username }}{% endblock %}
+
+{% block main_content %}
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">
+                    <i class="fas fa-user-cog text-primary"></i>
+                    Gestionar Permisos: {{ usuario.username }}
+                </h3>
+            </div>
+            <form method="post">
+                {% csrf_token %}
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i>
+                        <strong>Nota:</strong> Esta funcionalidad está en desarrollo. 
+                        Por ahora, solo los superadministradores pueden acceder a las configuraciones del sistema.
+                    </div>
+                    
+                    <div class="form-group">
+                        <label><strong>Información del Usuario</strong></label>
+                        <div class="row">
+                            <div class="col-sm-6">
+                                <p><strong>Usuario:</strong> {{ usuario.username }}</p>
+                                <p><strong>Email:</strong> {{ usuario.email|default:"No especificado" }}</p>
+                            </div>
+                            <div class="col-sm-6">
+                                <p><strong>Nombre:</strong> {{ usuario.get_full_name|default:"No especificado" }}</p>
+                                <p><strong>Superadmin:</strong> 
+                                    {% if usuario.is_superuser %}
+                                        <span class="badge badge-success">Sí</span>
+                                    {% else %}
+                                        <span class="badge badge-secondary">No</span>
+                                    {% endif %}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <hr>
+                    
+                    <div class="form-group">
+                        <label><strong>Permisos de Configuración (Próximamente)</strong></label>
+                        <div class="custom-control custom-checkbox">
+                            <input type="checkbox" class="custom-control-input" id="puede_gestionar_ia" disabled>
+                            <label class="custom-control-label" for="puede_gestionar_ia">
+                                Puede gestionar configuraciones IA
+                            </label>
+                        </div>
+                        <div class="custom-control custom-checkbox">
+                            <input type="checkbox" class="custom-control-input" id="puede_gestionar_whisper" disabled>
+                            <label class="custom-control-label" for="puede_gestionar_whisper">
+                                Puede gestionar configuraciones Whisper
+                            </label>
+                        </div>
+                        <div class="custom-control custom-checkbox">
+                            <input type="checkbox" class="custom-control-input" id="puede_ver_logs" disabled>
+                            <label class="custom-control-label" for="puede_ver_logs">
+                                Puede ver logs de configuración
+                            </label>
+                        </div>
+                        <small class="form-text text-muted">
+                            Esta funcionalidad se implementará en una próxima versión.
+                        </small>
+                    </div>
+                </div>
+                
+                <div class="card-footer">
+                    <a href="{% url 'config_system:usuarios_list' %}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left"></i> Volver a Lista
+                    </a>
+                    <button type="submit" class="btn btn-primary" disabled>
+                        <i class="fas fa-save"></i> Guardar Cambios (Próximamente)
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title">
+                    <i class="fas fa-info-circle text-info"></i>
+                    Información
+                </h5>
+            </div>
+            <div class="card-body">
+                <h6>Roles Disponibles:</h6>
+                <ul>
+                    <li><strong>Superadministrador:</strong> Acceso completo al sistema</li>
+                    <li><strong>Gestor IA:</strong> Puede configurar modelos de IA</li>
+                    <li><strong>Gestor Whisper:</strong> Puede configurar transcripción</li>
+                    <li><strong>Auditor:</strong> Solo lectura de logs</li>
+                </ul>
+                
+                <hr>
+                
+                <h6>Estado Actual:</h6>
+                <p>
+                    {% if usuario.is_superuser %}
+                        <span class="badge badge-success">Superadministrador</span><br>
+                        <small class="text-muted">Tiene acceso completo al sistema</small>
+                    {% else %}
+                        <span class="badge badge-secondary">Usuario estándar</span><br>
+                        <small class="text-muted">Sin permisos especiales de configuración</small>
+                    {% endif %}
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock main_content %}

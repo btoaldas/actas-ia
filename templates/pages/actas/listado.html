@@ -1,0 +1,276 @@
+{% extends 'layouts/base.html' %}
+
+{% block title %} {{ page_title }} - Sistema de Actas Municipales {% endblock title %}
+
+{% block content %}
+<!-- Content Wrapper -->
+<div class="content-wrapper">
+    <!-- Content Header -->
+    <div class="content-header">
+        <div class="container-fluid">
+            <div class="row mb-2">
+                <div class="col-sm-6">
+                    <h1 class="m-0">📋 {{ page_title }}</h1>
+                </div>
+                <div class="col-sm-6">
+                    <ol class="breadcrumb float-sm-right">
+                        <li class="breadcrumb-item"><a href="/">Dashboard</a></li>
+                        <li class="breadcrumb-item"><a href="#">Gestión de Actas</a></li>
+                        <li class="breadcrumb-item active">Listado</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main content -->
+    <section class="content">
+        <div class="container-fluid">
+            
+            <!-- Estadísticas rápidas -->
+            <div class="row">
+                <div class="col-lg-3 col-6">
+                    <div class="small-box bg-info">
+                        <div class="inner">
+                            <h3>{{ actas_demo|length }}</h3>
+                            <p>Actas Registradas</p>
+                        </div>
+                        <div class="icon">
+                            <i class="fas fa-file-alt"></i>
+                        </div>
+                        <a href="{% url 'actas_nueva' %}" class="small-box-footer">
+                            Nueva Acta <i class="fas fa-arrow-circle-right"></i>
+                        </a>
+                    </div>
+                </div>
+                
+                <div class="col-lg-3 col-6">
+                    <div class="small-box bg-success">
+                        <div class="inner">
+                            <h3>2</h3>
+                            <p>Publicadas Este Mes</p>
+                        </div>
+                        <div class="icon">
+                            <i class="fas fa-globe"></i>
+                        </div>
+                        <a href="{% url 'actas_publicacion' %}" class="small-box-footer">
+                            Ver Publicadas <i class="fas fa-arrow-circle-right"></i>
+                        </a>
+                    </div>
+                </div>
+                
+                <div class="col-lg-3 col-6">
+                    <div class="small-box bg-warning">
+                        <div class="inner">
+                            <h3>94.8%</h3>
+                            <p>Precisión de IA</p>
+                        </div>
+                        <div class="icon">
+                            <i class="fas fa-robot"></i>
+                        </div>
+                        <a href="{% url 'actas_transcripcion' %}" class="small-box-footer">
+                            Procesamiento IA <i class="fas fa-arrow-circle-right"></i>
+                        </a>
+                    </div>
+                </div>
+                
+                <div class="col-lg-3 col-6">
+                    <div class="small-box bg-danger">
+                        <div class="inner">
+                            <h3>1</h3>
+                            <p>Pendientes Revisión</p>
+                        </div>
+                        <div class="icon">
+                            <i class="fas fa-clock"></i>
+                        </div>
+                        <a href="#" class="small-box-footer">
+                            Ver Pendientes <i class="fas fa-arrow-circle-right"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tabla de Actas -->
+            <div class="row">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">
+                                <i class="fas fa-list mr-2"></i>
+                                Listado de Actas Municipales
+                            </h3>
+                            <div class="card-tools">
+                                <button type="button" class="btn btn-primary btn-sm" onclick="window.location.href='{% url 'actas_nueva' %}'">
+                                    <i class="fas fa-plus"></i> Nueva Acta
+                                </button>
+                                <button type="button" class="btn btn-secondary btn-sm ml-2">
+                                    <i class="fas fa-filter"></i> Filtros
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="card-body">
+                            <table class="table table-bordered table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Número</th>
+                                        <th>Fecha</th>
+                                        <th>Tipo de Sesión</th>
+                                        <th>Presidente</th>
+                                        <th>Participantes</th>
+                                        <th>Estado</th>
+                                        <th>IA Status</th>
+                                        <th>Confianza</th>
+                                        <th>Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for acta in actas_demo %}
+                                    <tr>
+                                        <td>
+                                            <strong>{{ acta.numero }}</strong>
+                                        </td>
+                                        <td>{{ acta.fecha }}</td>
+                                        <td>
+                                            <span class="badge badge-info">{{ acta.tipo }}</span>
+                                        </td>
+                                        <td>{{ acta.presidente }}</td>
+                                        <td>
+                                            <span class="badge badge-secondary">{{ acta.participantes }} personas</span>
+                                        </td>
+                                        <td>
+                                            {% if acta.estado == 'Publicada' %}
+                                                <span class="badge badge-success">{{ acta.estado }}</span>
+                                            {% elif acta.estado == 'En Revisión' %}
+                                                <span class="badge badge-warning">{{ acta.estado }}</span>
+                                            {% else %}
+                                                <span class="badge badge-secondary">{{ acta.estado }}</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if acta.estado_ia == 'Procesada' %}
+                                                <span class="badge badge-success">
+                                                    <i class="fas fa-check"></i> {{ acta.estado_ia }}
+                                                </span>
+                                            {% elif acta.estado_ia == 'En Proceso' %}
+                                                <span class="badge badge-warning">
+                                                    <i class="fas fa-spinner"></i> {{ acta.estado_ia }}
+                                                </span>
+                                            {% else %}
+                                                <span class="badge badge-secondary">
+                                                    <i class="fas fa-clock"></i> {{ acta.estado_ia }}
+                                                </span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if acta.confianza_ia > 0 %}
+                                                <div class="progress" style="width: 60px;">
+                                                    {% if acta.confianza_ia >= 90 %}
+                                                        <div class="progress-bar bg-success" style="width: {{ acta.confianza_ia }}%"></div>
+                                                    {% elif acta.confianza_ia >= 75 %}
+                                                        <div class="progress-bar bg-warning" style="width: {{ acta.confianza_ia }}%"></div>
+                                                    {% else %}
+                                                        <div class="progress-bar bg-danger" style="width: {{ acta.confianza_ia }}%"></div>
+                                                    {% endif %}
+                                                </div>
+                                                <small>{{ acta.confianza_ia }}%</small>
+                                            {% else %}
+                                                <span class="text-muted">N/A</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <div class="btn-group" role="group">
+                                                <button type="button" class="btn btn-sm btn-outline-primary" title="Ver">
+                                                    <i class="fas fa-eye"></i>
+                                                </button>
+                                                <button type="button" class="btn btn-sm btn-outline-warning" title="Editar">
+                                                    <i class="fas fa-edit"></i>
+                                                </button>
+                                                <button type="button" class="btn btn-sm btn-outline-success" title="Descargar">
+                                                    <i class="fas fa-download"></i>
+                                                </button>
+                                                <button type="button" class="btn btn-sm btn-outline-info" title="Procesar IA">
+                                                    <i class="fas fa-robot"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <div class="card-footer">
+                            <div class="row">
+                                <div class="col-sm-6">
+                                    <small class="text-muted">
+                                        Mostrando {{ actas_demo|length }} de {{ actas_demo|length }} actas
+                                    </small>
+                                </div>
+                                <div class="col-sm-6">
+                                    <nav aria-label="Paginación">
+                                        <ul class="pagination pagination-sm float-right">
+                                            <li class="page-item disabled">
+                                                <span class="page-link">Anterior</span>
+                                            </li>
+                                            <li class="page-item active">
+                                                <span class="page-link">1</span>
+                                            </li>
+                                            <li class="page-item disabled">
+                                                <span class="page-link">Siguiente</span>
+                                            </li>
+                                        </ul>
+                                    </nav>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Información adicional -->
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="card card-info">
+                        <div class="card-header">
+                            <h3 class="card-title">
+                                <i class="fas fa-info-circle"></i> Información del Sistema
+                            </h3>
+                        </div>
+                        <div class="card-body">
+                            <p><strong>🤖 Procesamiento con IA:</strong> El sistema utiliza inteligencia artificial para transcribir automáticamente las grabaciones de audio y extraer información relevante de las actas.</p>
+                            <p><strong>📊 Métricas de Calidad:</strong> La barra de confianza muestra el nivel de precisión del procesamiento automático. Valores sobre 90% indican alta confiabilidad.</p>
+                            <p><strong>🔍 Búsqueda Avanzada:</strong> Utilice los filtros para encontrar actas por fecha, tipo de sesión, participantes o palabras clave.</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-6">
+                    <div class="card card-warning">
+                        <div class="card-header">
+                            <h3 class="card-title">
+                                <i class="fas fa-exclamation-triangle"></i> Acciones Pendientes
+                            </h3>
+                        </div>
+                        <div class="card-body">
+                            <ul class="list-unstyled">
+                                <li class="mb-2">
+                                    <i class="fas fa-clock text-warning mr-2"></i>
+                                    <strong>ACT-2024-003:</strong> Requiere revisión manual
+                                    <button class="btn btn-xs btn-outline-primary ml-2">Revisar</button>
+                                </li>
+                                <li class="mb-2">
+                                    <i class="fas fa-robot text-info mr-2"></i>
+                                    <strong>ACT-2024-002:</strong> Procesamiento IA en curso
+                                    <button class="btn btn-xs btn-outline-info ml-2">Ver Estado</button>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </section>
+</div>
+{% endblock content %}

@@ -1,0 +1,521 @@
+{% extends "layouts/base.html" %}
+{% load static get_attribute %}
+
+{% block extrastyle %}
+
+<style>
+    .hide-show-dropdown {
+        max-height: 350px;
+        overflow-y: scroll;
+    }
+    .page-size .export-csv-img {
+        width: 35px;
+        cursor: pointer;
+    }
+    .export-img {
+        width: 30px;
+    }
+    .modal-header {
+        display: block !important;
+    }
+    .height{
+        height: 40px !important;
+    }
+    .table-row {
+        position: relative;
+    }
+    .action-td {
+        position: absolute;
+        left: 50%;
+        right: 50%;
+        bottom: -10px;
+    }
+    .table-row:hover .data-td {
+        opacity: 0.1;
+    }
+    .table-row:hover .action-td {
+        display: flex !important;
+        gap:3px !important;
+        
+    }
+</style>
+
+{% endblock extrastyle %}
+
+{% block content %}
+<div class="content-wrapper">
+    <div class="content">
+        <div class="container-fluid py-3">
+      
+                <div class="row d-flex justify-content-between mt-4">
+                    <form class="search">
+                        <div class="d-flex gap-3 align-items-center">
+                            <div class="mr-3">
+                                <input type="text" placeholder="Search for Items" name="search" id="" class="form-control">
+                            </div>
+                            <button type="submit" class="btn btn-primary  w-25">
+                                <i class="fas fa-search"></i>
+                            </button>
+                        </div>
+                    </form>
+
+                    <div class="align-items-center">
+                        <form method="post" class="mr-3">
+                            {% csrf_token %}
+                            <select onchange="this.form.submit()" name="active_model" class="custom-select">
+                                {% for key in settings.DYNAMIC_DATATB %}
+                                    <option {% if request.session.active_model == key %} selected {% endif %} value="{{ key }}">{{ key }}</option>
+                                {% endfor %}
+                            </select>
+                        </form>                        
+                        <form method="post">
+                            <div class="dropdown">
+                                <button class="btn btn-secondary dropdown-toggle" type="button" data-toggle="dropdown" aria-expanded="false">
+                                    Hide / Show Column
+                                </button>
+                                <div id="dropdownDefaultCheckbox">
+                                    <ul class="dropdown-menu hide-show-dropdown px-3">
+                                        {% for field_name in field_names %}
+                                            <div class="form-check mb-2">
+                                                <input class="form-check-input" {% if field_name.value %} checked {% endif %} type="checkbox" data-target="{{ field_name.key }}" value="" id="checkbox-item-{{ field_name.id }}">
+                                                <label class="form-check-label" for="checkbox-item-{{ field_name.id }}">
+                                                    {{ field_name.key }}
+                                                </label>
+                                            </div>
+                                        {% endfor %}
+                                    </ul>
+                                </div>
+                            </div>
+                        </form>
+                        <!--
+                        {{ request.session.active_model }}
+                         -->
+                    </div>
+                    <div class="page-size form-group">
+                        <div class="d-flex ">
+                            <form method="post" class="mr-3">
+                                {% csrf_token %}
+                                <select onchange="getPageItems(this)" name="" id="" class="custom-select">
+                                    <option {% if items == 5 %} selected {% endif %} value="5">5 Items</option>
+                                    <option {% if items == 10 %} selected {% endif %} value="10">10 Items</option>
+                                    <option {% if items == 15 %} selected {% endif %} value="15">15 Items</option>
+                                    <option {% if items == 25 %} selected {% endif %} value="25">25 Items</option>
+                                    <option {% if items == 50 %} selected {% endif %} value="50">50 Items</option>
+                                    <option {% if items == 100 %} selected {% endif %} value="100">100 Items</option>
+                                </select>
+                            </form>
+                            <div class="d-flex mr-3">
+                                <a data-toggle="modal" data-target="#exportCSV">
+                                    <img class="export-csv-img " src="{% static "img/csv.png" %}" alt="img">
+                                </a>
+                            </div>
+                            <div>
+                                <button data-toggle="modal" data-target="#addItem" type="button" class="btn btn-primary p-0 px-3 py-2 ">
+                                    Add
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+           
+                <div class="mb-4">
+                    <form action="{% url "create_filter" %}" method="post">
+                        {% csrf_token %}
+            
+                            <div class="d-flex align-items-center mb-3">
+                                <h3 class="mr-4 ">Filters</h3>
+                                <button id="addButton" type="button" class="btn btn-primary">Add</button>
+                            </div>
+                            <div class="mb-3" id="inputContainer">
+                                {% if filter_instance %}
+                                    {% for filter_data in filter_instance %}
+                                    <div class="d-flex gap-3 mb-3">
+                                        <div class="d-flex">
+                                            <select name="key" id="" class="custom-select rounded mr-3">
+                                                {% for field in db_field_names %}
+                                                    <option {% if filter_data.key == field %}selected{% endif %} value="{{ field }}">{{ field }}</option>
+                                                {% endfor %}
+                                            </select>
+                                            <input type="text" value="{{ filter_data.value }}" placeholder="Enter value" name="value" id="" class="form-control rounded mr-3">
+                                        </div>
+                                        <a href="{% url "delete_filter" filter_data.id %}" class="remove-button btn btn-danger">X</a>
+                                    </div>
+                                    {% endfor %}
+                                {% endif %}
+                            </div>
+                            <button id="submitButton" type="submit" {% if not filter_instance %} style="display: none;" {% endif %} class="btn btn-success">Submit</button>
+                        </div>
+                    </form>
+                <div class="card">
+                    <div class="card-header">
+                        <h5>Zero Configuration</h5>
+                        <small>DataTables has most features enabled by default, so all you need to do to
+                          use it with your own tables is to call the construction function.</small>
+                    </div>
+                    <div class="card-body">
+                        <div class="dt-responsive table-responsive">
+                            <table class="table">
+                                <thead>
+                                  <tr>
+                                    {% for field in db_field_names %}
+                                        <th id="th_{{ field }}" scope="col">{{ field }}</th>
+                                    {% endfor %}
+
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                    {% for dbItem in dbItems %}
+                                    <tr class="align-middle table-row">
+                                        {% for field_name in db_field_names %}
+                                        <td class="td_{{ field_name }} data-td">{{ dbItem|getattribute:field_name }}</td>
+                                        {% endfor %}
+            
+                                        {% if request.user.is_authenticated %}
+                                        <td class="d-none action-td" >
+                                            <a data-toggle="modal" data-target="#editSales-{{dbItem.ID}}" class="btn btn-primary btn-sm p-0 px-3 py-2 " href="#"><i class="fas fa-edit"></i></a>
+                                            <a data-toggle="modal" data-target="#deleteSales-{{dbItem.ID}}" class="btn btn-danger btn-sm p-0 px-3 py-2 " href="#"><i class="fas fa-trash-alt"></i></a>
+                                        </td>
+                                        {% else %}
+                                        <td class="d-none action-td">
+                                            <a data-toggle="modal" data-target="#viewSales-{{dbItem.ID}}" class="btn btn-primary btn-sm p-0 px-3 py-2 " href="#"><i class="fas fa-eye"></i></a>
+                                        </td>
+                                        {% endif %}
+                                    </tr>
+            
+                                    <!-- Edit Item -->
+                                    <div class="modal fade" id="editSales-{{dbItem.ID}}" tabindex="-1" aria-labelledby="editSalesLabel" aria-hidden="true">
+                                        <div class="modal-dialog modal-dialog-centered modal-xl">
+                                            <div class="modal-content">
+                                                <div class="modal-header">
+                                                    <div class="d-flex justify-content-between">
+                                                        <div>
+                                                            <h1 class="modal-title fs-5" id="editSalesLabel">Edit Item</h1>
+                                                        </div>
+                                                        <div>
+                                                            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                                                <span aria-hidden="true">&times;</span>
+                                                              </button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="modal-body">
+                                                    <form action="{% url "update" dbItem.ID %}" method="post">
+                                                        {% csrf_token %}
+                                                        
+                                                        <div class="row">
+                                                            {% for field_name in db_field_names %}
+                                                            <div class="col-md-6">
+                                                                <div class="form-group">
+                                                                    <label for="{{ field_name }}" class="form-label">{{ field_name|title }}</label>
+                                                                    {% if field_name == 'PurchaseDate' %}
+                                                                    <input type="date" name="{{ field_name }}" id="{{ field_name }}" class="form-control border ps-1 rounded" value="{{ dbItem|getattribute:field_name|date:'Y-m-d' }}">
+                                                                    {% else %}
+                                                                    <input type="text" 
+                                                                            {% if field_name == 'ID' %} readonly {% endif %} 
+                                                                           value="{{ dbItem|getattribute:field_name }}" name="{{ field_name }}" id="{{ field_name }}" class="form-control border ps-1 rounded">
+                                                                    {% endif %}
+                                                                </div>
+                                                            </div>
+                                                            {% endfor %}
+                                                        </div>
+                                                        <div>
+                                                            <button type="submit" class="btn btn-primary">Update</button>
+                                                        </div>
+                                                    </form>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+            
+                                    <!-- Delete Item -->
+                                    <div class="modal fade" id="deleteSales-{{dbItem.ID}}" tabindex="-1" aria-labelledby="deleteSalesLabel" aria-hidden="true">
+                                        <div class="modal-dialog">
+                                          <div class="modal-content">
+                                            <div class="modal-header">
+                                              <div class="d-flex justify-content-between">
+                                                <div>
+                                                    <h1 class="modal-title fs-5" id="deleteSalesLabel">Delete Item</h1>
+                                                </div>
+                                                <div>
+                                                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                                        <span aria-hidden="true">&times;</span>
+                                                      </button>
+                                                </div>
+                                              </div>
+                                            </div>
+                                            <div class="modal-body">
+                                              <h5>Please confirm or Cancel (Escape Key)</h5>
+                                            </div>
+                                            <div class="modal-footer">
+                                              <a href="{% url "delete" dbItem.ID %}" class="btn btn-danger">Delete</a>
+                                            </div>
+                                          </div>
+                                        </div>
+                                      </div>
+
+                                    <!-- View Sales -->
+                                    <div class="modal fade" id="viewSales-{{dbItem.ID}}" tabindex="-1" aria-labelledby="viweSalesLabel" aria-hidden="true">
+                                        <div class="modal-dialog modal-dialog-centered modal-xl">
+                                            <div class="modal-content">
+                                                <div class="modal-header">
+                                                    <div class="d-flex justify-content-between">
+                                                        <div>
+                                                            <h1 class="modal-title fs-5" id="viewSalesLabel">View Item</h1>
+                                                        </div>
+                                                        <div>
+                                                            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                                                <span aria-hidden="true">&times;</span>
+                                                              </button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="modal-body">
+                                                    <form action="{% url "update" dbItem.ID %}" method="post">
+                                                        {% csrf_token %}
+                                                        
+                                                        <div class="row">
+                                                            {% for field_name in db_field_names %}
+                                                            <div class="col-md-6">
+                                                                <div class="form-group">
+                                                                    <label for="{{ field_name }}" class="form-label">{{ field_name|title }}</label>
+                                                                    <input readonly type="text" value="{{ dbItem|getattribute:field_name }}" name="{{ field_name }}" id="{{ field_name }}" class="form-control">
+                                                                </div>
+                                                            </div>
+                                                            {% endfor %}
+                                                        </div>
+                                                    </form>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+            
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    {% if dbItems.has_other_pages %}
+                    <nav aria-label="Page navigation example">
+                        <ul class="pagination justify-content-center">
+                            {% if dbItems.has_previous %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ dbItems.previous_page_number }}" aria-label="Previous">
+                                        <span aria-hidden="true">&laquo;</span>
+                                        <span class="sr-only">Previous</span>
+                                    </a>
+                                </li>
+                            {% endif %}
+                            {% for n in dbItems.paginator.page_range %}
+                                {% if dbItems.number == n %}
+                                    <li class="page-item active"><a class="page-link">{{ n }}</a></li>
+                                {% elif  n > dbItems.number|add:'-3' and n < dbItems.number|add:'3' %}
+                                    <li class="page-item"><a class="page-link" href="?page={{n}}">{{ n }}</a></li>
+                                {% endif %}
+                            {% endfor %}
+                            {% if dbItems.has_next %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ dbItems.next_page_number }}" aria-label="Next">
+                                        <span aria-hidden="true">&raquo;</span>
+                                        <span class="sr-only">Next</span>
+                                    </a>
+                                </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Export as CSV -->
+            <div class="modal fade" id="exportCSV" tabindex="-1" aria-labelledby="exportCSVLabel" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered modal-xl">
+                  <div class="modal-content">
+                    <div class="modal-header">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <h1 class="modal-title fs-5" id="exportCSVLabel">Export as CSV</h1>
+                            </div>
+                            <div>
+                                {% if request.GET.order_by or request.GET.search %}
+                                    {% with order_by=request.GET.order_by search=request.GET.search %}
+                                        <a href="{% url 'export_csv' %}?{% if order_by %}order_by={{ order_by }}{% endif %}{% if order_by and search %}&{% endif %}{% if search %}search={{ search }}{% endif %}">
+                                           <img class="export-img" src="{% static 'img/export.png' %}" alt="">
+                                        </a>
+                                    {% endwith %}
+                                {% else %}
+                                    <a href="{% url 'export_csv' %}">
+                                        <img class="export-img" src="{% static 'img/export.png' %}" alt="">
+                                    </a>
+                                {% endif %}
+                            </div>
+                            <div>
+                                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                    <span aria-hidden="true">&times;</span>
+                                  </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-body">
+                      {% include "includes/items-table.html" with items=dbItems %}
+                    </div>
+                  </div>
+                </div>
+            </div>
+            
+            <!-- Add Item -->
+            <div class="modal fade" id="addItem" tabindex="-1" aria-labelledby="addItemLabel" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered modal-xl">
+                  <div class="modal-content">
+                    <div class="modal-header">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <h1 class="modal-title fs-5" id="addItemLabel">Add Item</h1>
+                            </div>
+                            <div>
+                                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                    <span aria-hidden="true">&times;</span>
+                                  </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-body">
+                      <form method="post" class="row">
+                        {% csrf_token %}
+            
+                        {% for field in form %}
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="" class="form-label">{{ field.label }}</label>
+                                {{ field }}
+                            </div>
+                        </div>
+                        {% endfor %}
+                        <div>
+                            <button type="submit" class="btn btn-primary">Save</button>
+                        </div>
+                      </form>
+                    </div>
+                  </div>
+                </div>
+            </div>
+    </div>
+</div>
+
+
+{% endblock content %}
+
+{% block extra_scripts %}
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+      var checkboxes = document.querySelectorAll('#dropdownDefaultCheckbox input[type="checkbox"]');
+      
+      checkboxes.forEach(function (checkbox) {
+  
+        var targetColumnId = checkbox.getAttribute('data-target');
+        var targetColumn = document.getElementById('th_' + targetColumnId);
+        var exportTargetColumn = document.getElementById('th_' + targetColumnId + '_export');
+        var targetDataCells = document.querySelectorAll('.td_' + targetColumnId);
+  
+        if (checkbox.checked) {
+          targetColumn.style.display = 'none';
+          exportTargetColumn.style.display = 'none';
+          targetDataCells.forEach(function (dataCell) {
+            dataCell.style.display = 'none';
+          });
+        }
+  
+        checkbox.addEventListener('change', function () {
+          var targetColumnId = this.getAttribute('data-target');
+          var targetColumn = document.getElementById('th_' + targetColumnId);
+          var exportTargetColumn = document.getElementById('th_' + targetColumnId + '_export');
+          var targetDataCells = document.querySelectorAll('.td_' + targetColumnId);
+          
+          if (this.checked) {
+            targetColumn.style.display = 'none';
+            exportTargetColumn.style.display = 'none';
+            targetDataCells.forEach(function (dataCell) {
+              dataCell.style.display = 'none';
+            });
+          } else {
+            targetColumn.style.display = '';
+            exportTargetColumn.style.display = '';
+            targetDataCells.forEach(function (dataCell) {
+              dataCell.style.display = '';
+            });
+          }
+  
+          fetch('/tables/create-hide-show-items/', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/x-www-form-urlencoded',
+              'X-CSRFToken': '{{ csrf_token }}',
+            },
+            body: JSON.stringify({
+              key: targetColumnId,
+              value: this.checked
+            })
+          })
+  
+        });
+      });
+    });
+</script>
+
+<script>
+    function getPageItems(selectObject) {
+      var value = selectObject.value;
+    
+      fetch('/tables/create-page-items/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'X-CSRFToken': '{{ csrf_token }}',
+        },
+        body: `items=${value}`
+      })
+      .then(response => {
+        location.reload()
+      })
+    }
+</script>
+
+<script>
+    document.getElementById('addButton').addEventListener('click', function() {
+      var fieldNames = {{ db_field_names|safe }};
+  
+      var template = `
+        <div class="input-container d-flex align-items-center gap-3 mb-3">
+          <div class="d-flex">
+            <select name="key" class="custom-select rounded mr-3">
+              ${fieldNames.map(option => `<option value="${option}">${option}</option>`).join('')}
+            </select>
+            <input name="value" class="form-control rounded mr-3" type="text" placeholder="Enter value">
+          </div>
+          <button class="remove-button btn btn-danger" onclick="removeInputContainer(this)">X</button>
+        </div>
+      `;
+  
+      var tempDiv = document.createElement('div');
+      tempDiv.innerHTML = template;
+  
+      document.getElementById('inputContainer').appendChild(tempDiv);
+  
+      document.getElementById('submitButton').style.display = 'inline-block';
+    });
+  
+    function removeInputContainer(element) {
+      var inputContainer = element.closest('.input-container');
+  
+      inputContainer.remove();
+      
+      var inputContainers = document.getElementsByClassName('input-container');
+      if (inputContainers.length === 0) {
+        document.getElementById('submitButton').style.display = 'none';
+      }
+    }
+  
+  </script>
+
+{% endblock extra_scripts %}

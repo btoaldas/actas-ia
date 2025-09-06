@@ -1,0 +1,553 @@
+{% extends 'config_system/base.html' %}
+{% load static %}
+
+{% block title %}Gestión de Perfiles{% endblock %}
+
+{% block extra_css %}
+<style>
+.profile-card {
+    transition: transform 0.2s ease-in-out;
+    border-left: 4px solid #007bff;
+}
+
+.profile-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.role-badge {
+    font-size: 1rem;
+    padding: 8px 16px;
+}
+
+.stats-card {
+    background: linear-gradient(45deg, #007bff, #28a745);
+    color: white;
+    border-radius: 15px;
+}
+
+.search-card {
+    background: #f8f9fa;
+    border-radius: 15px;
+    padding: 20px;
+    margin-bottom: 20px;
+}
+
+.profile-avatar {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: linear-gradient(45deg, #007bff, #28a745);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1.5rem;
+    margin-right: 15px;
+}
+
+.action-buttons .btn {
+    margin: 2px;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="content-wrapper">
+    <div class="content-header">
+        <div class="container-fluid">
+            <div class="row mb-2">
+                <div class="col-sm-6">
+                    <h1 class="m-0">
+                        <i class="fas fa-id-card"></i> Gestión de Perfiles
+                    </h1>
+                </div>
+                <div class="col-sm-6">
+                    <ol class="breadcrumb float-sm-right">
+                        <li class="breadcrumb-item"><a href="{% url 'config_system:dashboard' %}">Dashboard</a></li>
+                        <li class="breadcrumb-item active">Perfiles</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="content">
+        <div class="container-fluid">
+            <!-- Estadísticas -->
+            <div class="row mb-4">
+                <div class="col-lg-3 col-6">
+                    <div class="small-box bg-info">
+                        <div class="inner">
+                            <h3>{{ total_perfiles }}</h3>
+                            <p>Total Perfiles</p>
+                        </div>
+                        <div class="icon">
+                            <i class="fas fa-id-card"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-6">
+                    <div class="small-box bg-success">
+                        <div class="inner">
+                            <h3>{{ perfiles_activos }}</h3>
+                            <p>Perfiles Activos</p>
+                        </div>
+                        <div class="icon">
+                            <i class="fas fa-user-check"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-6">
+                    <div class="small-box bg-warning">
+                        <div class="inner">
+                            <h3>{{ perfiles_inactivos }}</h3>
+                            <p>Perfiles Inactivos</p>
+                        </div>
+                        <div class="icon">
+                            <i class="fas fa-user-times"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-6">
+                    <div class="small-box bg-danger">
+                        <div class="inner">
+                            <h3>{{ perfiles_sin_usuario }}</h3>
+                            <p>Sin Usuario</p>
+                        </div>
+                        <div class="icon">
+                            <i class="fas fa-user-slash"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Búsqueda y filtros -->
+            <div class="search-card">
+                <form method="get" class="form-inline">
+                    <div class="row w-100">
+                        <div class="col-md-3">
+                            <div class="form-group w-100">
+                                <label for="buscar" class="sr-only">Buscar</label>
+                                <input type="text" name="buscar" class="form-control w-100" 
+                                       placeholder="Buscar perfiles..." 
+                                       value="{{ request.GET.buscar }}">
+                            </div>
+                        </div>
+                        <div class="col-md-2">
+                            <div class="form-group w-100">
+                                <select name="rol" class="form-control w-100">
+                                    <option value="">Todos los roles</option>
+                                    {% for rol_key, rol_name in roles %}
+                                    <option value="{{ rol_key }}" {% if request.GET.rol == rol_key %}selected{% endif %}>
+                                        {{ rol_name }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-2">
+                            <div class="form-group w-100">
+                                <select name="departamento" class="form-control w-100">
+                                    <option value="">Todos los departamentos</option>
+                                    {% for dept in departamentos %}
+                                    <option value="{{ dept }}" {% if request.GET.departamento == dept %}selected{% endif %}>
+                                        {{ dept }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-2">
+                            <div class="form-group w-100">
+                                <select name="estado" class="form-control w-100">
+                                    <option value="">Todos los estados</option>
+                                    <option value="activo" {% if request.GET.estado == 'activo' %}selected{% endif %}>Activos</option>
+                                    <option value="inactivo" {% if request.GET.estado == 'inactivo' %}selected{% endif %}>Inactivos</option>
+                                    <option value="sin_usuario" {% if request.GET.estado == 'sin_usuario' %}selected{% endif %}>Sin Usuario</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-search"></i> Buscar
+                            </button>
+                            <a href="{% url 'config_system:perfiles_list' %}" class="btn btn-secondary ml-2">
+                                <i class="fas fa-times"></i> Limpiar
+                            </a>
+                            <a href="{% url 'config_system:perfil_create' %}" class="btn btn-success ml-2">
+                                <i class="fas fa-plus"></i> Nuevo Perfil
+                            </a>
+                        </div>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Lista de perfiles -->
+            <div class="row">
+                {% for perfil in perfiles %}
+                <div class="col-md-6 col-lg-4 mb-4">
+                    <div class="card profile-card h-100">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h6 class="mb-0">
+                                <span class="badge role-badge {% if perfil.rol == 'superadmin' %}badge-danger{% elif perfil.rol == 'admin' %}badge-warning{% elif perfil.rol == 'supervisor' %}badge-info{% else %}badge-secondary{% endif %}">
+                                    {{ perfil.get_rol_display }}
+                                </span>
+                            </h6>
+                            <div class="dropdown">
+                                <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" 
+                                        data-toggle="dropdown">
+                                    <i class="fas fa-ellipsis-v"></i>
+                                </button>
+                                <div class="dropdown-menu dropdown-menu-right">
+                                    <a class="dropdown-item" href="{% url 'config_system:perfil_detail' perfil.pk %}">
+                                        <i class="fas fa-eye"></i> Ver Detalles
+                                    </a>
+                                    <a class="dropdown-item" href="{% url 'config_system:perfil_edit' perfil.pk %}">
+                                        <i class="fas fa-edit"></i> Editar
+                                    </a>
+                                    {% if perfil.permisos_detallados %}
+                                    <a class="dropdown-item" href="{% url 'config_system:permisos_edit' perfil.permisos_detallados.pk %}">
+                                        <i class="fas fa-key"></i> Permisos
+                                    </a>
+                                    {% endif %}
+                                    <div class="dropdown-divider"></div>
+                                    <a class="dropdown-item text-warning" href="#" 
+                                       onclick="togglePerfilStatus({{ perfil.pk }})">
+                                        {% if perfil.activo %}
+                                            <i class="fas fa-user-slash"></i> Desactivar
+                                        {% else %}
+                                            <i class="fas fa-user-check"></i> Activar
+                                        {% endif %}
+                                    </a>
+                                    <a class="dropdown-item text-danger" href="{% url 'config_system:perfil_delete' perfil.pk %}"
+                                       onclick="return confirm('¿Estás seguro de eliminar este perfil?')">
+                                        <i class="fas fa-trash"></i> Eliminar
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="card-body">
+                            <div class="d-flex align-items-center mb-3">
+                                <div class="profile-avatar">
+                                    {% if perfil.usuario %}
+                                        {{ perfil.usuario.first_name.0|default:"U" }}{{ perfil.usuario.last_name.0|default:"" }}
+                                    {% else %}
+                                        <i class="fas fa-user-slash"></i>
+                                    {% endif %}
+                                </div>
+                                <div>
+                                    {% if perfil.usuario %}
+                                    <h6 class="mb-1">{{ perfil.usuario.first_name }} {{ perfil.usuario.last_name }}</h6>
+                                    <p class="text-muted mb-0">@{{ perfil.usuario.username }}</p>
+                                    {% else %}
+                                    <h6 class="mb-1 text-muted">Sin usuario asignado</h6>
+                                    <p class="text-muted mb-0">Perfil disponible</p>
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            <div class="row text-center">
+                                <div class="col-6">
+                                    <h6 class="text-primary">
+                                        {% if perfil.departamento %}
+                                            {{ perfil.departamento|truncatechars:15 }}
+                                        {% else %}
+                                            <span class="text-muted">N/A</span>
+                                        {% endif %}
+                                    </h6>
+                                    <small class="text-muted">Departamento</small>
+                                </div>
+                                <div class="col-6">
+                                    <h6 class="text-success">
+                                        {% if perfil.cargo %}
+                                            {{ perfil.cargo|truncatechars:15 }}
+                                        {% else %}
+                                            <span class="text-muted">N/A</span>
+                                        {% endif %}
+                                    </h6>
+                                    <small class="text-muted">Cargo</small>
+                                </div>
+                            </div>
+
+                            {% if perfil.telefono %}
+                            <div class="mt-2">
+                                <small class="text-muted">
+                                    <i class="fas fa-phone"></i> {{ perfil.telefono }}
+                                </small>
+                            </div>
+                            {% endif %}
+
+                            <div class="mt-3">
+                                <small class="text-muted">
+                                    <i class="fas fa-calendar"></i> 
+                                    Creado: {{ perfil.fecha_creacion|date:"d/m/Y" }}
+                                </small>
+                            </div>
+
+                            <!-- Estado y permisos -->
+                            <div class="mt-3">
+                                {% if perfil.activo %}
+                                    <span class="badge badge-success">Activo</span>
+                                {% else %}
+                                    <span class="badge badge-danger">Inactivo</span>
+                                {% endif %}
+
+                                {% if not perfil.usuario %}
+                                    <span class="badge badge-warning">Sin Usuario</span>
+                                {% endif %}
+
+                                {% if perfil.permisos_detallados %}
+                                    <span class="badge badge-info">Con Permisos</span>
+                                {% else %}
+                                    <span class="badge badge-secondary">Sin Permisos</span>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="card-footer">
+                            <div class="action-buttons text-center">
+                                <a href="{% url 'config_system:perfil_detail' perfil.pk %}" 
+                                   class="btn btn-sm btn-outline-primary" title="Ver detalles">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                                <a href="{% url 'config_system:perfil_edit' perfil.pk %}" 
+                                   class="btn btn-sm btn-outline-warning" title="Editar">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                {% if perfil.permisos_detallados %}
+                                <a href="{% url 'config_system:permisos_edit' perfil.permisos_detallados.pk %}" 
+                                   class="btn btn-sm btn-outline-success" title="Gestionar permisos">
+                                    <i class="fas fa-key"></i>
+                                </a>
+                                {% endif %}
+                                <button type="button" class="btn btn-sm {% if perfil.activo %}btn-outline-danger{% else %}btn-outline-success{% endif %}"
+                                        onclick="togglePerfilStatus({{ perfil.pk }})" 
+                                        title="{% if perfil.activo %}Desactivar{% else %}Activar{% endif %}">
+                                    {% if perfil.activo %}
+                                        <i class="fas fa-user-slash"></i>
+                                    {% else %}
+                                        <i class="fas fa-user-check"></i>
+                                    {% endif %}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-body text-center">
+                            <i class="fas fa-id-card fa-3x text-muted mb-3"></i>
+                            <h5 class="text-muted">No se encontraron perfiles</h5>
+                            <p class="text-muted">
+                                {% if request.GET.buscar or request.GET.rol or request.GET.departamento or request.GET.estado %}
+                                    No hay perfiles que coincidan con los filtros aplicados.
+                                {% else %}
+                                    Aún no hay perfiles creados en el sistema.
+                                {% endif %}
+                            </p>
+                            <a href="{% url 'config_system:perfil_create' %}" class="btn btn-primary">
+                                <i class="fas fa-plus"></i> Crear Primer Perfil
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- Paginación -->
+            {% if is_paginated %}
+            <div class="row">
+                <div class="col-12">
+                    <nav aria-label="Navegación de perfiles">
+                        <ul class="pagination justify-content-center">
+                            {% if page_obj.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?{% if request.GET.buscar %}buscar={{ request.GET.buscar }}&{% endif %}{% if request.GET.rol %}rol={{ request.GET.rol }}&{% endif %}{% if request.GET.departamento %}departamento={{ request.GET.departamento }}&{% endif %}{% if request.GET.estado %}estado={{ request.GET.estado }}&{% endif %}page={{ page_obj.previous_page_number }}">
+                                    <i class="fas fa-chevron-left"></i> Anterior
+                                </a>
+                            </li>
+                            {% endif %}
+
+                            {% for num in page_obj.paginator.page_range %}
+                            {% if page_obj.number == num %}
+                            <li class="page-item active">
+                                <span class="page-link">{{ num }}</span>
+                            </li>
+                            {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                            <li class="page-item">
+                                <a class="page-link" href="?{% if request.GET.buscar %}buscar={{ request.GET.buscar }}&{% endif %}{% if request.GET.rol %}rol={{ request.GET.rol }}&{% endif %}{% if request.GET.departamento %}departamento={{ request.GET.departamento }}&{% endif %}{% if request.GET.estado %}estado={{ request.GET.estado }}&{% endif %}page={{ num }}">{{ num }}</a>
+                            </li>
+                            {% endif %}
+                            {% endfor %}
+
+                            {% if page_obj.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?{% if request.GET.buscar %}buscar={{ request.GET.buscar }}&{% endif %}{% if request.GET.rol %}rol={{ request.GET.rol }}&{% endif %}{% if request.GET.departamento %}departamento={{ request.GET.departamento }}&{% endif %}{% if request.GET.estado %}estado={{ request.GET.estado }}&{% endif %}page={{ page_obj.next_page_number }}">
+                                    Siguiente <i class="fas fa-chevron-right"></i>
+                                </a>
+                            </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Acciones masivas -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <i class="fas fa-cogs"></i> Acciones Masivas
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p class="mb-2"><strong>Gestión por rol:</strong></p>
+                            <div class="btn-group">
+                                <button type="button" class="btn btn-outline-primary btn-sm" 
+                                        onclick="aplicarPermisosPorRol('operador')">
+                                    Configurar Operadores
+                                </button>
+                                <button type="button" class="btn btn-outline-info btn-sm" 
+                                        onclick="aplicarPermisosPorRol('supervisor')">
+                                    Configurar Supervisores
+                                </button>
+                                <button type="button" class="btn btn-outline-warning btn-sm" 
+                                        onclick="aplicarPermisosPorRol('admin')">
+                                    Configurar Administradores
+                                </button>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <p class="mb-2"><strong>Mantenimiento:</strong></p>
+                            <div class="btn-group">
+                                <button type="button" class="btn btn-outline-success btn-sm" 
+                                        onclick="activarTodosPerfiles()">
+                                    Activar Todos
+                                </button>
+                                <button type="button" class="btn btn-outline-danger btn-sm" 
+                                        onclick="desactivarInactivos()">
+                                    Limpiar Inactivos
+                                </button>
+                                <a href="{% url 'config_system:dashboard' %}" class="btn btn-outline-secondary btn-sm">
+                                    <i class="fas fa-chart-bar"></i> Ver Estadísticas
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function togglePerfilStatus(perfilId) {
+    if (!confirm('¿Estás seguro de que quieres cambiar el estado de este perfil?')) {
+        return;
+    }
+    
+    $.ajax({
+        url: '{% url "config_system:perfil_toggle_active" 0 %}'.replace('0', perfilId),
+        method: 'POST',
+        data: {
+            'csrfmiddlewaretoken': '{{ csrf_token }}'
+        },
+        success: function(response) {
+            if (response.success) {
+                location.reload();
+            } else {
+                alert('Error al cambiar el estado del perfil');
+            }
+        },
+        error: function() {
+            alert('Error en la conexión');
+        }
+    });
+}
+
+function aplicarPermisosPorRol(rol) {
+    if (!confirm('¿Aplicar permisos estándar a todos los perfiles de tipo ' + rol + '?')) {
+        return;
+    }
+    
+    $.ajax({
+        url: '{% url "config_system:permisos_reset_por_rol" %}',
+        method: 'POST',
+        data: {
+            'rol': rol,
+            'csrfmiddlewaretoken': '{{ csrf_token }}'
+        },
+        success: function(response) {
+            if (response.success) {
+                alert('Permisos aplicados correctamente');
+                location.reload();
+            } else {
+                alert('Error al aplicar permisos: ' + response.message);
+            }
+        },
+        error: function() {
+            alert('Error en la conexión');
+        }
+    });
+}
+
+function activarTodosPerfiles() {
+    if (!confirm('¿Activar todos los perfiles del sistema?')) {
+        return;
+    }
+    
+    $.ajax({
+        url: '{% url "config_system:aplicar_permisos_masivo" %}',
+        method: 'POST',
+        data: {
+            'accion': 'activar_todos',
+            'csrfmiddlewaretoken': '{{ csrf_token }}'
+        },
+        success: function(response) {
+            if (response.success) {
+                alert('Todos los perfiles han sido activados');
+                location.reload();
+            } else {
+                alert('Error: ' + response.message);
+            }
+        },
+        error: function() {
+            alert('Error en la conexión');
+        }
+    });
+}
+
+function desactivarInactivos() {
+    if (!confirm('¿Desactivar perfiles sin actividad reciente?')) {
+        return;
+    }
+    
+    $.ajax({
+        url: '{% url "config_system:aplicar_permisos_masivo" %}',
+        method: 'POST',
+        data: {
+            'accion': 'limpiar_inactivos',
+            'csrfmiddlewaretoken': '{{ csrf_token }}'
+        },
+        success: function(response) {
+            if (response.success) {
+                alert('Perfiles inactivos procesados: ' + response.message);
+                location.reload();
+            } else {
+                alert('Error: ' + response.message);
+            }
+        },
+        error: function() {
+            alert('Error en la conexión');
+        }
+    });
+}
+</script>
+{% endblock %}

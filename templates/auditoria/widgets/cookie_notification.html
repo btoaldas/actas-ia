@@ -1,0 +1,243 @@
+<!-- Notificación de Cookies -->
+<div id="cookie-notification" style="display: none;">
+    <div style="
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+        color: white;
+        padding: 20px;
+        text-align: center;
+        z-index: 10000;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+        border-bottom: 3px solid #3498db;
+    ">
+        <div style="max-width: 1200px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 15px;">
+            <div style="flex: 1; margin-right: 20px; text-align: left;">
+                <div style="font-size: 18px; font-weight: bold; margin-bottom: 5px;">
+                    🍪 <span style="color: #3498db;">Sistema de Actas Municipales</span> utiliza cookies
+                </div>
+                <div style="font-size: 14px; line-height: 1.4; opacity: 0.9;">
+                    Utilizamos cookies esenciales para el funcionamiento del sistema, autenticación de usuarios, 
+                    y para mejorar tu experiencia de navegación. Al continuar usando este sitio, 
+                    aceptas nuestro uso de cookies.
+                </div>
+            </div>
+            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                <button onclick="acceptCookies()" style="
+                    background: #27ae60; 
+                    border: none; 
+                    color: white; 
+                    padding: 12px 25px; 
+                    border-radius: 8px;
+                    cursor: pointer;
+                    font-weight: bold;
+                    font-size: 14px;
+                    transition: all 0.3s ease;
+                " onmouseover="this.style.background='#2ecc71'" onmouseout="this.style.background='#27ae60'">
+                    ✓ Aceptar Cookies
+                </button>
+                <button onclick="showCookieDetails()" style="
+                    background: transparent; 
+                    border: 2px solid #3498db; 
+                    color: #3498db; 
+                    padding: 10px 20px; 
+                    border-radius: 8px;
+                    cursor: pointer;
+                    font-size: 14px;
+                    transition: all 0.3s ease;
+                " onmouseover="this.style.background='#3498db'; this.style.color='white'" onmouseout="this.style.background='transparent'; this.style.color='#3498db'">
+                    ℹ️ Más Información
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Información Detallada de Cookies -->
+<div id="cookie-details-modal" style="display: none;">
+    <div style="
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0,0,0,0.7);
+        z-index: 10001;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+    " onclick="hideCookieDetails()">
+        <div style="
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            max-width: 600px;
+            max-height: 80vh;
+            overflow-y: auto;
+            position: relative;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        " onclick="event.stopPropagation()">
+            <button onclick="hideCookieDetails()" style="
+                position: absolute;
+                top: 15px;
+                right: 15px;
+                background: #e74c3c;
+                border: none;
+                color: white;
+                width: 30px;
+                height: 30px;
+                border-radius: 50%;
+                cursor: pointer;
+                font-size: 16px;
+            ">✕</button>
+            
+            <h2 style="color: #2c3e50; margin-top: 0; margin-bottom: 20px;">
+                🍪 Información sobre Cookies
+            </h2>
+            
+            <div style="color: #34495e; line-height: 1.6;">
+                <h3 style="color: #27ae60; border-bottom: 2px solid #27ae60; padding-bottom: 5px;">
+                    ✅ Cookies Esenciales (Requeridas)
+                </h3>
+                <ul style="margin-bottom: 20px;">
+                    <li><strong>actas_sessionid:</strong> Identifica tu sesión de usuario activa</li>
+                    <li><strong>actas_csrftoken:</strong> Protección contra ataques de falsificación de solicitudes</li>
+                    <li><strong>Cookies de autenticación:</strong> Mantienen tu sesión iniciada de forma segura</li>
+                </ul>
+                
+                <h3 style="color: #3498db; border-bottom: 2px solid #3498db; padding-bottom: 5px;">
+                    📊 Cookies Funcionales
+                </h3>
+                <ul style="margin-bottom: 20px;">
+                    <li><strong>Preferencias de usuario:</strong> Recuerdan tu configuración personalizada</li>
+                    <li><strong>Configuración de idioma:</strong> Mantienen tu idioma preferido</li>
+                    <li><strong>Datos de navegación:</strong> Mejoran la experiencia de usuario</li>
+                </ul>
+                
+                <h3 style="color: #e67e22; border-bottom: 2px solid #e67e22; padding-bottom: 5px;">
+                    🔒 Seguridad y Privacidad
+                </h3>
+                <ul style="margin-bottom: 20px;">
+                    <li>Todas las cookies están configuradas como <strong>HttpOnly</strong> cuando es posible</li>
+                    <li>Protección automática contra ataques XSS y CSRF</li>
+                    <li>Expiración automática por seguridad (2 horas para sesiones)</li>
+                    <li>No compartimos información con terceros</li>
+                    <li>Los datos se almacenan de forma segura en nuestros servidores</li>
+                </ul>
+                
+                <div style="background: #ecf0f1; padding: 15px; border-radius: 8px; margin-top: 20px;">
+                    <h4 style="margin-top: 0; color: #2c3e50;">🛠️ Para Administradores:</h4>
+                    <p style="margin-bottom: 0; font-size: 14px;">
+                        Si eres administrador del sistema, puedes usar el widget de debug (🔧) 
+                        para ver todas las cookies activas y monitorear las sesiones en tiempo real.
+                    </p>
+                </div>
+            </div>
+            
+            <div style="text-align: center; margin-top: 25px;">
+                <button onclick="acceptCookiesFromModal()" style="
+                    background: #27ae60; 
+                    border: none; 
+                    color: white; 
+                    padding: 12px 30px; 
+                    border-radius: 8px;
+                    cursor: pointer;
+                    font-weight: bold;
+                    font-size: 16px;
+                    margin-right: 10px;
+                ">✓ Aceptar y Continuar</button>
+                <button onclick="hideCookieDetails()" style="
+                    background: #95a5a6; 
+                    border: none; 
+                    color: white; 
+                    padding: 12px 20px; 
+                    border-radius: 8px;
+                    cursor: pointer;
+                    font-size: 14px;
+                ">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Verificar si se debe mostrar la notificación de cookies
+document.addEventListener('DOMContentLoaded', function() {
+    // Verificar si el usuario ya aceptó las cookies
+    if (!localStorage.getItem('cookies_accepted') && !sessionStorage.getItem('cookies_notification_shown')) {
+        showCookieNotification();
+        sessionStorage.setItem('cookies_notification_shown', 'true');
+    }
+});
+
+function showCookieNotification() {
+    const notification = document.getElementById('cookie-notification');
+    notification.style.display = 'block';
+    
+    // Animación de entrada
+    setTimeout(() => {
+        notification.style.opacity = '1';
+        notification.style.transform = 'translateY(0)';
+    }, 100);
+}
+
+function acceptCookies() {
+    localStorage.setItem('cookies_accepted', 'true');
+    localStorage.setItem('cookies_accepted_date', new Date().toISOString());
+    hideCookieNotification();
+    
+    // Opcional: Enviar evento al servidor
+    logCookieAcceptance();
+}
+
+function acceptCookiesFromModal() {
+    acceptCookies();
+    hideCookieDetails();
+}
+
+function hideCookieNotification() {
+    const notification = document.getElementById('cookie-notification');
+    notification.style.display = 'none';
+}
+
+function showCookieDetails() {
+    document.getElementById('cookie-details-modal').style.display = 'flex';
+}
+
+function hideCookieDetails() {
+    document.getElementById('cookie-details-modal').style.display = 'none';
+}
+
+function logCookieAcceptance() {
+    // Registrar que el usuario aceptó las cookies
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value;
+    if (!csrfToken) return;
+    
+    fetch('{% url "auditoria:log_frontend_activity" %}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSrfToken': csrfToken,
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: JSON.stringify({
+            action: 'cookie_acceptance',
+            data: {
+                timestamp: new Date().toISOString(),
+                user_agent: navigator.userAgent,
+                url: window.location.href
+            }
+        })
+    }).catch(error => console.log('Cookie acceptance log error:', error));
+}
+
+// Función para mostrar la notificación manualmente (para testing)
+function showCookieNotificationTest() {
+    localStorage.removeItem('cookies_accepted');
+    sessionStorage.removeItem('cookies_notification_shown');
+    showCookieNotification();
+}
+</script>

@@ -1,0 +1,234 @@
+{% extends 'layouts/base.html' %}
+{% load static %}
+
+{% block title %} Estadísticas Municipales {% endblock title %}
+
+{% block bodyclass %} hold-transition sidebar-mini {% endblock bodyclass %}
+
+{% block content %}
+<div class="content-wrapper">
+    <!-- Content Header -->
+    <div class="content-header">
+        <div class="container-fluid">
+            <div class="row mb-2">
+                <div class="col-sm-6">
+                    <h1 class="m-0">
+                        <i class="fas fa-chart-bar mr-2"></i>
+                        Estadísticas Municipales
+                    </h1>
+                </div>
+                <div class="col-sm-6">
+                    <ol class="breadcrumb float-sm-right">
+                        <li class="breadcrumb-item"><a href="{% url 'dashboardv3' %}">Inicio</a></li>
+                        <li class="breadcrumb-item"><a href="{% url 'transparencia_index' %}">Transparencia</a></li>
+                        <li class="breadcrumb-item active">Estadísticas</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main content -->
+    <section class="content">
+        <div class="container-fluid">
+            
+            {% for categoria, estadisticas in estadisticas_por_categoria.items %}
+            <div class="row">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">
+                                <i class="fas fa-layer-group mr-2"></i>
+                                {{ categoria }}
+                            </h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                {% for estadistica in estadisticas|slice:":6" %}
+                                <div class="col-lg-4 col-md-6">
+                                    <div class="info-box">
+                                        <span class="info-box-icon" style="background-color: {{ estadistica.color }};">
+                                            <i class="{{ estadistica.icono }}"></i>
+                                        </span>
+                                        <div class="info-box-content">
+                                            <span class="info-box-text">{{ estadistica.nombre }}</span>
+                                            <span class="info-box-number">
+                                                {% if estadistica.unidad == 'COP' %}
+                                                    ${{ estadistica.valor|floatformat:0 }}
+                                                {% elif estadistica.unidad == '%' %}
+                                                    {{ estadistica.valor|floatformat:1 }}%
+                                                {% else %}
+                                                    {{ estadistica.valor|floatformat:1 }} {{ estadistica.unidad }}
+                                                {% endif %}
+                                            </span>
+                                            {% if estadistica.unidad == '%' %}
+                                            <div class="progress">
+                                                <div class="progress-bar" 
+                                                     style="width: {{ estadistica.valor }}%; background-color: {{ estadistica.color }};">
+                                                </div>
+                                            </div>
+                                            {% endif %}
+                                            <span class="progress-description">
+                                                <strong>Fuente:</strong> {{ estadistica.fuente|truncatechars:30 }}<br>
+                                                <strong>Actualizado:</strong> {{ estadistica.fecha|date:"d/m/Y" }}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                            
+                            {% if estadisticas|length > 6 %}
+                            <div class="row">
+                                <div class="col-12">
+                                    <div class="card card-outline card-secondary">
+                                        <div class="card-header">
+                                            <h5 class="card-title">Datos Adicionales</h5>
+                                        </div>
+                                        <div class="card-body table-responsive">
+                                            <table class="table table-striped">
+                                                <thead>
+                                                    <tr>
+                                                        <th>Indicador</th>
+                                                        <th>Valor</th>
+                                                        <th>Fuente</th>
+                                                        <th>Fecha</th>
+                                                        <th>Descripción</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {% for estadistica in estadisticas|slice:"6:" %}
+                                                    <tr>
+                                                        <td>
+                                                            <i class="{{ estadistica.icono }}" style="color: {{ estadistica.color }};"></i>
+                                                            {{ estadistica.nombre }}
+                                                        </td>
+                                                        <td>
+                                                            <strong>
+                                                            {% if estadistica.unidad == 'COP' %}
+                                                                ${{ estadistica.valor|floatformat:0 }}
+                                                            {% elif estadistica.unidad == '%' %}
+                                                                {{ estadistica.valor|floatformat:1 }}%
+                                                            {% else %}
+                                                                {{ estadistica.valor|floatformat:1 }} {{ estadistica.unidad }}
+                                                            {% endif %}
+                                                            </strong>
+                                                        </td>
+                                                        <td>{{ estadistica.fuente|truncatechars:40 }}</td>
+                                                        <td>{{ estadistica.fecha|date:"d/m/Y" }}</td>
+                                                        <td>{{ estadistica.descripcion|truncatechars:60 }}</td>
+                                                    </tr>
+                                                    {% endfor %}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <div class="row">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-body text-center p-5">
+                            <i class="fas fa-chart-bar fa-4x text-muted mb-4"></i>
+                            <h3>No hay estadísticas disponibles</h3>
+                            <p class="text-muted">Aún no se han cargado estadísticas municipales en el sistema.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+
+            <!-- Gráfico de Comparación -->
+            {% if estadisticas_por_categoria %}
+            <div class="row">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">
+                                <i class="fas fa-chart-line mr-2"></i>
+                                Comparación de Indicadores Principales
+                            </h3>
+                        </div>
+                        <div class="card-body">
+                            <div id="comparacion-chart" style="height: 400px;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+        </div>
+    </section>
+</div>
+{% endblock content %}
+
+{% block extra_scripts %}
+<script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    // Datos para el gráfico de comparación
+    var categorias = [];
+    var series = [];
+    
+    {% for categoria, estadisticas in estadisticas_por_categoria.items %}
+        {% for estadistica in estadisticas|slice:":3" %}
+            categorias.push('{{ estadistica.nombre|truncatechars:20 }}');
+            {% if estadistica.unidad == '%' %}
+                series.push({{ estadistica.valor }});
+            {% elif estadistica.unidad == 'COP' %}
+                series.push({{ estadistica.valor|add:0 }} / 1000000); // Convertir a millones
+            {% else %}
+                series.push({{ estadistica.valor }});
+            {% endif %}
+        {% endfor %}
+    {% endfor %}
+
+    if (categorias.length > 0) {
+        var options = {
+            chart: {
+                type: 'bar',
+                height: 400
+            },
+            series: [{
+                name: 'Valor',
+                data: series
+            }],
+            xaxis: {
+                categories: categorias,
+                labels: {
+                    rotate: -45
+                }
+            },
+            yaxis: {
+                title: {
+                    text: 'Valores'
+                }
+            },
+            title: {
+                text: 'Principales Indicadores Municipales',
+                align: 'center'
+            },
+            colors: ['#007bff'],
+            plotOptions: {
+                bar: {
+                    borderRadius: 4,
+                    horizontal: false,
+                }
+            },
+            dataLabels: {
+                enabled: true
+            }
+        };
+
+        var chart = new ApexCharts(document.querySelector("#comparacion-chart"), options);
+        chart.render();
+    }
+});
+</script>
+{% endblock extra_scripts %}

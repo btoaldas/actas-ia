@@ -1,0 +1,382 @@
+{% extends 'layouts/base.html' %}
+{% load static %}
+
+{% block title %}Auditoría de Cambios{% endblock title %}
+
+{% block extrastyle %}
+  <!-- DataTables -->
+  <link rel="stylesheet" href="{% static 'plugins/datatables-bs4/css/dataTables.bootstrap4.min.css' %}">
+  <link rel="stylesheet" href="{% static 'plugins/datatables-responsive/css/responsive.bootstrap4.min.css' %}">
+{% endblock extrastyle %}
+
+{% block content %}
+<!-- Content Wrapper -->
+<div class="content-wrapper">
+  <!-- Content Header (Page header) -->
+  <section class="content-header">
+    <div class="container-fluid">
+      <div class="row mb-2">
+        <div class="col-sm-6">
+          <h1><i class="fas fa-database"></i> Auditoría de Cambios en BD</h1>
+        </div>
+        <div class="col-sm-6">
+          <ol class="breadcrumb float-sm-right">
+            <li class="breadcrumb-item"><a href="/">Inicio</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'auditoria:dashboard' %}">Auditoría</a></li>
+            <li class="breadcrumb-item active">Cambios BD</li>
+          </ol>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Main content -->
+  <section class="content">
+    <div class="container-fluid">
+      
+      <!-- Filtros -->
+      <div class="card collapsed-card">
+        <div class="card-header">
+          <h3 class="card-title">
+            <i class="fas fa-filter mr-1"></i>
+            Filtros de Búsqueda
+          </h3>
+          <div class="card-tools">
+            <button type="button" class="btn btn-tool" data-card-widget="collapse">
+              <i class="fas fa-plus"></i>
+            </button>
+          </div>
+        </div>
+        <div class="card-body">
+          <form method="GET">
+            <div class="row">
+              <div class="col-md-3">
+                <div class="form-group">
+                  <label>Tabla</label>
+                  <select name="tabla" class="form-control">
+                    <option value="">Todas las tablas</option>
+                    {% for tabla in tablas %}
+                    <option value="{{ tabla }}" {% if filtros.tabla == tabla %}selected{% endif %}>
+                      {{ tabla }}
+                    </option>
+                    {% endfor %}
+                  </select>
+                </div>
+              </div>
+              
+              <div class="col-md-2">
+                <div class="form-group">
+                  <label>Operación</label>
+                  <select name="operacion" class="form-control">
+                    <option value="">Todas</option>
+                    <option value="INSERT" {% if filtros.operacion == 'INSERT' %}selected{% endif %}>INSERT</option>
+                    <option value="UPDATE" {% if filtros.operacion == 'UPDATE' %}selected{% endif %}>UPDATE</option>
+                    <option value="DELETE" {% if filtros.operacion == 'DELETE' %}selected{% endif %}>DELETE</option>
+                  </select>
+                </div>
+              </div>
+              
+              <div class="col-md-2">
+                <div class="form-group">
+                  <label>Usuario ID</label>
+                  <input type="number" name="usuario_id" class="form-control" value="{{ filtros.usuario_id }}" placeholder="ID">
+                </div>
+              </div>
+              
+              <div class="col-md-2">
+                <div class="form-group">
+                  <label>Fecha Desde</label>
+                  <input type="date" name="fecha_desde" class="form-control" value="{{ filtros.fecha_desde }}">
+                </div>
+              </div>
+              
+              <div class="col-md-2">
+                <div class="form-group">
+                  <label>Fecha Hasta</label>
+                  <input type="date" name="fecha_hasta" class="form-control" value="{{ filtros.fecha_hasta }}">
+                </div>
+              </div>
+            </div>
+            
+            <div class="row">
+              <div class="col-12">
+                <button type="submit" class="btn btn-primary">
+                  <i class="fas fa-search"></i> Buscar
+                </button>
+                <a href="{% url 'auditoria:auditoria_cambios' %}" class="btn btn-secondary">
+                  <i class="fas fa-times"></i> Limpiar
+                </a>
+              </div>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- Tabla de cambios -->
+      <div class="card">
+        <div class="card-header">
+          <h3 class="card-title">
+            <i class="fas fa-list mr-1"></i>
+            Registro de Cambios en Base de Datos
+          </h3>
+          <div class="card-tools">
+            <span class="badge badge-danger">{{ cambios|length }} registros</span>
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="table-responsive">
+            <table id="cambiosTable" class="table table-bordered table-striped">
+              <thead>
+                <tr>
+                  <th>Timestamp</th>
+                  <th>Tabla</th>
+                  <th>Operación</th>
+                  <th>Registro ID</th>
+                  <th>Usuario</th>
+                  <th>Username</th>
+                  <th>IP Address</th>
+                  <th>Campos</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for cambio in cambios %}
+                <tr>
+                  <td>
+                    <small>{{ cambio.1|date:"d/m/Y H:i:s" }}</small>
+                  </td>
+                  <td>
+                    <code class="text-primary">{{ cambio.2 }}</code>
+                  </td>
+                  <td>
+                    <span class="badge 
+                      {% if cambio.3 == 'INSERT' %}badge-success
+                      {% elif cambio.3 == 'UPDATE' %}badge-warning
+                      {% elif cambio.3 == 'DELETE' %}badge-danger
+                      {% else %}badge-secondary{% endif %}">
+                      {{ cambio.3 }}
+                    </span>
+                  </td>
+                  <td>
+                    {% if cambio.4 %}
+                      <strong>{{ cambio.4 }}</strong>
+                    {% else %}
+                      <span class="text-muted">-</span>
+                    {% endif %}
+                  </td>
+                  <td>
+                    {% if cambio.5 %}
+                      <i class="fas fa-user text-primary"></i> {{ cambio.5 }}
+                    {% else %}
+                      <i class="fas fa-robot text-muted"></i> Sistema
+                    {% endif %}
+                  </td>
+                  <td>
+                    {% if cambio.6 %}
+                      <code>{{ cambio.6 }}</code>
+                    {% else %}
+                      <span class="text-muted">-</span>
+                    {% endif %}
+                  </td>
+                  <td>
+                    {% if cambio.7 %}
+                      <code>{{ cambio.7 }}</code>
+                    {% else %}
+                      <span class="text-muted">-</span>
+                    {% endif %}
+                  </td>
+                  <td>
+                    {% if cambio.8 %}
+                      <span class="badge badge-info">{{ cambio.8|length }} campos</span>
+                    {% else %}
+                      <span class="text-muted">-</span>
+                    {% endif %}
+                  </td>
+                  <td>
+                    <button class="btn btn-sm btn-info" onclick="verDetalle({{ cambio.0 }}, 'cambio')">
+                      <i class="fas fa-eye"></i>
+                    </button>
+                  </td>
+                </tr>
+                {% empty %}
+                <tr>
+                  <td colspan="9" class="text-center">
+                    <i class="fas fa-info-circle"></i> No se encontraron cambios con los criterios especificados
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+        
+        <!-- Paginación -->
+        {% if cambios.has_other_pages %}
+        <div class="card-footer">
+          <nav aria-label="Page navigation">
+            <ul class="pagination pagination-sm justify-content-center">
+              {% if cambios.has_previous %}
+                <li class="page-item">
+                  <a class="page-link" href="?page={{ cambios.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
+                    <i class="fas fa-angle-left"></i> Anterior
+                  </a>
+                </li>
+              {% endif %}
+              
+              {% for num in cambios.paginator.page_range %}
+                {% if cambios.number == num %}
+                  <li class="page-item active">
+                    <span class="page-link">{{ num }}</span>
+                  </li>
+                {% elif num > cambios.number|add:'-3' and num < cambios.number|add:'3' %}
+                  <li class="page-item">
+                    <a class="page-link" href="?page={{ num }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">{{ num }}</a>
+                  </li>
+                {% endif %}
+              {% endfor %}
+              
+              {% if cambios.has_next %}
+                <li class="page-item">
+                  <a class="page-link" href="?page={{ cambios.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
+                    Siguiente <i class="fas fa-angle-right"></i>
+                  </a>
+                </li>
+              {% endif %}
+            </ul>
+          </nav>
+        </div>
+        {% endif %}
+      </div>
+
+    </div>
+  </section>
+</div>
+
+<!-- Modal para detalle del cambio -->
+<div class="modal fade" id="modalDetalle" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-xl">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">
+          <i class="fas fa-info-circle"></i> Detalle del Cambio en BD
+        </h5>
+        <button type="button" class="close" data-dismiss="modal">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body" id="modalDetalleBody">
+        <div class="text-center">
+          <i class="fas fa-spinner fa-spin"></i> Cargando...
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">Cerrar</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock content %}
+
+{% block extrajs %}
+<!-- DataTables  & Plugins -->
+<script src="{% static 'plugins/datatables/jquery.dataTables.min.js' %}"></script>
+<script src="{% static 'plugins/datatables-bs4/js/dataTables.bootstrap4.min.js' %}"></script>
+<script src="{% static 'plugins/datatables-responsive/js/dataTables.responsive.min.js' %}"></script>
+<script src="{% static 'plugins/datatables-responsive/js/responsive.bootstrap4.min.js' %}"></script>
+
+<script>
+$(function () {
+  $("#cambiosTable").DataTable({
+    "responsive": true,
+    "lengthChange": false,
+    "autoWidth": false,
+    "searching": false,
+    "paging": false,
+    "info": false,
+    "ordering": false,
+    "language": {
+      "emptyTable": "No hay datos disponibles"
+    }
+  });
+});
+
+function verDetalle(cambioId, tipo) {
+  $('#modalDetalle').modal('show');
+  $('#modalDetalleBody').html('<div class="text-center"><i class="fas fa-spinner fa-spin"></i> Cargando...</div>');
+  
+  fetch(`{% url 'auditoria:detalle_log' 0 'cambio' %}`.replace('0', cambioId).replace('cambio', tipo))
+    .then(response => response.json())
+    .then(data => {
+      if (data.log) {
+        let html = '<div class="row">';
+        
+        // Información general
+        html += '<div class="col-12 mb-3"><h6><i class="fas fa-info-circle"></i> Información General</h6></div>';
+        
+        const generalFields = ['timestamp', 'tabla', 'operacion', 'registro_id', 'usuario_id', 'username', 'ip_address'];
+        generalFields.forEach(field => {
+          if (data.log[field] !== undefined) {
+            html += `
+              <div class="col-md-4 mb-2">
+                <strong>${field.replace(/_/g, ' ').toUpperCase()}:</strong><br>
+                <code>${data.log[field] || 'N/A'}</code>
+              </div>
+            `;
+          }
+        });
+        
+        // Campos modificados
+        if (data.log.campos_modificados) {
+          html += '<div class="col-12 mt-3 mb-2"><h6><i class="fas fa-edit"></i> Campos Modificados</h6></div>';
+          html += `
+            <div class="col-12 mb-3">
+              <pre style="background: #f8f9fa; padding: 10px; border-radius: 4px;">${data.log.campos_modificados}</pre>
+            </div>
+          `;
+        }
+        
+        // Valores anteriores y nuevos
+        html += '<div class="col-12"><div class="row">';
+        
+        if (data.log.valores_anteriores) {
+          html += `
+            <div class="col-md-6">
+              <h6><i class="fas fa-arrow-left text-danger"></i> Valores Anteriores</h6>
+              <pre style="background: #fff5f5; padding: 10px; border-radius: 4px; max-height: 300px; overflow-y: auto;">${JSON.stringify(JSON.parse(data.log.valores_anteriores), null, 2)}</pre>
+            </div>
+          `;
+        }
+        
+        if (data.log.valores_nuevos) {
+          html += `
+            <div class="col-md-6">
+              <h6><i class="fas fa-arrow-right text-success"></i> Valores Nuevos</h6>
+              <pre style="background: #f0fff0; padding: 10px; border-radius: 4px; max-height: 300px; overflow-y: auto;">${JSON.stringify(JSON.parse(data.log.valores_nuevos), null, 2)}</pre>
+            </div>
+          `;
+        }
+        
+        html += '</div></div>';
+        
+        // Consulta SQL
+        if (data.log.consulta_sql) {
+          html += `
+            <div class="col-12 mt-3">
+              <h6><i class="fas fa-code"></i> Consulta SQL</h6>
+              <pre style="background: #f8f9fa; padding: 10px; border-radius: 4px; font-size: 12px;">${data.log.consulta_sql}</pre>
+            </div>
+          `;
+        }
+        
+        html += '</div>';
+        $('#modalDetalleBody').html(html);
+      } else {
+        $('#modalDetalleBody').html('<div class="alert alert-danger">Error cargando los detalles</div>');
+      }
+    })
+    .catch(error => {
+      $('#modalDetalleBody').html('<div class="alert alert-danger">Error: ' + error.message + '</div>');
+    });
+}
+</script>
+{% endblock extrajs %}

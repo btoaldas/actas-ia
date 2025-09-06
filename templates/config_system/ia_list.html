@@ -1,0 +1,176 @@
+{% extends "config_system/base.html" %}
+{% load static %}
+
+{% block page_title %}Configuraciones IA{% endblock %}
+{% block breadcrumb_active %}Config IA{% endblock %}
+
+{% block main_content %}
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">
+                    <i class="fas fa-robot text-primary"></i>
+                    Configuraciones de Inteligencia Artificial
+                </h3>
+                <div class="card-tools">
+                    <a href="{% url 'config_system:ia_create' %}" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> Nueva Configuración IA
+                    </a>
+                </div>
+            </div>
+            <div class="card-body">
+                {% if configuraciones %}
+                    <div class="table-responsive">
+                        <table class="table table-striped datatable">
+                            <thead>
+                                <tr>
+                                    <th>Nombre</th>
+                                    <th>Proveedor</th>
+                                    <th>Modelo</th>
+                                    <th>Estado</th>
+                                    <th>Principal</th>
+                                    <th>Prioridad</th>
+                                    <th>Límite/min</th>
+                                    <th>Última Actualización</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for config in configuraciones %}
+                                <tr class="config-card {% if not config.activo %}config-inactive{% endif %} {% if config.es_principal %}config-principal{% endif %}" data-config-id="{{ config.pk }}">
+                                    <td>
+                                        <strong>{{ config.nombre }}</strong>
+                                        {% if config.es_principal %}
+                                            <span class="badge badge-success ml-1">Principal</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <span class="badge provider-badge badge-{% if config.proveedor == 'openai' %}primary{% elif config.proveedor == 'deepseek' %}info{% elif config.proveedor == 'ollama' %}warning{% elif config.proveedor == 'anthropic' %}dark{% else %}secondary{% endif %}">
+                                            {{ config.get_proveedor_display }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <code>{{ config.modelo }}</code>
+                                        <br>
+                                        <small class="text-muted">
+                                            T: {{ config.temperatura }} | 
+                                            Max: {{ config.max_tokens }}
+                                        </small>
+                                    </td>
+                                    <td>
+                                        <label class="toggle-switch">
+                                            <input type="checkbox" class="toggle-config" 
+                                                   data-config-id="{{ config.pk }}" 
+                                                   data-config-type="ia"
+                                                   {% if config.activo %}checked{% endif %}>
+                                            <span class="slider"></span>
+                                        </label>
+                                    </td>
+                                    <td>
+                                        {% if config.es_principal %}
+                                            <i class="fas fa-star text-warning" title="Principal"></i>
+                                        {% else %}
+                                            <i class="far fa-star text-muted" title="No principal"></i>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <span class="badge badge-info">{{ config.orden_prioridad }}</span>
+                                    </td>
+                                    <td>
+                                        {{ config.limite_requests_minuto }}
+                                    </td>
+                                    <td>
+                                        <small>{{ config.fecha_actualizacion|date:"d/m/Y H:i" }}</small>
+                                    </td>
+                                    <td>
+                                        <div class="btn-group" role="group">
+                                            <a href="{% url 'config_system:ia_detail' config.pk %}" 
+                                               class="btn btn-sm btn-outline-info" title="Ver detalles">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                            <a href="{% url 'config_system:ia_edit' config.pk %}" 
+                                               class="btn btn-sm btn-outline-primary" title="Editar">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                            <a href="{% url 'config_system:ia_test' config.pk %}" 
+                                               class="btn btn-sm btn-outline-success test-config" title="Probar">
+                                                <i class="fas fa-vial"></i>
+                                            </a>
+                                            <a href="{% url 'config_system:ia_delete' config.pk %}" 
+                                               class="btn btn-sm btn-outline-danger delete-config" 
+                                               data-config-name="{{ config.nombre }}"
+                                               title="Eliminar">
+                                                <i class="fas fa-trash"></i>
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-robot fa-5x text-muted mb-4"></i>
+                        <h4 class="text-muted">No hay configuraciones IA</h4>
+                        <p class="text-muted mb-4">
+                            Crea tu primera configuración de IA para comenzar a usar las funcionalidades de transcripción y análisis.
+                        </p>
+                        <a href="{% url 'config_system:ia_create' %}" class="btn btn-primary btn-lg">
+                            <i class="fas fa-plus"></i> Crear Primera Configuración IA
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Información adicional -->
+<div class="row">
+    <div class="col-md-4">
+        <div class="info-box">
+            <span class="info-box-icon bg-info">
+                <i class="fas fa-info-circle"></i>
+            </span>
+            <div class="info-box-content">
+                <span class="info-box-text">Configuración Principal</span>
+                <span class="info-box-number">
+                    {% if config_principal %}
+                        {{ config_principal.nombre }}
+                    {% else %}
+                        No definida
+                    {% endif %}
+                </span>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="info-box">
+            <span class="info-box-icon bg-success">
+                <i class="fas fa-check-circle"></i>
+            </span>
+            <div class="info-box-content">
+                <span class="info-box-text">Configuraciones Activas</span>
+                <span class="info-box-number">{{ configuraciones_activas }}</span>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="info-box">
+            <span class="info-box-icon bg-warning">
+                <i class="fas fa-bolt"></i>
+            </span>
+            <div class="info-box-content">
+                <span class="info-box-text">Proveedores Únicos</span>
+                <span class="info-box-number">{{ proveedores_unicos }}</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% csrf_token %}
+{% endblock main_content %}

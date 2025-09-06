@@ -1,0 +1,331 @@
+{% extends 'layouts/base.html' %}
+{% load static %}
+
+{% block title %}Logs del Sistema{% endblock title %}
+
+{% block extrastyle %}
+  <!-- DataTables -->
+  <link rel="stylesheet" href="{% static 'plugins/datatables-bs4/css/dataTables.bootstrap4.min.css' %}">
+  <link rel="stylesheet" href="{% static 'plugins/datatables-responsive/css/responsive.bootstrap4.min.css' %}">
+{% endblock extrastyle %}
+
+{% block content %}
+<!-- Content Wrapper -->
+<div class="content-wrapper">
+  <!-- Content Header (Page header) -->
+  <section class="content-header">
+    <div class="container-fluid">
+      <div class="row mb-2">
+        <div class="col-sm-6">
+          <h1><i class="fas fa-server"></i> Logs del Sistema</h1>
+        </div>
+        <div class="col-sm-6">
+          <ol class="breadcrumb float-sm-right">
+            <li class="breadcrumb-item"><a href="/">Inicio</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'auditoria:dashboard' %}">Auditoría</a></li>
+            <li class="breadcrumb-item active">Logs Sistema</li>
+          </ol>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Main content -->
+  <section class="content">
+    <div class="container-fluid">
+      
+      <!-- Filtros -->
+      <div class="card collapsed-card">
+        <div class="card-header">
+          <h3 class="card-title">
+            <i class="fas fa-filter mr-1"></i>
+            Filtros de Búsqueda
+          </h3>
+          <div class="card-tools">
+            <button type="button" class="btn btn-tool" data-card-widget="collapse">
+              <i class="fas fa-plus"></i>
+            </button>
+          </div>
+        </div>
+        <div class="card-body">
+          <form method="GET">
+            <div class="row">
+              <div class="col-md-3">
+                <div class="form-group">
+                  <label>Nivel</label>
+                  <select name="nivel" class="form-control">
+                    <option value="">Todos los niveles</option>
+                    <option value="ERROR" {% if filtros.nivel == 'ERROR' %}selected{% endif %}>ERROR</option>
+                    <option value="WARNING" {% if filtros.nivel == 'WARNING' %}selected{% endif %}>WARNING</option>
+                    <option value="INFO" {% if filtros.nivel == 'INFO' %}selected{% endif %}>INFO</option>
+                    <option value="DEBUG" {% if filtros.nivel == 'DEBUG' %}selected{% endif %}>DEBUG</option>
+                  </select>
+                </div>
+              </div>
+              
+              <div class="col-md-3">
+                <div class="form-group">
+                  <label>Categoría</label>
+                  <select name="categoria" class="form-control">
+                    <option value="">Todas las categorías</option>
+                    {% for categoria in categorias %}
+                    <option value="{{ categoria }}" {% if filtros.categoria == categoria %}selected{% endif %}>
+                      {{ categoria }}
+                    </option>
+                    {% endfor %}
+                  </select>
+                </div>
+              </div>
+              
+              <div class="col-md-3">
+                <div class="form-group">
+                  <label>Fecha Desde</label>
+                  <input type="date" name="fecha_desde" class="form-control" value="{{ filtros.fecha_desde }}">
+                </div>
+              </div>
+              
+              <div class="col-md-3">
+                <div class="form-group">
+                  <label>Fecha Hasta</label>
+                  <input type="date" name="fecha_hasta" class="form-control" value="{{ filtros.fecha_hasta }}">
+                </div>
+              </div>
+            </div>
+            
+            <div class="row">
+              <div class="col-12">
+                <button type="submit" class="btn btn-primary">
+                  <i class="fas fa-search"></i> Buscar
+                </button>
+                <a href="{% url 'auditoria:logs_sistema' %}" class="btn btn-secondary">
+                  <i class="fas fa-times"></i> Limpiar
+                </a>
+              </div>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- Tabla de logs -->
+      <div class="card">
+        <div class="card-header">
+          <h3 class="card-title">
+            <i class="fas fa-list mr-1"></i>
+            Registros de Logs del Sistema
+          </h3>
+          <div class="card-tools">
+            <span class="badge badge-primary">{{ logs|length }} registros</span>
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="table-responsive">
+            <table id="logsTable" class="table table-bordered table-striped">
+              <thead>
+                <tr>
+                  <th>Timestamp</th>
+                  <th>Nivel</th>
+                  <th>Categoría</th>
+                  <th>Subcategoría</th>
+                  <th>Mensaje</th>
+                  <th>Usuario</th>
+                  <th>IP</th>
+                  <th>Método</th>
+                  <th>Código</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for log in logs %}
+                <tr>
+                  <td>
+                    <small>{{ log.1|date:"d/m/Y H:i:s" }}</small>
+                  </td>
+                  <td>
+                    <span class="badge 
+                      {% if log.2 == 'ERROR' %}badge-danger
+                      {% elif log.2 == 'WARNING' %}badge-warning
+                      {% elif log.2 == 'INFO' %}badge-info
+                      {% elif log.2 == 'DEBUG' %}badge-secondary
+                      {% else %}badge-dark{% endif %}">
+                      {{ log.2 }}
+                    </span>
+                  </td>
+                  <td>{{ log.3 }}</td>
+                  <td>{{ log.4|default:"-" }}</td>
+                  <td>
+                    <span title="{{ log.5 }}">
+                      {{ log.5|truncatechars:50 }}
+                    </span>
+                  </td>
+                  <td>
+                    {% if log.6 %}
+                      <i class="fas fa-user"></i> {{ log.6 }}
+                    {% else %}
+                      <i class="fas fa-robot"></i> Sistema
+                    {% endif %}
+                  </td>
+                  <td>
+                    {% if log.7 %}
+                      <code>{{ log.7 }}</code>
+                    {% else %}
+                      -
+                    {% endif %}
+                  </td>
+                  <td>
+                    {% if log.8 %}
+                      <span class="badge badge-info">{{ log.8 }}</span>
+                    {% else %}
+                      -
+                    {% endif %}
+                  </td>
+                  <td>
+                    {% if log.9 %}
+                      <span class="badge 
+                        {% if log.9 >= 200 and log.9 < 300 %}badge-success
+                        {% elif log.9 >= 300 and log.9 < 400 %}badge-info
+                        {% elif log.9 >= 400 and log.9 < 500 %}badge-warning
+                        {% elif log.9 >= 500 %}badge-danger
+                        {% else %}badge-secondary{% endif %}">
+                        {{ log.9 }}
+                      </span>
+                    {% else %}
+                      -
+                    {% endif %}
+                  </td>
+                  <td>
+                    <button class="btn btn-sm btn-info" onclick="verDetalle({{ log.0 }}, 'sistema')">
+                      <i class="fas fa-eye"></i>
+                    </button>
+                  </td>
+                </tr>
+                {% empty %}
+                <tr>
+                  <td colspan="10" class="text-center">
+                    <i class="fas fa-info-circle"></i> No se encontraron logs con los criterios especificados
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+        
+        <!-- Paginación -->
+        {% if logs.has_other_pages %}
+        <div class="card-footer">
+          <nav aria-label="Page navigation">
+            <ul class="pagination pagination-sm justify-content-center">
+              {% if logs.has_previous %}
+                <li class="page-item">
+                  <a class="page-link" href="?page={{ logs.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
+                    <i class="fas fa-angle-left"></i> Anterior
+                  </a>
+                </li>
+              {% endif %}
+              
+              {% for num in logs.paginator.page_range %}
+                {% if logs.number == num %}
+                  <li class="page-item active">
+                    <span class="page-link">{{ num }}</span>
+                  </li>
+                {% elif num > logs.number|add:'-3' and num < logs.number|add:'3' %}
+                  <li class="page-item">
+                    <a class="page-link" href="?page={{ num }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">{{ num }}</a>
+                  </li>
+                {% endif %}
+              {% endfor %}
+              
+              {% if logs.has_next %}
+                <li class="page-item">
+                  <a class="page-link" href="?page={{ logs.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
+                    Siguiente <i class="fas fa-angle-right"></i>
+                  </a>
+                </li>
+              {% endif %}
+            </ul>
+          </nav>
+        </div>
+        {% endif %}
+      </div>
+
+    </div>
+  </section>
+</div>
+
+<!-- Modal para detalle del log -->
+<div class="modal fade" id="modalDetalle" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">
+          <i class="fas fa-info-circle"></i> Detalle del Log
+        </h5>
+        <button type="button" class="close" data-dismiss="modal">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body" id="modalDetalleBody">
+        <div class="text-center">
+          <i class="fas fa-spinner fa-spin"></i> Cargando...
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">Cerrar</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock content %}
+
+{% block extrajs %}
+<!-- DataTables  & Plugins -->
+<script src="{% static 'plugins/datatables/jquery.dataTables.min.js' %}"></script>
+<script src="{% static 'plugins/datatables-bs4/js/dataTables.bootstrap4.min.js' %}"></script>
+<script src="{% static 'plugins/datatables-responsive/js/dataTables.responsive.min.js' %}"></script>
+<script src="{% static 'plugins/datatables-responsive/js/responsive.bootstrap4.min.js' %}"></script>
+
+<script>
+$(function () {
+  $("#logsTable").DataTable({
+    "responsive": true,
+    "lengthChange": false,
+    "autoWidth": false,
+    "searching": false,
+    "paging": false,
+    "info": false,
+    "ordering": false,
+    "language": {
+      "emptyTable": "No hay datos disponibles"
+    }
+  });
+});
+
+function verDetalle(logId, tipo) {
+  $('#modalDetalle').modal('show');
+  $('#modalDetalleBody').html('<div class="text-center"><i class="fas fa-spinner fa-spin"></i> Cargando...</div>');
+  
+  fetch(`{% url 'auditoria:detalle_log' 0 'sistema' %}`.replace('0', logId).replace('sistema', tipo))
+    .then(response => response.json())
+    .then(data => {
+      if (data.log) {
+        let html = '<div class="row">';
+        for (const [key, value] of Object.entries(data.log)) {
+          html += `
+            <div class="col-md-6 mb-2">
+              <strong>${key}:</strong><br>
+              <code>${value || 'N/A'}</code>
+            </div>
+          `;
+        }
+        html += '</div>';
+        $('#modalDetalleBody').html(html);
+      } else {
+        $('#modalDetalleBody').html('<div class="alert alert-danger">Error cargando los detalles</div>');
+      }
+    })
+    .catch(error => {
+      $('#modalDetalleBody').html('<div class="alert alert-danger">Error: ' + error.message + '</div>');
+    });
+}
+</script>
+{% endblock extrajs %}

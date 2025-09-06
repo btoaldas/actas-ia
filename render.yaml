@@ -1,0 +1,61 @@
+services:
+  # Aplicación web principal
+  - type: web
+    name: actas-municipales-pastaza
+    plan: starter  # Cambiar a 'pro' o plan pagado para producción
+    env: python
+    region: oregon  # Cambiar según necesidades
+    buildCommand: "./build.sh"
+    startCommand: "gunicorn config.wsgi:application"
+    envVars:
+      - key: DEBUG
+        value: False
+      - key: SECRET_KEY
+        generateValue: true
+      - key: WEB_CONCURRENCY
+        value: 4
+      - key: RENDER_EXTERNAL_HOSTNAME
+        value: actas-municipales-pastaza.onrender.com
+      - key: MUNICIPIO_DOMAIN
+        value: puyo.gob.ec
+      - key: MUNICIPIO_NAME
+        value: Municipio de Pastaza
+      
+  # Worker de Celery para procesamiento de audio
+  - type: worker
+    name: actas-celery-worker
+    plan: starter
+    env: python
+    buildCommand: "./build.sh"
+    startCommand: "celery -A config worker -l info -Q audio_processing,transcription,notifications,pdf_generation,default"
+    envVars:
+      - key: DEBUG
+        value: False
+      - key: SECRET_KEY
+        sync: false  # Usar la misma que el web service
+        
+  # Beat scheduler para tareas periódicas
+  - type: worker
+    name: actas-celery-beat
+    plan: starter
+    env: python
+    buildCommand: "./build.sh"
+    startCommand: "celery -A config beat -l info"
+    envVars:
+      - key: DEBUG
+        value: False
+      - key: SECRET_KEY
+        sync: false
+
+databases:
+  # Base de datos PostgreSQL
+  - name: actas-db
+    plan: free  # Cambiar a plan pagado para producción
+    region: oregon
+    postgresMajorVersion: 15
+
+  # Redis para Celery
+  - name: actas-redis
+    plan: free
+    region: oregon
+    maxmemoryPolicy: allkeys-lru

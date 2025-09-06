@@ -1,0 +1,172 @@
+{% extends 'layouts/base.html' %}
+{% load static %}
+
+{% block title %}Confirmar Asistencia - {{ evento.titulo }}{% endblock title %}
+
+{% block extrastyle %}
+  <style>
+    .evento-card {
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      padding: 20px;
+      background: #f8f9fa;
+      margin-bottom: 20px;
+    }
+    .evento-info {
+      margin-bottom: 15px;
+    }
+    .evento-info i {
+      color: #007bff;
+      margin-right: 8px;
+    }
+  </style>
+{% endblock extrastyle %}
+
+{% block bodyclass %}hold-transition sidebar-mini{% endblock bodyclass %}
+
+{% block content %}
+  <!-- Content Wrapper. Contains page content -->
+  <div class="content-wrapper">
+    <!-- Content Header (Page header) -->
+    <section class="content-header">
+      <div class="container-fluid">
+        <div class="row mb-2">
+          <div class="col-sm-12">
+            <h1>
+              <i class="fas fa-calendar-check"></i> Confirmar Asistencia
+            </h1>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Main content -->
+    <section class="content">
+      <div class="container-fluid">
+        <div class="row justify-content-center">
+          <div class="col-md-8">
+            
+            <!-- Información del evento -->
+            <div class="evento-card">
+              <h3 class="text-primary">{{ evento.titulo }}</h3>
+              
+              <div class="evento-info">
+                <i class="fas fa-calendar"></i>
+                <strong>Fecha:</strong> {{ evento.fecha_inicio|date:"d/m/Y H:i" }}
+                {% if evento.fecha_fin %}
+                  - {{ evento.fecha_fin|date:"d/m/Y H:i" }}
+                {% endif %}
+              </div>
+              
+              {% if evento.ubicacion %}
+              <div class="evento-info">
+                <i class="fas fa-map-marker-alt"></i>
+                <strong>Ubicación:</strong> {{ evento.ubicacion }}
+              </div>
+              {% endif %}
+              
+              <div class="evento-info">
+                <i class="fas fa-tag"></i>
+                <strong>Tipo:</strong> {{ evento.get_tipo_display }}
+              </div>
+              
+              {% if evento.descripcion %}
+              <div class="evento-info">
+                <i class="fas fa-info-circle"></i>
+                <strong>Descripción:</strong>
+                <p class="mt-2">{{ evento.descripcion|linebreaks }}</p>
+              </div>
+              {% endif %}
+            </div>
+
+            <!-- Formulario de confirmación -->
+            <div class="card card-primary">
+              <div class="card-header">
+                <h3 class="card-title">
+                  <i class="fas fa-user-check"></i> Confirmar tu Asistencia
+                </h3>
+              </div>
+              
+              <form method="post">
+                {% csrf_token %}
+                
+                <div class="card-body">
+                  <div class="form-group">
+                    <label for="nombre" class="required-field">
+                      Ingresa tu nombre completo:
+                    </label>
+                    <input type="text" 
+                           name="nombre" 
+                           id="nombre" 
+                           class="form-control" 
+                           placeholder="Ej: Juan Pérez García"
+                           value="{{ request.POST.nombre }}"
+                           required>
+                    <small class="form-text text-muted">
+                      Este nombre aparecerá en la lista de asistentes confirmados.
+                    </small>
+                  </div>
+                  
+                  <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i>
+                    <strong>Información:</strong> Al confirmar tu asistencia, recibirás un email de confirmación 
+                    y tu nombre aparecerá en la lista de asistentes del evento.
+                  </div>
+                </div>
+
+                <div class="card-footer">
+                  <button type="submit" class="btn btn-primary btn-lg">
+                    <i class="fas fa-check"></i> Confirmar mi Asistencia
+                  </button>
+                  <a href="{% url 'eventos_detalle' evento.pk %}" class="btn btn-secondary ml-2">
+                    <i class="fas fa-eye"></i> Ver Detalles del Evento
+                  </a>
+                </div>
+              </form>
+            </div>
+
+            <!-- Información adicional -->
+            <div class="card">
+              <div class="card-body">
+                <h5><i class="fas fa-question-circle"></i> ¿Tienes problemas?</h5>
+                <p>Si tienes algún problema para confirmar tu asistencia, contacta al organizador del evento:</p>
+                <p><strong>{{ evento.organizador.get_full_name|default:evento.organizador.username }}</strong></p>
+                {% if evento.organizador.email %}
+                <p><i class="fas fa-envelope"></i> {{ evento.organizador.email }}</p>
+                {% endif %}
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+{% endblock content %}
+
+{% block javascript %}
+<script>
+$(document).ready(function() {
+  // Auto-focus en el campo nombre
+  $('#nombre').focus();
+  
+  // Validación del formulario
+  $('form').on('submit', function(e) {
+    var nombre = $('#nombre').val().trim();
+    if (!nombre) {
+      e.preventDefault();
+      alert('Por favor ingresa tu nombre completo.');
+      $('#nombre').focus();
+      return false;
+    }
+    
+    if (nombre.length < 2) {
+      e.preventDefault();
+      alert('El nombre debe tener al menos 2 caracteres.');
+      $('#nombre').focus();
+      return false;
+    }
+  });
+});
+</script>
+{% endblock javascript %}

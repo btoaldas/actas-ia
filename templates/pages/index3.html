@@ -1,0 +1,659 @@
+{% extends 'layouts/base.html' %}
+{% load static %}
+
+{% block title %} Análisis y Transparencia - Sistema de Actas Municipales IA {% endblock title %}
+
+{% block bodyclass %} hold-transition sidebar-mini {% endblock bodyclass %}
+
+{% block content %}
+  <!-- Content Wrapper. Contains page content -->
+  <div class="content-wrapper">
+    <!-- Content Header (Page header) -->
+    <div class="content-header">
+      <div class="container-fluid">
+        <div class="row mb-2">
+          <div class="col-sm-6">
+            <h1 class="m-0">🔍 Análisis Avanzado y Transparencia</h1>
+          </div><!-- /.col -->
+          <div class="col-sm-6">
+            <ol class="breadcrumb float-sm-right">
+              <li class="breadcrumb-item"><a href="/">Inicio</a></li>
+              <li class="breadcrumb-item active">Análisis y Transparencia</li>
+            </ol>
+          </div><!-- /.col -->
+        </div><!-- /.row -->
+      </div><!-- /.container-fluid -->
+    </div>
+    <!-- /.content-header -->
+
+    <!-- Main content -->
+    <div class="content">
+      <div class="container-fluid">
+        
+        <!-- Alertas del Sistema -->
+        <div class="row">
+          <div class="col-12">
+            <div class="card">
+              <div class="card-header">
+                <h5 class="card-title">
+                  <i class="fas fa-bell mr-2"></i>
+                  Alertas y Notificaciones del Sistema
+                </h5>
+              </div>
+              <div class="card-body">
+                <div class="row">
+                  {% for alerta in alertas_sistema %}
+                  <div class="col-md-3">
+                    <div class="alert 
+                      {% if alerta.tipo == 'danger' or alerta.urgencia == 'crítica' %}alert-danger
+                      {% elif alerta.tipo == 'warning' or alerta.urgencia == 'alta' %}alert-warning
+                      {% elif alerta.tipo == 'info' or alerta.urgencia == 'media' %}alert-info
+                      {% else %}alert-success{% endif %} alert-dismissible">
+                      <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
+                      <h6>
+                        {% if alerta.tipo == 'danger' %}<i class="icon fas fa-exclamation-triangle"></i>
+                        {% elif alerta.tipo == 'warning' %}<i class="icon fas fa-clock"></i>
+                        {% elif alerta.tipo == 'info' %}<i class="icon fas fa-info"></i>
+                        {% else %}<i class="icon fas fa-check"></i>{% endif %}
+                        {{ alerta.titulo }}
+                      </h6>
+                      <p class="mb-1">{{ alerta.descripcion }}</p>
+                      <small class="text-muted">{{ alerta.tiempo }}</small>
+                    </div>
+                  </div>
+                  {% endfor %}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Métricas de Transparencia -->
+        <div class="row">
+          <div class="col-12 col-sm-6 col-md-3">
+            <div class="info-box">
+              <span class="info-box-icon bg-success elevation-1">
+                <i class="fas fa-eye"></i>
+              </span>
+              <div class="info-box-content">
+                <span class="info-box-text">Transparencia</span>
+                <span class="info-box-number">
+                  {{ transparencia_metrics.cumplimiento_plazos }}%
+                  <small>cumplimiento</small>
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-12 col-sm-6 col-md-3">
+            <div class="info-box mb-3">
+              <span class="info-box-icon bg-primary elevation-1">
+                <i class="fas fa-clock"></i>
+              </span>
+              <div class="info-box-content">
+                <span class="info-box-text">Publicación</span>
+                <span class="info-box-number">
+                  {{ transparencia_metrics.tiempo_medio_publicacion }}h
+                  <small>promedio</small>
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-12 col-sm-6 col-md-3">
+            <div class="info-box mb-3">
+              <span class="info-box-icon bg-info elevation-1">
+                <i class="fas fa-universal-access"></i>
+              </span>
+              <div class="info-box-content">
+                <span class="info-box-text">Accesibilidad</span>
+                <span class="info-box-number">{{ transparencia_metrics.accesibilidad_web }}%</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-12 col-sm-6 col-md-3">
+            <div class="info-box mb-3">
+              <span class="info-box-icon bg-warning elevation-1">
+                <i class="fas fa-download"></i>
+              </span>
+              <div class="info-box-content">
+                <span class="info-box-text">Descargas</span>
+                <span class="info-box-number">{{ transparencia_metrics.descargas_mensuales }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Gráficos principales -->
+        <div class="row">
+          <!-- Tendencias de Transparencia -->
+          <div class="col-lg-6">
+            <div class="card">
+              <div class="card-header border-0">
+                <div class="d-flex justify-content-between">
+                  <h5 class="card-title">
+                    <i class="fas fa-chart-line mr-2"></i>
+                    Evolución de Transparencia
+                  </h5>
+                  <a href="/reportes/transparencia/">Ver Reporte Completo</a>
+                </div>
+              </div>
+              <div class="card-body">
+                <div class="d-flex">
+                  <p class="d-flex flex-column">
+                    <span class="text-bold text-lg">{{ transparencia_metrics.cumplimiento_plazos }}%</span>
+                    <span>Cumplimiento de Plazos</span>
+                  </p>
+                  <p class="ml-auto d-flex flex-column text-right">
+                    <span class="text-success">
+                      <i class="fas fa-arrow-up"></i> 8.3%
+                    </span>
+                    <span class="text-muted">Desde el mes pasado</span>
+                  </p>
+                </div>
+
+                <div class="position-relative mb-4">
+                  <canvas id="transparencia-chart" height="200"></canvas>
+                </div>
+
+                <div class="d-flex flex-row justify-content-end">
+                  <span class="mr-2">
+                    <i class="fas fa-square text-success"></i> Cumplimiento
+                  </span>
+                  <span>
+                    <i class="fas fa-square text-primary"></i> Publicaciones
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Análisis de Contenido IA -->
+          <div class="col-lg-6">
+            <div class="card">
+              <div class="card-header border-0">
+                <h5 class="card-title">
+                  <i class="fas fa-brain mr-2"></i>
+                  Análisis de Contenido por IA
+                </h5>
+              </div>
+              <div class="card-body">
+                <h6>Temas más Frecuentes:</h6>
+                {% for tema in analisis_contenido.temas_frecuentes %}
+                <div class="progress-group mb-2">
+                  {{ tema.tema }}
+                  <span class="float-right">
+                    <b>{{ tema.frecuencia }}</b> 
+                    <small class="text-{% if '+' in tema.tendencia %}success{% else %}danger{% endif %}">
+                      {{ tema.tendencia }}
+                    </small>
+                  </span>
+                  <div class="progress progress-sm">
+                    <div class="progress-bar bg-primary" style="width: {{ tema.frecuencia }}%"></div>
+                  </div>
+                </div>
+                {% endfor %}
+
+                <hr>
+                
+                <h6>Análisis de Sentimientos:</h6>
+                <div class="row text-center">
+                  <div class="col-4">
+                    <div class="description-block">
+                      <span class="description-percentage text-success">
+                        {{ analisis_contenido.sentimientos_detectados.positivo }}%
+                      </span>
+                      <h6 class="description-header">Positivo</h6>
+                    </div>
+                  </div>
+                  <div class="col-4">
+                    <div class="description-block">
+                      <span class="description-percentage text-info">
+                        {{ analisis_contenido.sentimientos_detectados.neutral }}%
+                      </span>
+                      <h6 class="description-header">Neutral</h6>
+                    </div>
+                  </div>
+                  <div class="col-4">
+                    <div class="description-block">
+                      <span class="description-percentage text-danger">
+                        {{ analisis_contenido.sentimientos_detectados.negativo }}%
+                      </span>
+                      <h6 class="description-header">Negativo</h6>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+                <!-- Cumplimiento Normativo y Métricas de Calidad -->
+        <div class="row">
+          <!-- Cumplimiento Normativo -->
+          <div class="col-lg-8">
+            <div class="card">
+              <div class="card-header border-0">
+                <h5 class="card-title">
+                  <i class="fas fa-balance-scale mr-2"></i>
+                  Cumplimiento Normativo
+                </h5>
+                <div class="card-tools">
+                  <a href="/normativa/" class="btn btn-tool btn-sm">
+                    <i class="fas fa-download"></i>
+                  </a>
+                  <a href="/auditoria/" class="btn btn-tool btn-sm">
+                    <i class="fas fa-search"></i>
+                  </a>
+                </div>
+              </div>
+              <div class="card-body table-responsive p-0">
+                <table class="table table-striped table-valign-middle">
+                  <thead>
+                  <tr>
+                    <th>Normativa</th>
+                    <th>Cumplimiento</th>
+                    <th>Estado</th>
+                    <th>Acciones</th>
+                  </tr>
+                  </thead>
+                  <tbody>
+                  {% for norma in cumplimiento_normativo %}
+                  <tr>
+                    <td>
+                      <i class="fas fa-gavel text-primary mr-2"></i>
+                      {{ norma.norma }}
+                    </td>
+                    <td>{{ norma.cumplimiento }}%</td>
+                    <td>
+                      {% if norma.estado == 'excelente' %}
+                        <span class="badge badge-success">Excelente</span>
+                      {% elif norma.estado == 'muy_bueno' %}
+                        <span class="badge badge-primary">Muy Bueno</span>
+                      {% elif norma.estado == 'bueno' %}
+                        <span class="badge badge-warning">Bueno</span>
+                      {% else %}
+                        <span class="badge badge-danger">Requiere Atención</span>
+                      {% endif %}
+                    </td>
+                    <td>
+                      <a href="/normativa/{{ norma.norma|slugify }}/" class="text-muted">
+                        <i class="fas fa-eye"></i>
+                      </a>
+                      <a href="/auditoria/{{ norma.norma|slugify }}/" class="text-muted ml-2">
+                        <i class="fas fa-chart-bar"></i>
+                      </a>
+                    </td>
+                  </tr>
+                  {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- Métricas de Calidad del Sistema -->
+          <div class="col-lg-4">
+            <div class="card">
+              <div class="card-header">
+                <h5 class="card-title">
+                  <i class="fas fa-award mr-2"></i>
+                  Calidad del Sistema
+                </h5>
+              </div>
+              <div class="card-body">
+                <div class="progress-group mb-3">
+                  Precisión Transcripción
+                  <span class="float-right"><b>{{ calidad_sistema.precision_transcripcion }}%</b></span>
+                  <div class="progress progress-sm">
+                    <div class="progress-bar bg-success" style="width: {{ calidad_sistema.precision_transcripcion }}%"></div>
+                  </div>
+                </div>
+
+                <div class="progress-group mb-3">
+                  Clasificación Automática
+                  <span class="float-right"><b>{{ calidad_sistema.precision_clasificacion }}%</b></span>
+                  <div class="progress progress-sm">
+                    <div class="progress-bar bg-primary" style="width: {{ calidad_sistema.precision_clasificacion }}%"></div>
+                  </div>
+                </div>
+
+                <div class="progress-group mb-3">
+                  Extracción de Datos
+                  <span class="float-right"><b>{{ calidad_sistema.precision_extraccion_datos }}%</b></span>
+                  <div class="progress progress-sm">
+                    <div class="progress-bar bg-info" style="width: {{ calidad_sistema.precision_extraccion_datos }}%"></div>
+                  </div>
+                </div>
+
+                <div class="progress-group mb-3">
+                  Disponibilidad Sistema
+                  <span class="float-right"><b>{{ calidad_sistema.disponibilidad_sistema }}%</b></span>
+                  <div class="progress progress-sm">
+                    <div class="progress-bar bg-warning" style="width: {{ calidad_sistema.disponibilidad_sistema }}%"></div>
+                  </div>
+                </div>
+
+                <hr>
+
+                <div class="text-center">
+                  <h4>{{ calidad_sistema.satisfaccion_usuario }}/5</h4>
+                  <p class="text-muted">Satisfacción de Usuario</p>
+                  <div class="rating">
+                    {% for i in "12345" %}
+                      {% if forloop.counter <= calidad_sistema.satisfaccion_usuario %}
+                        <i class="fas fa-star text-warning"></i>
+                      {% else %}
+                        <i class="far fa-star text-muted"></i>
+                      {% endif %}
+                    {% endfor %}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Estadísticas de Uso Ciudadano -->
+            <div class="card">
+              <div class="card-header">
+                <h5 class="card-title">
+                  <i class="fas fa-users mr-2"></i>
+                  Uso Ciudadano
+                </h5>
+              </div>
+              <div class="card-body">
+                <div class="info-box mb-2">
+                  <span class="info-box-icon bg-primary"><i class="fas fa-users"></i></span>
+                  <div class="info-box-content">
+                    <span class="info-box-text">Visitantes Únicos</span>
+                    <span class="info-box-number">{{ uso_ciudadano.visitantes_unicos }}</span>
+                  </div>
+                </div>
+
+                <div class="info-box mb-2">
+                  <span class="info-box-icon bg-success"><i class="fas fa-search"></i></span>
+                  <div class="info-box-content">
+                    <span class="info-box-text">Búsquedas</span>
+                    <span class="info-box-number">{{ uso_ciudadano.busquedas_realizadas }}</span>
+                  </div>
+                </div>
+
+                <div class="info-box mb-2">
+                  <span class="info-box-icon bg-warning"><i class="fas fa-download"></i></span>
+                  <div class="info-box-content">
+                    <span class="info-box-text">Descargas</span>
+                    <span class="info-box-number">{{ uso_ciudadano.documentos_descargados }}</span>
+                  </div>
+                </div>
+
+                <div class="info-box mb-2">
+                  <span class="info-box-icon bg-info"><i class="fas fa-mobile-alt"></i></span>
+                  <div class="info-box-content">
+                    <span class="info-box-text">Móviles</span>
+                    <span class="info-box-number">{{ uso_ciudadano.dispositivos_moviles }}%</span>
+                  </div>
+                </div>
+
+                <hr>
+                <p class="text-center text-muted">
+                  <i class="fas fa-clock"></i> 
+                  Sesión promedio: {{ uso_ciudadano.tiempo_promedio_sesion }}
+                  <br>
+                  <i class="fas fa-chart-line"></i> 
+                  Horario pico: {{ uso_ciudadano.horario_pico }}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Gráfico de Accesos Ciudadanos -->
+        <div class="row">
+          <div class="col-12">
+            <div class="card">
+              <div class="card-header">
+                <h5 class="card-title">
+                  <i class="fas fa-chart-area mr-2"></i>
+                  Accesos Ciudadanos al Portal de Transparencia
+                </h5>
+                <div class="card-tools">
+                  <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                    <i class="fas fa-minus"></i>
+                  </button>
+                </div>
+              </div>
+              <div class="card-body">
+                <div class="chart">
+                  <canvas id="accesos-chart" height="100"></canvas>
+                </div>
+              </div>
+              <div class="card-footer">
+                <div class="row">
+                  <div class="col-sm-3 col-6">
+                    <div class="description-block border-right">
+                      <span class="description-percentage text-success">
+                        <i class="fas fa-caret-up"></i> 23.5%
+                      </span>
+                      <h5 class="description-header">{{ uso_ciudadano.visitantes_unicos }}</h5>
+                      <span class="description-text">VISITANTES ÚNICOS</span>
+                    </div>
+                  </div>
+                  <div class="col-sm-3 col-6">
+                    <div class="description-block border-right">
+                      <span class="description-percentage text-info">
+                        <i class="fas fa-caret-up"></i> 17.2%
+                      </span>
+                      <h5 class="description-header">{{ uso_ciudadano.busquedas_realizadas }}</h5>
+                      <span class="description-text">BÚSQUEDAS</span>
+                    </div>
+                  </div>
+                  <div class="col-sm-3 col-6">
+                    <div class="description-block border-right">
+                      <span class="description-percentage text-warning">
+                        <i class="fas fa-caret-up"></i> 12.8%
+                      </span>
+                      <h5 class="description-header">{{ uso_ciudadano.documentos_descargados }}</h5>
+                      <span class="description-text">DESCARGAS</span>
+                    </div>
+                  </div>
+                  <div class="col-sm-3 col-6">
+                    <div class="description-block">
+                      <span class="description-percentage text-primary">
+                        <i class="fas fa-caret-up"></i> 8.1%
+                      </span>
+                      <h5 class="description-header">{{ uso_ciudadano.dispositivos_moviles }}%</h5>
+                      <span class="description-text">ACCESO MÓVIL</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /.container-fluid -->
+    </div>
+    <!-- /.content -->
+  </div>
+  <!-- /.content-wrapper -->
+        <!-- Gráfico de Accesos Ciudadanos -->
+        <div class="row">
+          <div class="col-12">
+            <div class="card">
+              <div class="card-header">
+                <h5 class="card-title">
+                  <i class="fas fa-chart-area mr-2"></i>
+                  Accesos Ciudadanos al Portal de Transparencia
+                </h5>
+                <div class="card-tools">
+                  <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                    <i class="fas fa-minus"></i>
+                  </button>
+                </div>
+              </div>
+              <div class="card-body">
+                <div class="chart">
+                  <canvas id="accesos-chart" height="100"></canvas>
+                </div>
+              </div>
+              <div class="card-footer">
+                <div class="row">
+                  <div class="col-sm-3 col-6">
+                    <div class="description-block border-right">
+                      <span class="description-percentage text-success">
+                        <i class="fas fa-caret-up"></i> 23.5%
+                      </span>
+                      <h5 class="description-header">{{ uso_ciudadano.visitantes_unicos }}</h5>
+                      <span class="description-text">VISITANTES ÚNICOS</span>
+                    </div>
+                  </div>
+                  <div class="col-sm-3 col-6">
+                    <div class="description-block border-right">
+                      <span class="description-percentage text-info">
+                        <i class="fas fa-caret-up"></i> 17.2%
+                      </span>
+                      <h5 class="description-header">{{ uso_ciudadano.busquedas_realizadas }}</h5>
+                      <span class="description-text">BÚSQUEDAS</span>
+                    </div>
+                  </div>
+                  <div class="col-sm-3 col-6">
+                    <div class="description-block border-right">
+                      <span class="description-percentage text-warning">
+                        <i class="fas fa-caret-up"></i> 12.8%
+                      </span>
+                      <h5 class="description-header">{{ uso_ciudadano.documentos_descargados }}</h5>
+                      <span class="description-text">DESCARGAS</span>
+                    </div>
+                  </div>
+                  <div class="col-sm-3 col-6">
+                    <div class="description-block">
+                      <span class="description-percentage text-primary">
+                        <i class="fas fa-caret-up"></i> 8.1%
+                      </span>
+                      <h5 class="description-header">{{ uso_ciudadano.dispositivos_moviles }}%</h5>
+                      <span class="description-text">ACCESO MÓVIL</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /.container-fluid -->
+    </div>
+    <!-- /.content -->
+  </div>
+  <!-- /.content-wrapper -->
+{% endblock content %}
+
+{% block javascripts %}
+  {{ block.super }}
+  <script src="{% static 'plugins/chart.js/Chart.min.js' %}"></script>
+  
+  <script>
+    $(function () {
+      // Gráfico de Transparencia
+      var transparenciaData = {
+        labels: {{ meses_trend_json|safe }},
+        datasets: [
+          {
+            label: 'Cumplimiento (%)',
+            backgroundColor: 'rgba(40, 167, 69, 0.2)',
+            borderColor: 'rgba(40, 167, 69, 1)',
+            pointRadius: 4,
+            pointColor: 'rgba(40, 167, 69, 1)',
+            pointStrokeColor: '#fff',
+            pointHighlightFill: '#fff',
+            pointHighlightStroke: 'rgba(40, 167, 69, 1)',
+            data: {{ transparencia_trend_json|safe }}
+          },
+          {
+            label: 'Publicaciones',
+            backgroundColor: 'rgba(0, 123, 255, 0.2)',
+            borderColor: 'rgba(0, 123, 255, 1)',
+            pointRadius: 4,
+            pointColor: 'rgba(0, 123, 255, 1)',
+            pointStrokeColor: '#fff',
+            pointHighlightFill: '#fff',
+            pointHighlightStroke: 'rgba(0, 123, 255, 1)',
+            data: {{ publicaciones_trend_json|safe }}
+          }
+        ]
+      };
+
+      var transparenciaOptions = {
+        maintainAspectRatio: false,
+        responsive: true,
+        legend: {
+          display: true
+        },
+        scales: {
+          xAxes: [{
+            gridLines: {
+              display: false
+            }
+          }],
+          yAxes: [{
+            gridLines: {
+              display: true
+            },
+            ticks: {
+              beginAtZero: true,
+              max: 100
+            }
+          }]
+        }
+      };
+
+      var transparenciaChartCanvas = $('#transparencia-chart').get(0).getContext('2d');
+      var transparenciaChart = new Chart(transparenciaChartCanvas, {
+        type: 'line',
+        data: transparenciaData,
+        options: transparenciaOptions
+      });
+
+      // Gráfico de Accesos Ciudadanos
+      var accesosData = {
+        labels: {{ meses_trend_json|safe }},
+        datasets: [{
+          label: 'Accesos',
+          backgroundColor: 'rgba(54, 162, 235, 0.5)',
+          borderColor: 'rgba(54, 162, 235, 1)',
+          borderWidth: 2,
+          data: {{ accesos_ciudadanos_json|safe }}
+        }]
+      };
+
+      var accesosOptions = {
+        maintainAspectRatio: false,
+        responsive: true,
+        legend: {
+          display: false
+        },
+        scales: {
+          xAxes: [{
+            gridLines: {
+              display: false
+            }
+          }],
+          yAxes: [{
+            gridLines: {
+              display: true
+            },
+            ticks: {
+              beginAtZero: true
+            }
+          }]
+        }
+      };
+
+      var accesosChartCanvas = $('#accesos-chart').get(0).getContext('2d');
+      var accesosChart = new Chart(accesosChartCanvas, {
+        type: 'bar',
+        data: accesosData,
+        options: accesosOptions
+      });
+    });
+  </script>
+{% endblock javascripts %}
+

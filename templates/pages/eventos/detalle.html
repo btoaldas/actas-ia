@@ -1,0 +1,471 @@
+{% extends 'layouts/base.html' %}
+{% load static %}
+
+{% block title %}{{ evento.titulo }}{% endblock title %}
+
+{% block extrastyle %}
+  <style>
+    .evento-header {
+      background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+      color: white;
+      padding: 30px 0;
+      margin-bottom: 30px;
+    }
+    .evento-tipo-badge {
+      font-size: 0.9rem;
+      padding: 8px 16px;
+    }
+    .evento-estado {
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+    .info-card {
+      border-left: 4px solid #007bff;
+      background: #f8f9fa;
+    }
+    .asistente-item {
+      padding: 8px 12px;
+      margin: 4px;
+      background: #e9ecef;
+      border-radius: 20px;
+      display: inline-block;
+      font-size: 0.9rem;
+    }
+    .documento-item {
+      border: 1px solid #dee2e6;
+      border-radius: 8px;
+      padding: 15px;
+      margin-bottom: 10px;
+      transition: all 0.3s ease;
+    }
+    .documento-item:hover {
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      border-color: #007bff;
+    }
+  </style>
+{% endblock extrastyle %}
+
+{% block bodyclass %}hold-transition sidebar-mini{% endblock bodyclass %}
+
+{% block content %}
+  <!-- Content Wrapper. Contains page content -->
+  <div class="content-wrapper">
+    
+    <!-- Header del evento -->
+    <section class="evento-header">
+      <div class="container-fluid">
+        <div class="row">
+          <div class="col-md-8">
+            <h1 class="display-4">
+              <i class="{{ evento.icono_tipo }}"></i> {{ evento.titulo }}
+            </h1>
+            <p class="lead">{{ evento.descripcion|truncatewords:30 }}</p>
+            
+            <div class="mt-3">
+              <span class="badge evento-tipo-badge mr-2" style="background-color: {{ evento.color_tipo }};">
+                <i class="{{ evento.icono_tipo }}"></i> {{ evento.get_tipo_display }}
+              </span>
+              
+              {% if evento.estado == 'programado' %}
+                <span class="evento-estado bg-warning text-dark">
+                  <i class="fas fa-clock"></i> {{ evento.get_estado_display }}
+                </span>
+              {% elif evento.estado == 'confirmado' %}
+                <span class="evento-estado bg-success">
+                  <i class="fas fa-check-circle"></i> {{ evento.get_estado_display }}
+                </span>
+              {% elif evento.estado == 'en_curso' %}
+                <span class="evento-estado bg-primary">
+                  <i class="fas fa-play"></i> {{ evento.get_estado_display }}
+                </span>
+              {% elif evento.estado == 'finalizado' %}
+                <span class="evento-estado bg-secondary">
+                  <i class="fas fa-flag-checkered"></i> {{ evento.get_estado_display }}
+                </span>
+              {% elif evento.estado == 'cancelado' %}
+                <span class="evento-estado bg-danger">
+                  <i class="fas fa-times-circle"></i> {{ evento.get_estado_display }}
+                </span>
+              {% endif %}
+            </div>
+          </div>
+          
+          <div class="col-md-4 text-right">
+            {% if evento.imagen_evento %}
+              <img src="{{ evento.imagen_evento.url }}" alt="{{ evento.titulo }}" 
+                   class="img-fluid rounded shadow" style="max-height: 200px;">
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Breadcrumb -->
+    <section class="content-header">
+      <div class="container-fluid">
+        <ol class="breadcrumb">
+          <li class="breadcrumb-item"><a href="{% url 'transparencia_index' %}">Inicio</a></li>
+          <li class="breadcrumb-item"><a href="{% url 'eventos_calendario' %}">Eventos</a></li>
+          <li class="breadcrumb-item active">{{ evento.titulo|truncatewords:5 }}</li>
+        </ol>
+      </div>
+    </section>
+
+    <!-- Main content -->
+    <section class="content">
+      <div class="container-fluid">
+        <div class="row">
+          
+          <!-- Información principal -->
+          <div class="col-md-8">
+            
+            <!-- Descripción -->
+            {% if evento.descripcion %}
+              <div class="card">
+                <div class="card-header">
+                  <h3 class="card-title">
+                    <i class="fas fa-info-circle"></i> Descripción del Evento
+                  </h3>
+                </div>
+                <div class="card-body">
+                  <p class="text-justify">{{ evento.descripcion|linebreaks }}</p>
+                </div>
+              </div>
+            {% endif %}
+
+            <!-- Documentos relacionados -->
+            {% if documentos %}
+              <div class="card">
+                <div class="card-header">
+                  <h3 class="card-title">
+                    <i class="fas fa-file-alt"></i> Documentos del Evento
+                  </h3>
+                  <div class="card-tools">
+                    <span class="badge badge-info">{{ documentos|length }} documento{{ documentos|length|pluralize:"s" }}</span>
+                  </div>
+                </div>
+                <div class="card-body">
+                  {% for documento in documentos %}
+                    <div class="documento-item">
+                      <div class="row align-items-center">
+                        <div class="col-md-8">
+                          <h6 class="mb-1">
+                            {{ documento.icono_tipo|safe }}
+                            {{ documento.nombre }}
+                          </h6>
+                          <div class="text-muted">
+                            <small>
+                              <i class="fas fa-tag"></i> {{ documento.get_tipo_documento_display }}
+                              {% if documento.tamaño_archivo %}
+                                | <i class="fas fa-weight"></i> {{ documento.tamaño_archivo|filesizeformat }}
+                              {% endif %}
+                              {% if documento.extension_archivo %}
+                                | <i class="fas fa-file"></i> {{ documento.extension_archivo|upper }}
+                              {% endif %}
+                            </small>
+                          </div>
+                          <small class="text-muted d-block mt-1">
+                            <i class="fas fa-clock"></i> Subido el {{ documento.fecha_subida|date:"d/m/Y H:i" }}
+                            {% if documento.subido_por %}
+                              por {{ documento.subido_por.get_full_name|default:documento.subido_por.username }}
+                            {% endif %}
+                          </small>
+                        </div>
+                        <div class="col-md-4 text-right">
+                          <a href="{{ documento.archivo.url }}" 
+                             class="btn btn-primary btn-sm" 
+                             target="_blank"
+                             title="Descargar {{ documento.nombre }}">
+                            <i class="fas fa-download"></i> Descargar
+                          </a>
+                        </div>
+                      </div>
+                    </div>
+                  {% endfor %}
+                </div>
+              </div>
+            {% endif %}
+
+            <!-- Asistentes confirmados -->
+            {% if evento.asistentes_confirmados.exists %}
+              <div class="card">
+                <div class="card-header">
+                  <h3 class="card-title">
+                    <i class="fas fa-users"></i> Asistentes Confirmados (Sistema)
+                    <span class="badge badge-primary ml-2">{{ evento.total_asistentes_confirmados }}</span>
+                  </h3>
+                </div>
+                <div class="card-body">
+                  {% for asistente in evento.asistentes_confirmados.all %}
+                    <span class="asistente-item">
+                      <i class="fas fa-user"></i>
+                      {% if asistente.get_full_name %}
+                        {{ asistente.get_full_name }}
+                      {% else %}
+                        {{ asistente.username }}
+                      {% endif %}
+                    </span>
+                  {% endfor %}
+                </div>
+              </div>
+            {% endif %}
+
+            <!-- Invitados externos -->
+            {% if invitados_externos %}
+              <div class="card">
+                <div class="card-header">
+                  <h3 class="card-title">
+                    <i class="fas fa-envelope"></i> Invitados Externos
+                    <span class="badge badge-info ml-2">{{ invitados_externos|length }}</span>
+                  </h3>
+                </div>
+                <div class="card-body">
+                  {% for invitacion in invitados_externos %}
+                    <div class="d-flex justify-content-between align-items-center mb-2 p-2 border rounded">
+                      <div>
+                        <i class="fas fa-envelope"></i>
+                        {% if invitacion.confirmado and invitacion.nombre_confirmado %}
+                          <strong>{{ invitacion.nombre_confirmado }}</strong>
+                          <small class="text-muted d-block">{{ invitacion.email }}</small>
+                        {% else %}
+                          {{ invitacion.email }}
+                        {% endif %}
+                      </div>
+                      <div>
+                        {% if invitacion.confirmado %}
+                          <span class="badge badge-success">
+                            <i class="fas fa-check"></i> Confirmado
+                          </span>
+                          {% if invitacion.fecha_confirmacion %}
+                            <small class="text-muted d-block">
+                              {{ invitacion.fecha_confirmacion|date:"d/m/Y H:i" }}
+                            </small>
+                          {% endif %}
+                        {% elif invitacion.enviado %}
+                          <span class="badge badge-warning">
+                            <i class="fas fa-clock"></i> Pendiente
+                          </span>
+                        {% else %}
+                          <span class="badge badge-secondary">
+                            <i class="fas fa-times"></i> No enviado
+                          </span>
+                        {% endif %}
+                      </div>
+                    </div>
+                  {% endfor %}
+                </div>
+              </div>
+            {% endif %}
+          </div>
+
+          <!-- Información lateral -->
+          <div class="col-md-4">
+            
+            <!-- Información del evento -->
+            <div class="card info-card">
+              <div class="card-header bg-primary text-white">
+                <h4 class="card-title mb-0">
+                  <i class="fas fa-calendar-alt"></i> Información del Evento
+                </h4>
+              </div>
+              <div class="card-body">
+                
+                <!-- Fechas -->
+                <div class="mb-3">
+                  <strong><i class="fas fa-calendar-day"></i> Fecha de inicio:</strong><br>
+                  <span class="text-primary">{{ evento.fecha_inicio|date:"l, d F Y" }}</span><br>
+                  <span class="text-muted">{{ evento.fecha_inicio|date:"H:i" }} hrs</span>
+                </div>
+                
+                <div class="mb-3">
+                  <strong><i class="fas fa-calendar-check"></i> Fecha de fin:</strong><br>
+                  <span class="text-primary">{{ evento.fecha_fin|date:"l, d F Y" }}</span><br>
+                  <span class="text-muted">{{ evento.fecha_fin|date:"H:i" }} hrs</span>
+                </div>
+
+                <!-- Duración -->
+                <div class="mb-3">
+                  <strong><i class="fas fa-clock"></i> Duración:</strong><br>
+                  <span class="text-info">{{ evento.duracion_horas }} horas</span>
+                </div>
+
+                <!-- Ubicación -->
+                {% if evento.ubicacion %}
+                  <div class="mb-3">
+                    <strong><i class="fas fa-map-marker-alt"></i> Ubicación:</strong><br>
+                    <span>{{ evento.ubicacion }}</span>
+                    {% if evento.direccion %}
+                      <br><small class="text-muted">{{ evento.direccion }}</small>
+                    {% endif %}
+                  </div>
+                {% endif %}
+
+                <!-- Organizador -->
+                <div class="mb-3">
+                  <strong><i class="fas fa-user-tie"></i> Organizador:</strong><br>
+                  <span>
+                    {% if evento.organizador.get_full_name %}
+                      {{ evento.organizador.get_full_name }}
+                    {% else %}
+                      {{ evento.organizador.username }}
+                    {% endif %}
+                  </span>
+                </div>
+
+                <!-- Capacidad -->
+                {% if evento.capacidad_maxima > 0 %}
+                  <div class="mb-3">
+                    <strong><i class="fas fa-users"></i> Capacidad:</strong><br>
+                    <div class="progress mt-2">
+                      <div class="progress-bar" role="progressbar" 
+                           style="width: {{ evento.porcentaje_ocupacion }}%"
+                           aria-valuenow="{{ evento.total_asistentes_confirmados }}" 
+                           aria-valuemin="0" aria-valuemax="{{ evento.capacidad_maxima }}">
+                        {{ evento.total_asistentes_confirmados }}/{{ evento.capacidad_maxima }}
+                      </div>
+                    </div>
+                    <small class="text-muted">{{ evento.porcentaje_ocupacion }}% ocupado</small>
+                  </div>
+                {% endif %}
+
+                <!-- Visibilidad -->
+                <div class="mb-3">
+                  <strong><i class="fas fa-eye"></i> Visibilidad:</strong><br>
+                  {% if evento.visibilidad == 'publico' %}
+                    <span class="badge badge-success">
+                      <i class="fas fa-globe"></i> Público
+                    </span>
+                  {% elif evento.visibilidad == 'privado' %}
+                    <span class="badge badge-warning">
+                      <i class="fas fa-lock"></i> Privado
+                    </span>
+                  {% elif evento.visibilidad == 'restringido' %}
+                    <span class="badge badge-danger">
+                      <i class="fas fa-shield-alt"></i> Restringido
+                    </span>
+                  {% endif %}
+                </div>
+              </div>
+            </div>
+
+            <!-- Acciones -->
+            <div class="card">
+              <div class="card-header bg-secondary text-white">
+                <h4 class="card-title mb-0">
+                  <i class="fas fa-cogs"></i> Acciones
+                </h4>
+              </div>
+              <div class="card-body">
+                
+                <!-- Confirmar asistencia -->
+                {% if puede_confirmar and not ya_confirmo %}
+                  <button id="confirmar-asistencia" class="btn btn-success btn-block mb-2" 
+                          data-evento-id="{{ evento.pk }}">
+                    <i class="fas fa-check"></i> Confirmar Asistencia
+                  </button>
+                {% elif ya_confirmo %}
+                  <div class="alert alert-success text-center">
+                    <i class="fas fa-check-circle"></i><br>
+                    Ya confirmaste tu asistencia
+                  </div>
+                {% endif %}
+
+                <!-- Botones de administración -->
+                {% if puede_editar %}
+                  <a href="{% url 'eventos_editar' evento.pk %}" class="btn btn-warning btn-block mb-2">
+                    <i class="fas fa-edit"></i> Editar Evento
+                  </a>
+                {% endif %}
+
+                <!-- Volver al calendario -->
+                <a href="{% url 'eventos_calendario' %}" class="btn btn-primary btn-block">
+                  <i class="fas fa-calendar-alt"></i> Volver al Calendario
+                </a>
+
+                <!-- Compartir evento -->
+                <div class="mt-3">
+                  <strong>Compartir:</strong><br>
+                  <div class="btn-group btn-group-sm" role="group">
+                    <button type="button" class="btn btn-outline-primary" onclick="compartirFacebook()">
+                      <i class="fab fa-facebook-f"></i>
+                    </button>
+                    <button type="button" class="btn btn-outline-info" onclick="compartirTwitter()">
+                      <i class="fab fa-twitter"></i>
+                    </button>
+                    <button type="button" class="btn btn-outline-success" onclick="copiarEnlace()">
+                      <i class="fas fa-link"></i>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+{% endblock content %}
+
+{% block extra_scripts %}
+  <script>
+    $(document).ready(function() {
+      // Confirmar asistencia
+      $('#confirmar-asistencia').click(function() {
+        const eventoId = $(this).data('evento-id');
+        const button = $(this);
+        
+        if (confirm('¿Confirmas tu asistencia a este evento?')) {
+          $.ajax({
+            url: `/eventos/${eventoId}/confirmar-asistencia/`,
+            method: 'POST',
+            headers: {
+              'X-CSRFToken': $('[name=csrfmiddlewaretoken]').val()
+            },
+            success: function(response) {
+              if (response.success) {
+                button.removeClass('btn-success').addClass('btn-secondary');
+                button.html('<i class="fas fa-check-circle"></i> Asistencia Confirmada');
+                button.prop('disabled', true);
+                
+                // Actualizar contador si existe
+                const badge = $('.badge-primary');
+                if (badge.length) {
+                  const current = parseInt(badge.text()) || 0;
+                  badge.text(current + 1);
+                }
+                
+                alert(response.mensaje);
+              }
+            },
+            error: function(xhr) {
+              const response = JSON.parse(xhr.responseText);
+              alert('Error: ' + response.error);
+            }
+          });
+        }
+      });
+    });
+
+    // Funciones para compartir
+    function compartirFacebook() {
+      const url = encodeURIComponent(window.location.href);
+      const titulo = encodeURIComponent('{{ evento.titulo }}');
+      window.open(`https://www.facebook.com/sharer/sharer.php?u=${url}`, '_blank');
+    }
+
+    function compartirTwitter() {
+      const url = encodeURIComponent(window.location.href);
+      const texto = encodeURIComponent('{{ evento.titulo }} - {{ evento.fecha_inicio|date:"d/m/Y H:i" }}');
+      window.open(`https://twitter.com/intent/tweet?url=${url}&text=${texto}`, '_blank');
+    }
+
+    function copiarEnlace() {
+      navigator.clipboard.writeText(window.location.href).then(function() {
+        alert('Enlace copiado al portapapeles');
+      });
+    }
+  </script>
+{% endblock extra_scripts %}

@@ -1,0 +1,457 @@
+{% extends 'layouts/base.html' %}
+{% load static %}
+
+{% block title %} Portal de Transparencia Municipal {% endblock title %}
+
+{% block bodyclass %} hold-transition sidebar-mini {% endblock bodyclass %}
+
+{% block content %}
+<div class="content-wrapper">
+    <!-- Content Header (Page header) -->
+    <div class="content-header">
+        <div class="container-fluid">
+            <div class="row mb-2">
+                <div class="col-sm-6">
+                    <h1 class="m-0">
+                        <i class="fas fa-chart-line mr-2"></i>
+                        Portal de Transparencia Municipal
+                    </h1>
+                </div>
+                <div class="col-sm-6">
+                    <ol class="breadcrumb float-sm-right">
+                        <li class="breadcrumb-item"><a href="{% url 'dashboardv3' %}">Inicio</a></li>
+                        <li class="breadcrumb-item active">Transparencia</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main content -->
+    <section class="content">
+        <div class="container-fluid">
+            
+            <!-- Métricas Principales -->
+            <div class="row">
+                <div class="col-lg-3 col-6">
+                    <div class="small-box bg-info">
+                        <div class="inner">
+                            <h3>{{ metricas.actas_publicas }}</h3>
+                            <p>Actas Públicas</p>
+                        </div>
+                        <div class="icon">
+                            <i class="fas fa-file-alt"></i>
+                        </div>
+                        <a href="{% url 'portal_ciudadano' %}" class="small-box-footer">
+                            Ver Portal Ciudadano <i class="fas fa-arrow-circle-right"></i>
+                        </a>
+                    </div>
+                </div>
+
+                <div class="col-lg-3 col-6">
+                    <div class="small-box bg-success">
+                        <div class="inner">
+                            <h3>{{ metricas.visualizaciones|floatformat:0 }}</h3>
+                            <p>Visualizaciones</p>
+                        </div>
+                        <div class="icon">
+                            <i class="fas fa-eye"></i>
+                        </div>
+                        <a href="{% url 'transparencia_indicadores' %}" class="small-box-footer">
+                            Ver Indicadores <i class="fas fa-arrow-circle-right"></i>
+                        </a>
+                    </div>
+                </div>
+
+                <div class="col-lg-3 col-6">
+                    <div class="small-box bg-warning">
+                        <div class="inner">
+                            <h3>{{ metricas.porcentaje_ejecucion|floatformat:1 }}%</h3>
+                            <p>Ejecución Presupuestal</p>
+                        </div>
+                        <div class="icon">
+                            <i class="fas fa-dollar-sign"></i>
+                        </div>
+                        <a href="{% url 'transparencia_proyectos' %}" class="small-box-footer">
+                            Ver Proyectos <i class="fas fa-arrow-circle-right"></i>
+                        </a>
+                    </div>
+                </div>
+
+                <div class="col-lg-3 col-6">
+                    <div class="small-box bg-danger">
+                        <div class="inner">
+                            <h3>{{ metricas.descargas }}</h3>
+                            <p>Descargas de PDFs</p>
+                        </div>
+                        <div class="icon">
+                            <i class="fas fa-download"></i>
+                        </div>
+                        <a href="{% url 'transparencia_estadisticas' %}" class="small-box-footer">
+                            Ver Estadísticas <i class="fas fa-arrow-circle-right"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Gráficos Principales -->
+            <div class="row">
+                <!-- Gráfico de Métricas de Transparencia -->
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">
+                                <i class="fas fa-chart-line mr-2"></i>
+                                Métricas de Transparencia
+                            </h3>
+                            <div class="card-tools">
+                                <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                                    <i class="fas fa-minus"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div id="metricas-chart" style="height: 300px;"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Gráfico de Proyectos por Estado -->
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">
+                                <i class="fas fa-chart-pie mr-2"></i>
+                                Proyectos por Estado
+                            </h3>
+                            <div class="card-tools">
+                                <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                                    <i class="fas fa-minus"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div id="proyectos-estado-chart" style="height: 300px;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Widget de Eventos de Hoy -->
+            <div class="row">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">
+                                <i class="fas fa-calendar-day mr-2"></i>
+                                Eventos de Hoy
+                            </h3>
+                            <div class="card-tools">
+                                <a href="{% url 'eventos_calendario' %}" class="btn btn-primary btn-sm">
+                                    <i class="fas fa-calendar-alt"></i> Ver Calendario
+                                </a>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div id="eventos-hoy-widget">
+                                <div class="text-center">
+                                    <i class="fas fa-spinner fa-spin"></i> Cargando eventos...
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Indicadores Destacados -->
+            <div class="row">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">
+                                <i class="fas fa-tachometer-alt mr-2"></i>
+                                Indicadores de Transparencia
+                            </h3>
+                            <div class="card-tools">
+                                <a href="{% url 'transparencia_indicadores' %}" class="btn btn-primary btn-sm">
+                                    <i class="fas fa-external-link-alt"></i> Ver Todos
+                                </a>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                {% for indicador in indicadores|slice:":6" %}
+                                <div class="col-md-2">
+                                    <div class="info-box">
+                                        <span class="info-box-icon" style="background-color: {{ indicador.color }};">
+                                            <i class="{{ indicador.icono }}"></i>
+                                        </span>
+                                        <div class="info-box-content">
+                                            <span class="info-box-text">{{ indicador.nombre }}</span>
+                                            <span class="info-box-number">
+                                                {% if indicador.tipo == 'porcentaje' %}
+                                                    95% <!-- Valor ejemplo -->
+                                                {% elif indicador.tipo == 'tiempo' %}
+                                                    2.5d <!-- Valor ejemplo -->
+                                                {% else %}
+                                                    8.7 <!-- Valor ejemplo -->
+                                                {% endif %}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% empty %}
+                                <div class="col-12">
+                                    <p class="text-muted">No hay indicadores configurados.</p>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Proyectos Activos -->
+            <div class="row">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">
+                                <i class="fas fa-tasks mr-2"></i>
+                                Proyectos Municipales Activos
+                            </h3>
+                            <div class="card-tools">
+                                <a href="{% url 'transparencia_proyectos' %}" class="btn btn-primary btn-sm">
+                                    <i class="fas fa-external-link-alt"></i> Ver Todos
+                                </a>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                {% for proyecto in proyectos_activos %}
+                                <div class="col-md-4">
+                                    <div class="card card-widget widget-user">
+                                        <div class="widget-user-header text-white" style="background-color: {{ proyecto.color_estado }};">
+                                            <h3 class="widget-user-username">{{ proyecto.nombre|truncatechars:30 }}</h3>
+                                            <h5 class="widget-user-desc">{{ proyecto.get_categoria_display }}</h5>
+                                        </div>
+                                        <div class="card-footer">
+                                            <div class="row">
+                                                <div class="col-sm-4 border-right">
+                                                    <div class="description-block">
+                                                        <h5 class="description-header">${{ proyecto.presupuesto_total|floatformat:0 }}</h5>
+                                                        <span class="description-text">PRESUPUESTO</span>
+                                                    </div>
+                                                </div>
+                                                <div class="col-sm-4 border-right">
+                                                    <div class="description-block">
+                                                        <h5 class="description-header">{{ proyecto.porcentaje_avance|floatformat:1 }}%</h5>
+                                                        <span class="description-text">AVANCE</span>
+                                                    </div>
+                                                </div>
+                                                <div class="col-sm-4">
+                                                    <div class="description-block">
+                                                        <h5 class="description-header">{{ proyecto.beneficiarios_estimados }}</h5>
+                                                        <span class="description-text">BENEFICIARIOS</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% empty %}
+                                <div class="col-12">
+                                    <p class="text-muted">No hay proyectos activos.</p>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Estadísticas Municipales -->
+            <div class="row">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">
+                                <i class="fas fa-chart-bar mr-2"></i>
+                                Estadísticas Municipales Recientes
+                            </h3>
+                            <div class="card-tools">
+                                <a href="{% url 'transparencia_estadisticas' %}" class="btn btn-primary btn-sm">
+                                    <i class="fas fa-external-link-alt"></i> Ver Todas
+                                </a>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                {% for estadistica in estadisticas %}
+                                <div class="col-md-3">
+                                    <div class="info-box">
+                                        <span class="info-box-icon" style="background-color: {{ estadistica.color }};">
+                                            <i class="{{ estadistica.icono }}"></i>
+                                        </span>
+                                        <div class="info-box-content">
+                                            <span class="info-box-text">{{ estadistica.nombre }}</span>
+                                            <span class="info-box-number">
+                                                {{ estadistica.valor|floatformat:0 }} {{ estadistica.unidad }}
+                                            </span>
+                                            <div class="progress">
+                                                <div class="progress-bar" style="width: 70%; background-color: {{ estadistica.color }};"></div>
+                                            </div>
+                                            <span class="progress-description">
+                                                Actualizado: {{ estadistica.fecha|date:"d/m/Y" }}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% empty %}
+                                <div class="col-12">
+                                    <p class="text-muted">No hay estadísticas disponibles.</p>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </section>
+</div>
+{% endblock content %}
+
+{% block extra_scripts %}
+<script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    // Gráfico de Métricas de Transparencia
+    fetch('{% url "api_transparencia_metricas" %}')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                var options = {
+                    chart: {
+                        type: 'line',
+                        height: 300
+                    },
+                    series: data.series,
+                    xaxis: {
+                        type: 'datetime'
+                    },
+                    stroke: {
+                        curve: 'smooth'
+                    },
+                    title: {
+                        text: 'Evolución de Métricas'
+                    }
+                };
+                var chart = new ApexCharts(document.querySelector("#metricas-chart"), options);
+                chart.render();
+            }
+        });
+
+    // Gráfico de Proyectos por Estado
+    fetch('{% url "api_transparencia_proyectos_stats" %}')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                var options = {
+                    chart: {
+                        type: 'pie',
+                        height: 300
+                    },
+                    series: data.por_estado.map(item => item.value),
+                    labels: data.por_estado.map(item => item.name),
+                    title: {
+                        text: 'Distribución por Estado'
+                    }
+                };
+                var chart = new ApexCharts(document.querySelector("#proyectos-estado-chart"), options);
+                chart.render();
+            }
+        });
+
+    // Cargar eventos de hoy
+    function cargarEventosHoy() {
+        fetch('{% url "api_eventos_hoy" %}')
+            .then(response => response.json())
+            .then(data => {
+                const widget = document.getElementById('eventos-hoy-widget');
+                
+                if (data.success && data.eventos.length > 0) {
+                    let html = `
+                        <div class="mb-3">
+                            <h6 class="text-primary">
+                                <i class="fas fa-calendar-day"></i> 
+                                ${data.fecha} - ${data.total} evento${data.total > 1 ? 's' : ''}
+                            </h6>
+                        </div>
+                        <div class="row">
+                    `;
+                    
+                    data.eventos.forEach(evento => {
+                        html += `
+                            <div class="col-md-6 col-lg-4 mb-3">
+                                <div class="card border-left" style="border-left-color: ${evento.color};">
+                                    <div class="card-body">
+                                        <div class="d-flex justify-content-between align-items-start mb-2">
+                                            <h6 class="card-title mb-0">
+                                                <a href="${evento.url}" class="text-decoration-none">
+                                                    ${evento.titulo}
+                                                </a>
+                                            </h6>
+                                            <span class="badge badge-primary">${evento.hora}</span>
+                                        </div>
+                                        <p class="text-muted mb-1">
+                                            <i class="${evento.icono}"></i> ${evento.tipo}
+                                        </p>
+                                        ${evento.ubicacion ? `
+                                            <p class="text-muted mb-0">
+                                                <i class="fas fa-map-marker-alt"></i> ${evento.ubicacion}
+                                            </p>
+                                        ` : ''}
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    });
+                    
+                    html += '</div>';
+                    widget.innerHTML = html;
+                } else {
+                    widget.innerHTML = `
+                        <div class="text-center text-muted py-4">
+                            <i class="fas fa-calendar-times fa-3x mb-3"></i>
+                            <h5>No hay eventos programados para hoy</h5>
+                            <p class="mb-0">
+                                <a href="{% url 'eventos_calendario' %}" class="btn btn-outline-primary">
+                                    <i class="fas fa-calendar-alt"></i> Ver calendario completo
+                                </a>
+                            </p>
+                        </div>
+                    `;
+                }
+            })
+            .catch(error => {
+                console.error('Error al cargar eventos:', error);
+                document.getElementById('eventos-hoy-widget').innerHTML = `
+                    <div class="text-center text-danger py-4">
+                        <i class="fas fa-exclamation-triangle fa-2x mb-3"></i>
+                        <p>Error al cargar los eventos de hoy</p>
+                    </div>
+                `;
+            });
+    }
+
+    // Cargar eventos al cargar la página
+    cargarEventosHoy();
+    
+    // Actualizar eventos cada 5 minutos
+    setInterval(cargarEventosHoy, 300000);
+    
+});
+</script>
+{% endblock extra_scripts %}

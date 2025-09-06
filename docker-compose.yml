@@ -1,0 +1,129 @@
+services:
+  # Base de datos PostgreSQL
+  db_postgres:
+    image: postgres:15-alpine
+    container_name: actas_postgres
+    restart: always
+    environment:
+      POSTGRES_DB: actas_municipales_pastaza
+      POSTGRES_USER: admin_actas
+      POSTGRES_PASSWORD: actas_pastaza_2025
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init_db.sql:/docker-entrypoint-initdb.d/init_db.sql
+    networks:
+      - actas_network
+
+  # Redis para Celery
+  redis:
+    image: redis:7-alpine
+    container_name: actas_redis
+    restart: always
+    ports:
+      - "6379:6379"
+    networks:
+      - actas_network
+
+  # Aplicación Django principal
+  web:
+    container_name: actas_web
+    restart: always
+    build: 
+      context: .
+      target: base
+    image: actasia-base:latest
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db_postgres
+      - redis
+    environment:
+      - DEBUG=True
+    volumes:
+      - .:/app
+      - ./media:/app/media
+      - ./staticfiles:/app/staticfiles
+      - ./static/dist/img:/app/static/dist/img:rw
+    networks:
+      - actas_network
+    command: >
+      sh -c "python manage.py collectstatic --noinput &&
+             python manage.py migrate &&
+             python manage.py crear_usuarios_iniciales &&
+             python manage.py runserver 0.0.0.0:8000"
+
+  # Worker de Celery para procesamiento en segundo plano
+  celery_worker:
+    container_name: actas_celery_worker
+    restart: always
+    image: actasia-base:latest
+    depends_on:
+      - db_postgres
+      - redis
+      - web
+    volumes:
+      - .:/app
+      - ./media:/app/media
+      - ./static/dist/img:/app/static/dist/img:rw
+    networks:
+      - actas_network
+    command: celery -A config worker -l info
+
+  # Beat de Celery para tareas programadas
+  celery_beat:
+    container_name: actas_celery_beat
+    restart: always
+    image: actasia-base:latest
+    depends_on:
+      - db_postgres
+      - redis
+      - web
+    volumes:
+      - .:/app
+      - ./media:/app/media
+    networks:
+      - actas_network
+    command: celery -A config beat -l info
+
+  # Monitor de Celery (Flower)
+  flower:
+    container_name: actas_flower
+    restart: always
+    image: actasia-base:latest
+    ports:
+      - "5555:5555"
+    depends_on:
+      - redis
+      - web
+    volumes:
+      - .:/app
+      - ./media:/app/media
+    networks:
+      - actas_network
+    command: celery -A config flower
+
+  # Nginx para servir archivos estáticos en producción
+  nginx:
+    container_name: actas_nginx
+    restart: always
+    image: "nginx:latest"
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx:/etc/nginx/conf.d
+      - ./staticfiles:/var/www/static
+      - ./media:/var/www/media
+    networks:
+      - actas_network
+    depends_on: 
+      - web
+
+volumes:
+  postgres_data:
+
+networks:
+  actas_network:
+    driver: bridge
+ 

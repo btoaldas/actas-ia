@@ -1,0 +1,206 @@
+<!-- Control Sidebar -->
+<aside class="control-sidebar control-sidebar-dark">
+  <!-- Control sidebar content goes here -->
+  <div class="p-3">
+    <h5><i class="fas fa-cogs mr-2"></i>Configuración del Sistema</h5>
+    
+    <!-- Configuraciones de visualización -->
+    <div class="mb-4">
+      <h6><i class="fas fa-eye mr-2"></i>Visualización</h6>
+      
+      <div class="form-group">
+        <div class="custom-control custom-switch">
+          <input type="checkbox" class="custom-control-input" id="dark-mode-switch">
+          <label class="custom-control-label" for="dark-mode-switch">Modo Oscuro</label>
+        </div>
+      </div>
+      
+      <div class="form-group">
+        <div class="custom-control custom-switch">
+          <input type="checkbox" class="custom-control-input" id="sidebar-collapse" checked>
+          <label class="custom-control-label" for="sidebar-collapse">Sidebar Compacto</label>
+        </div>
+      </div>
+      
+      <div class="form-group">
+        <div class="custom-control custom-switch">
+          <input type="checkbox" class="custom-control-input" id="navbar-fixed" checked>
+          <label class="custom-control-label" for="navbar-fixed">Navbar Fijo</label>
+        </div>
+      </div>
+    </div>
+
+    <!-- Configuraciones de transparencia -->
+    <div class="mb-4">
+      <h6><i class="fas fa-globe mr-2"></i>Portal Público</h6>
+      
+      <div class="form-group">
+        <div class="custom-control custom-switch">
+          <input type="checkbox" class="custom-control-input" id="public-portal" checked>
+          <label class="custom-control-label" for="public-portal">Portal Activo</label>
+        </div>
+      </div>
+      
+      <div class="form-group">
+        <div class="custom-control custom-switch">
+          <input type="checkbox" class="custom-control-input" id="auto-publish" checked>
+          <label class="custom-control-label" for="auto-publish">Publicación Automática</label>
+        </div>
+      </div>
+      
+      <div class="form-group">
+        <div class="custom-control custom-switch">
+          <input type="checkbox" class="custom-control-input" id="mobile-friendly" checked>
+          <label class="custom-control-label" for="mobile-friendly">Versión Móvil</label>
+        </div>
+      </div>
+    </div>
+
+    <!-- Configuraciones de notificaciones -->
+    <div class="mb-4">
+      <h6><i class="fas fa-bell mr-2"></i>Notificaciones</h6>
+      
+      <div class="form-group">
+        <div class="custom-control custom-switch">
+          <input type="checkbox" class="custom-control-input" id="email-notifications" checked>
+          <label class="custom-control-label" for="email-notifications">Email</label>
+        </div>
+      </div>
+      
+      <div class="form-group">
+        <div class="custom-control custom-switch">
+          <input type="checkbox" class="custom-control-input" id="browser-notifications">
+          <label class="custom-control-label" for="browser-notifications">Navegador</label>
+        </div>
+      </div>
+      
+      <div class="form-group">
+        <div class="custom-control custom-switch">
+          <input type="checkbox" class="custom-control-input" id="alert-deadlines" checked>
+          <label class="custom-control-label" for="alert-deadlines">Alertas de Plazos</label>
+        </div>
+      </div>
+    </div>
+
+    <!-- Configuraciones de IA -->
+    <div class="mb-4">
+      <h6><i class="fas fa-robot mr-2"></i>Inteligencia Artificial</h6>
+      
+      <div class="form-group">
+        <div class="custom-control custom-switch">
+          <input type="checkbox" class="custom-control-input" id="auto-transcription" checked>
+          <label class="custom-control-label" for="auto-transcription">Transcripción Auto</label>
+        </div>
+      </div>
+      
+      <div class="form-group">
+        <div class="custom-control custom-switch">
+          <input type="checkbox" class="custom-control-input" id="content-analysis" checked>
+          <label class="custom-control-label" for="content-analysis">Análisis de Contenido</label>
+        </div>
+      </div>
+      
+      <div class="form-group">
+        <div class="custom-control custom-switch">
+          <input type="checkbox" class="custom-control-input" id="quality-check">
+          <label class="custom-control-label" for="quality-check">Control de Calidad</label>
+        </div>
+      </div>
+    </div>
+
+    <!-- Acciones rápidas -->
+    <div class="mb-4">
+      <h6><i class="fas fa-rocket mr-2"></i>Acciones Rápidas</h6>
+      
+      <div class="btn-group-vertical w-100">
+        <a href="/backup/" class="btn btn-sm btn-outline-light mb-2">
+          <i class="fas fa-download mr-1"></i> Respaldo
+        </a>
+        <a href="/config-system/" class="btn btn-sm btn-outline-light mb-2">
+          <i class="fas fa-cogs mr-1"></i> Configuración
+        </a>
+        <a href="/reportes/" class="btn btn-sm btn-outline-light mb-2">
+          <i class="fas fa-chart-bar mr-1"></i> Reportes
+        </a>
+        <a href="/help/" class="btn btn-sm btn-outline-light">
+          <i class="fas fa-question-circle mr-1"></i> Ayuda
+        </a>
+      </div>
+    </div>
+
+    <!-- Info del sistema -->
+    <div class="text-center">
+      <small class="text-muted">
+        <i class="fas fa-server mr-1"></i>
+        Sistema de Actas v2.1.0<br>
+        <i class="fas fa-clock mr-1"></i>
+        Actualizado: 06/09/2025
+      </small>
+    </div>
+  </div>
+</aside>
+
+<script>
+// Funcionalidad del customizer
+$(document).ready(function() {
+  // Toggle dark mode
+  $('#dark-mode-switch').change(function() {
+    if ($(this).is(':checked')) {
+      $('body').addClass('dark-mode');
+      localStorage.setItem('dark-mode', 'true');
+    } else {
+      $('body').removeClass('dark-mode');
+      localStorage.setItem('dark-mode', 'false');
+    }
+  });
+
+  // Toggle sidebar collapse
+  $('#sidebar-collapse').change(function() {
+    if ($(this).is(':checked')) {
+      $('body').addClass('sidebar-collapse');
+      localStorage.setItem('sidebar-collapse', 'true');
+    } else {
+      $('body').removeClass('sidebar-collapse');
+      localStorage.setItem('sidebar-collapse', 'false');
+    }
+  });
+
+  // Toggle navbar fixed
+  $('#navbar-fixed').change(function() {
+    if ($(this).is(':checked')) {
+      $('body').addClass('layout-navbar-fixed');
+      localStorage.setItem('navbar-fixed', 'true');
+    } else {
+      $('body').removeClass('layout-navbar-fixed');
+      localStorage.setItem('navbar-fixed', 'false');
+    }
+  });
+
+  // Cargar preferencias guardadas
+  if (localStorage.getItem('dark-mode') === 'true') {
+    $('#dark-mode-switch').prop('checked', true);
+    $('body').addClass('dark-mode');
+  }
+  
+  if (localStorage.getItem('sidebar-collapse') === 'true') {
+    $('#sidebar-collapse').prop('checked', true);
+    $('body').addClass('sidebar-collapse');
+  }
+  
+  if (localStorage.getItem('navbar-fixed') === 'true') {
+    $('#navbar-fixed').prop('checked', true);
+    $('body').addClass('layout-navbar-fixed');
+  }
+
+  // Notificaciones de cambios en configuración
+  $('.custom-control-input').change(function() {
+    var label = $(this).next('.custom-control-label').text();
+    var status = $(this).is(':checked') ? 'activado' : 'desactivado';
+    
+    // Mostrar notificación toast (si existe)
+    if (typeof toastr !== 'undefined') {
+      toastr.info(label + ' ' + status);
+    }
+  });
+});
+</script>

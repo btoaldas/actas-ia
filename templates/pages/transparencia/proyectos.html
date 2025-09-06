@@ -1,0 +1,340 @@
+{% extends 'layouts/base.html' %}
+{% load static %}
+
+{% block title %} Proyectos Municipales {% endblock title %}
+
+{% block bodyclass %} hold-transition sidebar-mini {% endblock bodyclass %}
+
+{% block content %}
+<div class="content-wrapper">
+    <!-- Content Header -->
+    <div class="content-header">
+        <div class="container-fluid">
+            <div class="row mb-2">
+                <div class="col-sm-6">
+                    <h1 class="m-0">
+                        <i class="fas fa-tasks mr-2"></i>
+                        Proyectos Municipales
+                    </h1>
+                </div>
+                <div class="col-sm-6">
+                    <ol class="breadcrumb float-sm-right">
+                        <li class="breadcrumb-item"><a href="{% url 'dashboardv3' %}">Inicio</a></li>
+                        <li class="breadcrumb-item"><a href="{% url 'transparencia_index' %}">Transparencia</a></li>
+                        <li class="breadcrumb-item active">Proyectos</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main content -->
+    <section class="content">
+        <div class="container-fluid">
+            
+            <!-- Estadísticas Resumen -->
+            <div class="row">
+                <div class="col-lg-3 col-6">
+                    <div class="small-box bg-info">
+                        <div class="inner">
+                            <h3>{{ stats.total }}</h3>
+                            <p>Total Proyectos</p>
+                        </div>
+                        <div class="icon">
+                            <i class="fas fa-project-diagram"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-lg-3 col-6">
+                    <div class="small-box bg-warning">
+                        <div class="inner">
+                            <h3>{{ stats.en_ejecucion }}</h3>
+                            <p>En Ejecución</p>
+                        </div>
+                        <div class="icon">
+                            <i class="fas fa-cog fa-spin"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-lg-3 col-6">
+                    <div class="small-box bg-success">
+                        <div class="inner">
+                            <h3>{{ stats.finalizados }}</h3>
+                            <p>Finalizados</p>
+                        </div>
+                        <div class="icon">
+                            <i class="fas fa-check-circle"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-lg-3 col-6">
+                    <div class="small-box bg-danger">
+                        <div class="inner">
+                            <h3>${{ stats.presupuesto_total|floatformat:0 }}</h3>
+                            <p>Presupuesto Total</p>
+                        </div>
+                        <div class="icon">
+                            <i class="fas fa-dollar-sign"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Filtros -->
+            <div class="row">
+                <div class="col-12">
+                    <div class="card card-outline card-primary">
+                        <div class="card-header">
+                            <h3 class="card-title">Filtros</h3>
+                        </div>
+                        <div class="card-body">
+                            <form method="get" class="row">
+                                <div class="col-md-4">
+                                    <select name="categoria" class="form-control">
+                                        <option value="">Todas las Categorías</option>
+                                        {% for codigo, nombre in categorias %}
+                                        <option value="{{ codigo }}" {% if categoria_filter == codigo %}selected{% endif %}>
+                                            {{ nombre }}
+                                        </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <select name="estado" class="form-control">
+                                        <option value="">Todos los Estados</option>
+                                        {% for codigo, nombre in estados %}
+                                        <option value="{{ codigo }}" {% if estado_filter == codigo %}selected{% endif %}>
+                                            {{ nombre }}
+                                        </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="fas fa-filter"></i> Filtrar
+                                    </button>
+                                    <a href="{% url 'transparencia_proyectos' %}" class="btn btn-secondary">
+                                        <i class="fas fa-times"></i> Limpiar
+                                    </a>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Gráfico de Proyectos -->
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">Proyectos por Estado</h3>
+                        </div>
+                        <div class="card-body">
+                            <div id="proyectos-estado-chart" style="height: 300px;"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">Proyectos por Categoría</h3>
+                        </div>
+                        <div class="card-body">
+                            <div id="proyectos-categoria-chart" style="height: 300px;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Lista de Proyectos -->
+            <div class="row">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">Lista de Proyectos</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                {% for proyecto in proyectos %}
+                                <div class="col-md-6 col-lg-4">
+                                    <div class="card card-widget widget-user-2">
+                                        <div class="widget-user-header" style="background-color: {{ proyecto.color_estado }};">
+                                            <h5 class="widget-user-username">{{ proyecto.nombre|truncatechars:40 }}</h5>
+                                            <h6 class="widget-user-desc">{{ proyecto.get_categoria_display }}</h6>
+                                        </div>
+                                        <div class="card-footer p-0">
+                                            <ul class="nav flex-column">
+                                                <li class="nav-item">
+                                                    <span class="nav-link">
+                                                        <strong>Estado:</strong> 
+                                                        <span class="badge" style="background-color: {{ proyecto.color_estado }};">
+                                                            {{ proyecto.get_estado_display }}
+                                                        </span>
+                                                    </span>
+                                                </li>
+                                                <li class="nav-item">
+                                                    <span class="nav-link">
+                                                        <strong>Presupuesto:</strong> ${{ proyecto.presupuesto_total|floatformat:0 }}
+                                                    </span>
+                                                </li>
+                                                <li class="nav-item">
+                                                    <span class="nav-link">
+                                                        <strong>Ejecutado:</strong> {{ proyecto.porcentaje_presupuesto_ejecutado }}%
+                                                        <div class="progress progress-sm">
+                                                            <div class="progress-bar" 
+                                                                 style="width: {{ proyecto.porcentaje_presupuesto_ejecutado }}%; background-color: {{ proyecto.color_estado }};">
+                                                            </div>
+                                                        </div>
+                                                    </span>
+                                                </li>
+                                                <li class="nav-item">
+                                                    <span class="nav-link">
+                                                        <strong>Avance:</strong> {{ proyecto.porcentaje_avance }}%
+                                                        <div class="progress progress-sm">
+                                                            <div class="progress-bar bg-success" 
+                                                                 style="width: {{ proyecto.porcentaje_avance }}%;">
+                                                            </div>
+                                                        </div>
+                                                    </span>
+                                                </li>
+                                                <li class="nav-item">
+                                                    <span class="nav-link">
+                                                        <strong>Ubicación:</strong> {{ proyecto.ubicacion|truncatechars:30 }}
+                                                    </span>
+                                                </li>
+                                                <li class="nav-item">
+                                                    <span class="nav-link">
+                                                        <strong>Beneficiarios:</strong> {{ proyecto.beneficiarios_estimados|floatformat:0 }}
+                                                    </span>
+                                                </li>
+                                                <li class="nav-item">
+                                                    <span class="nav-link">
+                                                        <strong>Responsable:</strong> {{ proyecto.responsable|truncatechars:25 }}
+                                                    </span>
+                                                </li>
+                                                {% if proyecto.contratista %}
+                                                <li class="nav-item">
+                                                    <span class="nav-link">
+                                                        <strong>Contratista:</strong> {{ proyecto.contratista|truncatechars:25 }}
+                                                    </span>
+                                                </li>
+                                                {% endif %}
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% empty %}
+                                <div class="col-12">
+                                    <div class="text-center p-4">
+                                        <i class="fas fa-tasks fa-3x text-muted mb-3"></i>
+                                        <h4>No hay proyectos</h4>
+                                        <p class="text-muted">No se encontraron proyectos con los filtros seleccionados.</p>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+
+                            <!-- Paginación -->
+                            {% if proyectos.has_other_pages %}
+                            <div class="row mt-3">
+                                <div class="col-12">
+                                    <nav aria-label="Paginación de proyectos">
+                                        <ul class="pagination justify-content-center">
+                                            {% if proyectos.has_previous %}
+                                            <li class="page-item">
+                                                <a class="page-link" href="?page={{ proyectos.previous_page_number }}{% if categoria_filter %}&categoria={{ categoria_filter }}{% endif %}{% if estado_filter %}&estado={{ estado_filter }}{% endif %}">
+                                                    <i class="fas fa-chevron-left"></i>
+                                                </a>
+                                            </li>
+                                            {% endif %}
+
+                                            {% for num in proyectos.paginator.page_range %}
+                                                {% if proyectos.number == num %}
+                                                <li class="page-item active">
+                                                    <span class="page-link">{{ num }}</span>
+                                                </li>
+                                                {% elif num > proyectos.number|add:'-3' and num < proyectos.number|add:'3' %}
+                                                <li class="page-item">
+                                                    <a class="page-link" href="?page={{ num }}{% if categoria_filter %}&categoria={{ categoria_filter }}{% endif %}{% if estado_filter %}&estado={{ estado_filter }}{% endif %}">{{ num }}</a>
+                                                </li>
+                                                {% endif %}
+                                            {% endfor %}
+
+                                            {% if proyectos.has_next %}
+                                            <li class="page-item">
+                                                <a class="page-link" href="?page={{ proyectos.next_page_number }}{% if categoria_filter %}&categoria={{ categoria_filter }}{% endif %}{% if estado_filter %}&estado={{ estado_filter }}{% endif %}">
+                                                    <i class="fas fa-chevron-right"></i>
+                                                </a>
+                                            </li>
+                                            {% endif %}
+                                        </ul>
+                                    </nav>
+                                </div>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </section>
+</div>
+{% endblock content %}
+
+{% block extra_scripts %}
+<script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    // Gráficos de proyectos
+    fetch('{% url "api_transparencia_proyectos_stats" %}')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Gráfico por estado
+                var optionsEstado = {
+                    chart: {
+                        type: 'pie',
+                        height: 300
+                    },
+                    series: data.por_estado.map(item => item.value),
+                    labels: data.por_estado.map(item => item.name),
+                    title: {
+                        text: 'Distribución por Estado'
+                    },
+                    legend: {
+                        position: 'bottom'
+                    }
+                };
+                var chartEstado = new ApexCharts(document.querySelector("#proyectos-estado-chart"), optionsEstado);
+                chartEstado.render();
+
+                // Gráfico por categoría
+                var optionsCategoria = {
+                    chart: {
+                        type: 'donut',
+                        height: 300
+                    },
+                    series: data.por_categoria.map(item => item.value),
+                    labels: data.por_categoria.map(item => item.name),
+                    title: {
+                        text: 'Distribución por Categoría'
+                    },
+                    legend: {
+                        position: 'bottom'
+                    }
+                };
+                var chartCategoria = new ApexCharts(document.querySelector("#proyectos-categoria-chart"), optionsCategoria);
+                chartCategoria.render();
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+        });
+});
+</script>
+{% endblock extra_scripts %}

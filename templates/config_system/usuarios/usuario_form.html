@@ -1,0 +1,385 @@
+{% extends 'config_system/base.html' %}
+{% load static %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block extra_css %}
+<style>
+.form-section {
+    background: #f8f9fa;
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 20px;
+}
+
+.form-icon {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background: linear-gradient(45deg, #007bff, #28a745);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1.5rem;
+    margin: 0 auto 20px;
+}
+
+.field-help {
+    font-size: 0.875rem;
+    color: #6c757d;
+    margin-top: 5px;
+}
+
+.required-field {
+    color: #dc3545;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="content-wrapper">
+    <div class="content-header">
+        <div class="container-fluid">
+            <div class="row mb-2">
+                <div class="col-sm-6">
+                    <h1 class="m-0">
+                        {% if usuario %}
+                            <i class="fas fa-user-edit"></i> Editar Usuario
+                        {% else %}
+                            <i class="fas fa-user-plus"></i> Crear Usuario
+                        {% endif %}
+                    </h1>
+                </div>
+                <div class="col-sm-6">
+                    <ol class="breadcrumb float-sm-right">
+                        <li class="breadcrumb-item"><a href="{% url 'config_system:dashboard' %}">Dashboard</a></li>
+                        <li class="breadcrumb-item"><a href="{% url 'config_system:usuarios_list' %}">Usuarios</a></li>
+                        <li class="breadcrumb-item active">
+                            {% if usuario %}Editar{% else %}Crear{% endif %}
+                        </li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="content">
+        <div class="container-fluid">
+            <form method="post" novalidate>
+                {% csrf_token %}
+                
+                <div class="row">
+                    <div class="col-md-8">
+                        <!-- Información básica -->
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="mb-0">
+                                    <i class="fas fa-user"></i> Información Básica
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label for="{{ form.username.id_for_label }}" class="form-label">
+                                                Username <span class="required-field">*</span>
+                                            </label>
+                                            {{ form.username }}
+                                            {% if form.username.errors %}
+                                                <div class="invalid-feedback d-block">
+                                                    {{ form.username.errors.0 }}
+                                                </div>
+                                            {% endif %}
+                                            <div class="field-help">
+                                                Nombre único para iniciar sesión. Solo letras, números y @/./+/-/_
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label for="{{ form.email.id_for_label }}" class="form-label">
+                                                Email <span class="required-field">*</span>
+                                            </label>
+                                            {{ form.email }}
+                                            {% if form.email.errors %}
+                                                <div class="invalid-feedback d-block">
+                                                    {{ form.email.errors.0 }}
+                                                </div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label for="{{ form.first_name.id_for_label }}" class="form-label">
+                                                Nombre
+                                            </label>
+                                            {{ form.first_name }}
+                                            {% if form.first_name.errors %}
+                                                <div class="invalid-feedback d-block">
+                                                    {{ form.first_name.errors.0 }}
+                                                </div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label for="{{ form.last_name.id_for_label }}" class="form-label">
+                                                Apellido
+                                            </label>
+                                            {{ form.last_name }}
+                                            {% if form.last_name.errors %}
+                                                <div class="invalid-feedback d-block">
+                                                    {{ form.last_name.errors.0 }}
+                                                </div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Contraseñas solo para usuario nuevo -->
+                                {% if not usuario %}
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label for="{{ form.password1.id_for_label }}" class="form-label">
+                                                Contraseña <span class="required-field">*</span>
+                                            </label>
+                                            {{ form.password1 }}
+                                            {% if form.password1.errors %}
+                                                <div class="invalid-feedback d-block">
+                                                    {{ form.password1.errors.0 }}
+                                                </div>
+                                            {% endif %}
+                                            <div class="field-help">
+                                                Mínimo 6 caracteres
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label for="{{ form.password2.id_for_label }}" class="form-label">
+                                                Confirmar Contraseña <span class="required-field">*</span>
+                                            </label>
+                                            {{ form.password2 }}
+                                            {% if form.password2.errors %}
+                                                <div class="invalid-feedback d-block">
+                                                    {{ form.password2.errors.0 }}
+                                                </div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Permisos del sistema -->
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="mb-0">
+                                    <i class="fas fa-shield-alt"></i> Permisos del Sistema
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="form-check">
+                                            {{ form.is_active }}
+                                            <label class="form-check-label" for="{{ form.is_active.id_for_label }}">
+                                                Usuario activo
+                                            </label>
+                                            <div class="field-help">
+                                                Si está desactivado, el usuario no podrá iniciar sesión
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-check">
+                                            {{ form.is_staff }}
+                                            <label class="form-check-label" for="{{ form.is_staff.id_for_label }}">
+                                                Acceso al admin de Django
+                                            </label>
+                                            <div class="field-help">
+                                                Permite acceso al panel de administración de Django
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Panel lateral -->
+                    <div class="col-md-4">
+                        <!-- Vista previa del usuario -->
+                        <div class="card">
+                            <div class="card-header">
+                                <h6 class="mb-0">
+                                    <i class="fas fa-eye"></i> Vista Previa
+                                </h6>
+                            </div>
+                            <div class="card-body text-center">
+                                <div class="form-icon">
+                                    <i class="fas fa-user"></i>
+                                </div>
+                                <h6 class="preview-name">
+                                    {{ usuario.first_name|default:"Nombre" }} {{ usuario.last_name|default:"Apellido" }}
+                                </h6>
+                                <p class="text-muted preview-username">
+                                    @{{ usuario.username|default:"username" }}
+                                </p>
+                                <p class="text-muted preview-email">
+                                    {{ usuario.email|default:"email@ejemplo.com" }}
+                                </p>
+                                
+                                {% if usuario %}
+                                <div class="mt-3">
+                                    <small class="text-muted d-block">
+                                        Creado: {{ usuario.date_joined|date:"d/m/Y" }}
+                                    </small>
+                                    {% if usuario.last_login %}
+                                    <small class="text-muted d-block">
+                                        Último acceso: {{ usuario.last_login|date:"d/m/Y H:i" }}
+                                    </small>
+                                    {% endif %}
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Información adicional -->
+                        <div class="card">
+                            <div class="card-header">
+                                <h6 class="mb-0">
+                                    <i class="fas fa-info-circle"></i> Información
+                                </h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="alert alert-info">
+                                    <strong>Siguiente paso:</strong>
+                                    Después de guardar el usuario, podrás crear su perfil y asignar permisos específicos.
+                                </div>
+                                
+                                {% if usuario and usuario.perfilusuario %}
+                                <div class="alert alert-success">
+                                    <strong>Perfil existente:</strong>
+                                    <br>Rol: {{ usuario.perfilusuario.get_rol_display }}
+                                    <br>
+                                    <a href="{% url 'config_system:perfil_detail' usuario.perfilusuario.pk %}" 
+                                       class="btn btn-sm btn-outline-primary mt-2">
+                                        Ver Perfil
+                                    </a>
+                                </div>
+                                {% elif usuario %}
+                                <div class="alert alert-warning">
+                                    <strong>Sin perfil:</strong>
+                                    Este usuario no tiene perfil asignado.
+                                    <br>
+                                    <a href="{% url 'config_system:perfil_create' %}" 
+                                       class="btn btn-sm btn-outline-warning mt-2">
+                                        Crear Perfil
+                                    </a>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Botones de acción -->
+                <div class="row">
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-body text-center">
+                                <button type="submit" class="btn btn-primary btn-lg">
+                                    <i class="fas fa-save"></i> 
+                                    {% if usuario %}Actualizar Usuario{% else %}Crear Usuario{% endif %}
+                                </button>
+                                <a href="{% url 'config_system:usuarios_list' %}" class="btn btn-secondary btn-lg ml-2">
+                                    <i class="fas fa-times"></i> Cancelar
+                                </a>
+                                
+                                {% if usuario %}
+                                <div class="mt-3">
+                                    <a href="{% url 'config_system:usuario_detail' usuario.pk %}" 
+                                       class="btn btn-info">
+                                        <i class="fas fa-eye"></i> Ver Detalles
+                                    </a>
+                                    {% if usuario.perfilusuario %}
+                                    <a href="{% url 'config_system:perfil_edit' usuario.perfilusuario.pk %}" 
+                                       class="btn btn-warning">
+                                        <i class="fas fa-id-card"></i> Editar Perfil
+                                    </a>
+                                    <a href="{% url 'config_system:permisos_edit' usuario.perfilusuario.permisos_detallados.pk %}" 
+                                       class="btn btn-success">
+                                        <i class="fas fa-key"></i> Gestionar Permisos
+                                    </a>
+                                    {% endif %}
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    // Actualizar vista previa en tiempo real
+    function updatePreview() {
+        var firstName = $('#id_first_name').val() || 'Nombre';
+        var lastName = $('#id_last_name').val() || 'Apellido';
+        var username = $('#id_username').val() || 'username';
+        var email = $('#id_email').val() || 'email@ejemplo.com';
+        
+        $('.preview-name').text(firstName + ' ' + lastName);
+        $('.preview-username').text('@' + username);
+        $('.preview-email').text(email);
+    }
+    
+    // Eventos para actualizar la vista previa
+    $('#id_first_name, #id_last_name, #id_username, #id_email').on('input', updatePreview);
+    
+    // Validación en tiempo real
+    $('#id_username').on('input', function() {
+        var username = $(this).val();
+        var regex = /^[\w.@+-]+$/;
+        
+        if (username && !regex.test(username)) {
+            $(this).addClass('is-invalid');
+            $(this).next('.invalid-feedback').remove();
+            $(this).after('<div class="invalid-feedback">Solo se permiten letras, números y @/./+/-/_</div>');
+        } else {
+            $(this).removeClass('is-invalid');
+            $(this).next('.invalid-feedback').remove();
+        }
+    });
+    
+    // Validación de contraseñas
+    {% if not usuario %}
+    $('#id_password2').on('input', function() {
+        var password1 = $('#id_password1').val();
+        var password2 = $(this).val();
+        
+        if (password2 && password1 !== password2) {
+            $(this).addClass('is-invalid');
+            $(this).next('.invalid-feedback').remove();
+            $(this).after('<div class="invalid-feedback">Las contraseñas no coinciden</div>');
+        } else {
+            $(this).removeClass('is-invalid');
+            $(this).next('.invalid-feedback').remove();
+        }
+    });
+    {% endif %}
+});
+</script>
+{% endblock %}

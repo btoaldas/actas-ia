@@ -1,0 +1,588 @@
+{% extends 'config_system/base.html' %}
+{% load static %}
+
+{% block title %}Perfil: {{ perfil.usuario.username }}{% endblock %}
+
+{% block extra_css %}
+<style>
+.profile-header {
+    background: linear-gradient(45deg, #007bff, #28a745);
+    color: white;
+    border-radius: 15px;
+    padding: 30px;
+    margin-bottom: 20px;
+}
+
+.profile-avatar {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 2.5rem;
+    margin: 0 auto 20px;
+    border: 4px solid rgba(255, 255, 255, 0.3);
+}
+
+.info-card {
+    border-left: 4px solid #007bff;
+    background: #f8f9fa;
+}
+
+.permission-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px;
+}
+
+.permission-category {
+    background: white;
+    border-radius: 10px;
+    padding: 20px;
+    border-left: 4px solid #17a2b8;
+}
+
+.permission-item {
+    display: flex;
+    justify-content: between;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid #eee;
+}
+
+.permission-item:last-child {
+    border-bottom: none;
+}
+
+.timeline-item {
+    position: relative;
+    padding-left: 30px;
+    margin-bottom: 20px;
+}
+
+.timeline-item::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 8px;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: #007bff;
+}
+
+.timeline-item::after {
+    content: '';
+    position: absolute;
+    left: 5px;
+    top: 20px;
+    width: 2px;
+    height: calc(100% - 8px);
+    background: #dee2e6;
+}
+
+.timeline-item:last-child::after {
+    display: none;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="content-wrapper">
+    <div class="content-header">
+        <div class="container-fluid">
+            <div class="row mb-2">
+                <div class="col-sm-6">
+                    <h1 class="m-0">
+                        <i class="fas fa-id-card"></i> Detalle del Perfil
+                    </h1>
+                </div>
+                <div class="col-sm-6">
+                    <ol class="breadcrumb float-sm-right">
+                        <li class="breadcrumb-item"><a href="{% url 'config_system:dashboard' %}">Dashboard</a></li>
+                        <li class="breadcrumb-item"><a href="{% url 'config_system:perfiles_list' %}">Perfiles</a></li>
+                        <li class="breadcrumb-item active">{{ perfil.usuario.username }}</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="content">
+        <div class="container-fluid">
+            <!-- Encabezado del perfil -->
+            <div class="profile-header">
+                <div class="row align-items-center">
+                    <div class="col-md-3 text-center">
+                        <div class="profile-avatar">
+                            {% if perfil.usuario %}
+                                {{ perfil.usuario.first_name.0|default:"U" }}{{ perfil.usuario.last_name.0|default:"" }}
+                            {% else %}
+                                <i class="fas fa-user-slash"></i>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        {% if perfil.usuario %}
+                        <h2 class="mb-1">{{ perfil.usuario.first_name }} {{ perfil.usuario.last_name }}</h2>
+                        <p class="mb-1">@{{ perfil.usuario.username }}</p>
+                        <p class="mb-1">{{ perfil.usuario.email }}</p>
+                        {% else %}
+                        <h2 class="mb-1">Perfil sin usuario asignado</h2>
+                        <p class="mb-1">Perfil disponible para asignación</p>
+                        {% endif %}
+                        <div class="mt-3">
+                            <span class="badge badge-light badge-lg">{{ perfil.get_rol_display }}</span>
+                            {% if perfil.activo %}
+                                <span class="badge badge-success badge-lg">Activo</span>
+                            {% else %}
+                                <span class="badge badge-danger badge-lg">Inactivo</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="col-md-3 text-center">
+                        <div class="btn-group-vertical">
+                            <a href="{% url 'config_system:perfil_edit' perfil.pk %}" class="btn btn-light">
+                                <i class="fas fa-edit"></i> Editar Perfil
+                            </a>
+                            {% if perfil.permisos_detallados %}
+                            <a href="{% url 'config_system:permisos_edit' perfil.permisos_detallados.pk %}" class="btn btn-light">
+                                <i class="fas fa-key"></i> Gestionar Permisos
+                            </a>
+                            {% endif %}
+                            {% if perfil.usuario %}
+                            <a href="{% url 'config_system:usuario_detail' perfil.usuario.pk %}" class="btn btn-light">
+                                <i class="fas fa-user"></i> Ver Usuario
+                            </a>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <!-- Información del perfil -->
+                <div class="col-md-6">
+                    <div class="card info-card">
+                        <div class="card-header">
+                            <h5 class="mb-0">
+                                <i class="fas fa-info-circle"></i> Información del Perfil
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-6">
+                                    <strong>Rol:</strong>
+                                </div>
+                                <div class="col-6">
+                                    <span class="badge badge-primary">{{ perfil.get_rol_display }}</span>
+                                </div>
+                            </div>
+                            <hr>
+                            <div class="row">
+                                <div class="col-6">
+                                    <strong>Departamento:</strong>
+                                </div>
+                                <div class="col-6">
+                                    {{ perfil.departamento|default:"No especificado" }}
+                                </div>
+                            </div>
+                            <hr>
+                            <div class="row">
+                                <div class="col-6">
+                                    <strong>Cargo:</strong>
+                                </div>
+                                <div class="col-6">
+                                    {{ perfil.cargo|default:"No especificado" }}
+                                </div>
+                            </div>
+                            <hr>
+                            <div class="row">
+                                <div class="col-6">
+                                    <strong>Teléfono:</strong>
+                                </div>
+                                <div class="col-6">
+                                    {% if perfil.telefono %}
+                                        <a href="tel:{{ perfil.telefono }}">{{ perfil.telefono }}</a>
+                                    {% else %}
+                                        No especificado
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <hr>
+                            <div class="row">
+                                <div class="col-6">
+                                    <strong>Fecha de creación:</strong>
+                                </div>
+                                <div class="col-6">
+                                    {{ perfil.fecha_creacion|date:"d/m/Y H:i" }}
+                                </div>
+                            </div>
+                            <hr>
+                            <div class="row">
+                                <div class="col-6">
+                                    <strong>Estado:</strong>
+                                </div>
+                                <div class="col-6">
+                                    {% if perfil.activo %}
+                                        <i class="fas fa-check-circle text-success"></i> Activo
+                                    {% else %}
+                                        <i class="fas fa-times-circle text-danger"></i> Inactivo
+                                    {% endif %}
+                                </div>
+                            </div>
+                            
+                            {% if perfil.notas %}
+                            <hr>
+                            <div class="row">
+                                <div class="col-12">
+                                    <strong>Notas:</strong>
+                                    <p class="mt-2 text-muted">{{ perfil.notas }}</p>
+                                </div>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Estadísticas del perfil -->
+                    <div class="card mt-3">
+                        <div class="card-header">
+                            <h6 class="mb-0">
+                                <i class="fas fa-chart-bar"></i> Estadísticas
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="row text-center">
+                                <div class="col-6">
+                                    <h4 class="text-primary">{{ perfil.fecha_creacion|timesince }}</h4>
+                                    <small class="text-muted">En el sistema</small>
+                                </div>
+                                <div class="col-6">
+                                    <h4 class="text-success">
+                                        {% if perfil.usuario and perfil.usuario.last_login %}
+                                            {{ perfil.usuario.last_login|timesince }}
+                                        {% else %}
+                                            Nunca
+                                        {% endif %}
+                                    </h4>
+                                    <small class="text-muted">Último acceso</small>
+                                </div>
+                            </div>
+                            
+                            {% if perfil.permisos_detallados %}
+                            <hr>
+                            <div class="text-center">
+                                <h4 class="text-info">{{ permisos_activos }}</h4>
+                                <small class="text-muted">Permisos activos de {{ total_permisos }}</small>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Permisos detallados -->
+                <div class="col-md-6">
+                    {% if perfil.permisos_detallados %}
+                    <div class="card">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">
+                                <i class="fas fa-key"></i> Permisos del Sistema
+                            </h5>
+                            <div>
+                                <span class="badge badge-info">{{ permisos_activos }} activos</span>
+                                <span class="badge badge-secondary">{{ total_permisos }} total</span>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div class="permission-grid">
+                                <!-- Permisos de menús -->
+                                <div class="permission-category">
+                                    <h6 class="text-primary mb-3">
+                                        <i class="fas fa-bars"></i> Acceso a Menús
+                                    </h6>
+                                    <div class="permission-item">
+                                        <span>Transcribir</span>
+                                        {% if perfil.permisos_detallados.ver_menu_transcribir %}
+                                            <i class="fas fa-check text-success"></i>
+                                        {% else %}
+                                            <i class="fas fa-times text-danger"></i>
+                                        {% endif %}
+                                    </div>
+                                    <div class="permission-item">
+                                        <span>Procesamiento</span>
+                                        {% if perfil.permisos_detallados.ver_menu_procesamiento %}
+                                            <i class="fas fa-check text-success"></i>
+                                        {% else %}
+                                            <i class="fas fa-times text-danger"></i>
+                                        {% endif %}
+                                    </div>
+                                    <div class="permission-item">
+                                        <span>Digitalización</span>
+                                        {% if perfil.permisos_detallados.ver_menu_digitalizacion %}
+                                            <i class="fas fa-check text-success"></i>
+                                        {% else %}
+                                            <i class="fas fa-times text-danger"></i>
+                                        {% endif %}
+                                    </div>
+                                    <div class="permission-item">
+                                        <span>Generación</span>
+                                        {% if perfil.permisos_detallados.ver_menu_generacion %}
+                                            <i class="fas fa-check text-success"></i>
+                                        {% else %}
+                                            <i class="fas fa-times text-danger"></i>
+                                        {% endif %}
+                                    </div>
+                                    <div class="permission-item">
+                                        <span>Publicación</span>
+                                        {% if perfil.permisos_detallados.ver_menu_publicacion %}
+                                            <i class="fas fa-check text-success"></i>
+                                        {% else %}
+                                            <i class="fas fa-times text-danger"></i>
+                                        {% endif %}
+                                    </div>
+                                    <div class="permission-item">
+                                        <span>Config IA</span>
+                                        {% if perfil.permisos_detallados.ver_menu_config_ia %}
+                                            <i class="fas fa-check text-success"></i>
+                                        {% else %}
+                                            <i class="fas fa-times text-danger"></i>
+                                        {% endif %}
+                                    </div>
+                                </div>
+
+                                <!-- Permisos de funcionalidades -->
+                                <div class="permission-category">
+                                    <h6 class="text-success mb-3">
+                                        <i class="fas fa-cogs"></i> Funcionalidades
+                                    </h6>
+                                    <div class="permission-item">
+                                        <span>Crear Transcripciones</span>
+                                        {% if perfil.permisos_detallados.crear_transcripciones %}
+                                            <i class="fas fa-check text-success"></i>
+                                        {% else %}
+                                            <i class="fas fa-times text-danger"></i>
+                                        {% endif %}
+                                    </div>
+                                    <div class="permission-item">
+                                        <span>Editar Transcripciones</span>
+                                        {% if perfil.permisos_detallados.editar_transcripciones %}
+                                            <i class="fas fa-check text-success"></i>
+                                        {% else %}
+                                            <i class="fas fa-times text-danger"></i>
+                                        {% endif %}
+                                    </div>
+                                    <div class="permission-item">
+                                        <span>Procesar Audio</span>
+                                        {% if perfil.permisos_detallados.procesar_audio %}
+                                            <i class="fas fa-check text-success"></i>
+                                        {% else %}
+                                            <i class="fas fa-times text-danger"></i>
+                                        {% endif %}
+                                    </div>
+                                    <div class="permission-item">
+                                        <span>Configurar Whisper</span>
+                                        {% if perfil.permisos_detallados.configurar_whisper %}
+                                            <i class="fas fa-check text-success"></i>
+                                        {% else %}
+                                            <i class="fas fa-times text-danger"></i>
+                                        {% endif %}
+                                    </div>
+                                    <div class="permission-item">
+                                        <span>Gestionar Usuarios</span>
+                                        {% if perfil.permisos_detallados.gestionar_usuarios %}
+                                            <i class="fas fa-check text-success"></i>
+                                        {% else %}
+                                            <i class="fas fa-times text-danger"></i>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="text-center mt-3">
+                                <a href="{% url 'config_system:permisos_edit' perfil.permisos_detallados.pk %}" 
+                                   class="btn btn-primary">
+                                    <i class="fas fa-edit"></i> Modificar Permisos
+                                </a>
+                                <button type="button" class="btn btn-warning ml-2" 
+                                        onclick="resetearPermisos('{{ perfil.rol }}')">
+                                    <i class="fas fa-undo"></i> Resetear por Rol
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    {% else %}
+                    <div class="card">
+                        <div class="card-body">
+                            <div class="alert alert-warning text-center">
+                                <h5><i class="fas fa-exclamation-triangle"></i> Sin Permisos Asignados</h5>
+                                <p class="mb-3">Este perfil no tiene permisos detallados configurados.</p>
+                                <button type="button" class="btn btn-warning" onclick="crearPermisos()">
+                                    <i class="fas fa-plus"></i> Crear Permisos
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Actividad y logs -->
+            <div class="row mt-4">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0">
+                                <i class="fas fa-history"></i> Actividad Reciente
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="timeline-item">
+                                <div class="d-flex justify-content-between">
+                                    <div>
+                                        <strong>Perfil creado</strong>
+                                        <br>
+                                        <small class="text-muted">
+                                            Rol: {{ perfil.get_rol_display }} | Departamento: {{ perfil.departamento }}
+                                        </small>
+                                    </div>
+                                    <small class="text-muted">{{ perfil.fecha_creacion|date:"d/m/Y H:i" }}</small>
+                                </div>
+                            </div>
+
+                            {% if perfil.permisos_detallados %}
+                            <div class="timeline-item">
+                                <div class="d-flex justify-content-between">
+                                    <div>
+                                        <strong>Permisos asignados</strong>
+                                        <br>
+                                        <small class="text-muted">{{ permisos_activos }} permisos configurados</small>
+                                    </div>
+                                    <small class="text-muted">{{ perfil.fecha_creacion|date:"d/m/Y H:i" }}</small>
+                                </div>
+                            </div>
+                            {% endif %}
+
+                            {% if perfil.usuario and perfil.usuario.last_login %}
+                            <div class="timeline-item">
+                                <div class="d-flex justify-content-between">
+                                    <div>
+                                        <strong>Último acceso al sistema</strong>
+                                        <br>
+                                        <small class="text-muted">Usuario: {{ perfil.usuario.username }}</small>
+                                    </div>
+                                    <small class="text-muted">{{ perfil.usuario.last_login|date:"d/m/Y H:i" }}</small>
+                                </div>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Acciones -->
+            <div class="row mt-4">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-body text-center">
+                            <div class="btn-group">
+                                <a href="{% url 'config_system:perfil_edit' perfil.pk %}" class="btn btn-primary">
+                                    <i class="fas fa-edit"></i> Editar Perfil
+                                </a>
+                                {% if perfil.permisos_detallados %}
+                                <a href="{% url 'config_system:permisos_edit' perfil.permisos_detallados.pk %}" class="btn btn-success">
+                                    <i class="fas fa-key"></i> Gestionar Permisos
+                                </a>
+                                {% endif %}
+                                {% if perfil.usuario %}
+                                <a href="{% url 'config_system:usuario_detail' perfil.usuario.pk %}" class="btn btn-info">
+                                    <i class="fas fa-user"></i> Ver Usuario
+                                </a>
+                                {% endif %}
+                                <button type="button" class="btn {% if perfil.activo %}btn-warning{% else %}btn-success{% endif %}" 
+                                        onclick="togglePerfilStatus({{ perfil.pk }})">
+                                    {% if perfil.activo %}
+                                        <i class="fas fa-user-slash"></i> Desactivar
+                                    {% else %}
+                                        <i class="fas fa-user-check"></i> Activar
+                                    {% endif %}
+                                </button>
+                                <a href="{% url 'config_system:perfil_delete' perfil.pk %}" 
+                                   class="btn btn-danger"
+                                   onclick="return confirm('¿Estás seguro de eliminar este perfil?')">
+                                    <i class="fas fa-trash"></i> Eliminar
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function togglePerfilStatus(perfilId) {
+    if (!confirm('¿Estás seguro de que quieres cambiar el estado de este perfil?')) {
+        return;
+    }
+    
+    $.ajax({
+        url: '{% url "config_system:perfil_toggle_active" 0 %}'.replace('0', perfilId),
+        method: 'POST',
+        data: {
+            'csrfmiddlewaretoken': '{{ csrf_token }}'
+        },
+        success: function(response) {
+            if (response.success) {
+                location.reload();
+            } else {
+                alert('Error al cambiar el estado del perfil');
+            }
+        },
+        error: function() {
+            alert('Error en la conexión');
+        }
+    });
+}
+
+function resetearPermisos(rol) {
+    if (!confirm('¿Resetear los permisos a los valores por defecto para el rol ' + rol + '?')) {
+        return;
+    }
+    
+    $.ajax({
+        url: '{% url "config_system:permisos_reset_por_rol" %}',
+        method: 'POST',
+        data: {
+            'rol': rol,
+            'perfil_id': {{ perfil.pk }},
+            'csrfmiddlewaretoken': '{{ csrf_token }}'
+        },
+        success: function(response) {
+            if (response.success) {
+                alert('Permisos reseteados correctamente');
+                location.reload();
+            } else {
+                alert('Error al resetear permisos: ' + response.message);
+            }
+        },
+        error: function() {
+            alert('Error en la conexión');
+        }
+    });
+}
+
+function crearPermisos() {
+    if (!confirm('¿Crear permisos estándar para este perfil?')) {
+        return;
+    }
+    
+    window.location.href = '{% url "config_system:permisos_edit" 0 %}'.replace('0', 'nuevo') + '?perfil={{ perfil.pk }}';
+}
+</script>
+{% endblock %}

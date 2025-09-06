@@ -1,0 +1,355 @@
+{% extends 'config_system/base.html' %}
+{% load static %}
+
+{% block title %}Gestión de Usuarios{% endblock %}
+
+{% block extra_css %}
+<style>
+.user-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: linear-gradient(45deg, #007bff, #28a745);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: bold;
+}
+
+.status-badge {
+    font-size: 0.75rem;
+}
+
+.user-card {
+    transition: transform 0.2s ease;
+}
+
+.user-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+.stats-card {
+    background: linear-gradient(45deg, #007bff, #0056b3);
+    color: white;
+    border: none;
+}
+
+.search-section {
+    background: #f8f9fa;
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 25px;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="content-wrapper">
+    <div class="content-header">
+        <div class="container-fluid">
+            <div class="row mb-2">
+                <div class="col-sm-6">
+                    <h1 class="m-0">👥 Gestión de Usuarios</h1>
+                    <p class="text-muted">Administrar usuarios del sistema de actas municipales</p>
+                </div>
+                <div class="col-sm-6">
+                    <ol class="breadcrumb float-sm-right">
+                        <li class="breadcrumb-item"><a href="{% url 'config_system:dashboard' %}">Dashboard</a></li>
+                        <li class="breadcrumb-item active">Usuarios</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="content">
+        <div class="container-fluid">
+            <!-- Estadísticas -->
+            <div class="row mb-4">
+                <div class="col-lg-3 col-6">
+                    <div class="small-box bg-primary">
+                        <div class="inner">
+                            <h3>{{ total_usuarios }}</h3>
+                            <p>Total Usuarios</p>
+                        </div>
+                        <div class="icon">
+                            <i class="fas fa-users"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-6">
+                    <div class="small-box bg-success">
+                        <div class="inner">
+                            <h3>{{ usuarios_activos }}</h3>
+                            <p>Usuarios Activos</p>
+                        </div>
+                        <div class="icon">
+                            <i class="fas fa-user-check"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-6">
+                    <div class="small-box bg-warning">
+                        <div class="inner">
+                            <h3>{{ total_usuarios|add:"-"|add:usuarios_activos }}</h3>
+                            <p>Usuarios Inactivos</p>
+                        </div>
+                        <div class="icon">
+                            <i class="fas fa-user-times"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-6">
+                    <div class="small-box bg-info">
+                        <div class="inner">
+                            <h3>{{ usuarios|length }}</h3>
+                            <p>Mostrando</p>
+                        </div>
+                        <div class="icon">
+                            <i class="fas fa-filter"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Búsqueda y filtros -->
+            <div class="search-section">
+                <form method="get" class="row">
+                    <div class="col-md-4">
+                        <input type="text" name="search" class="form-control" 
+                               placeholder="Buscar por username, nombre, email..." 
+                               value="{{ search }}">
+                    </div>
+                    <div class="col-md-3">
+                        <select name="estado" class="form-control">
+                            <option value="">Todos los estados</option>
+                            <option value="activo" {% if estado == 'activo' %}selected{% endif %}>Activos</option>
+                            <option value="inactivo" {% if estado == 'inactivo' %}selected{% endif %}>Inactivos</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-search"></i> Buscar
+                        </button>
+                        <a href="{% url 'config_system:usuarios_list' %}" class="btn btn-secondary">
+                            <i class="fas fa-times"></i> Limpiar
+                        </a>
+                    </div>
+                    <div class="col-md-2">
+                        <a href="{% url 'config_system:usuario_create' %}" class="btn btn-success">
+                            <i class="fas fa-plus"></i> Nuevo Usuario
+                        </a>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Lista de usuarios -->
+            <div class="row">
+                {% for usuario in usuarios %}
+                <div class="col-md-6 col-lg-4 mb-4">
+                    <div class="card user-card h-100">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center mb-3">
+                                <div class="user-avatar me-3">
+                                    {{ usuario.first_name|first|default:usuario.username|first|upper }}
+                                </div>
+                                <div class="flex-grow-1">
+                                    <h6 class="mb-1">{{ usuario.first_name }} {{ usuario.last_name }}</h6>
+                                    <small class="text-muted">@{{ usuario.username }}</small>
+                                </div>
+                                <div>
+                                    {% if usuario.is_active %}
+                                        <span class="badge badge-success status-badge">Activo</span>
+                                    {% else %}
+                                        <span class="badge badge-danger status-badge">Inactivo</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <small class="text-muted d-block">
+                                    <i class="fas fa-envelope"></i> {{ usuario.email }}
+                                </small>
+                                <small class="text-muted d-block">
+                                    <i class="fas fa-calendar"></i> 
+                                    Creado: {{ usuario.date_joined|date:"d/m/Y" }}
+                                </small>
+                                {% if usuario.last_login %}
+                                <small class="text-muted d-block">
+                                    <i class="fas fa-clock"></i> 
+                                    Último acceso: {{ usuario.last_login|date:"d/m/Y H:i" }}
+                                </small>
+                                {% endif %}
+                            </div>
+
+                            <!-- Información del perfil -->
+                            {% if usuario.perfilusuario %}
+                            <div class="mb-3">
+                                <span class="badge badge-info">
+                                    {{ usuario.perfilusuario.get_rol_display }}
+                                </span>
+                                {% if usuario.perfilusuario.departamento %}
+                                <span class="badge badge-secondary">
+                                    {{ usuario.perfilusuario.get_departamento_display }}
+                                </span>
+                                {% endif %}
+                            </div>
+                            {% else %}
+                            <div class="mb-3">
+                                <span class="badge badge-warning">Sin perfil</span>
+                            </div>
+                            {% endif %}
+
+                            <!-- Permisos especiales -->
+                            <div class="mb-3">
+                                {% if usuario.is_superuser %}
+                                <span class="badge badge-danger">
+                                    <i class="fas fa-crown"></i> Superusuario
+                                </span>
+                                {% endif %}
+                                {% if usuario.is_staff %}
+                                <span class="badge badge-primary">
+                                    <i class="fas fa-cog"></i> Staff
+                                </span>
+                                {% endif %}
+                            </div>
+
+                            <!-- Acciones -->
+                            <div class="d-flex justify-content-between">
+                                <div class="btn-group btn-group-sm">
+                                    <a href="{% url 'config_system:usuario_detail' usuario.pk %}" 
+                                       class="btn btn-outline-info" title="Ver detalles">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    <a href="{% url 'config_system:usuario_edit' usuario.pk %}" 
+                                       class="btn btn-outline-primary" title="Editar">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                </div>
+                                
+                                <div class="btn-group btn-group-sm">
+                                    <button class="btn btn-outline-{{ usuario.is_active|yesno:'warning,success' }} toggle-user-status" 
+                                            data-user-id="{{ usuario.pk }}" 
+                                            data-current-status="{{ usuario.is_active|yesno:'true,false' }}"
+                                            title="{{ usuario.is_active|yesno:'Desactivar,Activar' }}">
+                                        <i class="fas fa-{{ usuario.is_active|yesno:'pause,play' }}"></i>
+                                    </button>
+                                    {% if not usuario.is_superuser %}
+                                    <a href="{% url 'config_system:usuario_delete' usuario.pk %}" 
+                                       class="btn btn-outline-danger" title="Eliminar"
+                                       onclick="return confirm('¿Está seguro de eliminar este usuario?')">
+                                        <i class="fas fa-trash"></i>
+                                    </a>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-body text-center py-5">
+                            <i class="fas fa-users fa-3x text-muted mb-3"></i>
+                            <h5 class="text-muted">No se encontraron usuarios</h5>
+                            <p class="text-muted">
+                                {% if search or estado %}
+                                    No hay usuarios que coincidan con los filtros aplicados.
+                                {% else %}
+                                    No hay usuarios registrados en el sistema.
+                                {% endif %}
+                            </p>
+                            <a href="{% url 'config_system:usuario_create' %}" class="btn btn-primary">
+                                <i class="fas fa-plus"></i> Crear Primer Usuario
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- Acciones masivas -->
+            {% if usuarios %}
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <i class="fas fa-cogs"></i> Acciones Masivas
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="btn-group">
+                        <button class="btn btn-info" onclick="aplicarPermisosMasivo()">
+                            <i class="fas fa-sync"></i> Reaplicar Permisos por Rol
+                        </button>
+                        <a href="{% url 'config_system:perfiles_list' %}" class="btn btn-secondary">
+                            <i class="fas fa-id-card"></i> Gestionar Perfiles
+                        </a>
+                        <a href="{% url 'config_system:permisos_list' %}" class="btn btn-warning">
+                            <i class="fas fa-key"></i> Gestionar Permisos
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    // Toggle estado de usuario
+    $('.toggle-user-status').click(function() {
+        var button = $(this);
+        var userId = button.data('user-id');
+        var currentStatus = button.data('current-status') === 'true';
+        var newStatus = !currentStatus;
+        
+        $.ajax({
+            url: `/config_system/usuarios/${userId}/toggle-active/`,
+            method: 'POST',
+            data: {
+                'activo': newStatus,
+                'csrfmiddlewaretoken': $('[name=csrfmiddlewaretoken]').val()
+            },
+            success: function(response) {
+                if (response.success) {
+                    // Actualizar UI
+                    location.reload();
+                } else {
+                    alert('Error: ' + response.message);
+                }
+            },
+            error: function() {
+                alert('Error al cambiar el estado del usuario');
+            }
+        });
+    });
+});
+
+function aplicarPermisosMasivo() {
+    if (confirm('¿Está seguro de reaplicar permisos por rol a todos los usuarios?')) {
+        $.ajax({
+            url: '{% url "config_system:aplicar_permisos_masivo" %}',
+            method: 'POST',
+            data: {
+                'csrfmiddlewaretoken': $('[name=csrfmiddlewaretoken]').val()
+            },
+            success: function(response) {
+                if (response.success) {
+                    alert(response.message);
+                } else {
+                    alert('Error: ' + response.message);
+                }
+            },
+            error: function() {
+                alert('Error al aplicar permisos masivamente');
+            }
+        });
+    }
+}
+</script>
+{% endblock %}

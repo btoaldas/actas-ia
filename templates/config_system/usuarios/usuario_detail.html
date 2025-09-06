@@ -1,0 +1,482 @@
+{% extends 'config_system/base.html' %}
+{% load static %}
+
+{% block title %}Detalles del Usuario: {{ usuario.username }}{% endblock %}
+
+{% block extra_css %}
+<style>
+.user-avatar {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    background: linear-gradient(45deg, #007bff, #28a745);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 3rem;
+    margin: 0 auto 20px;
+}
+
+.stat-card {
+    border-left: 4px solid #007bff;
+}
+
+.permission-badge {
+    font-size: 0.875rem;
+    margin: 2px;
+}
+
+.timeline-item {
+    border-left: 2px solid #dee2e6;
+    padding-left: 20px;
+    margin-bottom: 20px;
+    position: relative;
+}
+
+.timeline-item::before {
+    content: '';
+    position: absolute;
+    left: -6px;
+    top: 5px;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #007bff;
+}
+
+.activity-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 15px;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="content-wrapper">
+    <div class="content-header">
+        <div class="container-fluid">
+            <div class="row mb-2">
+                <div class="col-sm-6">
+                    <h1 class="m-0">
+                        <i class="fas fa-user"></i> {{ usuario.first_name }} {{ usuario.last_name }}
+                    </h1>
+                </div>
+                <div class="col-sm-6">
+                    <ol class="breadcrumb float-sm-right">
+                        <li class="breadcrumb-item"><a href="{% url 'config_system:dashboard' %}">Dashboard</a></li>
+                        <li class="breadcrumb-item"><a href="{% url 'config_system:usuarios_list' %}">Usuarios</a></li>
+                        <li class="breadcrumb-item active">{{ usuario.username }}</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="content">
+        <div class="container-fluid">
+            <div class="row">
+                <!-- Información principal -->
+                <div class="col-md-8">
+                    <!-- Información básica -->
+                    <div class="card">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">
+                                <i class="fas fa-info-circle"></i> Información Básica
+                            </h5>
+                            <div>
+                                {% if usuario.is_active %}
+                                <span class="badge badge-success">Activo</span>
+                                {% else %}
+                                <span class="badge badge-danger">Inactivo</span>
+                                {% endif %}
+                                
+                                {% if usuario.is_staff %}
+                                <span class="badge badge-warning">Admin Django</span>
+                                {% endif %}
+                                
+                                {% if usuario.is_superuser %}
+                                <span class="badge badge-danger">Superusuario</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label class="font-weight-bold">Username:</label>
+                                        <p class="mb-1">{{ usuario.username }}</p>
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="font-weight-bold">Email:</label>
+                                        <p class="mb-1">
+                                            <a href="mailto:{{ usuario.email }}">{{ usuario.email }}</a>
+                                        </p>
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="font-weight-bold">Nombre completo:</label>
+                                        <p class="mb-1">{{ usuario.first_name }} {{ usuario.last_name }}</p>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label class="font-weight-bold">Fecha de registro:</label>
+                                        <p class="mb-1">{{ usuario.date_joined|date:"d/m/Y H:i" }}</p>
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="font-weight-bold">Último acceso:</label>
+                                        <p class="mb-1">
+                                            {% if usuario.last_login %}
+                                                {{ usuario.last_login|date:"d/m/Y H:i" }}
+                                            {% else %}
+                                                <span class="text-muted">Nunca</span>
+                                            {% endif %}
+                                        </p>
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="font-weight-bold">Estado de la cuenta:</label>
+                                        <p class="mb-1">
+                                            {% if usuario.is_active %}
+                                                <i class="fas fa-check-circle text-success"></i> Activo
+                                            {% else %}
+                                                <i class="fas fa-times-circle text-danger"></i> Inactivo
+                                            {% endif %}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Perfil y Permisos -->
+                    {% if perfil %}
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0">
+                                <i class="fas fa-id-card"></i> Perfil de Usuario
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label class="font-weight-bold">Rol:</label>
+                                        <p class="mb-1">
+                                            <span class="badge badge-primary">{{ perfil.get_rol_display }}</span>
+                                        </p>
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="font-weight-bold">Departamento:</label>
+                                        <p class="mb-1">{{ perfil.departamento|default:"No especificado" }}</p>
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="font-weight-bold">Cargo:</label>
+                                        <p class="mb-1">{{ perfil.cargo|default:"No especificado" }}</p>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label class="font-weight-bold">Teléfono:</label>
+                                        <p class="mb-1">{{ perfil.telefono|default:"No especificado" }}</p>
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="font-weight-bold">Activo desde:</label>
+                                        <p class="mb-1">{{ perfil.fecha_creacion|date:"d/m/Y" }}</p>
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="font-weight-bold">Estado del perfil:</label>
+                                        <p class="mb-1">
+                                            {% if perfil.activo %}
+                                                <i class="fas fa-check-circle text-success"></i> Activo
+                                            {% else %}
+                                                <i class="fas fa-times-circle text-danger"></i> Inactivo
+                                            {% endif %}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            {% if perfil.notas %}
+                            <div class="form-group mt-3">
+                                <label class="font-weight-bold">Notas:</label>
+                                <p class="mb-1">{{ perfil.notas }}</p>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Permisos detallados -->
+                    {% if permisos %}
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0">
+                                <i class="fas fa-key"></i> Permisos del Sistema
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <h6 class="font-weight-bold">Acceso a Menús:</h6>
+                                    <div class="mb-3">
+                                        {% if permisos.ver_menu_transcribir %}
+                                            <span class="badge badge-success permission-badge">Transcribir</span>
+                                        {% endif %}
+                                        {% if permisos.ver_menu_procesamiento %}
+                                            <span class="badge badge-success permission-badge">Procesamiento</span>
+                                        {% endif %}
+                                        {% if permisos.ver_menu_digitalizacion %}
+                                            <span class="badge badge-success permission-badge">Digitalización</span>
+                                        {% endif %}
+                                        {% if permisos.ver_menu_generacion %}
+                                            <span class="badge badge-success permission-badge">Generación</span>
+                                        {% endif %}
+                                        {% if permisos.ver_menu_publicacion %}
+                                            <span class="badge badge-success permission-badge">Publicación</span>
+                                        {% endif %}
+                                        {% if permisos.ver_menu_config_ia %}
+                                            <span class="badge badge-success permission-badge">Config IA</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-4">
+                                    <h6 class="font-weight-bold">Funcionalidades:</h6>
+                                    <div class="mb-3">
+                                        {% if permisos.crear_transcripciones %}
+                                            <span class="badge badge-info permission-badge">Crear Transcripciones</span>
+                                        {% endif %}
+                                        {% if permisos.editar_transcripciones %}
+                                            <span class="badge badge-info permission-badge">Editar Transcripciones</span>
+                                        {% endif %}
+                                        {% if permisos.eliminar_transcripciones %}
+                                            <span class="badge badge-info permission-badge">Eliminar Transcripciones</span>
+                                        {% endif %}
+                                        {% if permisos.procesar_audio %}
+                                            <span class="badge badge-info permission-badge">Procesar Audio</span>
+                                        {% endif %}
+                                        {% if permisos.configurar_whisper %}
+                                            <span class="badge badge-info permission-badge">Config Whisper</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-4">
+                                    <h6 class="font-weight-bold">Administración:</h6>
+                                    <div class="mb-3">
+                                        {% if permisos.gestionar_usuarios %}
+                                            <span class="badge badge-warning permission-badge">Gestionar Usuarios</span>
+                                        {% endif %}
+                                        {% if permisos.configurar_sistema %}
+                                            <span class="badge badge-warning permission-badge">Config Sistema</span>
+                                        {% endif %}
+                                        {% if permisos.ver_reportes %}
+                                            <span class="badge badge-warning permission-badge">Ver Reportes</span>
+                                        {% endif %}
+                                        {% if permisos.exportar_datos %}
+                                            <span class="badge badge-warning permission-badge">Exportar Datos</span>
+                                        {% endif %}
+                                        {% if permisos.backup_restaurar %}
+                                            <span class="badge badge-warning permission-badge">Backup/Restaurar</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    {% else %}
+                    <div class="card">
+                        <div class="card-body">
+                            <div class="alert alert-warning">
+                                <h5><i class="fas fa-exclamation-triangle"></i> Sin Perfil Asignado</h5>
+                                <p class="mb-3">Este usuario no tiene un perfil configurado. Para acceder al sistema, necesita tener un perfil asignado.</p>
+                                <a href="{% url 'config_system:perfil_create' %}" class="btn btn-warning">
+                                    <i class="fas fa-plus"></i> Crear Perfil
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- Panel lateral -->
+                <div class="col-md-4">
+                    <!-- Avatar y acciones -->
+                    <div class="card">
+                        <div class="card-body text-center">
+                            <div class="user-avatar">
+                                {{ usuario.first_name.0|default:"U" }}{{ usuario.last_name.0|default:"" }}
+                            </div>
+                            <h5>{{ usuario.first_name }} {{ usuario.last_name }}</h5>
+                            <p class="text-muted">@{{ usuario.username }}</p>
+                            
+                            <div class="btn-group-vertical w-100 mt-3">
+                                <a href="{% url 'config_system:usuario_edit' usuario.pk %}" class="btn btn-primary">
+                                    <i class="fas fa-edit"></i> Editar Usuario
+                                </a>
+                                
+                                {% if perfil %}
+                                <a href="{% url 'config_system:perfil_edit' perfil.pk %}" class="btn btn-warning">
+                                    <i class="fas fa-id-card"></i> Editar Perfil
+                                </a>
+                                <a href="{% url 'config_system:permisos_edit' permisos.pk %}" class="btn btn-success">
+                                    <i class="fas fa-key"></i> Gestionar Permisos
+                                </a>
+                                {% else %}
+                                <a href="{% url 'config_system:perfil_create' %}" class="btn btn-warning">
+                                    <i class="fas fa-plus"></i> Crear Perfil
+                                </a>
+                                {% endif %}
+                                
+                                <button type="button" class="btn {% if usuario.is_active %}btn-danger{% else %}btn-success{% endif %}" 
+                                        onclick="toggleUserStatus({{ usuario.pk }})">
+                                    {% if usuario.is_active %}
+                                        <i class="fas fa-user-slash"></i> Desactivar
+                                    {% else %}
+                                        <i class="fas fa-user-check"></i> Activar
+                                    {% endif %}
+                                </button>
+                                
+                                <a href="{% url 'config_system:usuario_delete' usuario.pk %}" 
+                                   class="btn btn-outline-danger"
+                                   onclick="return confirm('¿Estás seguro de que quieres eliminar este usuario?')">
+                                    <i class="fas fa-trash"></i> Eliminar
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Estadísticas rápidas -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h6 class="mb-0">
+                                <i class="fas fa-chart-bar"></i> Estadísticas
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-6">
+                                    <div class="text-center">
+                                        <h4 class="text-primary">
+                                            {% if usuario.last_login %}
+                                                {{ usuario.last_login|timesince }}
+                                            {% else %}
+                                                Nunca
+                                            {% endif %}
+                                        </h4>
+                                        <small class="text-muted">Último acceso</small>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="text-center">
+                                        <h4 class="text-success">{{ usuario.date_joined|timesince }}</h4>
+                                        <small class="text-muted">En el sistema</small>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            {% if perfil %}
+                            <hr>
+                            <div class="row">
+                                <div class="col-12">
+                                    <div class="text-center">
+                                        <h4 class="text-info">{{ perfil.get_rol_display }}</h4>
+                                        <small class="text-muted">Rol actual</small>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Actividad reciente -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h6 class="mb-0">
+                                <i class="fas fa-history"></i> Actividad Reciente
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="timeline-item">
+                                <div class="d-flex align-items-center">
+                                    <div class="activity-icon bg-primary">
+                                        <i class="fas fa-user-plus text-white"></i>
+                                    </div>
+                                    <div>
+                                        <strong>Usuario creado</strong>
+                                        <br>
+                                        <small class="text-muted">{{ usuario.date_joined|date:"d/m/Y H:i" }}</small>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            {% if perfil %}
+                            <div class="timeline-item">
+                                <div class="d-flex align-items-center">
+                                    <div class="activity-icon bg-success">
+                                        <i class="fas fa-id-card text-white"></i>
+                                    </div>
+                                    <div>
+                                        <strong>Perfil asignado</strong>
+                                        <br>
+                                        <small class="text-muted">{{ perfil.fecha_creacion|date:"d/m/Y H:i" }}</small>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endif %}
+                            
+                            {% if usuario.last_login %}
+                            <div class="timeline-item">
+                                <div class="d-flex align-items-center">
+                                    <div class="activity-icon bg-info">
+                                        <i class="fas fa-sign-in-alt text-white"></i>
+                                    </div>
+                                    <div>
+                                        <strong>Último acceso</strong>
+                                        <br>
+                                        <small class="text-muted">{{ usuario.last_login|date:"d/m/Y H:i" }}</small>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function toggleUserStatus(userId) {
+    if (!confirm('¿Estás seguro de que quieres cambiar el estado de este usuario?')) {
+        return;
+    }
+    
+    $.ajax({
+        url: '{% url "config_system:usuario_toggle_active" 0 %}'.replace('0', userId),
+        method: 'POST',
+        data: {
+            'csrfmiddlewaretoken': '{{ csrf_token }}'
+        },
+        success: function(response) {
+            if (response.success) {
+                location.reload();
+            } else {
+                alert('Error al cambiar el estado del usuario');
+            }
+        },
+        error: function() {
+            alert('Error en la conexión');
+        }
+    });
+}
+</script>
+{% endblock %}

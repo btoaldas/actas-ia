@@ -1,0 +1,294 @@
+{% extends 'config_system/base.html' %}
+{% load static %}
+
+{% block title %}Eliminar Usuario: {{ usuario.username }}{% endblock %}
+
+{% block extra_css %}
+<style>
+.danger-card {
+    border: 2px solid #dc3545;
+    background: #fff5f5;
+}
+
+.user-info {
+    background: #f8f9fa;
+    border-radius: 10px;
+    padding: 20px;
+    margin: 20px 0;
+}
+
+.warning-icon {
+    font-size: 4rem;
+    color: #dc3545;
+    margin-bottom: 20px;
+}
+
+.consequence-item {
+    display: flex;
+    align-items: center;
+    margin-bottom: 10px;
+    padding: 10px;
+    background: #fff;
+    border-radius: 5px;
+    border-left: 4px solid #dc3545;
+}
+
+.consequence-icon {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: #dc3545;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 15px;
+    font-size: 0.875rem;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="content-wrapper">
+    <div class="content-header">
+        <div class="container-fluid">
+            <div class="row mb-2">
+                <div class="col-sm-6">
+                    <h1 class="m-0 text-danger">
+                        <i class="fas fa-user-times"></i> Eliminar Usuario
+                    </h1>
+                </div>
+                <div class="col-sm-6">
+                    <ol class="breadcrumb float-sm-right">
+                        <li class="breadcrumb-item"><a href="{% url 'config_system:dashboard' %}">Dashboard</a></li>
+                        <li class="breadcrumb-item"><a href="{% url 'config_system:usuarios_list' %}">Usuarios</a></li>
+                        <li class="breadcrumb-item"><a href="{% url 'config_system:usuario_detail' usuario.pk %}">{{ usuario.username }}</a></li>
+                        <li class="breadcrumb-item active">Eliminar</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="content">
+        <div class="container-fluid">
+            <div class="row justify-content-center">
+                <div class="col-md-8">
+                    <div class="card danger-card">
+                        <div class="card-body text-center">
+                            <div class="warning-icon">
+                                <i class="fas fa-exclamation-triangle"></i>
+                            </div>
+                            
+                            <h3 class="text-danger">¡Atención! Esta acción es irreversible</h3>
+                            <p class="text-muted mb-4">
+                                Estás a punto de eliminar permanentemente el usuario del sistema.
+                                Esta acción no se puede deshacer.
+                            </p>
+
+                            <!-- Información del usuario -->
+                            <div class="user-info">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <h5 class="text-dark">{{ usuario.first_name }} {{ usuario.last_name }}</h5>
+                                        <p class="text-muted">@{{ usuario.username }}</p>
+                                        <p class="text-muted">{{ usuario.email }}</p>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <p><strong>Registrado:</strong> {{ usuario.date_joined|date:"d/m/Y" }}</p>
+                                        <p><strong>Último acceso:</strong> 
+                                            {% if usuario.last_login %}
+                                                {{ usuario.last_login|date:"d/m/Y H:i" }}
+                                            {% else %}
+                                                Nunca
+                                            {% endif %}
+                                        </p>
+                                        <p><strong>Estado:</strong> 
+                                            {% if usuario.is_active %}
+                                                <span class="badge badge-success">Activo</span>
+                                            {% else %}
+                                                <span class="badge badge-danger">Inactivo</span>
+                                            {% endif %}
+                                        </p>
+                                    </div>
+                                </div>
+                                
+                                {% if perfil %}
+                                <hr>
+                                <div class="row">
+                                    <div class="col-12">
+                                        <p><strong>Perfil:</strong> {{ perfil.get_rol_display }}</p>
+                                        {% if perfil.departamento %}
+                                        <p><strong>Departamento:</strong> {{ perfil.departamento }}</p>
+                                        {% endif %}
+                                        {% if perfil.cargo %}
+                                        <p><strong>Cargo:</strong> {{ perfil.cargo }}</p>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                {% endif %}
+                            </div>
+
+                            <!-- Consecuencias de la eliminación -->
+                            <div class="text-left">
+                                <h5 class="text-danger mb-3">
+                                    <i class="fas fa-exclamation-circle"></i> ¿Qué sucederá al eliminar este usuario?
+                                </h5>
+                                
+                                <div class="consequence-item">
+                                    <div class="consequence-icon">
+                                        <i class="fas fa-user-slash"></i>
+                                    </div>
+                                    <div>
+                                        <strong>Eliminación del usuario</strong>
+                                        <br>
+                                        <small class="text-muted">Se eliminará permanentemente la cuenta de usuario</small>
+                                    </div>
+                                </div>
+
+                                {% if perfil %}
+                                <div class="consequence-item">
+                                    <div class="consequence-icon">
+                                        <i class="fas fa-id-card"></i>
+                                    </div>
+                                    <div>
+                                        <strong>Eliminación del perfil</strong>
+                                        <br>
+                                        <small class="text-muted">Se eliminará también su perfil y configuraciones asociadas</small>
+                                    </div>
+                                </div>
+
+                                {% if permisos %}
+                                <div class="consequence-item">
+                                    <div class="consequence-icon">
+                                        <i class="fas fa-key"></i>
+                                    </div>
+                                    <div>
+                                        <strong>Eliminación de permisos</strong>
+                                        <br>
+                                        <small class="text-muted">Se eliminarán todos los permisos detallados asignados</small>
+                                    </div>
+                                </div>
+                                {% endif %}
+                                {% endif %}
+
+                                <div class="consequence-item">
+                                    <div class="consequence-icon">
+                                        <i class="fas fa-sign-in-alt"></i>
+                                    </div>
+                                    <div>
+                                        <strong>Pérdida de acceso</strong>
+                                        <br>
+                                        <small class="text-muted">El usuario no podrá volver a acceder al sistema</small>
+                                    </div>
+                                </div>
+
+                                <div class="consequence-item">
+                                    <div class="consequence-icon">
+                                        <i class="fas fa-history"></i>
+                                    </div>
+                                    <div>
+                                        <strong>Conservación de historial</strong>
+                                        <br>
+                                        <small class="text-muted">Los registros de actividad se mantendrán por referencia</small>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Alternativas -->
+                            <div class="alert alert-info mt-4">
+                                <h6><i class="fas fa-lightbulb"></i> ¿Consideraste estas alternativas?</h6>
+                                <ul class="text-left mb-0">
+                                    <li><strong>Desactivar el usuario:</strong> Mantiene los datos pero impide el acceso</li>
+                                    <li><strong>Cambiar permisos:</strong> Reduce el acceso sin eliminar la cuenta</li>
+                                    <li><strong>Modificar el perfil:</strong> Cambia el rol sin perder información</li>
+                                </ul>
+                            </div>
+
+                            <!-- Formulario de confirmación -->
+                            <form method="post" class="mt-4">
+                                {% csrf_token %}
+                                
+                                <div class="form-group">
+                                    <div class="custom-control custom-checkbox">
+                                        <input type="checkbox" class="custom-control-input" id="confirm-delete" required>
+                                        <label class="custom-control-label text-danger" for="confirm-delete">
+                                            <strong>Confirmo que entiendo las consecuencias y quiero eliminar este usuario permanentemente</strong>
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <div class="btn-group btn-group-lg mt-3">
+                                    <button type="submit" class="btn btn-danger" id="delete-btn" disabled>
+                                        <i class="fas fa-trash"></i> Eliminar Usuario Permanentemente
+                                    </button>
+                                    <a href="{% url 'config_system:usuario_detail' usuario.pk %}" class="btn btn-secondary">
+                                        <i class="fas fa-arrow-left"></i> Cancelar
+                                    </a>
+                                </div>
+                            </form>
+
+                            <!-- Acciones alternativas -->
+                            <div class="mt-4">
+                                <h6 class="text-muted">Acciones alternativas:</h6>
+                                <div class="btn-group">
+                                    <button type="button" class="btn btn-warning btn-sm" onclick="toggleUserStatus({{ usuario.pk }})">
+                                        {% if usuario.is_active %}
+                                            <i class="fas fa-user-slash"></i> Desactivar en su lugar
+                                        {% else %}
+                                            <i class="fas fa-user-check"></i> Reactivar usuario
+                                        {% endif %}
+                                    </button>
+                                    <a href="{% url 'config_system:usuario_edit' usuario.pk %}" class="btn btn-info btn-sm">
+                                        <i class="fas fa-edit"></i> Editar usuario
+                                    </a>
+                                    {% if perfil %}
+                                    <a href="{% url 'config_system:permisos_edit' permisos.pk %}" class="btn btn-success btn-sm">
+                                        <i class="fas fa-key"></i> Modificar permisos
+                                    </a>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    // Habilitar/deshabilitar el botón de eliminar
+    $('#confirm-delete').change(function() {
+        $('#delete-btn').prop('disabled', !this.checked);
+    });
+});
+
+function toggleUserStatus(userId) {
+    if (!confirm('¿Quieres cambiar el estado del usuario en lugar de eliminarlo?')) {
+        return;
+    }
+    
+    $.ajax({
+        url: '{% url "config_system:usuario_toggle_active" 0 %}'.replace('0', userId),
+        method: 'POST',
+        data: {
+            'csrfmiddlewaretoken': '{{ csrf_token }}'
+        },
+        success: function(response) {
+            if (response.success) {
+                window.location.href = '{% url "config_system:usuario_detail" usuario.pk %}';
+            } else {
+                alert('Error al cambiar el estado del usuario');
+            }
+        },
+        error: function() {
+            alert('Error en la conexión');
+        }
+    });
+}
+</script>
+{% endblock %}

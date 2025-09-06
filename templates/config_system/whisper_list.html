@@ -1,0 +1,190 @@
+{% extends "config_system/base.html" %}
+{% load static %}
+
+{% block page_title %}Configuraciones Whisper{% endblock %}
+{% block breadcrumb_active %}Config Whisper{% endblock %}
+
+{% block main_content %}
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">
+                    <i class="fas fa-microphone text-success"></i>
+                    Configuraciones de Whisper (Transcripción)
+                </h3>
+                <div class="card-tools">
+                    <a href="{% url 'config_system:whisper_create' %}" class="btn btn-success">
+                        <i class="fas fa-plus"></i> Nueva Configuración Whisper
+                    </a>
+                </div>
+            </div>
+            <div class="card-body">
+                {% if configuraciones %}
+                    <div class="table-responsive">
+                        <table class="table table-striped datatable">
+                            <thead>
+                                <tr>
+                                    <th>Nombre</th>
+                                    <th>Modelo</th>
+                                    <th>Idioma</th>
+                                    <th>Estado</th>
+                                    <th>VAD</th>
+                                    <th>Pyannote</th>
+                                    <th>Failover</th>
+                                    <th>Última Actualización</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for config in configuraciones %}
+                                <tr class="config-card {% if not config.activo %}config-inactive{% endif %}" data-config-id="{{ config.pk }}">
+                                    <td>
+                                        <strong>{{ config.nombre }}</strong>
+                                    </td>
+                                    <td>
+                                        <code>{{ config.modelo_whisper }}</code>
+                                        <br>
+                                        <small class="text-muted">
+                                            T: {{ config.temperatura }}
+                                        </small>
+                                    </td>
+                                    <td>
+                                        <span class="badge badge-secondary">{{ config.idioma|upper }}</span>
+                                    </td>
+                                    <td>
+                                        <label class="toggle-switch">
+                                            <input type="checkbox" class="toggle-config" 
+                                                   data-config-id="{{ config.pk }}" 
+                                                   data-config-type="whisper"
+                                                   {% if config.activo %}checked{% endif %}>
+                                            <span class="slider"></span>
+                                        </label>
+                                    </td>
+                                    <td>
+                                        {% if config.usar_vad %}
+                                            <i class="fas fa-check-circle text-success" title="VAD activo"></i>
+                                        {% else %}
+                                            <i class="fas fa-times-circle text-muted" title="VAD inactivo"></i>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if config.usar_pyannote %}
+                                            <i class="fas fa-users text-info" title="Pyannote activo"></i>
+                                            <br>
+                                            <small class="text-muted">
+                                                {{ config.min_speakers }}-{{ config.max_speakers }} speakers
+                                            </small>
+                                        {% else %}
+                                            <i class="fas fa-user text-muted" title="Sin Pyannote"></i>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if config.tiene_failover %}
+                                            <span class="badge badge-warning">
+                                                {{ config.get_failover_metodo_display }}
+                                            </span>
+                                        {% else %}
+                                            <span class="badge badge-light">Sin failover</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <small>{{ config.fecha_actualizacion|date:"d/m/Y H:i" }}</small>
+                                    </td>
+                                    <td>
+                                        <div class="btn-group" role="group">
+                                            <a href="{% url 'config_system:whisper_detail' config.pk %}" 
+                                               class="btn btn-sm btn-outline-info" title="Ver detalles">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                            <a href="{% url 'config_system:whisper_edit' config.pk %}" 
+                                               class="btn btn-sm btn-outline-primary" title="Editar">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                            <a href="{% url 'config_system:whisper_test' config.pk %}" 
+                                               class="btn btn-sm btn-outline-success test-config" title="Probar">
+                                                <i class="fas fa-vial"></i>
+                                            </a>
+                                            <a href="{% url 'config_system:whisper_delete' config.pk %}" 
+                                               class="btn btn-sm btn-outline-danger delete-config" 
+                                               data-config-name="{{ config.nombre }}"
+                                               title="Eliminar">
+                                                <i class="fas fa-trash"></i>
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-microphone fa-5x text-muted mb-4"></i>
+                        <h4 class="text-muted">No hay configuraciones Whisper</h4>
+                        <p class="text-muted mb-4">
+                            Crea tu primera configuración de Whisper para comenzar a transcribir audios y videos.
+                        </p>
+                        <a href="{% url 'config_system:whisper_create' %}" class="btn btn-success btn-lg">
+                            <i class="fas fa-plus"></i> Crear Primera Configuración Whisper
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Información adicional -->
+<div class="row">
+    <div class="col-md-3">
+        <div class="info-box">
+            <span class="info-box-icon bg-success">
+                <i class="fas fa-check-circle"></i>
+            </span>
+            <div class="info-box-content">
+                <span class="info-box-text">Configuraciones Activas</span>
+                <span class="info-box-number">{{ configuraciones_activas }}</span>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="info-box">
+            <span class="info-box-icon bg-info">
+                <i class="fas fa-users"></i>
+            </span>
+            <div class="info-box-content">
+                <span class="info-box-text">Con Pyannote</span>
+                <span class="info-box-number">{{ configuraciones_con_pyannote }}</span>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="info-box">
+            <span class="info-box-icon bg-warning">
+                <i class="fas fa-shield-alt"></i>
+            </span>
+            <div class="info-box-content">
+                <span class="info-box-text">Con Failover</span>
+                <span class="info-box-number">{{ configuraciones_con_failover }}</span>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="info-box">
+            <span class="info-box-icon bg-secondary">
+                <i class="fas fa-globe"></i>
+            </span>
+            <div class="info-box-content">
+                <span class="info-box-text">Idiomas Únicos</span>
+                <span class="info-box-number">{{ idiomas_unicos }}</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% csrf_token %}
+{% endblock main_content %}

@@ -1,0 +1,271 @@
+{% extends "config_system/base.html" %}
+{% load static %}
+
+{% block page_title %}Dashboard de Configuraciones{% endblock %}
+{% block breadcrumb_active %}Dashboard{% endblock %}
+
+{% block main_content %}
+<div class="row">
+    <!-- Stats Cards -->
+    <div class="col-lg-3 col-6">
+        <div class="small-box bg-info">
+            <div class="inner">
+                <h3>{{ stats.total_configs_ia }}</h3>
+                <p>Configuraciones IA</p>
+            </div>
+            <div class="icon">
+                <i class="fas fa-robot"></i>
+            </div>
+            <a href="{% url 'config_system:ia_list' %}" class="small-box-footer">
+                Ver más <i class="fas fa-arrow-circle-right"></i>
+            </a>
+        </div>
+    </div>
+
+    <div class="col-lg-3 col-6">
+        <div class="small-box bg-success">
+            <div class="inner">
+                <h3>{{ stats.total_configs_whisper }}</h3>
+                <p>Configuraciones Whisper</p>
+            </div>
+            <div class="icon">
+                <i class="fas fa-microphone"></i>
+            </div>
+            <a href="{% url 'config_system:whisper_list' %}" class="small-box-footer">
+                Ver más <i class="fas fa-arrow-circle-right"></i>
+            </a>
+        </div>
+    </div>
+
+    <div class="col-lg-3 col-6">
+        <div class="small-box bg-warning">
+            <div class="inner">
+                <h3>{{ stats.configs_activas }}</h3>
+                <p>Configuraciones Activas</p>
+            </div>
+            <div class="icon">
+                <i class="fas fa-check-circle"></i>
+            </div>
+            <div class="small-box-footer">
+                <small>{{ stats.configs_inactivas }} inactivas</small>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-3 col-6">
+        <div class="small-box bg-danger">
+            <div class="inner">
+                <h3>{{ stats.usuarios_con_permisos }}</h3>
+                <p>Usuarios con Permisos</p>
+            </div>
+            <div class="icon">
+                <i class="fas fa-users-cog"></i>
+            </div>
+            <a href="{% url 'config_system:usuarios_list' %}" class="small-box-footer">
+                Ver más <i class="fas fa-arrow-circle-right"></i>
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Configuraciones IA Activas -->
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">
+                    <i class="fas fa-robot text-primary"></i>
+                    Configuraciones IA Activas
+                </h3>
+                <div class="card-tools">
+                    <a href="{% url 'config_system:ia_create' %}" class="btn btn-primary btn-sm">
+                        <i class="fas fa-plus"></i> Nueva Config IA
+                    </a>
+                </div>
+            </div>
+            <div class="card-body p-0">
+                {% if configs_ia_activas %}
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Nombre</th>
+                                    <th>Proveedor</th>
+                                    <th>Principal</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for config in configs_ia_activas %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ config.nombre }}</strong>
+                                        {% if config.es_principal %}
+                                            <span class="badge badge-success ml-1">Principal</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <span class="badge provider-badge badge-{% if config.proveedor == 'openai' %}primary{% elif config.proveedor == 'deepseek' %}info{% elif config.proveedor == 'ollama' %}warning{% else %}secondary{% endif %}">
+                                            {{ config.get_proveedor_display }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        {% if config.es_principal %}
+                                            <i class="fas fa-star text-warning"></i>
+                                        {% else %}
+                                            <i class="far fa-star text-muted"></i>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <a href="{% url 'config_system:ia_edit' config.pk %}" class="btn btn-sm btn-outline-primary">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        <a href="{% url 'config_system:ia_test' config.pk %}" class="btn btn-sm btn-outline-success test-config">
+                                            <i class="fas fa-vial"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center p-3">
+                        <i class="fas fa-robot fa-3x text-muted mb-3"></i>
+                        <p class="text-muted">No hay configuraciones IA activas</p>
+                        <a href="{% url 'config_system:ia_create' %}" class="btn btn-primary">
+                            <i class="fas fa-plus"></i> Crear Primera Config IA
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Configuraciones Whisper Activas -->
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">
+                    <i class="fas fa-microphone text-success"></i>
+                    Configuraciones Whisper Activas
+                </h3>
+                <div class="card-tools">
+                    <a href="{% url 'config_system:whisper_create' %}" class="btn btn-success btn-sm">
+                        <i class="fas fa-plus"></i> Nueva Config Whisper
+                    </a>
+                </div>
+            </div>
+            <div class="card-body p-0">
+                {% if configs_whisper_activas %}
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Nombre</th>
+                                    <th>Modelo</th>
+                                    <th>Idioma</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for config in configs_whisper_activas %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ config.nombre }}</strong>
+                                        {% if config.usar_pyannote %}
+                                            <small class="badge badge-info">Pyannote</small>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <code>{{ config.modelo_whisper }}</code>
+                                    </td>
+                                    <td>
+                                        <span class="badge badge-secondary">{{ config.idioma|upper }}</span>
+                                    </td>
+                                    <td>
+                                        <a href="{% url 'config_system:whisper_edit' config.pk %}" class="btn btn-sm btn-outline-primary">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        <a href="{% url 'config_system:whisper_test' config.pk %}" class="btn btn-sm btn-outline-success test-config">
+                                            <i class="fas fa-vial"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center p-3">
+                        <i class="fas fa-microphone fa-3x text-muted mb-3"></i>
+                        <p class="text-muted">No hay configuraciones Whisper activas</p>
+                        <a href="{% url 'config_system:whisper_create' %}" class="btn btn-success">
+                            <i class="fas fa-plus"></i> Crear Primera Config Whisper
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Últimas Actividades -->
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">
+                    <i class="fas fa-history text-info"></i>
+                    Últimas Actividades de Configuración
+                </h3>
+            </div>
+            <div class="card-body">
+                {% if ultimas_actividades %}
+                    <div class="timeline">
+                        {% for actividad in ultimas_actividades %}
+                        <div class="time-label">
+                            <span class="bg-{% cycle 'blue' 'green' 'yellow' 'red' %}">
+                                {{ actividad.fecha_creacion|date:"d M Y" }}
+                            </span>
+                        </div>
+                        <div>
+                            <i class="fas fa-{% if actividad.accion == 'crear' %}plus{% elif actividad.accion == 'editar' %}edit{% elif actividad.accion == 'eliminar' %}trash{% elif actividad.accion == 'probar' %}vial{% else %}cog{% endif %} bg-{% cycle 'blue' 'green' 'yellow' 'red' %}"></i>
+                            <div class="timeline-item">
+                                <span class="time">
+                                    <i class="fas fa-clock"></i> {{ actividad.fecha_creacion|time:"H:i" }}
+                                </span>
+                                <h3 class="timeline-header">
+                                    {% if actividad.usuario %}
+                                        <strong>{{ actividad.usuario.get_full_name|default:actividad.usuario.username }}</strong>
+                                    {% else %}
+                                        <strong>Sistema</strong>
+                                    {% endif %}
+                                    {{ actividad.get_accion_display|lower }} configuración
+                                </h3>
+                                <div class="timeline-body">
+                                    <strong>{{ actividad.configuracion_nombre }}</strong>
+                                    {% if actividad.detalles %}
+                                        <br><small class="text-muted">{{ actividad.detalles }}</small>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                        <div>
+                            <i class="fas fa-clock bg-gray"></i>
+                        </div>
+                    </div>
+                {% else %}
+                    <div class="text-center">
+                        <i class="fas fa-history fa-3x text-muted mb-3"></i>
+                        <p class="text-muted">No hay actividades recientes</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+{% csrf_token %}
+{% endblock main_content %}

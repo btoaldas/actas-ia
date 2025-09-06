@@ -1,0 +1,285 @@
+{% extends 'layouts/base.html' %}
+{% load static %}
+
+{% block title %}Calendario de Eventos{% endblock title %}
+
+{% block extrastyle %}
+  <!-- fullCalendar -->
+  <link rel="stylesheet" href="{% static 'plugins/fullcalendar/main.css' %}">
+  <style>
+    .event-info {
+      font-size: 0.8rem;
+      color: #666;
+    }
+    .fc-event {
+      cursor: pointer;
+    }
+    .evento-item {
+      border-left: 4px solid;
+      margin-bottom: 8px;
+      padding: 8px 12px;
+      background: #f8f9fa;
+      border-radius: 4px;
+    }
+    .evento-item:hover {
+      background: #e9ecef;
+    }
+    .evento-hora {
+      font-weight: bold;
+      color: #495057;
+    }
+    .evento-tipo {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      font-weight: 600;
+    }
+  </style>
+{% endblock extrastyle %}
+
+{% block bodyclass %}hold-transition sidebar-mini{% endblock bodyclass %}
+
+{% block content %}
+  <!-- Content Wrapper. Contains page content -->
+  <div class="content-wrapper">
+    <!-- Content Header (Page header) -->
+    <section class="content-header">
+      <div class="container-fluid">
+        <div class="row mb-2">
+          <div class="col-sm-6">
+            <h1>
+              <i class="fas fa-calendar-alt"></i> Calendario de Eventos
+            </h1>
+          </div>
+          <div class="col-sm-6">
+            <ol class="breadcrumb float-sm-right">
+              <li class="breadcrumb-item"><a href="{% url 'transparencia_index' %}">Inicio</a></li>
+              <li class="breadcrumb-item active">Eventos</li>
+            </ol>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Main content -->
+    <section class="content">
+      <div class="container-fluid">
+        <div class="row">
+          <div class="col-md-3">
+            <div class="sticky-top mb-3">
+              
+              <!-- Acciones rápidas -->
+              {% if puede_crear %}
+              <div class="card">
+                <div class="card-header bg-primary">
+                  <h4 class="card-title text-white">
+                    <i class="fas fa-plus"></i> Acciones
+                  </h4>
+                </div>
+                <div class="card-body">
+                  <a href="{% url 'eventos_nuevo' %}" class="btn btn-success btn-block">
+                    <i class="fas fa-plus"></i> Crear Evento
+                  </a>
+                </div>
+              </div>
+              {% endif %}
+
+              <!-- Próximos eventos -->
+              <div class="card">
+                <div class="card-header bg-info">
+                  <h4 class="card-title text-white">
+                    <i class="fas fa-clock"></i> Próximos Eventos
+                  </h4>
+                </div>
+                <div class="card-body">
+                  {% if eventos_proximos %}
+                    {% for evento in eventos_proximos %}
+                      <div class="evento-item" style="border-left-color: {{ evento.color_tipo }};">
+                        <div class="evento-hora">{{ evento.fecha_inicio|date:"d/m H:i" }}</div>
+                        <div class="evento-titulo">
+                          <a href="{% url 'eventos_detalle' evento.pk %}" class="text-decoration-none">
+                            {{ evento.titulo }}
+                          </a>
+                        </div>
+                        <div class="evento-tipo" style="color: {{ evento.color_tipo }};">
+                          <i class="{{ evento.icono_tipo }}"></i> {{ evento.get_tipo_display }}
+                        </div>
+                        {% if evento.ubicacion %}
+                          <div class="event-info">
+                            <i class="fas fa-map-marker-alt"></i> {{ evento.ubicacion }}
+                          </div>
+                        {% endif %}
+                      </div>
+                    {% endfor %}
+                  {% else %}
+                    <p class="text-muted text-center">
+                      <i class="fas fa-calendar-times"></i><br>
+                      No hay eventos próximos
+                    </p>
+                  {% endif %}
+                </div>
+              </div>
+
+              <!-- Leyenda de tipos -->
+              <div class="card">
+                <div class="card-header bg-secondary">
+                  <h4 class="card-title text-white">
+                    <i class="fas fa-palette"></i> Leyenda
+                  </h4>
+                </div>
+                <div class="card-body">
+                  <div class="mb-2">
+                    <span class="badge bg-primary"><i class="fas fa-gavel"></i></span>
+                    Sesión de Concejo
+                  </div>
+                  <div class="mb-2">
+                    <span class="badge bg-success"><i class="fas fa-users"></i></span>
+                    Reunión Pública
+                  </div>
+                  <div class="mb-2">
+                    <span class="badge bg-warning"><i class="fas fa-handshake"></i></span>
+                    Audiencia Pública
+                  </div>
+                  <div class="mb-2">
+                    <span class="badge bg-info"><i class="fas fa-bullhorn"></i></span>
+                    Evento Comunitario
+                  </div>
+                  <div class="mb-2">
+                    <span class="badge bg-danger"><i class="fas fa-exclamation-triangle"></i></span>
+                    Urgente
+                  </div>
+                  <div>
+                    <span class="badge bg-secondary"><i class="fas fa-calendar-day"></i></span>
+                    Otro
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Calendario principal -->
+          <div class="col-md-9">
+            <div class="card card-primary">
+              <div class="card-header">
+                <h3 class="card-title">
+                  <i class="fas fa-calendar-alt"></i> 
+                  Calendario de Eventos Municipales
+                </h3>
+              </div>
+              <div class="card-body p-0">
+                <!-- THE CALENDAR -->
+                <div id="calendar"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+{% endblock content %}
+
+{% block extra_scripts %}
+  <!-- fullCalendar 2.2.5 -->
+  <script src="{% static 'plugins/fullcalendar/main.js' %}"></script>
+  <script src="{% static 'plugins/fullcalendar/locales-all.js' %}"></script>
+  
+  <script>
+    $(function () {
+      // Initialize the calendar
+      var calendarEl = document.getElementById('calendar');
+      var calendar = new FullCalendar.Calendar(calendarEl, {
+        locale: 'es',
+        headerToolbar: {
+          left: 'prev,next today',
+          center: 'title',
+          right: 'dayGridMonth,timeGridWeek,timeGridDay,listWeek'
+        },
+        buttonText: {
+          today: 'Hoy',
+          month: 'Mes',
+          week: 'Semana',
+          day: 'Día',
+          list: 'Lista'
+        },
+        initialView: 'dayGridMonth',
+        height: 650,
+        navLinks: true,
+        selectable: true,
+        selectMirror: true,
+        editable: false,
+        dayMaxEvents: true,
+        
+        // Cargar eventos desde API
+        events: {
+          url: '{% url "api_eventos_calendario" %}',
+          method: 'GET',
+          failure: function() {
+            alert('Error al cargar eventos');
+          }
+        },
+        
+        // Configurar tooltip para eventos
+        eventDidMount: function(info) {
+          // Agregar tooltip con información adicional
+          $(info.el).tooltip({
+            title: info.event.title + '<br>' + 
+                   '<strong>Tipo:</strong> ' + info.event.extendedProps.tipo + '<br>' +
+                   '<strong>Estado:</strong> ' + info.event.extendedProps.estado + 
+                   (info.event.extendedProps.ubicacion ? '<br><strong>Ubicación:</strong> ' + info.event.extendedProps.ubicacion : '') +
+                   '<br><strong>Organizador:</strong> ' + info.event.extendedProps.organizador,
+            html: true,
+            placement: 'top'
+          });
+        },
+        
+        // Click en evento - ir a detalle
+        eventClick: function(info) {
+          if (info.event.url) {
+            window.open(info.event.url, '_self');
+            info.jsEvent.preventDefault();
+          }
+        },
+        
+        // Seleccionar fecha (solo si puede crear eventos)
+        {% if puede_crear %}
+        select: function(info) {
+          if (confirm('¿Desea crear un nuevo evento para el ' + info.startStr + '?')) {
+            var fecha = info.start.toISOString().slice(0, 16);
+            window.location.href = '{% url "eventos_nuevo" %}?fecha=' + fecha;
+          }
+        },
+        {% endif %}
+        
+        // Personalizar vista de eventos
+        eventDisplay: 'block',
+        displayEventTime: true,
+        
+        // Configuración de días de la semana
+        firstDay: 1, // Lunes como primer día
+        weekends: true,
+        
+        // Configurar formato de fechas
+        titleFormat: { 
+          year: 'numeric', 
+          month: 'long' 
+        },
+        
+        // Botones personalizados
+        customButtons: {
+          refresh: {
+            text: 'Actualizar',
+            click: function() {
+              calendar.refetchEvents();
+            }
+          }
+        }
+      });
+
+      calendar.render();
+      
+      // Auto-refresh cada 5 minutos
+      setInterval(function() {
+        calendar.refetchEvents();
+      }, 300000);
+    });
+  </script>
+{% endblock extra_scripts %}

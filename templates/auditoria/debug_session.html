@@ -1,0 +1,304 @@
+{% extends "layouts/base.html" %}
+
+{% block title %} Debug de Sesión {% endblock %}
+
+{% block stylesheets %}
+<style>
+    .debug-section {
+        background: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-radius: 0.375rem;
+        padding: 1rem;
+        margin-bottom: 1rem;
+    }
+    .debug-key {
+        font-weight: bold;
+        color: #495057;
+    }
+    .debug-value {
+        color: #6c757d;
+        font-family: 'Courier New', monospace;
+        font-size: 0.9em;
+    }
+    .json-container {
+        background: #2d3748;
+        color: #e2e8f0;
+        padding: 1rem;
+        border-radius: 0.375rem;
+        overflow-x: auto;
+        font-family: 'Courier New', monospace;
+        font-size: 0.85em;
+    }
+    .test-buttons {
+        margin: 1rem 0;
+    }
+    .test-buttons .btn {
+        margin: 0.25rem;
+    }
+</style>
+{% endblock stylesheets %}
+
+{% block content %}
+
+<div class="content-wrapper">
+    <div class="content-header">
+        <div class="container-fluid">
+            <div class="row mb-2">
+                <div class="col-sm-6">
+                    <h1 class="m-0">🔍 Debug de Sesión y Cookies</h1>
+                </div>
+                <div class="col-sm-6">
+                    <ol class="breadcrumb float-sm-right">
+                        <li class="breadcrumb-item"><a href="{% url 'auditoria:dashboard' %}">Auditoría</a></li>
+                        <li class="breadcrumb-item active">Debug Sesión</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <section class="content">
+        <div class="container-fluid">
+            
+            <!-- Botones de prueba -->
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">🧪 Pruebas de Sesión</h3>
+                </div>
+                <div class="card-body">
+                    <div class="test-buttons">
+                        <button class="btn btn-primary" onclick="testSessionAction('set_test_data')">
+                            <i class="fas fa-plus"></i> Agregar Datos de Prueba
+                        </button>
+                        <button class="btn btn-warning" onclick="testSessionAction('clear_test_data')">
+                            <i class="fas fa-trash"></i> Limpiar Datos de Prueba
+                        </button>
+                        <button class="btn btn-danger" onclick="testSessionAction('flush_session')">
+                            <i class="fas fa-exclamation-triangle"></i> Limpiar Sesión Completa
+                        </button>
+                        <button class="btn btn-info" onclick="testCookies()">
+                            <i class="fas fa-cookie-bite"></i> Probar Cookies
+                        </button>
+                        <button class="btn btn-success" onclick="location.reload()">
+                            <i class="fas fa-sync"></i> Refrescar
+                        </button>
+                    </div>
+                    <div id="test-results" class="alert" style="display: none;"></div>
+                </div>
+            </div>
+
+            <div class="row">
+                <!-- Información de Sesión -->
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">🔐 Información de Sesión</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="debug-section">
+                                <div class="row">
+                                    <div class="col-4 debug-key">Session Key:</div>
+                                    <div class="col-8 debug-value">{{ session_data.session_key|default:"No disponible" }}</div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-4 debug-key">Expiración:</div>
+                                    <div class="col-8 debug-value">{{ session_data.session_expiry|default:"No disponible" }}</div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-4 debug-key">Edad (segundos):</div>
+                                    <div class="col-8 debug-value">{{ session_data.session_age|default:"No disponible" }}</div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-4 debug-key">Modificada:</div>
+                                    <div class="col-8 debug-value">{{ session_data.session_modified|yesno:"Sí,No,No disponible" }}</div>
+                                </div>
+                            </div>
+                            
+                            <h5>📦 Datos de Sesión:</h5>
+                            <div class="json-container">
+                                <pre>{{ session_data.session_data|pprint }}</pre>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Información de Cookies -->
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">🍪 Cookies</h3>
+                        </div>
+                        <div class="card-body">
+                            {% if cookies_data %}
+                                {% for name, cookie in cookies_data.items %}
+                                <div class="debug-section">
+                                    <div class="row">
+                                        <div class="col-4 debug-key">{{ name }}:</div>
+                                        <div class="col-8 debug-value">
+                                            {{ cookie.value|truncatechars:50 }}
+                                            <small class="text-muted">({{ cookie.length }} chars)</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            {% else %}
+                                <p class="text-muted">No hay cookies disponibles</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <!-- Información del Usuario -->
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">👤 Usuario Actual</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="debug-section">
+                                <div class="row">
+                                    <div class="col-4 debug-key">ID:</div>
+                                    <div class="col-8 debug-value">{{ user_data.id }}</div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-4 debug-key">Username:</div>
+                                    <div class="col-8 debug-value">{{ user_data.username }}</div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-4 debug-key">Email:</div>
+                                    <div class="col-8 debug-value">{{ user_data.email|default:"No definido" }}</div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-4 debug-key">Autenticado:</div>
+                                    <div class="col-8 debug-value">{{ user_data.is_authenticated|yesno:"Sí,No" }}</div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-4 debug-key">Staff:</div>
+                                    <div class="col-8 debug-value">{{ user_data.is_staff|yesno:"Sí,No" }}</div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-4 debug-key">Superuser:</div>
+                                    <div class="col-8 debug-value">{{ user_data.is_superuser|yesno:"Sí,No" }}</div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-4 debug-key">Último login:</div>
+                                    <div class="col-8 debug-value">{{ user_data.last_login|default:"Nunca" }}</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Información del Request -->
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">🌐 Información del Request</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="debug-section">
+                                <div class="row">
+                                    <div class="col-4 debug-key">Método:</div>
+                                    <div class="col-8 debug-value">{{ request_data.method }}</div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-4 debug-key">Path:</div>
+                                    <div class="col-8 debug-value">{{ request_data.path }}</div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-4 debug-key">Host:</div>
+                                    <div class="col-8 debug-value">{{ request_data.http_host }}</div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-4 debug-key">IP:</div>
+                                    <div class="col-8 debug-value">{{ request_data.remote_addr }}</div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-4 debug-key">User Agent:</div>
+                                    <div class="col-8 debug-value">{{ request_data.user_agent|truncatechars:100 }}</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Headers HTTP -->
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">📡 Headers HTTP</h3>
+                </div>
+                <div class="card-body">
+                    <div class="json-container">
+                        <pre>{{ headers_data|pprint }}</pre>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </section>
+</div>
+
+{% endblock content %}
+
+{% block javascripts %}
+<script>
+function testSessionAction(action) {
+    fetch('{% url "auditoria:test_session" %}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-CSRFToken': '{{ csrf_token }}'
+        },
+        body: 'action=' + action
+    })
+    .then(response => response.json())
+    .then(data => {
+        const resultsDiv = document.getElementById('test-results');
+        resultsDiv.style.display = 'block';
+        
+        if (data.success) {
+            resultsDiv.className = 'alert alert-success';
+            resultsDiv.innerHTML = '<i class="fas fa-check"></i> ' + data.message;
+        } else {
+            resultsDiv.className = 'alert alert-danger';
+            resultsDiv.innerHTML = '<i class="fas fa-times"></i> ' + (data.error || 'Error desconocido');
+        }
+        
+        // Auto-ocultar después de 3 segundos
+        setTimeout(() => {
+            resultsDiv.style.display = 'none';
+        }, 3000);
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        const resultsDiv = document.getElementById('test-results');
+        resultsDiv.style.display = 'block';
+        resultsDiv.className = 'alert alert-danger';
+        resultsDiv.innerHTML = '<i class="fas fa-times"></i> Error de conexión';
+    });
+}
+
+function testCookies() {
+    fetch('{% url "auditoria:cookie_test" %}')
+    .then(response => response.json())
+    .then(data => {
+        const resultsDiv = document.getElementById('test-results');
+        resultsDiv.style.display = 'block';
+        resultsDiv.className = 'alert alert-info';
+        resultsDiv.innerHTML = '<i class="fas fa-cookie-bite"></i> Cookie de prueba establecida. Revisa las cookies del navegador.';
+        
+        console.log('Datos de cookies:', data);
+        
+        setTimeout(() => {
+            resultsDiv.style.display = 'none';
+        }, 3000);
+    })
+    .catch(error => {
+        console.error('Error:', error);
+    });
+}
+</script>
+{% endblock javascripts %}

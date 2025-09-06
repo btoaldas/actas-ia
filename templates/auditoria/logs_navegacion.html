@@ -1,0 +1,321 @@
+{% extends 'layouts/base.html' %}
+{% load static %}
+
+{% block title %}Logs de Navegación{% endblock title %}
+
+{% block extrastyle %}
+  <!-- DataTables -->
+  <link rel="stylesheet" href="{% static 'plugins/datatables-bs4/css/dataTables.bootstrap4.min.css' %}">
+  <link rel="stylesheet" href="{% static 'plugins/datatables-responsive/css/responsive.bootstrap4.min.css' %}">
+{% endblock extrastyle %}
+
+{% block content %}
+<!-- Content Wrapper -->
+<div class="content-wrapper">
+  <!-- Content Header (Page header) -->
+  <section class="content-header">
+    <div class="container-fluid">
+      <div class="row mb-2">
+        <div class="col-sm-6">
+          <h1><i class="fas fa-mouse-pointer"></i> Logs de Navegación</h1>
+        </div>
+        <div class="col-sm-6">
+          <ol class="breadcrumb float-sm-right">
+            <li class="breadcrumb-item"><a href="/">Inicio</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'auditoria:dashboard' %}">Auditoría</a></li>
+            <li class="breadcrumb-item active">Navegación</li>
+          </ol>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Main content -->
+  <section class="content">
+    <div class="container-fluid">
+      
+      <!-- Filtros -->
+      <div class="card collapsed-card">
+        <div class="card-header">
+          <h3 class="card-title">
+            <i class="fas fa-filter mr-1"></i>
+            Filtros de Búsqueda
+          </h3>
+          <div class="card-tools">
+            <button type="button" class="btn btn-tool" data-card-widget="collapse">
+              <i class="fas fa-plus"></i>
+            </button>
+          </div>
+        </div>
+        <div class="card-body">
+          <form method="GET">
+            <div class="row">
+              <div class="col-md-3">
+                <div class="form-group">
+                  <label>Usuario ID</label>
+                  <input type="number" name="usuario_id" class="form-control" value="{{ filtros.usuario_id }}" placeholder="ID del usuario">
+                </div>
+              </div>
+              
+              <div class="col-md-3">
+                <div class="form-group">
+                  <label>URL Visitada</label>
+                  <input type="text" name="url" class="form-control" value="{{ filtros.url }}" placeholder="Parte de la URL">
+                </div>
+              </div>
+              
+              <div class="col-md-3">
+                <div class="form-group">
+                  <label>Fecha Desde</label>
+                  <input type="date" name="fecha_desde" class="form-control" value="{{ filtros.fecha_desde }}">
+                </div>
+              </div>
+              
+              <div class="col-md-3">
+                <div class="form-group">
+                  <label>Fecha Hasta</label>
+                  <input type="date" name="fecha_hasta" class="form-control" value="{{ filtros.fecha_hasta }}">
+                </div>
+              </div>
+            </div>
+            
+            <div class="row">
+              <div class="col-12">
+                <button type="submit" class="btn btn-primary">
+                  <i class="fas fa-search"></i> Buscar
+                </button>
+                <a href="{% url 'auditoria:logs_navegacion' %}" class="btn btn-secondary">
+                  <i class="fas fa-times"></i> Limpiar
+                </a>
+              </div>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- Tabla de logs -->
+      <div class="card">
+        <div class="card-header">
+          <h3 class="card-title">
+            <i class="fas fa-list mr-1"></i>
+            Registros de Navegación de Usuarios
+          </h3>
+          <div class="card-tools">
+            <span class="badge badge-success">{{ logs|length }} registros</span>
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="table-responsive">
+            <table id="navegacionTable" class="table table-bordered table-striped">
+              <thead>
+                <tr>
+                  <th>Timestamp</th>
+                  <th>Usuario</th>
+                  <th>URL Visitada</th>
+                  <th>URL Anterior</th>
+                  <th>Método</th>
+                  <th>IP Address</th>
+                  <th>Código</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for log in logs %}
+                <tr>
+                  <td>
+                    <small>{{ log.1|date:"d/m/Y H:i:s" }}</small>
+                  </td>
+                  <td>
+                    {% if log.2 %}
+                      <i class="fas fa-user text-primary"></i> 
+                      <strong>{{ log.2 }}</strong>
+                    {% else %}
+                      <i class="fas fa-user-slash text-muted"></i> 
+                      <span class="text-muted">Anónimo</span>
+                    {% endif %}
+                  </td>
+                  <td>
+                    <code class="text-success">{{ log.3|truncatechars:60 }}</code>
+                  </td>
+                  <td>
+                    {% if log.4 %}
+                      <code class="text-muted">{{ log.4|truncatechars:40 }}</code>
+                    {% else %}
+                      <span class="text-muted">-</span>
+                    {% endif %}
+                  </td>
+                  <td>
+                    <span class="badge 
+                      {% if log.5 == 'GET' %}badge-info
+                      {% elif log.5 == 'POST' %}badge-warning
+                      {% elif log.5 == 'PUT' %}badge-primary
+                      {% elif log.5 == 'DELETE' %}badge-danger
+                      {% else %}badge-secondary{% endif %}">
+                      {{ log.5 }}
+                    </span>
+                  </td>
+                  <td>
+                    {% if log.6 %}
+                      <code>{{ log.6 }}</code>
+                    {% else %}
+                      <span class="text-muted">-</span>
+                    {% endif %}
+                  </td>
+                  <td>
+                    <span class="badge 
+                      {% if log.7 >= 200 and log.7 < 300 %}badge-success
+                      {% elif log.7 >= 300 and log.7 < 400 %}badge-info
+                      {% elif log.7 >= 400 and log.7 < 500 %}badge-warning
+                      {% elif log.7 >= 500 %}badge-danger
+                      {% else %}badge-secondary{% endif %}">
+                      {{ log.7 }}
+                    </span>
+                  </td>
+                  <td>
+                    <button class="btn btn-sm btn-info" onclick="verDetalle({{ log.0 }}, 'navegacion')">
+                      <i class="fas fa-eye"></i>
+                    </button>
+                  </td>
+                </tr>
+                {% empty %}
+                <tr>
+                  <td colspan="8" class="text-center">
+                    <i class="fas fa-info-circle"></i> No se encontraron logs de navegación con los criterios especificados
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+        
+        <!-- Paginación -->
+        {% if logs.has_other_pages %}
+        <div class="card-footer">
+          <nav aria-label="Page navigation">
+            <ul class="pagination pagination-sm justify-content-center">
+              {% if logs.has_previous %}
+                <li class="page-item">
+                  <a class="page-link" href="?page={{ logs.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
+                    <i class="fas fa-angle-left"></i> Anterior
+                  </a>
+                </li>
+              {% endif %}
+              
+              {% for num in logs.paginator.page_range %}
+                {% if logs.number == num %}
+                  <li class="page-item active">
+                    <span class="page-link">{{ num }}</span>
+                  </li>
+                {% elif num > logs.number|add:'-3' and num < logs.number|add:'3' %}
+                  <li class="page-item">
+                    <a class="page-link" href="?page={{ num }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">{{ num }}</a>
+                  </li>
+                {% endif %}
+              {% endfor %}
+              
+              {% if logs.has_next %}
+                <li class="page-item">
+                  <a class="page-link" href="?page={{ logs.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
+                    Siguiente <i class="fas fa-angle-right"></i>
+                  </a>
+                </li>
+              {% endif %}
+            </ul>
+          </nav>
+        </div>
+        {% endif %}
+      </div>
+
+    </div>
+  </section>
+</div>
+
+<!-- Modal para detalle del log -->
+<div class="modal fade" id="modalDetalle" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">
+          <i class="fas fa-info-circle"></i> Detalle de Navegación
+        </h5>
+        <button type="button" class="close" data-dismiss="modal">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body" id="modalDetalleBody">
+        <div class="text-center">
+          <i class="fas fa-spinner fa-spin"></i> Cargando...
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">Cerrar</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock content %}
+
+{% block extrajs %}
+<!-- DataTables  & Plugins -->
+<script src="{% static 'plugins/datatables/jquery.dataTables.min.js' %}"></script>
+<script src="{% static 'plugins/datatables-bs4/js/dataTables.bootstrap4.min.js' %}"></script>
+<script src="{% static 'plugins/datatables-responsive/js/dataTables.responsive.min.js' %}"></script>
+<script src="{% static 'plugins/datatables-responsive/js/responsive.bootstrap4.min.js' %}"></script>
+
+<script>
+$(function () {
+  $("#navegacionTable").DataTable({
+    "responsive": true,
+    "lengthChange": false,
+    "autoWidth": false,
+    "searching": false,
+    "paging": false,
+    "info": false,
+    "ordering": false,
+    "language": {
+      "emptyTable": "No hay datos disponibles"
+    }
+  });
+});
+
+function verDetalle(logId, tipo) {
+  $('#modalDetalle').modal('show');
+  $('#modalDetalleBody').html('<div class="text-center"><i class="fas fa-spinner fa-spin"></i> Cargando...</div>');
+  
+  fetch(`{% url 'auditoria:detalle_log' 0 'navegacion' %}`.replace('0', logId).replace('navegacion', tipo))
+    .then(response => response.json())
+    .then(data => {
+      if (data.log) {
+        let html = '<div class="row">';
+        for (const [key, value] of Object.entries(data.log)) {
+          let displayValue = value;
+          
+          // Formatear campos JSON
+          if (key.includes('parametros') || key.includes('datos')) {
+            try {
+              displayValue = JSON.stringify(JSON.parse(value), null, 2);
+            } catch (e) {
+              displayValue = value;
+            }
+          }
+          
+          html += `
+            <div class="col-md-6 mb-3">
+              <strong>${key.replace(/_/g, ' ').toUpperCase()}:</strong><br>
+              <pre style="font-size: 12px; max-height: 100px; overflow-y: auto;">${displayValue || 'N/A'}</pre>
+            </div>
+          `;
+        }
+        html += '</div>';
+        $('#modalDetalleBody').html(html);
+      } else {
+        $('#modalDetalleBody').html('<div class="alert alert-danger">Error cargando los detalles</div>');
+      }
+    })
+    .catch(error => {
+      $('#modalDetalleBody').html('<div class="alert alert-danger">Error: ' + error.message + '</div>');
+    });
+}
+</script>
+{% endblock extrajs %}

@@ -1,0 +1,512 @@
+{% extends "layouts/base.html" %}
+{% load static %}
+
+{% block title %} Portal Ciudadano - Actas Municipales {% endblock title %}
+
+{% block bodyclass %} hold-transition sidebar-mini layout-fixed layout-navbar-fixed layout-footer-fixed {% endblock bodyclass %}
+
+{% block content %}
+  <!-- Content Wrapper. Contains page content -->
+  <div class="content-wrapper">
+    <!-- Content Header (Page header) -->
+    <section class="content-header">
+      <div class="container-fluid">
+        <div class="row mb-2">
+          <div class="col-sm-6">
+            <h1><i class="fas fa-globe mr-2 text-primary"></i>Portal Ciudadano</h1>
+            <p class="mb-0 text-muted">Consulta transparente de actas municipales</p>
+          </div>
+          <div class="col-sm-6">
+            <ol class="breadcrumb float-sm-right">
+              <li class="breadcrumb-item"><a href="{% url 'index' %}">Inicio</a></li>
+              <li class="breadcrumb-item active">Portal Ciudadano</li>
+            </ol>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Main content -->
+    <section class="content">
+      <div class="container-fluid">
+        
+        <!-- Estadísticas rápidas -->
+        <div class="row mb-4">
+          <div class="col-lg-3 col-6">
+            <div class="small-box bg-info">
+              <div class="inner">
+                <h3>{{ total_actas }}</h3>
+                <p>Total de Actas</p>
+              </div>
+              <div class="icon">
+                <i class="fas fa-file-alt"></i>
+              </div>
+            </div>
+          </div>
+          
+          <div class="col-lg-3 col-6">
+            <div class="small-box bg-success">
+              <div class="inner">
+                <h3>{{ actas_publicas }}</h3>
+                <p>Acceso Público</p>
+              </div>
+              <div class="icon">
+                <i class="fas fa-globe"></i>
+              </div>
+            </div>
+          </div>
+          
+          <div class="col-lg-3 col-6">
+            <div class="small-box bg-warning">
+              <div class="inner">
+                <h3>{{ actas_este_mes }}</h3>
+                <p>Este Mes</p>
+              </div>
+              <div class="icon">
+                <i class="fas fa-calendar"></i>
+              </div>
+            </div>
+          </div>
+          
+          <div class="col-lg-3 col-6">
+            <div class="small-box bg-primary">
+              <div class="inner">
+                <h3>{{ precision_promedio }}%</h3>
+                <p>Precisión IA</p>
+              </div>
+              <div class="icon">
+                <i class="fas fa-brain"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Métricas adicionales -->
+        <div class="row">
+          <div class="col-lg-3 col-6">
+            <div class="small-box bg-info">
+              <div class="inner">
+                <h3>{{ visualizaciones_mes }}</h3>
+                <p>Vistas Este Mes</p>
+              </div>
+              <div class="icon">
+                <i class="fas fa-eye"></i>
+              </div>
+            </div>
+          </div>
+          
+          <div class="col-lg-3 col-6">
+            <div class="small-box bg-secondary">
+              <div class="inner">
+                <h3>{{ descargas_mes }}</h3>
+                <p>Descargas Este Mes</p>
+              </div>
+              <div class="icon">
+                <i class="fas fa-download"></i>
+              </div>
+            </div>
+          </div>
+          
+          <div class="col-lg-3 col-6">
+            <div class="small-box bg-light">
+              <div class="inner">
+                <h3>{{ porcentaje_ia }}%</h3>
+                <p>Actas con IA</p>
+              </div>
+              <div class="icon">
+                <i class="fas fa-robot"></i>
+              </div>
+            </div>
+          </div>
+          
+          <div class="col-lg-3 col-6">
+            <div class="small-box bg-dark">
+              <div class="inner">
+                <h3>
+                  {% if dias_ultima_actualizacion == 0 %}
+                    Hoy
+                  {% elif dias_ultima_actualizacion == 1 %}
+                    Ayer
+                  {% else %}
+                    {{ dias_ultima_actualizacion }} días
+                  {% endif %}
+                </h3>
+                <p>Última Actualización</p>
+              </div>
+              <div class="icon">
+                <i class="fas fa-sync-alt"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Panel de búsqueda y filtros -->
+        <div class="card card-outline card-primary">
+          <div class="card-header">
+            <h3 class="card-title"><i class="fas fa-search mr-2"></i>Búsqueda y Filtros</h3>
+            <div class="card-tools">
+              <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                <i class="fas fa-minus"></i>
+              </button>
+            </div>
+          </div>
+          <div class="card-body">
+            <form method="GET" id="search-form">
+              <div class="row">
+                <!-- Búsqueda principal -->
+                <div class="col-md-12 mb-3">
+                  <div class="input-group input-group-lg">
+                    <input type="search" 
+                           class="form-control form-control-lg" 
+                           placeholder="Buscar en actas municipales (título, número, contenido)..." 
+                           name="search"
+                           value="{{ search_query }}"
+                           id="search-input">
+                    <div class="input-group-append">
+                      <button type="submit" class="btn btn-primary btn-lg">
+                        <i class="fas fa-search"></i>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <div class="row">
+                <!-- Tipo de sesión -->
+                <div class="col-md-3">
+                  <div class="form-group">
+                    <label for="tipo_sesion">Tipo de Sesión:</label>
+                    <select class="form-control select2" name="tipo_sesion" id="tipo_sesion">
+                      <option value="">Todos los tipos</option>
+                      {% for tipo in tipos_sesion %}
+                        <option value="{{ tipo.nombre }}" 
+                                {% if filters.tipo_sesion == tipo.nombre %}selected{% endif %}>
+                          {{ tipo.get_nombre_display }}
+                        </option>
+                      {% endfor %}
+                    </select>
+                  </div>
+                </div>
+                
+                <!-- Estado -->
+                <div class="col-md-3">
+                  <div class="form-group">
+                    <label for="estado">Estado:</label>
+                    <select class="form-control select2" name="estado" id="estado">
+                      <option value="">Todos los estados</option>
+                      {% for estado in estados %}
+                        <option value="{{ estado.nombre }}" 
+                                {% if filters.estado == estado.nombre %}selected{% endif %}>
+                          {{ estado.get_nombre_display }}
+                        </option>
+                      {% endfor %}
+                    </select>
+                  </div>
+                </div>
+                
+                <!-- Acceso -->
+                <div class="col-md-3">
+                  <div class="form-group">
+                    <label for="acceso">Nivel de Acceso:</label>
+                    <select class="form-control select2" name="acceso" id="acceso">
+                      <option value="">Todos los niveles</option>
+                      {% for value, label in acceso_choices %}
+                        <option value="{{ value }}" 
+                                {% if filters.acceso == value %}selected{% endif %}>
+                          {{ label }}
+                        </option>
+                      {% endfor %}
+                    </select>
+                  </div>
+                </div>
+                
+                <!-- Ordenar por -->
+                <div class="col-md-3">
+                  <div class="form-group">
+                    <label for="orden">Ordenar por:</label>
+                    <select class="form-control select2" name="orden" id="orden">
+                      {% for value, label in orden_choices %}
+                        <option value="{{ value }}" 
+                                {% if filters.orden == value %}selected{% endif %}>
+                          {{ label }}
+                        </option>
+                      {% endfor %}
+                    </select>
+                  </div>
+                </div>
+              </div>
+              
+              <div class="row">
+                <!-- Fecha desde -->
+                <div class="col-md-4">
+                  <div class="form-group">
+                    <label for="fecha_desde">Fecha desde:</label>
+                    <input type="date" 
+                           class="form-control" 
+                           name="fecha_desde" 
+                           value="{{ filters.fecha_desde }}"
+                           id="fecha_desde">
+                  </div>
+                </div>
+                
+                <!-- Fecha hasta -->
+                <div class="col-md-4">
+                  <div class="form-group">
+                    <label for="fecha_hasta">Fecha hasta:</label>
+                    <input type="date" 
+                           class="form-control" 
+                           name="fecha_hasta" 
+                           value="{{ filters.fecha_hasta }}"
+                           id="fecha_hasta">
+                  </div>
+                </div>
+                
+                <!-- Botones -->
+                <div class="col-md-4">
+                  <div class="form-group">
+                    <label>&nbsp;</label>
+                    <div class="d-block">
+                      <button type="submit" class="btn btn-primary mr-2">
+                        <i class="fas fa-search"></i> Buscar
+                      </button>
+                      <a href="{% url 'portal_ciudadano' %}" class="btn btn-secondary">
+                        <i class="fas fa-times"></i> Limpiar
+                      </a>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+
+        <!-- Resultados -->
+        <div class="card">
+          <div class="card-header">
+            <h3 class="card-title">
+              <i class="fas fa-list mr-2"></i>
+              Resultados de Actas Municipales
+              {% if search_query %}
+                - "{{ search_query }}"
+              {% endif %}
+            </h3>
+            <div class="card-tools">
+              <span class="badge badge-primary">{{ actas.paginator.count }} acta{{ actas.paginator.count|pluralize }}</span>
+            </div>
+          </div>
+          
+          <div class="card-body p-0">
+            {% if actas %}
+              <div class="list-group list-group-flush">
+                {% for acta in actas %}
+                  <div class="list-group-item list-group-item-action">
+                    <div class="row">
+                      <!-- Imagen -->
+                      <div class="col-auto">
+                        {% if acta.imagen_preview %}
+                          <img src="{{ acta.imagen_preview.url }}" 
+                               alt="Vista previa" 
+                               class="img-fluid rounded" 
+                               style="max-height: 120px; max-width: 120px;">
+                        {% else %}
+                          <div class="bg-light d-flex align-items-center justify-content-center rounded" 
+                               style="height: 120px; width: 120px;">
+                            <i class="fas fa-file-alt fa-3x text-muted"></i>
+                          </div>
+                        {% endif %}
+                      </div>
+                      
+                      <!-- Contenido -->
+                      <div class="col">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                          <div>
+                            <h5 class="mb-1">
+                              <a href="{{ acta.get_absolute_url }}" class="text-decoration-none">
+                                {{ acta.titulo }}
+                              </a>
+                            </h5>
+                            <small class="text-muted">
+                              <strong>{{ acta.numero_acta }}</strong> | 
+                              {{ acta.fecha_sesion|date:"d/m/Y H:i" }} | 
+                              {{ acta.tipo_sesion.get_nombre_display }}
+                            </small>
+                          </div>
+                          
+                          <!-- Iconos de estado y acceso -->
+                          <div class="text-right">
+                            <span class="badge" style="background-color: {{ acta.color_estado }};">
+                              {{ acta.estado.get_nombre_display }}
+                            </span>
+                            <div class="mt-1">
+                              <i class="{{ acta.icono_acceso }}" title="{{ acta.get_acceso_display }}"></i>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        <!-- Resumen -->
+                        <p class="mb-2 text-justify">
+                          {{ acta.resumen|truncatewords:30 }}
+                        </p>
+                        
+                        <!-- Información adicional -->
+                        <div class="d-flex justify-content-between align-items-center">
+                          <small class="text-muted">
+                            <i class="fas fa-user mr-1"></i>{{ acta.presidente }}
+                            {% if acta.transcripcion_ia %}
+                              | <i class="fas fa-robot text-info mr-1"></i>IA: {{ acta.precision_ia }}%
+                            {% endif %}
+                          </small>
+                          
+                          <!-- Botones de acción -->
+                          <div class="btn-group btn-group-sm" role="group">
+                            <a href="{{ acta.get_absolute_url }}" 
+                               class="btn btn-outline-primary"
+                               title="Ver información detallada del acta">
+                              <i class="fas fa-eye"></i> Ver Detalle
+                            </a>
+                            
+                            {% if acta.archivo_pdf %}
+                              <a href="{% url 'acta_pdf_view' acta.pk %}" 
+                                 class="btn btn-outline-info"
+                                 target="_blank"
+                                 title="Abrir PDF en nueva ventana">
+                                <i class="fas fa-file-pdf"></i> Ver PDF
+                              </a>
+                              
+                              <a href="{% url 'acta_pdf_download' acta.pk %}" 
+                                 class="btn btn-outline-success"
+                                 title="Descargar archivo PDF">
+                                <i class="fas fa-download"></i> Descargar
+                              </a>
+                            {% else %}
+                              <button class="btn btn-outline-secondary" 
+                                      disabled
+                                      title="PDF no disponible">
+                                <i class="fas fa-file-pdf"></i> Sin PDF
+                              </button>
+                            {% endif %}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                {% endfor %}
+              </div>
+              
+              <!-- Paginación -->
+              {% if actas.has_other_pages %}
+                <div class="card-footer">
+                  <div class="row">
+                    <div class="col-sm-12 col-md-5">
+                      <div class="dataTables_info">
+                        Mostrando {{ actas.start_index }} a {{ actas.end_index }} 
+                        de {{ actas.paginator.count }} actas
+                      </div>
+                    </div>
+                    <div class="col-sm-12 col-md-7">
+                      <div class="dataTables_paginate paging_simple_numbers">
+                        <ul class="pagination pagination-sm m-0 float-right">
+                          {% if actas.has_previous %}
+                            <li class="page-item">
+                              <a class="page-link" href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ actas.previous_page_number }}">
+                                <i class="fas fa-angle-left"></i>
+                              </a>
+                            </li>
+                          {% endif %}
+                          
+                          {% for num in actas.paginator.page_range %}
+                            {% if num == actas.number %}
+                              <li class="page-item active">
+                                <span class="page-link">{{ num }}</span>
+                              </li>
+                            {% else %}
+                              <li class="page-item">
+                                <a class="page-link" href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ num }}">{{ num }}</a>
+                              </li>
+                            {% endif %}
+                          {% endfor %}
+                          
+                          {% if actas.has_next %}
+                            <li class="page-item">
+                              <a class="page-link" href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ actas.next_page_number }}">
+                                <i class="fas fa-angle-right"></i>
+                              </a>
+                            </li>
+                          {% endif %}
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              {% endif %}
+              
+            {% else %}
+              <!-- Sin resultados -->
+              <div class="p-4 text-center">
+                <div class="mb-3">
+                  <i class="fas fa-search fa-3x text-muted"></i>
+                </div>
+                <h5>No se encontraron actas</h5>
+                <p class="text-muted">
+                  {% if search_query %}
+                    No hay actas que coincidan con "{{ search_query }}"
+                  {% else %}
+                    No hay actas disponibles con los filtros seleccionados
+                  {% endif %}
+                </p>
+                <a href="{% url 'portal_ciudadano' %}" class="btn btn-primary">
+                  <i class="fas fa-refresh"></i> Ver todas las actas
+                </a>
+              </div>
+            {% endif %}
+          </div>
+        </div>
+        
+      </div>
+    </section>
+  </div>
+{% endblock content %}
+
+{% block extra_scripts %}
+  <!-- Select2 -->
+  <script src="{% static 'plugins/select2/js/select2.full.min.js' %}"></script>
+  
+  <script>
+    $(function () {
+      // Inicializar Select2
+      $('.select2').select2({
+        theme: 'bootstrap4'
+      });
+      
+      // Búsqueda dinámica (opcional)
+      let searchTimeout;
+      $('#search-input').on('input', function() {
+        clearTimeout(searchTimeout);
+        const query = $(this).val();
+        
+        // Si hay más de 2 caracteres, hacer búsqueda automática
+        if (query.length > 2) {
+          searchTimeout = setTimeout(function() {
+            // Aquí podrías implementar búsqueda AJAX en tiempo real
+            console.log('Buscando:', query);
+          }, 500);
+        }
+      });
+      
+      // Auto-submit cuando cambian los filtros
+      $('#tipo_sesion, #estado, #acceso, #orden').change(function() {
+        $('#search-form').submit();
+      });
+      
+      // Limpiar fechas fácilmente
+      $('#fecha_desde, #fecha_hasta').change(function() {
+        if ($(this).val()) {
+          // Auto-submit cuando se selecciona una fecha
+          setTimeout(function() {
+            $('#search-form').submit();
+          }, 100);
+        }
+      });
+    });
+  </script>
+{% endblock extra_scripts %}

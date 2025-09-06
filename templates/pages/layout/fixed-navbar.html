@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+{% load static %}
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Portal de Transparencia - Actas Municipales IA</title>
+
+  <!-- Google Font: Source Sans Pro -->
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700&display=fallback">
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="{% static 'plugins/fontawesome-free/css/all.min.css' %}">
+  <!-- Theme style -->
+  <link rel="stylesheet" href="{% static 'dist/css/adminlte.min.css' %}">
+</head>
+<body class="hold-transition sidebar-mini layout-navbar-fixed">
+<!-- Site wrapper -->
+<div class="wrapper">
+  <!-- Navbar -->
+  {% include 'includes/navigation-light.html' %}
+  <!-- /.navbar -->
+
+  <!-- Main Sidebar Container -->
+  {% include 'includes/sidebar.html' %}
+
+  <!-- Content Wrapper. Contains page content -->
+  <div class="content-wrapper">
+    <!-- Content Header (Page header) -->
+    <section class="content-header">
+      <div class="container-fluid">
+        <div class="row mb-2">
+          <div class="col-sm-6">
+            <h1>
+              <i class="fas fa-globe mr-2"></i>
+              Portal de Transparencia
+            </h1>
+          </div>
+          <div class="col-sm-6">
+            <ol class="breadcrumb float-sm-right">
+              <li class="breadcrumb-item"><a href="{% url 'index' %}">Inicio</a></li>
+              <li class="breadcrumb-item"><a href="#">Publicación</a></li>
+              <li class="breadcrumb-item active">Portal de Transparencia</li>
+            </ol>
+          </div>
+        </div>
+      </div><!-- /.container-fluid -->
+    </section>
+
+    <!-- Main content -->
+    <section class="content">
+      <div class="container-fluid">
+        
+        <!-- Información del portal -->
+        <div class="row mb-4">
+          <div class="col-12">
+            <div class="card card-primary">
+              <div class="card-header">
+                <h3 class="card-title">
+                  <i class="fas fa-info-circle mr-1"></i>
+                  Portal Público de Transparencia Municipal
+                </h3>
+              </div>
+              <div class="card-body">
+                <p class="lead">
+                  El Portal de Transparencia permite a los ciudadanos acceder a las actas municipales 
+                  procesadas y aprobadas oficialmente. Toda la información está disponible para 
+                  consulta pública de acuerdo con las leyes de transparencia y acceso a la información.
+                </p>
+                <div class="row">
+                  <div class="col-md-4">
+                    <div class="info-box">
+                      <span class="info-box-icon bg-success"><i class="fas fa-file-alt"></i></span>
+                      <div class="info-box-content">
+                        <span class="info-box-text">Actas Publicadas</span>
+                        <span class="info-box-number">156</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col-md-4">
+                    <div class="info-box">
+                      <span class="info-box-icon bg-info"><i class="fas fa-eye"></i></span>
+                      <div class="info-box-content">
+                        <span class="info-box-text">Consultas del Mes</span>
+                        <span class="info-box-number">2,847</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col-md-4">
+                    <div class="info-box">
+                      <span class="info-box-icon bg-warning"><i class="fas fa-download"></i></span>
+                      <div class="info-box-content">
+                        <span class="info-box-text">Descargas</span>
+                        <span class="info-box-number">1,203</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Panel de configuración -->
+        <div class="row">
+          <div class="col-md-8">
+            <!-- Actas recientes publicadas -->
+            <div class="card">
+              <div class="card-header">
+                <h3 class="card-title">
+                  <i class="fas fa-list mr-1"></i>
+                  Actas Recientemente Publicadas
+                </h3>
+                <div class="card-tools">
+                  <button class="btn btn-success btn-sm">
+                    <i class="fas fa-plus mr-1"></i>
+                    Publicar Nueva
+                  </button>
+                </div>
+              </div>
+              <div class="card-body p-0">
+                <table class="table table-striped">
+                  <thead>
+                    <tr>
+                      <th>Acta</th>
+                      <th>Fecha Sesión</th>
+                      <th>Tipo</th>
+                      <th>Fecha Publicación</th>
+                      <th>Vistas</th>
+                      <th>Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td><strong>ACT-2024-001</strong></td>
+                      <td>15/01/2024</td>
+                      <td><span class="badge badge-primary">Ordinaria</span></td>
+                      <td>20/01/2024</td>
+                      <td>
+                        <span class="badge badge-success">
+                          <i class="fas fa-eye mr-1"></i>
+                          1,247
+                        </span>
+                      </td>
+                      <td>
+                        <button class="btn btn-xs btn-outline-primary" title="Ver en portal">
+                          <i class="fas fa-external-link-alt"></i>
+                        </button>
+                        <button class="btn btn-xs btn-outline-info" title="Estadísticas">
+                          <i class="fas fa-chart-bar"></i>
+                        </button>
+                        <button class="btn btn-xs btn-outline-warning" title="Despublicar">
+                          <i class="fas fa-eye-slash"></i>
+                        </button>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td><strong>ACT-2024-002</strong></td>
+                      <td>22/01/2024</td>
+                      <td><span class="badge badge-warning">Extraordinaria</span></td>
+                      <td>25/01/2024</td>
+                      <td>
+                        <span class="badge badge-success">
+                          <i class="fas fa-eye mr-1"></i>
+                          892
+                        </span>
+                      </td>
+                      <td>
+                        <button class="btn btn-xs btn-outline-primary" title="Ver en portal">
+                          <i class="fas fa-external-link-alt"></i>
+                        </button>
+                        <button class="btn btn-xs btn-outline-info" title="Estadísticas">
+                          <i class="fas fa-chart-bar"></i>
+                        </button>
+                        <button class="btn btn-xs btn-outline-warning" title="Despublicar">
+                          <i class="fas fa-eye-slash"></i>
+                        </button>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td><strong>ACT-2024-003</strong></td>
+                      <td>05/02/2024</td>
+                      <td><span class="badge badge-info">Comisión</span></td>
+                      <td>08/02/2024</td>
+                      <td>
+                        <span class="badge badge-success">
+                          <i class="fas fa-eye mr-1"></i>
+                          634
+                        </span>
+                      </td>
+                      <td>
+                        <button class="btn btn-xs btn-outline-primary" title="Ver en portal">
+                          <i class="fas fa-external-link-alt"></i>
+                        </button>
+                        <button class="btn btn-xs btn-outline-info" title="Estadísticas">
+                          <i class="fas fa-chart-bar"></i>
+                        </button>
+                        <button class="btn btn-xs btn-outline-warning" title="Despublicar">
+                          <i class="fas fa-eye-slash"></i>
+                        </button>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+              <div class="card-footer">
+                <a href="{% url 'actas_publicacion' %}" class="btn btn-primary">Ver gestión de publicación</a>
+              </div>
+            </div>
+
+            <!-- Configuración del portal -->
+            <div class="card">
+              <div class="card-header">
+                <h3 class="card-title">
+                  <i class="fas fa-cog mr-1"></i>
+                  Configuración del Portal
+                </h3>
+              </div>
+              <div class="card-body">
+                <form>
+                  <div class="row">
+                    <div class="col-md-6">
+                      <div class="form-group">
+                        <label>URL del Portal Público</label>
+                        <input type="text" class="form-control" value="https://transparencia.municipio.gob" readonly>
+                      </div>
+                      <div class="form-group">
+                        <label>Título del Portal</label>
+                        <input type="text" class="form-control" value="Portal de Transparencia Municipal">
+                      </div>
+                    </div>
+                    <div class="col-md-6">
+                      <div class="form-group">
+                        <label>Estado del Portal</label>
+                        <select class="form-control">
+                          <option selected>Activo</option>
+                          <option>Mantenimiento</option>
+                          <option>Inactivo</option>
+                        </select>
+                      </div>
+                      <div class="form-group">
+                        <label>Publicación Automática</label>
+                        <div class="custom-control custom-switch">
+                          <input type="checkbox" class="custom-control-input" id="autoPublish" checked>
+                          <label class="custom-control-label" for="autoPublish">Activar publicación automática</label>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <button type="submit" class="btn btn-primary">Guardar Configuración</button>
+                </form>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-md-4">
+            <!-- Estadísticas del portal -->
+            <div class="card card-info">
+              <div class="card-header">
+                <h3 class="card-title">
+                  <i class="fas fa-chart-pie mr-1"></i>
+                  Estadísticas del Portal
+                </h3>
+              </div>
+              <div class="card-body">
+                <div class="chart-container" style="height: 200px;">
+                  <canvas id="portalStatsChart"></canvas>
+                </div>
+              </div>
+            </div>
+
+            <!-- Estado del sistema -->
+            <div class="card card-success">
+              <div class="card-header">
+                <h3 class="card-title">
+                  <i class="fas fa-server mr-1"></i>
+                  Estado del Sistema
+                </h3>
+              </div>
+              <div class="card-body">
+                <div class="mb-3">
+                  <small class="text-muted">Servidor Web</small>
+                  <div class="progress progress-sm">
+                    <div class="progress-bar bg-success" style="width: 95%"></div>
+                  </div>
+                  <small>Operativo - 95% Disponibilidad</small>
+                </div>
+                
+                <div class="mb-3">
+                  <small class="text-muted">Base de Datos</small>
+                  <div class="progress progress-sm">
+                    <div class="progress-bar bg-success" style="width: 88%"></div>
+                  </div>
+                  <small>Óptimo - 88% Rendimiento</small>
+                </div>
+                
+                <div class="mb-0">
+                  <small class="text-muted">CDN</small>
+                  <div class="progress progress-sm">
+                    <div class="progress-bar bg-info" style="width: 92%"></div>
+                  </div>
+                  <small>Normal - 92% Cache Hit</small>
+                </div>
+              </div>
+            </div>
+
+            <!-- Accesos directos -->
+            <div class="card card-warning">
+              <div class="card-header">
+                <h3 class="card-title">
+                  <i class="fas fa-external-link-alt mr-1"></i>
+                  Accesos Directos
+                </h3>
+              </div>
+              <div class="card-body">
+                <a href="#" class="btn btn-outline-primary btn-block">
+                  <i class="fas fa-globe mr-2"></i>
+                  Ver Portal Público
+                </a>
+                <a href="#" class="btn btn-outline-info btn-block">
+                  <i class="fas fa-chart-bar mr-2"></i>
+                  Analytics Detallado
+                </a>
+                <a href="#" class="btn btn-outline-success btn-block">
+                  <i class="fas fa-rss mr-2"></i>
+                  Feed RSS
+                </a>
+                <a href="#" class="btn btn-outline-warning btn-block">
+                  <i class="fas fa-search mr-2"></i>
+                  Buscador Público
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /.container-fluid -->
+    </section>
+    <!-- /.content -->
+  </div>
+  <!-- /.content-wrapper -->
+
+  <!-- Footer -->
+  {% include 'includes/footer.html' %}
+  <!-- /.footer -->
+
+  <!-- Control Sidebar -->
+  {% include 'includes/customizer.html' %}
+  <!-- /.control-sidebar -->
+
+</div>
+<!-- ./wrapper -->
+
+<!-- jQuery -->
+<script src="{% static 'plugins/jquery/jquery.min.js' %}"></script>
+<!-- Bootstrap 4 -->
+<script src="{% static 'plugins/bootstrap/js/bootstrap.bundle.min.js' %}"></script>
+<!-- Actas IA App -->
+<script src="{% static 'dist/js/adminlte.min.js' %}"></script>
+<!-- Chart.js -->
+<script src="{% static 'plugins/chart.js/Chart.min.js' %}"></script>
+
+<script>
+  // Gráfico de estadísticas del portal
+  var ctx = document.getElementById('portalStatsChart').getContext('2d');
+  var chart = new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels: ['Actas Ordinarias', 'Extraordinarias', 'Comisiones'],
+      datasets: [{
+        data: [65, 25, 10],
+        backgroundColor: ['#007bff', '#ffc107', '#17a2b8']
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      legend: {
+        position: 'bottom'
+      }
+    }
+  });
+</script>
+
+</body>
+</html>

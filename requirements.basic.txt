@@ -1,0 +1,42 @@
+# Core Django
+django==4.2.9
+django-allauth==0.60.1
+PyJWT==2.8.0
+python-dotenv==1.0.1
+str2bool==1.1
+django-quill-editor==0.1.40
+
+# Base de datos PostgreSQL
+psycopg2-binary==2.9.9
+
+# Celery y Redis para procesamiento en segundo plano
+celery==5.3.4
+redis==5.0.1
+hiredis==3.1.0
+django-celery-results==2.5.1
+flower==2.0.1
+
+# Procesamiento de archivos y medios
+Pillow==10.2.0
+
+# API y herramientas
+djangorestframework==3.14.0
+django-api-generator==1.0.17
+django-debug-toolbar==4.2.0
+drf-spectacular==0.26.5
+django-webpack-loader==3.1.0
+
+# Cliente para APIs básicas
+requests==2.31.0
+anthropic==0.34.2
+
+# Deployment
+whitenoise==6.5.0
+gunicorn==21.2.0
+cryptography==42.0.2
+
+# Utilidades
+astor==0.8.1
+django-jazzmin==3.0.1
+python-dateutil==2.8.2
+pytz==2023.4
