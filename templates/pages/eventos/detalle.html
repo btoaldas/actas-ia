@@ -1,5 +1,6 @@
 {% extends 'layouts/base.html' %}
 {% load static %}
+{% load math_filters %}
 
 {% block title %}{{ evento.titulo }}{% endblock title %}
 
@@ -189,6 +190,75 @@
               </div>
             {% endif %}
 
+            <!-- Resumen de Asistentes -->
+            <div class="card">
+              <div class="card-header">
+                <h3 class="card-title">
+                  <i class="fas fa-chart-pie"></i> Resumen de Participación
+                </h3>
+              </div>
+              <div class="card-body">
+                <div class="row">
+                  <div class="col-md-3">
+                    <div class="small-box bg-info">
+                      <div class="inner">
+                        <h3>{{ total_invitados }}</h3>
+                        <p>Total Invitados</p>
+                      </div>
+                      <div class="icon">
+                        <i class="fas fa-user-plus"></i>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col-md-3">
+                    <div class="small-box bg-success">
+                      <div class="inner">
+                        <h3>{{ total_confirmados }}</h3>
+                        <p>Confirmados</p>
+                      </div>
+                      <div class="icon">
+                        <i class="fas fa-user-check"></i>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col-md-3">
+                    <div class="small-box bg-primary">
+                      <div class="inner">
+                        <h3>{{ asistentes_invitados.count }}</h3>
+                        <p>Usuarios Sistema</p>
+                      </div>
+                      <div class="icon">
+                        <i class="fas fa-users"></i>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col-md-3">
+                    <div class="small-box bg-warning">
+                      <div class="inner">
+                        <h3>{{ invitados_externos.count }}</h3>
+                        <p>Invitados Externos</p>
+                      </div>
+                      <div class="icon">
+                        <i class="fas fa-envelope"></i>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                {% if total_invitados > 0 %}
+                  <div class="progress-group">
+                    <span class="float-right"><b>{{ total_confirmados }}/{{ total_invitados }}</b></span>
+                    <span>Tasa de Confirmación</span>
+                    <div class="progress progress-sm">
+                      <div class="progress-bar bg-success" 
+                           style="width: {{ total_confirmados|percentage:total_invitados }}%">
+                      </div>
+                    </div>
+                  </div>
+                {% endif %}
+              </div>
+            </div>
+
             <!-- Asistentes confirmados -->
             {% if evento.asistentes_confirmados.exists %}
               <div class="card">
@@ -227,24 +297,24 @@
                     <div class="d-flex justify-content-between align-items-center mb-2 p-2 border rounded">
                       <div>
                         <i class="fas fa-envelope"></i>
-                        {% if invitacion.confirmado and invitacion.nombre_confirmado %}
-                          <strong>{{ invitacion.nombre_confirmado }}</strong>
+                        {% if invitacion.estado == 'confirmada' and invitacion.nombre %}
+                          <strong>{{ invitacion.nombre }}</strong>
                           <small class="text-muted d-block">{{ invitacion.email }}</small>
                         {% else %}
                           {{ invitacion.email }}
                         {% endif %}
                       </div>
                       <div>
-                        {% if invitacion.confirmado %}
+                        {% if invitacion.estado == 'confirmada' %}
                           <span class="badge badge-success">
                             <i class="fas fa-check"></i> Confirmado
                           </span>
-                          {% if invitacion.fecha_confirmacion %}
+                          {% if invitacion.fecha_respuesta %}
                             <small class="text-muted d-block">
-                              {{ invitacion.fecha_confirmacion|date:"d/m/Y H:i" }}
+                              {{ invitacion.fecha_respuesta|date:"d/m/Y H:i" }}
                             </small>
                           {% endif %}
-                        {% elif invitacion.enviado %}
+                        {% elif invitacion.estado == 'enviada' %}
                           <span class="badge badge-warning">
                             <i class="fas fa-clock"></i> Pendiente
                           </span>

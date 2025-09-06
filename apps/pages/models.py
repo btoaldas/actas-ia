@@ -498,11 +498,10 @@ class EventoMunicipal(models.Model):
         related_name='eventos_invitado',
         help_text="Usuarios registrados invitados al evento"
     )
-    # TEMPORALMENTE COMENTADO - invitados_externos
-    # invitados_externos = models.TextField(
-    #     blank=True,
-    #     help_text="Emails de invitados externos separados por comas"
-    # )
+    invitados_externos = models.TextField(
+        blank=True,
+        help_text="Emails de invitados externos separados por comas"
+    )
     asistentes_confirmados = models.ManyToManyField(
         User, 
         blank=True, 
@@ -712,37 +711,36 @@ class AsistenciaEvento(models.Model):
         return f"{self.usuario.get_full_name()} - {self.evento.titulo} ({self.get_tipo_display()})"
 
 
-# TEMPORALMENTE COMENTADO - InvitacionExterna
-# class InvitacionExterna(models.Model):
-#     """Invitaciones por email a personas no registradas"""
-#     ESTADO_CHOICES = [
-#         ('enviada', 'Enviada'),
-#         ('vista', 'Vista'),
-#         ('confirmada', 'Confirmada'),
-#         ('rechazada', 'Rechazada'),
-#     ]
-#     
-#     evento = models.ForeignKey(EventoMunicipal, on_delete=models.CASCADE, related_name='invitaciones_externas')
-#     email = models.EmailField()
-#     nombre = models.CharField(max_length=100, blank=True)
-#     mensaje_personalizado = models.TextField(blank=True)
-#     token = models.CharField(max_length=100, unique=True)
-#     estado = models.CharField(max_length=15, choices=ESTADO_CHOICES, default='enviada')
-#     fecha_envio = models.DateTimeField(auto_now_add=True)
-#     fecha_respuesta = models.DateTimeField(null=True, blank=True)
-#     enviado_por = models.ForeignKey(User, on_delete=models.PROTECT)
-#     
-#     class Meta:
-#         verbose_name = "Invitación Externa"
-#         verbose_name_plural = "Invitaciones Externas"
-#         unique_together = ['evento', 'email']
-#         ordering = ['-fecha_envio']
-#     
-#     def __str__(self):
-#         return f"{self.email} - {self.evento.titulo}"
-#     
-#     def save(self, *args, **kwargs):
-#         if not self.token:
-#             import uuid
-#             self.token = str(uuid.uuid4())
-#         super().save(*args, **kwargs)
+class InvitacionExterna(models.Model):
+    """Invitaciones por email a personas no registradas"""
+    ESTADO_CHOICES = [
+        ('enviada', 'Enviada'),
+        ('vista', 'Vista'),
+        ('confirmada', 'Confirmada'),
+        ('rechazada', 'Rechazada'),
+    ]
+    
+    evento = models.ForeignKey(EventoMunicipal, on_delete=models.CASCADE, related_name='invitaciones_externas')
+    email = models.EmailField()
+    nombre = models.CharField(max_length=100, blank=True)
+    mensaje_personalizado = models.TextField(blank=True)
+    token = models.CharField(max_length=100, unique=True)
+    estado = models.CharField(max_length=15, choices=ESTADO_CHOICES, default='enviada')
+    fecha_envio = models.DateTimeField(auto_now_add=True)
+    fecha_respuesta = models.DateTimeField(null=True, blank=True)
+    enviado_por = models.ForeignKey(User, on_delete=models.PROTECT)
+    
+    class Meta:
+        verbose_name = "Invitación Externa"
+        verbose_name_plural = "Invitaciones Externas"
+        unique_together = ['evento', 'email']
+        ordering = ['-fecha_envio']
+    
+    def __str__(self):
+        return f"{self.email} - {self.evento.titulo}"
+    
+    def save(self, *args, **kwargs):
+        if not self.token:
+            import uuid
+            self.token = str(uuid.uuid4())
+        super().save(*args, **kwargs)

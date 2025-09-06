@@ -172,8 +172,7 @@ urlpatterns = [
     path('eventos/<int:pk>/', views.eventos_detalle, name='eventos_detalle'),
     path('eventos/<int:pk>/editar/', views.eventos_editar, name='eventos_editar'),
     path('eventos/<int:pk>/confirmar/', views.eventos_confirmar_asistencia, name='eventos_confirmar_asistencia'),
-    # TEMPORALMENTE COMENTADO - REQUIERE InvitacionExterna MODEL
-    # path('eventos/<int:pk>/confirmar-externa/<str:token>/', views.eventos_confirmar_externa, name='eventos_confirmar_externa'),
+    path('eventos/<int:pk>/confirmar-externa/<str:token>/', views.eventos_confirmar_externa, name='eventos_confirmar_externa'),
     
     # APIs para calendario
     path('api/eventos/calendario/', views.api_eventos_calendario, name='api_eventos_calendario'),

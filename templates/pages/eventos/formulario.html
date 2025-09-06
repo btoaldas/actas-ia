@@ -24,6 +24,89 @@
       content: " *";
       color: #dc3545;
     }
+    
+    /* Estilos para Drag & Drop */
+    .drag-drop-area {
+      border: 2px dashed #007bff;
+      border-radius: 8px;
+      padding: 40px 20px;
+      text-align: center;
+      background-color: #f8f9fa;
+      transition: all 0.3s ease;
+      cursor: pointer;
+      position: relative;
+      margin-bottom: 15px;
+      min-height: 150px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+    }
+    
+    .drag-drop-area:hover {
+      border-color: #0056b3;
+      background-color: #e3f2fd;
+    }
+    
+    .drag-drop-area.dragover {
+      border-color: #28a745;
+      background-color: #d4edda;
+      transform: scale(1.02);
+    }
+    
+    .drag-drop-area .upload-icon {
+      font-size: 48px;
+      color: #007bff;
+      margin-bottom: 15px;
+    }
+    
+    .drag-drop-area.dragover .upload-icon {
+      color: #28a745;
+    }
+    
+    .file-input-hidden {
+      position: absolute;
+      opacity: 0;
+      width: 100%;
+      height: 100%;
+      cursor: pointer;
+    }
+    
+    .file-list {
+      margin-top: 15px;
+    }
+    
+    .file-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 12px;
+      background: #e9ecef;
+      border-radius: 4px;
+      margin-bottom: 5px;
+    }
+    
+    .file-item .file-info {
+      display: flex;
+      align-items: center;
+    }
+    
+    .file-item .file-icon {
+      margin-right: 8px;
+      width: 20px;
+    }
+    
+    .file-item .remove-file {
+      color: #dc3545;
+      cursor: pointer;
+      padding: 2px 6px;
+      border-radius: 3px;
+    }
+    
+    .file-item .remove-file:hover {
+      background-color: #dc3545;
+      color: white;
+    }
   </style>
 {% endblock extrastyle %}
 
@@ -375,10 +458,116 @@
                     </div>
                   </div>
 
+                  <!-- Documentos del evento -->
+                  <div class="form-section">
+                    <h5><i class="fas fa-file-upload"></i> Documentos del Evento</h5>
+                    
+                    <div class="row">
+                      <div class="col-md-8">
+                        <div class="form-group">
+                          <label for="{{ docs_form.archivos.id_for_label }}">
+                            {{ docs_form.archivos.label }}
+                          </label>
+                          
+                          <!-- Área de Drag & Drop -->
+                          <div class="drag-drop-area" id="dragDropArea">
+                            <div class="upload-icon">
+                              <i class="fas fa-cloud-upload-alt"></i>
+                            </div>
+                            <h5>Arrastra y suelta archivos aquí</h5>
+                            <p class="text-muted mb-3">o haz clic para seleccionar archivos</p>
+                            <button type="button" class="btn btn-outline-primary" id="selectFilesBtn">
+                              <i class="fas fa-folder-open"></i> Explorar Archivos
+                            </button>
+                          </div>
+                          
+                          <!-- Input de archivos (estará oculto) -->
+                          <div style="display: none;">
+                            {{ docs_form.archivos }}
+                          </div>
+                          
+                          <!-- Lista de archivos seleccionados -->
+                          <div class="file-list" id="fileList"></div>
+                          
+                          {% if docs_form.archivos.help_text %}
+                            <small class="help-text">{{ docs_form.archivos.help_text }}</small>
+                          {% endif %}
+                          {% if docs_form.archivos.errors %}
+                            <div class="text-danger">
+                              {% for error in docs_form.archivos.errors %}
+                                <small>{{ error }}</small>
+                              {% endfor %}
+                            </div>
+                          {% endif %}
+                        </div>
+                      </div>
+                      
+                      <div class="col-md-4">
+                        <div class="form-group">
+                          <label for="{{ docs_form.tipo_documento.id_for_label }}">
+                            {{ docs_form.tipo_documento.label }}
+                          </label>
+                          {{ docs_form.tipo_documento }}
+                          {% if docs_form.tipo_documento.help_text %}
+                            <small class="help-text">{{ docs_form.tipo_documento.help_text }}</small>
+                          {% endif %}
+                          {% if docs_form.tipo_documento.errors %}
+                            <div class="text-danger">
+                              {% for error in docs_form.tipo_documento.errors %}
+                                <small>{{ error }}</small>
+                              {% endfor %}
+                            </div>
+                          {% endif %}
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div class="row">
+                      <div class="col-md-12">
+                        <div class="form-check">
+                          {{ docs_form.es_publico }}
+                          <label class="form-check-label" for="{{ docs_form.es_publico.id_for_label }}">
+                            {{ docs_form.es_publico.label }}
+                          </label>
+                          {% if docs_form.es_publico.help_text %}
+                            <br><small class="help-text">{{ docs_form.es_publico.help_text }}</small>
+                          {% endif %}
+                          {% if docs_form.es_publico.errors %}
+                            <div class="text-danger">
+                              {% for error in docs_form.es_publico.errors %}
+                                <small>{{ error }}</small>
+                              {% endfor %}
+                            </div>
+                          {% endif %}
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div class="alert alert-info mt-3">
+                      <h6><i class="fas fa-info-circle"></i> Tipos de archivo soportados:</h6>
+                      <ul class="mb-0">
+                        <li><strong>Documentos:</strong> PDF, DOC, DOCX, TXT, RTF</li>
+                        <li><strong>Hojas de cálculo:</strong> XLS, XLSX, CSV</li>
+                        <li><strong>Imágenes:</strong> JPG, JPEG, PNG, GIF, BMP</li>
+                        <li><strong>Planos:</strong> DWG, DXF</li>
+                        <li><strong>Comprimidos:</strong> ZIP, RAR, 7Z</li>
+                        <li><strong>Tamaño máximo:</strong> 10 MB por archivo</li>
+                      </ul>
+                    </div>
+                  </div>
+
                   <!-- Errores generales del formulario -->
                   {% if form.non_field_errors %}
                     <div class="alert alert-danger">
                       {% for error in form.non_field_errors %}
+                        <p>{{ error }}</p>
+                      {% endfor %}
+                    </div>
+                  {% endif %}
+                  
+                  {% if docs_form.non_field_errors %}
+                    <div class="alert alert-danger">
+                      {% for error in docs_form.non_field_errors %}
                         <p>{{ error }}</p>
                       {% endfor %}
                     </div>
@@ -451,6 +640,156 @@
           invitadosGroup.hide();
         }
       }).trigger('change');
+
+      // ========================================
+      // DRAG & DROP PARA ARCHIVOS MÚLTIPLES
+      // ========================================
+      
+      const dragDropArea = document.getElementById('dragDropArea');
+      const fileInput = document.getElementById('id_archivos');
+      const fileList = document.getElementById('fileList');
+      let selectedFiles = [];
+
+      // Verificar que los elementos existen
+      if (!dragDropArea || !fileInput || !fileList) {
+        console.log('Elementos de drag & drop no encontrados:');
+        console.log('dragDropArea:', dragDropArea);
+        console.log('fileInput:', fileInput);
+        console.log('fileList:', fileList);
+        return;
+      }
+
+      console.log('Elementos encontrados correctamente, inicializando drag & drop...');
+
+      // Función para obtener icono según extensión
+      function getFileIcon(fileName) {
+        const ext = fileName.split('.').pop().toLowerCase();
+        const iconMap = {
+          'pdf': 'fas fa-file-pdf text-danger',
+          'doc': 'fas fa-file-word text-primary',
+          'docx': 'fas fa-file-word text-primary',
+          'xls': 'fas fa-file-excel text-success',
+          'xlsx': 'fas fa-file-excel text-success',
+          'jpg': 'fas fa-file-image text-info',
+          'jpeg': 'fas fa-file-image text-info',
+          'png': 'fas fa-file-image text-info',
+          'gif': 'fas fa-file-image text-info',
+          'dwg': 'fas fa-drafting-compass text-warning',
+          'dxf': 'fas fa-drafting-compass text-warning',
+          'zip': 'fas fa-file-archive text-secondary',
+          'rar': 'fas fa-file-archive text-secondary',
+          '7z': 'fas fa-file-archive text-secondary',
+          'txt': 'fas fa-file-alt text-dark',
+          'csv': 'fas fa-file-csv text-success'
+        };
+        return iconMap[ext] || 'fas fa-file text-muted';
+      }
+
+      // Función para formatear tamaño de archivo
+      function formatFileSize(bytes) {
+        if (bytes === 0) return '0 Bytes';
+        const k = 1024;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+      }
+
+      // Función para actualizar la lista de archivos
+      function updateFileList() {
+        fileList.innerHTML = '';
+        selectedFiles.forEach((file, index) => {
+          const fileItem = document.createElement('div');
+          fileItem.className = 'file-item';
+          fileItem.innerHTML = `
+            <div class="file-info">
+              <i class="${getFileIcon(file.name)} file-icon"></i>
+              <span><strong>${file.name}</strong> (${formatFileSize(file.size)})</span>
+            </div>
+            <span class="remove-file" onclick="removeFile(${index})">
+              <i class="fas fa-times"></i>
+            </span>
+          `;
+          fileList.appendChild(fileItem);
+        });
+
+        // Actualizar el input file
+        const dt = new DataTransfer();
+        selectedFiles.forEach(file => dt.items.add(file));
+        fileInput.files = dt.files;
+      }
+
+      // Función para remover archivo
+      window.removeFile = function(index) {
+        selectedFiles.splice(index, 1);
+        updateFileList();
+      };
+
+      // Función para agregar archivos
+      function addFiles(files) {
+        console.log('Agregando archivos:', files.length);
+        Array.from(files).forEach(file => {
+          console.log('Procesando archivo:', file.name, file.size);
+          // Verificar si el archivo ya está seleccionado
+          if (!selectedFiles.some(f => f.name === file.name && f.size === file.size)) {
+            selectedFiles.push(file);
+            console.log('Archivo agregado:', file.name);
+          } else {
+            console.log('Archivo ya existe:', file.name);
+          }
+        });
+        updateFileList();
+      }
+
+      // Event listeners para drag & drop
+      dragDropArea.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        dragDropArea.classList.add('dragover');
+      });
+
+      dragDropArea.addEventListener('dragleave', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        dragDropArea.classList.remove('dragover');
+      });
+
+      dragDropArea.addEventListener('drop', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        dragDropArea.classList.remove('dragover');
+        
+        const files = e.dataTransfer.files;
+        console.log('Archivos soltados:', files.length);
+        
+        if (files.length > 0) {
+          addFiles(files);
+        }
+      });
+
+      // Click en el botón para abrir selector
+      const selectFilesBtn = document.getElementById('selectFilesBtn');
+      if (selectFilesBtn) {
+        selectFilesBtn.addEventListener('click', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          fileInput.click();
+        });
+      }
+
+      // Click en el área para abrir selector (excepto en el botón)
+      dragDropArea.addEventListener('click', (e) => {
+        if (e.target.id !== 'selectFilesBtn' && !e.target.closest('#selectFilesBtn')) {
+          fileInput.click();
+        }
+      });
+
+      // Cuando se seleccionan archivos mediante el input
+      fileInput.addEventListener('change', (e) => {
+        console.log('Archivos seleccionados vía input:', e.target.files.length);
+        addFiles(e.target.files);
+      });
+
+      console.log('Drag & Drop inicializado correctamente');
     });
   </script>
 {% endblock extra_scripts %}

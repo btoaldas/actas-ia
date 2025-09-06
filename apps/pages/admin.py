@@ -4,7 +4,7 @@ from .models import (
     VisualizacionActa, DescargaActa, Product,
     IndicadorTransparencia, MetricaTransparencia,
     EstadisticaMunicipal, ProyectoMunicipal,
-    EventoMunicipal, DocumentoEvento, AsistenciaEvento  # InvitacionExterna TEMPORALMENTE COMENTADO
+    EventoMunicipal, DocumentoEvento, AsistenciaEvento, InvitacionExterna
 )
 
 # Register your models here.
@@ -238,12 +238,11 @@ class DocumentoEventoInline(admin.TabularInline):
     fields = ('nombre', 'tipo_documento', 'archivo', 'es_publico', 'orden')
 
 
-# TEMPORALMENTE COMENTADO - InvitacionExternaInline
-# class InvitacionExternaInline(admin.TabularInline):
-#     model = InvitacionExterna
-#     extra = 1
-#     fields = ('email', 'nombre', 'estado')
-#     readonly_fields = ('token', 'fecha_envio', 'fecha_respuesta')
+class InvitacionExternaInline(admin.TabularInline):
+    model = InvitacionExterna
+    extra = 1
+    fields = ('email', 'nombre', 'estado')
+    readonly_fields = ('token', 'fecha_envio', 'fecha_respuesta')
 
 
 class AsistenciaEventoInline(admin.TabularInline):
@@ -265,7 +264,7 @@ class EventoMunicipalAdmin(admin.ModelAdmin):
     ordering = ['-fecha_inicio']
     
     filter_horizontal = ('asistentes_invitados', 'asistentes_confirmados')
-    inlines = [DocumentoEventoInline, AsistenciaEventoInline]  # InvitacionExternaInline TEMPORALMENTE COMENTADO
+    inlines = [DocumentoEventoInline, AsistenciaEventoInline, InvitacionExternaInline]
     
     fieldsets = (
         ('Información Básica', {

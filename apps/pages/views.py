@@ -1719,8 +1719,8 @@ def eventos_nuevo(request):
     if not request.user.is_authenticated:
         return redirect('login')
     
-    from .forms import EventoForm
-    from .models import DocumentoEvento  # InvitacionExterna TEMPORALMENTE COMENTADO
+    from .forms import EventoForm, DocumentosEventoForm
+    from .models import DocumentoEvento, InvitacionExterna
     from django.contrib import messages
     from django.core.mail import send_mail
     from django.conf import settings
@@ -1729,67 +1729,93 @@ def eventos_nuevo(request):
     
     if request.method == 'POST':
         form = EventoForm(request.POST, request.FILES)
+        docs_form = DocumentosEventoForm(request.POST, request.FILES)
+        
         if form.is_valid():
             evento = form.save(commit=False)
             evento.organizador = request.user
             evento.save()
             form.save_m2m()
             
-            # TEMPORALMENTE COMENTADO - Procesar invitaciones externas
-            # emails_externos = form.cleaned_data.get('invitados_externos', [])
-            # for email in emails_externos:
-            #     if email:
-            #         # Crear invitación externa con token único
-            #         invitacion = InvitacionExterna(
-            #             evento=evento,
-            #             email=email,
-            #             token=str(uuid.uuid4()),
-            #             enviado_por=request.user
-            #         )
-            #         invitacion.save()
-            #         
-            #         # Enviar email de invitación
-            #         try:
-            #             subject = f'Invitación al evento: {evento.titulo}'
-            #             message = f"""
-            # Hola,
-            # 
-            # Has sido invitado al evento "{evento.titulo}".
-            # 
-            # Detalles del evento:
-            # - Fecha: {evento.fecha_inicio.strftime('%d/%m/%Y %H:%M')}
-            # - Ubicación: {evento.ubicacion}
-            # - Descripción: {evento.descripcion}
-            # 
-            # Para confirmar tu asistencia, haz clic en el siguiente enlace:
-            # {request.build_absolute_uri(f'/eventos/{evento.pk}/confirmar-externa/{invitacion.token}/')}
-            # 
-            # Saludos,
-            # {request.user.get_full_name() or request.user.username}
-            #                         """
-            #             
-            #             send_mail(
-            #                 subject,
-            #                 message,
-            #                 settings.DEFAULT_FROM_EMAIL,
-            #                 [email],
-            #                 fail_silently=True
-            #             )
-            #             invitacion.enviado = True
-            #             invitacion.save()
-            #         except Exception as e:
-            #             messages.warning(request, f'Error enviando invitación a {email}: {str(e)}')
+            # Procesar documentos múltiples
+            if docs_form.is_valid():
+                archivos = docs_form.cleaned_data.get('archivos', [])
+                if archivos:
+                    tipo_documento = docs_form.cleaned_data.get('tipo_documento', 'otro')
+                    es_publico = docs_form.cleaned_data.get('es_publico', True)
+                    
+                    documentos_creados = 0
+                    for archivo in archivos:
+                        documento = DocumentoEvento(
+                            evento=evento,
+                            nombre=archivo.name,
+                            tipo_documento=tipo_documento,
+                            archivo=archivo,
+                            es_publico=es_publico,
+                            subido_por=request.user
+                        )
+                        documento.save()
+                        documentos_creados += 1
+                    
+                    if documentos_creados > 0:
+                        messages.success(request, f'Se subieron {documentos_creados} documento(s) al evento.')
+            
+            # Procesar invitaciones externas
+            emails_externos = form.cleaned_data.get('invitados_externos', [])
+            for email in emails_externos:
+                if email:
+                    # Crear invitación externa con token único
+                    invitacion = InvitacionExterna(
+                        evento=evento,
+                        email=email,
+                        token=str(uuid.uuid4()),
+                        enviado_por=request.user
+                    )
+                    invitacion.save()
+                    
+                    # Enviar email de invitación
+                    try:
+                        subject = f'Invitación al evento: {evento.titulo}'
+                        message = f"""
+Hola,
+
+Has sido invitado al evento "{evento.titulo}".
+
+Detalles del evento:
+- Fecha: {evento.fecha_inicio.strftime('%d/%m/%Y %H:%M')}
+- Ubicación: {evento.ubicacion}
+- Descripción: {evento.descripcion}
+
+Para confirmar tu asistencia, haz clic en el siguiente enlace:
+{request.build_absolute_uri(f'/eventos/{evento.pk}/confirmar-externa/{invitacion.token}/')}
+
+Saludos,
+{request.user.get_full_name() or request.user.username}
+                        """
+                        
+                        send_mail(
+                            subject,
+                            message,
+                            settings.DEFAULT_FROM_EMAIL,
+                            [email],
+                            fail_silently=True
+                        )
+                        # El estado se mantiene como 'enviada' que es el default
+                    except Exception as e:
+                        messages.warning(request, f'Error enviando invitación a {email}: {str(e)}')
             
             messages.success(request, f'Evento "{evento.titulo}" creado exitosamente.')
-            # if emails_externos:
-            #     messages.info(request, f'Se enviaron {len(emails_externos)} invitación(es) externa(s).')
+            if emails_externos:
+                messages.info(request, f'Se enviaron {len(emails_externos)} invitación(es) externa(s).')
             
             return redirect('eventos_detalle', pk=evento.pk)
     else:
         form = EventoForm()
+        docs_form = DocumentosEventoForm()
     
     context = {
         'form': form,
+        'docs_form': docs_form,
         'titulo': 'Crear Nuevo Evento',
     }
     
@@ -1797,7 +1823,7 @@ def eventos_nuevo(request):
 
 def eventos_detalle(request, pk):
     """Vista de detalle de evento"""
-    from .models import EventoMunicipal, DocumentoEvento  # InvitacionExterna TEMPORALMENTE COMENTADO
+    from .models import EventoMunicipal, DocumentoEvento, InvitacionExterna
     
     evento = get_object_or_404(EventoMunicipal, pk=pk, activo=True)
     
@@ -1808,8 +1834,8 @@ def eventos_detalle(request, pk):
     # Obtener documentos del evento
     documentos = DocumentoEvento.objects.filter(evento=evento).order_by('-fecha_subida')
     
-    # Obtener invitados externos del evento - TEMPORALMENTE COMENTADO
-    # invitados_externos = InvitacionExterna.objects.filter(evento=evento).order_by('-fecha_invitacion')
+    # Obtener invitados externos del evento
+    invitados_externos = InvitacionExterna.objects.filter(evento=evento).order_by('-fecha_envio')
     
     # Verificar si el usuario puede confirmar asistencia
     puede_confirmar = (
@@ -1826,19 +1852,26 @@ def eventos_detalle(request, pk):
     context = {
         'evento': evento,
         'documentos': documentos,
-        # 'invitados_externos': invitados_externos,  # TEMPORALMENTE COMENTADO
+        'invitados_externos': invitados_externos,
         'puede_confirmar': puede_confirmar,
         'ya_confirmo': ya_confirmo,
         'puede_editar': evento.puede_editar_usuario(request.user),
+        # Información de asistentes
+        'asistentes_invitados': evento.asistentes_invitados.all(),
+        'asistentes_confirmados': evento.asistentes_confirmados.all(),
+        'invitados_externos_confirmados': invitados_externos.filter(estado='confirmada'),
+        'total_invitados': evento.asistentes_invitados.count() + invitados_externos.count(),
+        'total_confirmados': evento.asistentes_confirmados.count() + invitados_externos.filter(estado='confirmada').count(),
     }
     
     return render(request, 'pages/eventos/detalle.html', context)
 
 def eventos_editar(request, pk):
     """Vista para editar evento"""
-    from .models import EventoMunicipal
-    from .forms import EventoForm
+    from .models import EventoMunicipal, DocumentoEvento, InvitacionExterna
+    from .forms import EventoForm, DocumentosEventoForm
     from django.contrib import messages
+    import uuid
     
     evento = get_object_or_404(EventoMunicipal, pk=pk, activo=True)
     
@@ -1847,15 +1880,43 @@ def eventos_editar(request, pk):
     
     if request.method == 'POST':
         form = EventoForm(request.POST, request.FILES, instance=evento)
+        docs_form = DocumentosEventoForm(request.POST, request.FILES)
+        
         if form.is_valid():
-            form.save()
-            messages.success(request, f'Evento "{evento.titulo}" actualizado exitosamente.')
-            return redirect('eventos_detalle', pk=evento.pk)
+            evento_actualizado = form.save()
+            
+            # Procesar documentos múltiples si se enviaron
+            if docs_form.is_valid():
+                archivos = docs_form.cleaned_data.get('archivos', [])
+                if archivos:
+                    tipo_documento = docs_form.cleaned_data.get('tipo_documento', 'otro')
+                    es_publico = docs_form.cleaned_data.get('es_publico', True)
+                    
+                    documentos_creados = 0
+                    for archivo in archivos:
+                        documento = DocumentoEvento(
+                            evento=evento_actualizado,
+                            nombre=archivo.name,
+                            tipo_documento=tipo_documento,
+                            archivo=archivo,
+                            es_publico=es_publico,
+                            subido_por=request.user
+                        )
+                        documento.save()
+                        documentos_creados += 1
+                    
+                    if documentos_creados > 0:
+                        messages.success(request, f'Se agregaron {documentos_creados} documento(s) al evento.')
+            
+            messages.success(request, f'Evento "{evento_actualizado.titulo}" actualizado exitosamente.')
+            return redirect('eventos_detalle', pk=evento_actualizado.pk)
     else:
         form = EventoForm(instance=evento)
+        docs_form = DocumentosEventoForm()
     
     context = {
         'form': form,
+        'docs_form': docs_form,
         'evento': evento,
         'titulo': f'Editar Evento: {evento.titulo}',
     }
@@ -1902,40 +1963,40 @@ def eventos_confirmar_asistencia(request, pk):
     
     return JsonResponse({'error': 'Método no permitido'}, status=405)
 
-# FUNCIÓN TEMPORALMENTE COMENTADA - REQUIERE InvitacionExterna MODEL
-# def eventos_confirmar_externa(request, pk, token):
-#     """Vista para confirmación de asistencia externa mediante token"""
-#     from .models import EventoMunicipal, InvitacionExterna
-#     from django.contrib import messages
-#     
-#     evento = get_object_or_404(EventoMunicipal, pk=pk, activo=True)
-#     invitacion = get_object_or_404(InvitacionExterna, evento=evento, token=token)
-#     
-#     if request.method == 'POST':
-#         nombre = request.POST.get('nombre', '').strip()
-#         if not nombre:
-#             messages.error(request, 'Por favor ingresa tu nombre.')
-#         else:
-#             # Confirmar asistencia
-#             invitacion.confirmado = True
-#             invitacion.nombre_confirmado = nombre
-#             invitacion.fecha_confirmacion = timezone.now()
-#             invitacion.save()
-#             
-#             messages.success(request, f'¡Gracias {nombre}! Tu asistencia ha sido confirmada.')
-#             return redirect('eventos_detalle', pk=evento.pk)
-#     
-#     # Si ya está confirmado, mostrar información
-#     if invitacion.confirmado:
-#         messages.info(request, f'Ya has confirmado tu asistencia como {invitacion.nombre_confirmado}.')
-#         return redirect('eventos_detalle', pk=evento.pk)
-#     
-#     context = {
-#         'evento': evento,
-#         'invitacion': invitacion,
-#     }
-#     
-#     return render(request, 'pages/eventos/confirmar_externa.html', context)
+def eventos_confirmar_externa(request, pk, token):
+    """Vista para confirmación de asistencia externa mediante token"""
+    from .models import EventoMunicipal, InvitacionExterna
+    from django.contrib import messages
+    from django.utils import timezone
+    
+    evento = get_object_or_404(EventoMunicipal, pk=pk, activo=True)
+    invitacion = get_object_or_404(InvitacionExterna, evento=evento, token=token)
+    
+    if request.method == 'POST':
+        nombre = request.POST.get('nombre', '').strip()
+        if not nombre:
+            messages.error(request, 'Por favor ingresa tu nombre.')
+        else:
+            # Confirmar asistencia
+            invitacion.estado = 'confirmada'
+            invitacion.nombre = nombre
+            invitacion.fecha_respuesta = timezone.now()
+            invitacion.save()
+            
+            messages.success(request, f'¡Gracias {nombre}! Tu asistencia ha sido confirmada.')
+            return redirect('eventos_detalle', pk=evento.pk)
+    
+    # Si ya está confirmado, mostrar información
+    if invitacion.estado == 'confirmada':
+        messages.info(request, f'Ya has confirmado tu asistencia como {invitacion.nombre}.')
+        return redirect('eventos_detalle', pk=evento.pk)
+    
+    context = {
+        'evento': evento,
+        'invitacion': invitacion,
+    }
+    
+    return render(request, 'pages/eventos/confirmar_externa.html', context)
 
 # ========================================================================
 # APIs PARA CALENDARIO DE EVENTOS
