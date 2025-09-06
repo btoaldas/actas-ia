@@ -142,10 +142,18 @@ backups/
 *.dump
 *.backup
 
+# Excepciones para backups iniciales
+!backups_inicial/
+!backups_inicial/*.sql
+
 # Archivos PDF generados (actas y eventos)
 media/actas/*.pdf
 media/eventos/**/*.pdf
 media/uploads/*.pdf
+
+# Carpetas completas de media (contenido dinámico)
+media/repositorio/
+media/eventos/
 
 # Archivos grandes (> 10MB)
 *.zip

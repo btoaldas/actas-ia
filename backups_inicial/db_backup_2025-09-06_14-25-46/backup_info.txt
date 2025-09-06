@@ -1,0 +1,51 @@
+BACKUP INFORMACIÓN
+==================
+
+Fecha de Backup: 2025-09-06 14:26:00
+Sistema: Actas Municipales Pastaza
+Entorno: Docker Compose
+
+BASES DE DATOS RESPALDADAS:
+==========================
+
+1. PostgreSQL:
+   - postgresql_full_backup.sql: Backup completo de todas las bases de datos
+   - actas_municipales_pastaza.sql: Backup específico de la BD principal
+   - Usuario: admin_actas
+   - Base de datos principal: actas_municipales_pastaza
+
+2. Redis:
+   - redis_dump.rdb: Dump binario de Redis
+   - Datos de cache y sesiones
+
+INFORMACIÓN DEL SISTEMA:
+=======================
+
+Contenedores en ejecución:
+- actas_postgres (PostgreSQL 15-alpine)
+- actas_redis (Redis 7-alpine)
+- actas_web (Django application)
+- actas_nginx (Nginx proxy)
+- actas_celery_worker (Celery worker)
+- actas_celery_beat (Celery scheduler)
+- actas_flower (Celery monitor)
+
+INSTRUCCIONES DE RESTAURACIÓN:
+=============================
+
+PostgreSQL:
+1. docker exec -i actas_postgres psql -U admin_actas < postgresql_full_backup.sql
+   O específicamente:
+2. docker exec -i actas_postgres psql -U admin_actas actas_municipales_pastaza < actas_municipales_pastaza.sql
+
+Redis:
+1. Detener contenedor Redis
+2. docker cp redis_dump.rdb actas_redis:/data/
+3. Reiniciar contenedor Redis
+
+NOTAS:
+======
+- Backup creado durante desarrollo del sistema de eventos
+- Sistema funcionando correctamente al momento del backup
+- Funcionalidades de eventos con múltiples archivos implementadas
+- Sistema de invitaciones externas temporalmente comentado
