@@ -309,12 +309,12 @@ class UsuarioEditForm(forms.ModelForm):
         }
 
 
-class PerfilUsuarioForm(forms.ModelForm):
-    """Formulario para gestionar perfiles de usuario"""
+class PerfilUsuarioLegacyForm(forms.ModelForm):
+    """Formulario para gestionar perfiles de usuario LEGACY"""
     
     class Meta:
-        from .models import PerfilUsuario
-        model = PerfilUsuario
+        from .models import PerfilUsuarioLegacy
+        model = PerfilUsuarioLegacy
         fields = [
             'usuario', 'rol', 'departamento', 'cargo', 'telefono', 'extension',
             'limite_procesamiento_diario', 'limite_transcripcion_horas', 'activo'

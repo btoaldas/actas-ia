@@ -332,10 +332,13 @@
                                     </td>
                                     <td>
                                         <div class="progress" style="height: 8px;">
-                                            {% with porcentaje=config.emails_enviados_hoy|floatformat:0|add:"0"|mul:100|div:config.limite_diario %}
+                                            {% if config.limite_diario > 0 %}
+                                                {% widthratio config.emails_enviados_hoy config.limite_diario 100 as porcentaje %}
                                                 <div class="progress-bar {% if porcentaje > 80 %}bg-warning{% elif porcentaje > 95 %}bg-danger{% else %}bg-success{% endif %}" 
                                                      style="width: {{ porcentaje }}%"></div>
-                                            {% endwith %}
+                                            {% else %}
+                                                <div class="progress-bar bg-secondary" style="width: 0%"></div>
+                                            {% endif %}
                                         </div>
                                         <small class="text-muted">{{ config.emails_enviados_hoy }} / {{ config.limite_diario }}</small>
                                     </td>

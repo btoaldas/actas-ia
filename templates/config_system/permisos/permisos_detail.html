@@ -1,0 +1,187 @@
+{% extends 'layouts/base.html' %}
+{% load static %}
+
+{% block title %}Detalle del Permiso{% endblock %}
+
+{% block content %}
+<div class="content-wrapper">
+    <!-- Header -->
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <div>
+            <h1 class="h3 mb-0 text-gray-800">
+                <i class="fas fa-key text-primary"></i>
+                Detalle del Permiso: {{ permiso.nombre }}
+            </h1>
+            <p class="mb-0 text-gray-600">{{ permiso.descripcion|default:"Sin descripción" }}</p>
+        </div>
+        <div>
+            <a href="{% url 'config_system:permiso_edit' permiso.pk %}" class="btn btn-primary">
+                <i class="fas fa-edit"></i> Editar
+            </a>
+            <a href="{% url 'config_system:permisos_list' %}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left"></i> Volver
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <!-- Información del Permiso -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Información del Permiso</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <dl class="row">
+                                <dt class="col-sm-4">Código:</dt>
+                                <dd class="col-sm-8"><code>{{ permiso.codigo }}</code></dd>
+                                
+                                <dt class="col-sm-4">Nombre:</dt>
+                                <dd class="col-sm-8">{{ permiso.nombre }}</dd>
+                                
+                                <dt class="col-sm-4">Categoría:</dt>
+                                <dd class="col-sm-8">
+                                    <span class="badge badge-secondary">{{ permiso.get_categoria_display }}</span>
+                                </dd>
+                                
+                                <dt class="col-sm-4">Nivel de Acceso:</dt>
+                                <dd class="col-sm-8">
+                                    <span class="badge badge-info">{{ permiso.get_nivel_acceso_display }}</span>
+                                </dd>
+                            </dl>
+                        </div>
+                        <div class="col-md-6">
+                            <dl class="row">
+                                <dt class="col-sm-4">Estado:</dt>
+                                <dd class="col-sm-8">
+                                    {% if permiso.activo %}
+                                        <span class="badge badge-success">Activo</span>
+                                    {% else %}
+                                        <span class="badge badge-danger">Inactivo</span>
+                                    {% endif %}
+                                </dd>
+                                
+                                <dt class="col-sm-4">Permiso del Sistema:</dt>
+                                <dd class="col-sm-8">
+                                    {% if permiso.es_sistema %}
+                                        <span class="badge badge-warning">Sí</span>
+                                    {% else %}
+                                        <span class="badge badge-secondary">No</span>
+                                    {% endif %}
+                                </dd>
+                                
+                                <dt class="col-sm-4">Mostrar en Menú:</dt>
+                                <dd class="col-sm-8">
+                                    {% if permiso.mostrar_en_menu %}
+                                        <span class="badge badge-success">Sí</span>
+                                    {% else %}
+                                        <span class="badge badge-secondary">No</span>
+                                    {% endif %}
+                                </dd>
+                                
+                                <dt class="col-sm-4">Orden en Menú:</dt>
+                                <dd class="col-sm-8">{{ permiso.orden_menu }}</dd>
+                            </dl>
+                        </div>
+                    </div>
+
+                    {% if permiso.descripcion %}
+                    <hr>
+                    <div>
+                        <h6>Descripción:</h6>
+                        <p>{{ permiso.descripcion }}</p>
+                    </div>
+                    {% endif %}
+
+                    {% if permiso.urls_permitidas %}
+                    <hr>
+                    <div>
+                        <h6>URLs Permitidas:</h6>
+                        <div class="row">
+                            {% for url in permiso.urls_permitidas|split:", " %}
+                                <div class="col-md-6 mb-2">
+                                    <code>{{ url }}</code>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    {% if permiso.mostrar_en_menu and permiso.icono_menu %}
+                    <hr>
+                    <div>
+                        <h6>Configuración del Menú:</h6>
+                        <p>
+                            <i class="{{ permiso.icono_menu }}"></i>
+                            {{ permiso.nombre }}
+                        </p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <!-- Metadatos -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Metadatos</h6>
+                </div>
+                <div class="card-body">
+                    <dl class="row">
+                        <dt class="col-sm-5">Creado:</dt>
+                        <dd class="col-sm-7">
+                            <small>{{ permiso.fecha_creacion|date:"d/m/Y H:i" }}</small>
+                        </dd>
+                        
+                        <dt class="col-sm-5">Modificado:</dt>
+                        <dd class="col-sm-7">
+                            <small>{{ permiso.fecha_modificacion|date:"d/m/Y H:i" }}</small>
+                        </dd>
+                        
+                        {% if permiso.creado_por %}
+                        <dt class="col-sm-5">Creado por:</dt>
+                        <dd class="col-sm-7">
+                            <small>{{ permiso.creado_por.get_full_name|default:permiso.creado_por.username }}</small>
+                        </dd>
+                        {% endif %}
+                        
+                        {% if permiso.modificado_por %}
+                        <dt class="col-sm-5">Modificado por:</dt>
+                        <dd class="col-sm-7">
+                            <small>{{ permiso.modificado_por.get_full_name|default:permiso.modificado_por.username }}</small>
+                        </dd>
+                        {% endif %}
+                    </dl>
+                </div>
+            </div>
+
+            <!-- Perfiles que usan este permiso -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        Perfiles Asignados
+                        <span class="badge badge-primary">{{ perfiles_con_permiso.count }}</span>
+                    </h6>
+                </div>
+                <div class="card-body">
+                    {% if perfiles_con_permiso %}
+                        {% for perfil in perfiles_con_permiso %}
+                            <div class="d-flex align-items-center mb-2">
+                                <span class="badge mr-2" style="background-color: {{ perfil.color }}; color: white;">
+                                    {{ perfil.nombre }}
+                                </span>
+                                <small class="text-muted">{{ perfil.asignaciones.count }} usuarios</small>
+                            </div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="text-muted mb-0">No hay perfiles asignados a este permiso.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

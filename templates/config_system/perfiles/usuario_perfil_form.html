@@ -1,0 +1,328 @@
+{% extends 'config_system/base.html' %}
+{% load static %}
+
+{% block title %}Asignar Perfil a Usuario{% endblock %}
+
+{% block page_title %}
+    <i class="fas fa-user-plus mr-2"></i>Asignar Perfil a Usuario
+{% endblock %}
+
+{% block breadcrumb_active %}Asignar Perfil{% endblock %}
+
+{% block main_content %}
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">
+                    <i class="fas fa-shield-alt mr-1"></i>
+                    Nueva Asignación de Perfil
+                </h3>
+                <div class="card-tools">
+                    <a href="{% url 'config_system:usuarios_perfiles_list' %}" class="btn btn-tool">
+                        <i class="fas fa-arrow-left"></i> Volver a Lista
+                    </a>
+                </div>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="{{ form.usuario.id_for_label }}">
+                                    <i class="fas fa-user mr-1"></i>
+                                    {{ form.usuario.label }}
+                                </label>
+                                {{ form.usuario }}
+                                {% if form.usuario.help_text %}
+                                    <small class="form-text text-muted">{{ form.usuario.help_text }}</small>
+                                {% endif %}
+                                {% if form.usuario.errors %}
+                                    <div class="text-danger">
+                                        <i class="fas fa-exclamation-triangle mr-1"></i>
+                                        {{ form.usuario.errors }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="{{ form.perfil.id_for_label }}">
+                                    <i class="fas fa-shield-alt mr-1"></i>
+                                    {{ form.perfil.label }}
+                                </label>
+                                {{ form.perfil }}
+                                {% if form.perfil.help_text %}
+                                    <small class="form-text text-muted">{{ form.perfil.help_text }}</small>
+                                {% endif %}
+                                {% if form.perfil.errors %}
+                                    <div class="text-danger">
+                                        <i class="fas fa-exclamation-triangle mr-1"></i>
+                                        {{ form.perfil.errors }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="{{ form.fecha_asignacion.id_for_label }}">
+                                    <i class="fas fa-calendar mr-1"></i>
+                                    {{ form.fecha_asignacion.label }}
+                                </label>
+                                {{ form.fecha_asignacion }}
+                                {% if form.fecha_asignacion.help_text %}
+                                    <small class="form-text text-muted">{{ form.fecha_asignacion.help_text }}</small>
+                                {% endif %}
+                                {% if form.fecha_asignacion.errors %}
+                                    <div class="text-danger">
+                                        <i class="fas fa-exclamation-triangle mr-1"></i>
+                                        {{ form.fecha_asignacion.errors }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="{{ form.fecha_expiracion.id_for_label }}">
+                                    <i class="fas fa-clock mr-1"></i>
+                                    {{ form.fecha_expiracion.label }}
+                                </label>
+                                {{ form.fecha_expiracion }}
+                                {% if form.fecha_expiracion.help_text %}
+                                    <small class="form-text text-muted">{{ form.fecha_expiracion.help_text }}</small>
+                                {% endif %}
+                                {% if form.fecha_expiracion.errors %}
+                                    <div class="text-danger">
+                                        <i class="fas fa-exclamation-triangle mr-1"></i>
+                                        {{ form.fecha_expiracion.errors }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    {% if form.notas %}
+                    <div class="form-group">
+                        <label for="{{ form.notas.id_for_label }}">
+                            <i class="fas fa-sticky-note mr-1"></i>
+                            {{ form.notas.label }}
+                        </label>
+                        {{ form.notas }}
+                        {% if form.notas.help_text %}
+                            <small class="form-text text-muted">{{ form.notas.help_text }}</small>
+                        {% endif %}
+                        {% if form.notas.errors %}
+                            <div class="text-danger">
+                                <i class="fas fa-exclamation-triangle mr-1"></i>
+                                {{ form.notas.errors }}
+                            </div>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                    
+                    {% if form.activo %}
+                    <div class="form-group">
+                        <div class="custom-control custom-checkbox">
+                            {{ form.activo }}
+                            <label class="custom-control-label" for="{{ form.activo.id_for_label }}">
+                                <i class="fas fa-toggle-on mr-1"></i>
+                                {{ form.activo.label }}
+                            </label>
+                        </div>
+                        {% if form.activo.help_text %}
+                            <small class="form-text text-muted">{{ form.activo.help_text }}</small>
+                        {% endif %}
+                        {% if form.activo.errors %}
+                            <div class="text-danger">
+                                <i class="fas fa-exclamation-triangle mr-1"></i>
+                                {{ form.activo.errors }}
+                            </div>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                    
+                    <hr>
+                    
+                    <div class="form-group mb-0">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save mr-1"></i>
+                            Asignar Perfil
+                        </button>
+                        <a href="{% url 'config_system:usuarios_perfiles_list' %}" class="btn btn-secondary ml-2">
+                            <i class="fas fa-times mr-1"></i>
+                            Cancelar
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <!-- Información del usuario seleccionado -->
+        <div class="card card-info">
+            <div class="card-header">
+                <h3 class="card-title">
+                    <i class="fas fa-info-circle mr-1"></i>
+                    Información
+                </h3>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info">
+                    <h5><i class="icon fas fa-info"></i> Instrucciones</h5>
+                    <ul class="mb-0">
+                        <li><strong>Usuario:</strong> Selecciona el usuario que recibirá el perfil</li>
+                        <li><strong>Perfil:</strong> Elige el perfil de permisos a asignar</li>
+                        <li><strong>Fecha de Asignación:</strong> Fecha cuando inicia la asignación</li>
+                        <li><strong>Fecha de Expiración:</strong> Opcional, fecha cuando expira</li>
+                        <li><strong>Activo:</strong> Si la asignación está activa</li>
+                    </ul>
+                </div>
+                
+                <div class="mt-3" id="user-info" style="display: none;">
+                    <h6><i class="fas fa-user mr-1"></i> Información del Usuario</h6>
+                    <div id="user-details">
+                        <!-- Se llenará vía JavaScript -->
+                    </div>
+                </div>
+                
+                <div class="mt-3" id="profile-info" style="display: none;">
+                    <h6><i class="fas fa-shield-alt mr-1"></i> Información del Perfil</h6>
+                    <div id="profile-details">
+                        <!-- Se llenará vía JavaScript -->
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Historial de asignaciones -->
+        <div class="card card-warning">
+            <div class="card-header">
+                <h3 class="card-title">
+                    <i class="fas fa-history mr-1"></i>
+                    Acciones Rápidas
+                </h3>
+            </div>
+            <div class="card-body">
+                <a href="{% url 'config_system:usuarios_perfiles_list' %}" class="btn btn-block btn-outline-primary">
+                    <i class="fas fa-list mr-1"></i>
+                    Ver Todas las Asignaciones
+                </a>
+                <a href="{% url 'config_system:asignacion_masiva' %}" class="btn btn-block btn-outline-success">
+                    <i class="fas fa-users mr-1"></i>
+                    Asignación Masiva
+                </a>
+                <a href="{% url 'config_system:permisos_dashboard' %}" class="btn btn-block btn-outline-secondary">
+                    <i class="fas fa-tachometer-alt mr-1"></i>
+                    Dashboard de Permisos
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    // Mejorar selects con Select2
+    $('#id_usuario, #id_perfil').select2({
+        placeholder: 'Selecciona una opción...',
+        allowClear: true,
+        width: '100%'
+    });
+    
+    // Validar que fecha de expiración sea mayor a fecha de asignación
+    $('#id_fecha_expiracion').change(function() {
+        var fechaAsignacion = $('#id_fecha_asignacion').val();
+        var fechaExpiracion = $(this).val();
+        
+        if (fechaAsignacion && fechaExpiracion) {
+            if (new Date(fechaExpiracion) <= new Date(fechaAsignacion)) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Fechas inválidas',
+                    text: 'La fecha de expiración debe ser posterior a la fecha de asignación.'
+                });
+                $(this).val('');
+            }
+        }
+    });
+    
+    // Mostrar información del usuario seleccionado
+    $('#id_usuario').change(function() {
+        var userId = $(this).val();
+        if (userId) {
+            // Aquí puedes hacer una petición AJAX para obtener más detalles del usuario
+            $('#user-info').show();
+            $('#user-details').html('<p><i class="fas fa-spinner fa-spin mr-1"></i> Cargando información...</p>');
+            
+            // Simulación - en un proyecto real harías una petición AJAX
+            setTimeout(function() {
+                var userName = $('#id_usuario option:selected').text();
+                $('#user-details').html('<p><strong>Usuario:</strong> ' + userName + '</p>');
+            }, 500);
+        } else {
+            $('#user-info').hide();
+        }
+    });
+    
+    // Mostrar información del perfil seleccionado
+    $('#id_perfil').change(function() {
+        var profileId = $(this).val();
+        if (profileId) {
+            $('#profile-info').show();
+            $('#profile-details').html('<p><i class="fas fa-spinner fa-spin mr-1"></i> Cargando información...</p>');
+            
+            // Simulación - en un proyecto real harías una petición AJAX
+            setTimeout(function() {
+                var profileName = $('#id_perfil option:selected').text();
+                $('#profile-details').html('<p><strong>Perfil:</strong> ' + profileName + '</p>');
+            }, 500);
+        } else {
+            $('#profile-info').hide();
+        }
+    });
+    
+    // Validación del formulario antes de enviar
+    $('form').on('submit', function(e) {
+        var usuario = $('#id_usuario').val();
+        var perfil = $('#id_perfil').val();
+        
+        if (!usuario || !perfil) {
+            e.preventDefault();
+            Swal.fire({
+                icon: 'warning',
+                title: 'Campos requeridos',
+                text: 'Debes seleccionar tanto el usuario como el perfil.'
+            });
+            return false;
+        }
+        
+        // Confirmación antes de enviar
+        e.preventDefault();
+        Swal.fire({
+            title: '¿Confirmar asignación?',
+            text: 'Se asignará el perfil seleccionado al usuario.',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#007bff',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: 'Sí, asignar',
+            cancelButtonText: 'Cancelar'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                $('form')[0].submit();
+            }
+        });
+    });
+});
+</script>
+{% endblock %}

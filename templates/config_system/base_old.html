@@ -1,0 +1,205 @@
+{% extends "layouts/base.html" %}
+{% load static %}
+
+{% block title %} Configuraciones del Sistema | Actas.IA {% endblock %}
+
+{% block stylesheets %}
+<link rel="stylesheet" href="{% static 'plugins/datatables-bs4/css/dataTables.bootstrap4.min.css' %}">
+<link rel="stylesheet" href="{% static 'plugins/datatables-responsive/css/responsive.bootstrap4.min.css' %}">
+{% endblock %}
+    .slider:before {
+        position: absolute;
+        content: "";
+        height: 18px;
+        width: 18px;
+        left: 3px;
+        bottom: 3px;
+        background-color: white;
+        transition: .4s;
+        border-radius: 50%;
+    }
+    input:checked + .slider {
+        background-color: #28a745;
+    }
+    input:checked + .slider:before {
+        transform: translateX(26px);
+    }
+</style>
+{% endblock stylesheets %}
+
+{% block content %}
+<div class="content-wrapper">
+    <!-- Content Header -->
+    <div class="content-header">
+        <div class="container-fluid">
+            <div class="row mb-2">
+                <div class="col-sm-6">
+                    <h1 class="m-0">
+                        <i class="fas fa-cogs text-primary"></i>
+                        {% block page_title %}Configuraciones del Sistema{% endblock %}
+                    </h1>
+                </div>
+                <div class="col-sm-6">
+                    <ol class="breadcrumb float-sm-right">
+                        <li class="breadcrumb-item"><a href="{% url 'index' %}">Dashboard</a></li>
+                        <li class="breadcrumb-item active">
+                            {% block breadcrumb_active %}Configuraciones{% endblock %}
+                        </li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main content -->
+    <section class="content">
+        <div class="container-fluid">
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+
+            {% block main_content %}
+            <!-- Contenido específico de cada página -->
+            {% endblock main_content %}
+        </div>
+    </section>
+</div>
+{% endblock content %}
+
+{% block javascripts %}
+<script src="{% static 'plugins/datatables/jquery.dataTables.min.js' %}"></script>
+<script src="{% static 'plugins/datatables-bs4/js/dataTables.bootstrap4.min.js' %}"></script>
+<script src="{% static 'plugins/datatables-responsive/js/dataTables.responsive.min.js' %}"></script>
+
+<script>
+$(document).ready(function() {
+    // Inicializar DataTables
+    if ($('.datatable').length) {
+        $('.datatable').DataTable({
+            "responsive": true,
+            "autoWidth": false,
+            "language": {
+                "url": "//cdn.datatables.net/plug-ins/1.10.24/i18n/Spanish.json"
+            },
+            "order": [[ 0, "asc" ]],
+            "columnDefs": [
+                { "orderable": false, "targets": -1 } // No ordenar columna de acciones
+            ]
+        });
+    }
+
+    // Toggle switches para activar/desactivar configs
+    $('.toggle-config').change(function() {
+        var configId = $(this).data('config-id');
+        var configType = $(this).data('config-type');
+        var isActive = $(this).is(':checked');
+        
+        $.ajax({
+            url: '/config-system/toggle-' + configType + '/' + configId + '/',
+            type: 'POST',
+            data: {
+                'activo': isActive,
+                'csrfmiddlewaretoken': $('[name=csrfmiddlewaretoken]').val()
+            },
+            success: function(response) {
+                if (response.success) {
+                    toastr.success(response.message);
+                    // Actualizar clases de la tarjeta
+                    var card = $('.config-card[data-config-id="' + configId + '"]');
+                    if (isActive) {
+                        card.removeClass('config-inactive');
+                    } else {
+                        card.addClass('config-inactive');
+                    }
+                } else {
+                    toastr.error(response.error || 'Error al actualizar configuración');
+                    // Revertir toggle
+                    $(this).prop('checked', !isActive);
+                }
+            },
+            error: function() {
+                toastr.error('Error de conexión');
+                // Revertir toggle
+                $(this).prop('checked', !isActive);
+            }
+        });
+    });
+
+    // Eliminar configuración
+    $('.delete-config').click(function(e) {
+        e.preventDefault();
+        var url = $(this).attr('href');
+        var configName = $(this).data('config-name');
+        
+        if (confirm('¿Estás seguro de que deseas eliminar la configuración "' + configName + '"?')) {
+            $.ajax({
+                url: url,
+                type: 'DELETE',
+                data: {
+                    'csrfmiddlewaretoken': $('[name=csrfmiddlewaretoken]').val()
+                },
+                success: function(response) {
+                    if (response.success) {
+                        toastr.success(response.message);
+                        // Remover la fila de la tabla o tarjeta
+                        setTimeout(function() {
+                            location.reload();
+                        }, 1500);
+                    } else {
+                        toastr.error(response.error || 'Error al eliminar configuración');
+                    }
+                },
+                error: function() {
+                    toastr.error('Error de conexión');
+                }
+            });
+        }
+    });
+
+    // Probar configuración
+    $('.test-config').click(function(e) {
+        e.preventDefault();
+        var url = $(this).attr('href');
+        var btn = $(this);
+        var originalText = btn.html();
+        
+        btn.html('<i class="fas fa-spinner fa-spin"></i> Probando...');
+        btn.prop('disabled', true);
+        
+        $.ajax({
+            url: url,
+            type: 'POST',
+            data: {
+                'csrfmiddlewaretoken': $('[name=csrfmiddlewaretoken]').val()
+            },
+            success: function(response) {
+                if (response.success) {
+                    toastr.success('Prueba exitosa: ' + response.message);
+                } else {
+                    toastr.error('Prueba fallida: ' + response.error);
+                }
+            },
+            error: function() {
+                toastr.error('Error al probar configuración');
+            },
+            complete: function() {
+                btn.html(originalText);
+                btn.prop('disabled', false);
+            }
+        });
+    });
+});
+</script>
+
+{% block extra_js %}
+<!-- JavaScript específico de cada página -->
+{% endblock extra_js %}
+
+{% endblock javascripts %}

@@ -1,0 +1,317 @@
+{% extends 'config_system/base.html' %}
+{% load static %}
+
+{% block title %}Asignaciones Usuario-Perfil{% endblock %}
+
+{% block page_title %}
+    <i class="fas fa-user-shield mr-2"></i>Asignaciones Usuario-Perfil
+{% endblock %}
+
+{% block breadcrumb_active %}Usuarios-Perfiles{% endblock %}
+
+{% block main_content %}
+
+    <!-- Filtros -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h3 class="card-title">
+                <i class="fas fa-filter mr-1"></i>Filtros de Búsqueda
+            </h3>
+            <div class="card-tools">
+                <a href="{% url 'config_system:usuario_perfiles_asignar' %}" class="btn btn-primary btn-sm">
+                    <i class="fas fa-plus"></i> Asignar Perfil
+                </a>
+                <a href="{% url 'config_system:permisos_dashboard' %}" class="btn btn-tool">
+                    <i class="fas fa-arrow-left"></i> Dashboard
+                </a>
+            </div>
+        </div>
+        <div class="card-body">
+            <form method="get" class="row">
+                <div class="col-md-3">
+                    <label for="usuario" class="form-label">Usuario</label>
+                    <input type="text" class="form-control" id="usuario" name="usuario" 
+                           value="{{ filtros.usuario }}" placeholder="Buscar usuario...">
+                </div>
+                <div class="col-md-3">
+                    <label for="perfil" class="form-label">Perfil</label>
+                    <select class="form-control" id="perfil" name="perfil">
+                        <option value="">Todos los perfiles</option>
+                        {% for perfil in perfiles_disponibles %}
+                            <option value="{{ perfil.id }}" {% if filtros.perfil == perfil.id|stringformat:"s" %}selected{% endif %}>
+                                {{ perfil.nombre }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label for="activo" class="form-label">Estado</label>
+                    <select class="form-control" id="activo" name="activo">
+                        <option value="">Todos</option>
+                        <option value="true" {% if filtros.activo == "true" %}selected{% endif %}>Activos</option>
+                        <option value="false" {% if filtros.activo == "false" %}selected{% endif %}>Inactivos</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label for="principal" class="form-label">Tipo</label>
+                    <select class="form-control" id="principal" name="principal">
+                        <option value="">Todos</option>
+                        <option value="true" {% if filtros.principal == "true" %}selected{% endif %}>Principales</option>
+                        <option value="false" {% if filtros.principal == "false" %}selected{% endif %}>Secundarios</option>
+                    </select>
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
+                    <button type="submit" class="btn btn-outline-primary me-2">
+                        <i class="fas fa-search"></i> Buscar
+                    </button>
+                    <a href="{% url 'config_system:usuarios_perfiles_list' %}" class="btn btn-outline-secondary">
+                        <i class="fas fa-times"></i> Limpiar
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Estadísticas -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card border-left-primary shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                Total Asignaciones
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_asignaciones }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-user-shield fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-left-success shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                Asignaciones Activas
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ asignaciones_activas }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-check-circle fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-left-info shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                                Usuarios con Perfiles
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ usuarios_con_perfiles }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-users fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-left-warning shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                Asignaciones Principales
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ asignaciones_principales }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-star fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabla de Asignaciones -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">
+                Lista de Asignaciones 
+                <span class="badge badge-primary">{{ page_obj.paginator.count }}</span>
+            </h6>
+        </div>
+        <div class="card-body">
+            {% if page_obj %}
+                <div class="table-responsive">
+                    <table class="table table-bordered" id="dataTable" width="100%" cellspacing="0">
+                        <thead>
+                            <tr>
+                                <th>Usuario</th>
+                                <th>Perfil</th>
+                                <th>Tipo</th>
+                                <th>Estado</th>
+                                <th>Fecha Asignación</th>
+                                <th>Fecha Expiración</th>
+                                <th>Asignado Por</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for asignacion in page_obj %}
+                                <tr>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="avatar avatar-sm me-3">
+                                                <span class="avatar-initial rounded-circle bg-label-primary">
+                                                    {{ asignacion.usuario.username|first|upper }}
+                                                </span>
+                                            </div>
+                                            <div>
+                                                <h6 class="mb-0">{{ asignacion.usuario.get_full_name|default:asignacion.usuario.username }}</h6>
+                                                <small class="text-muted">{{ asignacion.usuario.email }}</small>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="badge" style="background-color: {{ asignacion.perfil.color }}; color: white;">
+                                            {{ asignacion.perfil.nombre }}
+                                        </span>
+                                        <small class="d-block text-muted">Nivel: {{ asignacion.perfil.nivel_jerarquia }}</small>
+                                    </td>
+                                    <td>
+                                        {% if asignacion.es_principal %}
+                                            <span class="badge badge-warning">
+                                                <i class="fas fa-star"></i> Principal
+                                            </span>
+                                        {% else %}
+                                            <span class="badge badge-secondary">
+                                                <i class="fas fa-circle"></i> Secundario
+                                            </span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if asignacion.activo %}
+                                            <span class="badge badge-success">
+                                                <i class="fas fa-check"></i> Activo
+                                            </span>
+                                        {% else %}
+                                            <span class="badge badge-danger">
+                                                <i class="fas fa-times"></i> Inactivo
+                                            </span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <small>{{ asignacion.fecha_asignacion|date:"d/m/Y H:i" }}</small>
+                                    </td>
+                                    <td>
+                                        {% if asignacion.fecha_expiracion %}
+                                            <small class="text-warning">{{ asignacion.fecha_expiracion|date:"d/m/Y H:i" }}</small>
+                                        {% else %}
+                                            <small class="text-muted">Sin expiración</small>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if asignacion.asignado_por %}
+                                            <small>{{ asignacion.asignado_por.get_full_name|default:asignacion.asignado_por.username }}</small>
+                                        {% else %}
+                                            <small class="text-muted">Sistema</small>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="btn-group" role="group">
+                                            <a href="{% url 'config_system:usuario_perfiles_edit' asignacion.pk %}" 
+                                               class="btn btn-sm btn-outline-primary" title="Editar">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                            <a href="{% url 'config_system:usuario_perfiles_delete' asignacion.pk %}" 
+                                               class="btn btn-sm btn-outline-danger" 
+                                               onclick="return confirm('¿Está seguro de eliminar esta asignación?')"
+                                               title="Eliminar">
+                                                <i class="fas fa-trash"></i>
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Paginación -->
+                {% if page_obj.has_other_pages %}
+                    <nav aria-label="Navegación de páginas">
+                        <ul class="pagination justify-content-center">
+                            {% if page_obj.has_previous %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page=1{% if request.GET.usuario %}&usuario={{ request.GET.usuario }}{% endif %}{% if request.GET.perfil %}&perfil={{ request.GET.perfil }}{% endif %}{% if request.GET.activo %}&activo={{ request.GET.activo }}{% endif %}{% if request.GET.principal %}&principal={{ request.GET.principal }}{% endif %}">Primera</a>
+                                </li>
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if request.GET.usuario %}&usuario={{ request.GET.usuario }}{% endif %}{% if request.GET.perfil %}&perfil={{ request.GET.perfil }}{% endif %}{% if request.GET.activo %}&activo={{ request.GET.activo }}{% endif %}{% if request.GET.principal %}&principal={{ request.GET.principal }}{% endif %}">Anterior</a>
+                                </li>
+                            {% endif %}
+
+                            {% for num in page_obj.paginator.page_range %}
+                                {% if page_obj.number == num %}
+                                    <li class="page-item active">
+                                        <span class="page-link">{{ num }}</span>
+                                    </li>
+                                {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ num }}{% if request.GET.usuario %}&usuario={{ request.GET.usuario }}{% endif %}{% if request.GET.perfil %}&perfil={{ request.GET.perfil }}{% endif %}{% if request.GET.activo %}&activo={{ request.GET.activo }}{% endif %}{% if request.GET.principal %}&principal={{ request.GET.principal }}{% endif %}">{{ num }}</a>
+                                    </li>
+                                {% endif %}
+                            {% endfor %}
+
+                            {% if page_obj.has_next %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if request.GET.usuario %}&usuario={{ request.GET.usuario }}{% endif %}{% if request.GET.perfil %}&perfil={{ request.GET.perfil }}{% endif %}{% if request.GET.activo %}&activo={{ request.GET.activo }}{% endif %}{% if request.GET.principal %}&principal={{ request.GET.principal }}{% endif %}">Siguiente</a>
+                                </li>
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.usuario %}&usuario={{ request.GET.usuario }}{% endif %}{% if request.GET.perfil %}&perfil={{ request.GET.perfil }}{% endif %}{% if request.GET.activo %}&activo={{ request.GET.activo }}{% endif %}{% if request.GET.principal %}&principal={{ request.GET.principal }}{% endif %}">Última</a>
+                                </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                {% endif %}
+
+            {% else %}
+                <div class="text-center py-5">
+                    <i class="fas fa-user-shield fa-4x text-gray-300 mb-3"></i>
+                    <h4 class="text-gray-600">No hay asignaciones</h4>
+                    <p class="text-gray-500">No se encontraron asignaciones de perfiles a usuarios.</p>
+                    <a href="{% url 'config_system:usuario_perfiles_asignar' %}" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> Crear Primera Asignación
+                    </a>
+                </div>
+            {% endif %}
+{% endblock %}
+
+{% block javascript %}
+<script>
+$(document).ready(function() {
+    // Mejorar formulario de filtros
+    $('#dataTable').DataTable({
+        "paging": false,
+        "searching": false,
+        "info": false,
+        "ordering": true,
+        "order": [[ 4, "desc" ]],
+        "language": {
+            "url": "//cdn.datatables.net/plug-ins/1.11.5/i18n/es-ES.json"
+        }
+    });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,261 @@
+{% extends 'layouts/base.html' %}
+{% load static %}
+
+{% block title %}{% if form.instance.pk %}Editar{% else %}Crear{% endif %} Permiso{% endblock title %}
+
+{% block bodyclass %}hold-transition sidebar-mini{% endblock bodyclass %}
+
+{% block content %}
+
+  <!-- Content Wrapper. Contains page content -->
+  <div class="content-wrapper">
+    <!-- Content Header (Page header) -->
+    <section class="content-header">
+      <div class="container-fluid">
+        <div class="row mb-2">
+          <div class="col-sm-6">
+            <h1>{% if form.instance.pk %}Editar Permiso{% else %}Crear Permiso{% endif %}</h1>
+          </div>
+          <div class="col-sm-6">
+            <ol class="breadcrumb float-sm-right">
+              <li class="breadcrumb-item"><a href="{% url 'dashboardv3' %}">Inicio</a></li>
+              <li class="breadcrumb-item"><a href="{% url 'config_system:permisos_list' %}">Permisos</a></li>
+              <li class="breadcrumb-item active">{% if form.instance.pk %}Editar{% else %}Crear{% endif %}</li>
+            </ol>
+          </div>
+        </div>
+      </div><!-- /.container-fluid -->
+    </section>
+
+    <!-- Main content -->
+    <section class="content">
+      <div class="container-fluid">
+        <div class="row">
+          <!-- left column -->
+          <div class="col-md-6">
+            <!-- general form elements -->
+            <div class="card card-primary">
+              <div class="card-header">
+                <h3 class="card-title">Información del Permiso</h3>
+              </div>
+              <!-- /.card-header -->
+              <!-- form start -->
+              <form method="post">
+                {% csrf_token %}
+                <div class="card-body">
+                            <div class="form-group">
+                                <label for="{{ form.codigo.id_for_label }}" class="form-label required-field">
+                                    Código del Permiso
+                                </label>
+                                {{ form.codigo }}
+                                {% if form.codigo.help_text %}
+                                    <div class="help-text">{{ form.codigo.help_text }}</div>
+                                {% endif %}
+                                {% if form.codigo.errors %}
+                                    <div class="text-danger">
+                                        {% for error in form.codigo.errors %}
+                                            <small>{{ error }}</small>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="{{ form.nombre.id_for_label }}" class="form-label required-field">
+                                    Nombre del Permiso
+                                </label>
+                                {{ form.nombre }}
+                                {% if form.nombre.help_text %}
+                                    <div class="help-text">{{ form.nombre.help_text }}</div>
+                                {% endif %}
+                                {% if form.nombre.errors %}
+                                    <div class="text-danger">
+                                        {% for error in form.nombre.errors %}
+                                            <small>{{ error }}</small>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-12">
+                            <div class="form-group">
+                                <label for="{{ form.descripcion.id_for_label }}" class="form-label">
+                                    Descripción
+                                </label>
+                                {{ form.descripcion }}
+                                {% if form.descripcion.help_text %}
+                                    <div class="help-text">{{ form.descripcion.help_text }}</div>
+                                {% endif %}
+                                {% if form.descripcion.errors %}
+                                    <div class="text-danger">
+                                        {% for error in form.descripcion.errors %}
+                                            <small>{{ error }}</small>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label for="{{ form.categoria.id_for_label }}" class="form-label">
+                                    Categoría
+                                </label>
+                                {{ form.categoria }}
+                                {% if form.categoria.errors %}
+                                    <div class="text-danger">
+                                        {% for error in form.categoria.errors %}
+                                            <small>{{ error }}</small>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label for="{{ form.nivel_acceso.id_for_label }}" class="form-label">
+                                    Nivel de Acceso
+                                </label>
+                                {{ form.nivel_acceso }}
+                                {% if form.nivel_acceso.errors %}
+                                    <div class="text-danger">
+                                        {% for error in form.nivel_acceso.errors %}
+                                            <small>{{ error }}</small>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label for="{{ form.orden_menu.id_for_label }}" class="form-label">
+                                    Orden en Menú
+                                </label>
+                                {{ form.orden_menu }}
+                                {% if form.orden_menu.errors %}
+                                    <div class="text-danger">
+                                        {% for error in form.orden_menu.errors %}
+                                            <small>{{ error }}</small>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="{{ form.urls_permitidas.id_for_label }}" class="form-label">
+                                    URLs Permitidas
+                                </label>
+                                {{ form.urls_permitidas }}
+                                {% if form.urls_permitidas.help_text %}
+                                    <div class="help-text">{{ form.urls_permitidas.help_text }}</div>
+                                {% endif %}
+                                {% if form.urls_permitidas.errors %}
+                                    <div class="text-danger">
+                                        {% for error in form.urls_permitidas.errors %}
+                                            <small>{{ error }}</small>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="{{ form.icono_menu.id_for_label }}" class="form-label">
+                                    Ícono del Menú
+                                </label>
+                                {{ form.icono_menu }}
+                                {% if form.icono_menu.help_text %}
+                                    <div class="help-text">{{ form.icono_menu.help_text }}</div>
+                                {% endif %}
+                                {% if form.icono_menu.errors %}
+                                    <div class="text-danger">
+                                        {% for error in form.icono_menu.errors %}
+                                            <small>{{ error }}</small>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Opciones -->
+                    <div class="row">
+                        <div class="col-md-12">
+                            <div class="form-group">
+                                <label class="form-label">Opciones</label>
+                                <div class="d-flex gap-4">
+                                    <div class="form-check">
+                                        {{ form.mostrar_en_menu }}
+                                        <label class="form-check-label" for="{{ form.mostrar_en_menu.id_for_label }}">
+                                            Mostrar en Menú
+                                        </label>
+                                    </div>
+                                    <div class="form-check">
+                                        {{ form.activo }}
+                                        <label class="form-check-label" for="{{ form.activo.id_for_label }}">
+                                            Activo
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Botones -->
+                    <div class="row">
+                        <div class="col-md-12">
+                            <div class="d-flex justify-content-end gap-2">
+                                <a href="{% url 'config_system:permisos_list' %}" class="btn btn-back">
+                                    <i class="fas fa-times me-2"></i>Cancelar
+                                </a>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save me-2"></i>{{ action|default:"Guardar" }}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                </form>
+            </div>
+        </div>
+    </div>
+    
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Validación en tiempo real del código
+    const codigoInput = document.getElementById('{{ form.codigo.id_for_label }}');
+    if (codigoInput) {
+        codigoInput.addEventListener('input', function() {
+            let value = this.value.toLowerCase();
+            value = value.replace(/[^a-z0-9._-]/g, '');
+            value = value.replace(/\s+/g, '_');
+            this.value = value;
+        });
+    }
+    
+    // Preview del ícono
+    const iconoInput = document.getElementById('{{ form.icono_menu.id_for_label }}');
+    if (iconoInput) {
+        iconoInput.addEventListener('input', function() {
+            // Aquí podrías agregar un preview del ícono
+        });
+    }
+});
+</script>
+{% endblock %}

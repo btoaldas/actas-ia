@@ -1,0 +1,350 @@
+{% extends 'layouts/base.html' %}
+{% load static %}
+
+{% block title %}{% if form.instance.pk %}Editar{% else %}Crear{% endif %} Permiso | Actas.IA{% endblock title %}
+
+{% block bodyclass %}hold-transition sidebar-mini{% endblock bodyclass %}
+
+{% block content %}
+<div class="content-wrapper">
+    <!-- Content Header (Page header) -->
+    <div class="content-header">
+        <div class="container-fluid">
+            <div class="row mb-2">
+                <div class="col-sm-6">
+                    <h1 class="m-0">
+                        <i class="fas fa-key mr-2"></i>
+                        {% if form.instance.pk %}
+                            Editar Permiso
+                        {% else %}
+                            Crear Nuevo Permiso
+                        {% endif %}
+                    </h1>
+                </div>
+                <div class="col-sm-6">
+                    <ol class="breadcrumb float-sm-right">
+                        <li class="breadcrumb-item"><a href="{% url 'dashboardv3' %}">Inicio</a></li>
+                        <li class="breadcrumb-item"><a href="{% url 'config_system:permisos_list' %}">Permisos</a></li>
+                        <li class="breadcrumb-item active">{% if form.instance.pk %}Editar{% else %}Crear{% endif %}</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main content -->
+    <section class="content">
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-lg-8">
+                    <div class="card card-primary">
+                        <div class="card-header">
+                            <h3 class="card-title">
+                                <i class="fas fa-edit mr-2"></i>
+                                {% if form.instance.pk %}
+                                    Editar Información del Permiso
+                                {% else %}
+                                    Información del Nuevo Permiso
+                                {% endif %}
+                            </h3>
+                        </div>
+                        <form method="post">
+                            {% csrf_token %}
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label for="{{ form.codigo.id_for_label }}">
+                                                <i class="fas fa-code mr-1"></i>
+                                                {{ form.codigo.label }}
+                                            </label>
+                                            {{ form.codigo }}
+                                            {% if form.codigo.help_text %}
+                                                <small class="form-text text-muted">{{ form.codigo.help_text }}</small>
+                                            {% endif %}
+                                            {% if form.codigo.errors %}
+                                                <div class="text-danger mt-1">
+                                                    <i class="fas fa-exclamation-triangle mr-1"></i>
+                                                    {{ form.codigo.errors.0 }}
+                                                </div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label for="{{ form.nombre.id_for_label }}">
+                                                <i class="fas fa-tag mr-1"></i>
+                                                {{ form.nombre.label }}
+                                            </label>
+                                            {{ form.nombre }}
+                                            {% if form.nombre.errors %}
+                                                <div class="text-danger mt-1">
+                                                    <i class="fas fa-exclamation-triangle mr-1"></i>
+                                                    {{ form.nombre.errors.0 }}
+                                                </div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="{{ form.descripcion.id_for_label }}">
+                                        {{ form.descripcion.label }}
+                                    </label>
+                                    {{ form.descripcion }}
+                                    {% if form.descripcion.errors %}
+                                        <div class="text-danger mt-1">
+                                            <i class="fas fa-exclamation-triangle mr-1"></i>
+                                            {{ form.descripcion.errors.0 }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label for="{{ form.categoria.id_for_label }}">
+                                                <i class="fas fa-folder mr-1"></i>
+                                                {{ form.categoria.label }}
+                                            </label>
+                                            {{ form.categoria }}
+                                            {% if form.categoria.errors %}
+                                                <div class="text-danger mt-1">
+                                                    <i class="fas fa-exclamation-triangle mr-1"></i>
+                                                    {{ form.categoria.errors.0 }}
+                                                </div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label for="{{ form.nivel_acceso.id_for_label }}">
+                                                <i class="fas fa-layer-group mr-1"></i>
+                                                {{ form.nivel_acceso.label }}
+                                            </label>
+                                            {{ form.nivel_acceso }}
+                                            {% if form.nivel_acceso.errors %}
+                                                <div class="text-danger mt-1">
+                                                    <i class="fas fa-exclamation-triangle mr-1"></i>
+                                                    {{ form.nivel_acceso.errors.0 }}
+                                                </div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="{{ form.urls_permitidas.id_for_label }}">
+                                        <i class="fas fa-link mr-1"></i>
+                                        {{ form.urls_permitidas.label }}
+                                    </label>
+                                    {{ form.urls_permitidas }}
+                                    {% if form.urls_permitidas.help_text %}
+                                        <small class="form-text text-muted">{{ form.urls_permitidas.help_text }}</small>
+                                    {% endif %}
+                                    {% if form.urls_permitidas.errors %}
+                                        <div class="text-danger mt-1">
+                                            <i class="fas fa-exclamation-triangle mr-1"></i>
+                                            {{ form.urls_permitidas.errors.0 }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+
+                                <hr>
+                                <h5 class="mb-3">
+                                    <i class="fas fa-bars mr-2"></i>
+                                    Configuración del Menú
+                                </h5>
+
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        <div class="form-group">
+                                            <div class="icheck-primary">
+                                                {{ form.mostrar_en_menu }}
+                                                <label for="{{ form.mostrar_en_menu.id_for_label }}">
+                                                    <i class="fas fa-eye mr-1"></i>
+                                                    {{ form.mostrar_en_menu.label }}
+                                                </label>
+                                            </div>
+                                            {% if form.mostrar_en_menu.help_text %}
+                                                <small class="form-text text-muted">{{ form.mostrar_en_menu.help_text }}</small>
+                                            {% endif %}
+                                            {% if form.mostrar_en_menu.errors %}
+                                                <div class="text-danger mt-1">
+                                                    <i class="fas fa-exclamation-triangle mr-1"></i>
+                                                    {{ form.mostrar_en_menu.errors.0 }}
+                                                </div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-group">
+                                            <label for="{{ form.icono_menu.id_for_label }}">
+                                                <i class="fas fa-icons mr-1"></i>
+                                                {{ form.icono_menu.label }}
+                                            </label>
+                                            {{ form.icono_menu }}
+                                            {% if form.icono_menu.help_text %}
+                                                <small class="form-text text-muted">{{ form.icono_menu.help_text }}</small>
+                                            {% endif %}
+                                            {% if form.icono_menu.errors %}
+                                                <div class="text-danger mt-1">
+                                                    <i class="fas fa-exclamation-triangle mr-1"></i>
+                                                    {{ form.icono_menu.errors.0 }}
+                                                </div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-group">
+                                            <label for="{{ form.orden_menu.id_for_label }}">
+                                                <i class="fas fa-sort-numeric-down mr-1"></i>
+                                                {{ form.orden_menu.label }}
+                                            </label>
+                                            {{ form.orden_menu }}
+                                            {% if form.orden_menu.help_text %}
+                                                <small class="form-text text-muted">{{ form.orden_menu.help_text }}</small>
+                                            {% endif %}
+                                            {% if form.orden_menu.errors %}
+                                                <div class="text-danger mt-1">
+                                                    <i class="fas fa-exclamation-triangle mr-1"></i>
+                                                    {{ form.orden_menu.errors.0 }}
+                                                </div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <hr>
+                                <h5 class="mb-3">
+                                    <i class="fas fa-cogs mr-2"></i>
+                                    Configuración Adicional
+                                </h5>
+
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <div class="icheck-primary">
+                                                {{ form.es_sistema }}
+                                                <label for="{{ form.es_sistema.id_for_label }}">
+                                                    <i class="fas fa-server mr-1"></i>
+                                                    {{ form.es_sistema.label }}
+                                                </label>
+                                            </div>
+                                            {% if form.es_sistema.help_text %}
+                                                <small class="form-text text-muted">{{ form.es_sistema.help_text }}</small>
+                                            {% endif %}
+                                            {% if form.es_sistema.errors %}
+                                                <div class="text-danger mt-1">
+                                                    <i class="fas fa-exclamation-triangle mr-1"></i>
+                                                    {{ form.es_sistema.errors.0 }}
+                                                </div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <div class="icheck-primary">
+                                                {{ form.activo }}
+                                                <label for="{{ form.activo.id_for_label }}">
+                                                    <i class="fas fa-toggle-on mr-1"></i>
+                                                    {{ form.activo.label }}
+                                                </label>
+                                            </div>
+                                            {% if form.activo.errors %}
+                                                <div class="text-danger mt-1">
+                                                    <i class="fas fa-exclamation-triangle mr-1"></i>
+                                                    {{ form.activo.errors.0 }}
+                                                </div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="card-footer">
+                                <button type="submit" class="btn btn-primary">
+                                    {% if form.instance.pk %}
+                                        <i class="fas fa-save mr-2"></i>Actualizar Permiso
+                                    {% else %}
+                                        <i class="fas fa-plus mr-2"></i>Crear Permiso
+                                    {% endif %}
+                                </button>
+                                <a href="{% url 'config_system:permisos_list' %}" class="btn btn-secondary ml-2">
+                                    <i class="fas fa-times mr-2"></i>Cancelar
+                                </a>
+                                {% if form.instance.pk %}
+                                <a href="{% url 'config_system:permisos_detail' form.instance.pk %}" class="btn btn-info ml-2">
+                                    <i class="fas fa-eye mr-2"></i>Ver Detalle
+                                </a>
+                                {% endif %}
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <div class="col-lg-4">
+                    <div class="card card-info">
+                        <div class="card-header">
+                            <h3 class="card-title">
+                                <i class="fas fa-question-circle mr-2"></i>
+                                Ayuda
+                            </h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="alert alert-info">
+                                <h6><i class="fas fa-code mr-1"></i>Código del Permiso:</h6>
+                                <p class="text-muted small mb-2">
+                                    Utiliza un formato como <code>modulo.accion</code>. 
+                                    Ejemplos: <code>actas.crear</code>, <code>users.editar</code>
+                                </p>
+
+                                <h6><i class="fas fa-folder mr-1"></i>Categorías:</h6>
+                                <p class="text-muted small mb-2">
+                                    Organiza los permisos por categorías para facilitar su gestión.
+                                </p>
+
+                                <h6><i class="fas fa-link mr-1"></i>URLs Permitidas:</h6>
+                                <p class="text-muted small mb-2">
+                                    Lista de URLs separadas por comas que este permiso permite acceder.
+                                </p>
+
+                                <h6><i class="fas fa-icons mr-1"></i>Iconos del Menú:</h6>
+                                <p class="text-muted small mb-0">
+                                    Utiliza clases de FontAwesome. Ejemplos:
+                                    <br><code>fas fa-users</code>
+                                    <br><code>fas fa-file-alt</code>
+                                    <br><code>fas fa-cog</code>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    {% if form.instance.pk %}
+                    <div class="card card-danger">
+                        <div class="card-header">
+                            <h3 class="card-title">
+                                <i class="fas fa-exclamation-triangle mr-2"></i>
+                                Zona de Peligro
+                            </h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="alert alert-warning">
+                                <p class="mb-2">
+                                    <i class="fas fa-warning mr-1"></i>
+                                    Eliminar este permiso también lo removerá de todos los perfiles que lo tengan asignado.
+                                </p>
+                            </div>
+                            <a href="{% url 'config_system:permiso_delete' form.instance.pk %}" 
+                               class="btn btn-danger btn-sm"
+                               onclick="return confirm('¿Está seguro de eliminar este permiso?')">
+                                <i class="fas fa-trash mr-2"></i>Eliminar Permiso
+                            </a>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </section>
+</div>
+{% endblock content %}

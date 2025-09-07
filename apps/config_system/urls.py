@@ -55,20 +55,46 @@ urlpatterns = [
     path('usuarios/<int:pk>/eliminar/', views.usuario_delete, name='usuario_delete'),
     path('usuarios/<int:pk>/toggle-active/', views.usuario_toggle_active, name='usuario_toggle_active'),
     
-    # ==================== GESTIÓN DE PERFILES ====================
+    # ==================== SISTEMA DE PERMISOS PERSONALIZADOS ====================
+    # Dashboard de permisos
+    path('permisos/dashboard/', views.permisos_dashboard, name='permisos_dashboard'),
+    
+    # Gestión de permisos personalizados
+    path('permisos/', views.permisos_list, name='permisos_list'),
+    path('permisos/crear/', views.permiso_create, name='permiso_create'),
+    path('permisos/<int:pk>/', views.permiso_detail, name='permiso_detail'),
+    path('permisos/<int:pk>/editar/', views.permiso_edit, name='permiso_edit'),
+    path('permisos/<int:pk>/eliminar/', views.permiso_delete, name='permiso_delete'),
+    
+    # Gestión de perfiles de usuario
     path('perfiles/', views.perfiles_list, name='perfiles_list'),
     path('perfiles/crear/', views.perfil_create, name='perfil_create'),
     path('perfiles/<int:pk>/', views.perfil_detail, name='perfil_detail'),
     path('perfiles/<int:pk>/editar/', views.perfil_edit, name='perfil_edit'),
     path('perfiles/<int:pk>/eliminar/', views.perfil_delete, name='perfil_delete'),
-    path('perfiles/<int:pk>/toggle-active/', views.perfil_toggle_active, name='perfil_toggle_active'),
     
-    # ==================== GESTIÓN DE PERMISOS ====================
-    path('permisos/', views.permisos_list, name='permisos_list'),
-    path('permisos/<int:pk>/', views.permisos_detail, name='permisos_detail'),
-    path('permisos/<int:pk>/editar/', views.permisos_edit, name='permisos_edit'),
-    path('permisos/<int:pk>/reset-rol/', views.permisos_reset_por_rol, name='permisos_reset_rol'),
-    path('permisos/aplicar-masivo/', views.aplicar_permisos_masivo, name='aplicar_permisos_masivo'),
+    # Asignación de perfiles a usuarios
+    path('usuarios-perfiles/', views.usuarios_perfiles_list, name='usuarios_perfiles_list'),
+    path('usuarios-perfiles/asignar/', views.usuario_perfiles_asignar, name='usuario_perfiles_asignar'),
+    path('usuarios-perfiles/<int:pk>/editar/', views.usuario_perfiles_edit, name='usuario_perfiles_edit'),
+    path('usuarios-perfiles/<int:pk>/eliminar/', views.usuario_perfiles_delete, name='usuario_perfiles_delete'),
+    path('usuarios-perfiles/asignacion-masiva/', views.asignacion_masiva, name='asignacion_masiva'),
+    
+    # Logs y auditoría
+    path('permisos/logs/', views.logs_permisos, name='logs_permisos'),
+    path('permisos/reportes/', views.reportes_permisos, name='reportes_permisos'),
+    # path('permisos/analisis/', views.analisis_uso_permisos, name='analisis_uso_permisos'),
+    
+    # APIs para el sistema de permisos - TEMPORALMENTE COMENTADAS
+    # path('api/permisos/verificar/', views.api_verificar_permiso, name='api_verificar_permiso'),
+    # path('api/permisos/usuario/<int:user_id>/', views.api_permisos_usuario, name='api_permisos_usuario'),
+    # path('api/perfiles/permisos/<int:perfil_id>/', views.api_permisos_perfil, name='api_permisos_perfil'),
+    
+    # ==================== GESTIÓN DE PERMISOS LEGACY ====================
+    path('permisos-legacy/<int:pk>/', views.permisos_detail, name='permisos_detail_legacy'),
+    path('permisos-legacy/<int:pk>/editar/', views.permisos_edit, name='permisos_edit_legacy'),
+    path('permisos-legacy/<int:pk>/reset-rol/', views.permisos_reset_por_rol, name='permisos_reset_rol'),
+    path('permisos-legacy/aplicar-masivo/', views.aplicar_permisos_masivo, name='aplicar_permisos_masivo'),
     
     # Gestión de usuarios con permisos (legacy - mantener compatibilidad)
     path('usuarios-legacy/', views.UsuariosListView.as_view(), name='usuarios_list_legacy'),

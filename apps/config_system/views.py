@@ -9,11 +9,23 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.urls import reverse_lazy
 from django.db.models import Count, Q
 from django.utils import timezone
+from django.core.paginator import Paginator
 from datetime import timedelta
 import json
 
-from .models import ConfiguracionWhisper, ConfiguracionIA, PerfilUsuario, LogConfiguracion
+from .models import (
+    ConfiguracionWhisper, ConfiguracionIA, PerfilUsuario, LogConfiguracion,
+    PermisoCustom, UsuarioPerfil, LogPermisos
+)
 from .forms import ConfiguracionWhisperForm, ConfiguracionIAForm
+from .permisos_forms import (
+    PermisoCustomForm,
+    PerfilUsuarioForm,
+    UsuarioPerfilForm,
+    BusquedaPermisosForm,
+    BusquedaPerfilesForm,
+    AsignacionMasivaForm
+)
 
 User = get_user_model()
 
@@ -1250,3 +1262,939 @@ def smtp_test_single(request, pk):
     }
     
     return render(request, 'config_system/smtp/smtp_test_single.html', context)
+
+
+# ==================== SISTEMA DE PERMISOS Y PERFILES ====================
+
+@superadmin_required
+def permisos_dashboard(request):
+    """Dashboard del sistema de permisos"""
+    
+    # Estadísticas generales
+    stats = {
+        'total_permisos': PermisoCustom.objects.count(),
+        'permisos_activos': PermisoCustom.objects.filter(activo=True).count(),
+        'total_perfiles': PerfilUsuario.objects.count(),
+        'perfiles_activos': PerfilUsuario.objects.filter(activo=True).count(),
+        'usuarios_con_perfiles': UsuarioPerfil.objects.filter(activo=True).values('usuario').distinct().count(),
+        'total_asignaciones': UsuarioPerfil.objects.filter(activo=True).count(),
+    }
+    
+    # Permisos por categoría
+    permisos_por_categoria = {}
+    for categoria_code, categoria_name in PermisoCustom.CATEGORIAS:
+        count = PermisoCustom.objects.filter(categoria=categoria_code, activo=True).count()
+        if count > 0:
+            permisos_por_categoria[categoria_name] = count
+    
+    # Perfiles más utilizados
+    perfiles_populares = PerfilUsuario.objects.filter(activo=True).annotate(
+        total_usuarios=Count('usuarios_con_perfil', filter=Q(usuarios_con_perfil__activo=True))
+    ).order_by('-total_usuarios')[:5]
+    
+    # Actividad reciente
+    actividad_reciente = LogPermisos.objects.select_related(
+        'usuario_afectado', 'usuario_ejecutor'
+    ).order_by('-fecha')[:10]
+    
+    # Usuarios sin perfiles
+    usuarios_sin_perfiles = User.objects.filter(
+        perfiles_usuario__isnull=True,
+        is_active=True
+    ).count()
+    
+    context = {
+        'stats': stats,
+        'permisos_por_categoria': permisos_por_categoria,
+        'perfiles_populares': perfiles_populares,
+        'actividad_reciente': actividad_reciente,
+        'usuarios_sin_perfiles': usuarios_sin_perfiles,
+        'title': 'Dashboard de Permisos',
+    }
+    
+    return render(request, 'config_system/permisos/dashboard.html', context)
+
+
+# ==================== GESTIÓN DE PERMISOS ====================
+
+@superadmin_required
+def permisos_list(request):
+    """Lista de permisos personalizados"""
+    
+    # Filtros
+    categoria = request.GET.get('categoria', '')
+    activo = request.GET.get('activo', '')
+    search = request.GET.get('search', '')
+    
+    permisos = PermisoCustom.objects.all()
+    
+    if categoria:
+        permisos = permisos.filter(categoria=categoria)
+    
+    if activo:
+        permisos = permisos.filter(activo=activo == 'true')
+    
+    if search:
+        permisos = permisos.filter(
+            Q(codigo__icontains=search) |
+            Q(nombre__icontains=search) |
+            Q(descripcion__icontains=search)
+        )
+    
+    permisos = permisos.order_by('categoria', 'orden_menu', 'nombre')
+    
+    # Estadísticas para la vista
+    stats = {
+        'total': PermisoCustom.objects.count(),
+        'activos': PermisoCustom.objects.filter(activo=True).count(),
+        'sistema': PermisoCustom.objects.filter(es_sistema=True).count(),
+        'personalizados': PermisoCustom.objects.filter(es_sistema=False).count(),
+    }
+    
+    context = {
+        'permisos': permisos,
+        'stats': stats,
+        'categorias': PermisoCustom.CATEGORIAS,
+        'filtros': {
+            'categoria': categoria,
+            'activo': activo,
+            'search': search,
+        },
+        'title': 'Gestión de Permisos',
+    }
+    
+    return render(request, 'config_system/permisos/permisos_list.html', context)
+
+
+@superadmin_required
+@superadmin_required
+def permiso_create(request):
+    """Crear nuevo permiso"""
+    if request.method == 'POST':
+        form = PermisoCustomForm(request.POST)
+        if form.is_valid():
+            permiso = form.save(commit=False)
+            permiso.creado_por = request.user
+            permiso.save()
+            
+            # Log de la acción
+            LogPermisos.objects.create(
+                accion='permiso_creado',
+                usuario_afectado=request.user,
+                usuario_ejecutor=request.user,
+                permiso_codigo=permiso.codigo,
+                mensaje=f'Permiso "{permiso.nombre}" creado exitosamente'
+            )
+            
+            messages.success(request, f'Permiso "{permiso.nombre}" creado exitosamente')
+            return redirect('config_system:permisos_list')
+    else:
+        form = PermisoCustomForm()
+    
+    context = {
+        'form': form,
+        'title': 'Crear Permiso',
+        'action': 'Crear'
+    }
+    
+    return render(request, 'config_system/permisos/permiso_form.html', context)
+
+
+@superadmin_required
+def permiso_edit(request, pk):
+    """Editar permiso existente"""
+    permiso = get_object_or_404(PermisoCustom, pk=pk)
+    
+    # No permitir editar permisos del sistema
+    if permiso.es_sistema:
+        messages.error(request, 'No se pueden editar permisos del sistema')
+        return redirect('config_system:permisos_list')
+    
+    if request.method == 'POST':
+        form = PermisoCustomForm(request.POST, instance=permiso)
+        if form.is_valid():
+            permiso = form.save(commit=False)
+            permiso.modificado_por = request.user
+            permiso.save()
+            
+            # Log de la acción
+            LogPermisos.objects.create(
+                accion='permiso_modificado',
+                usuario_afectado=request.user,
+                usuario_ejecutor=request.user,
+                permiso_codigo=permiso.codigo,
+                mensaje=f'Permiso "{permiso.nombre}" modificado'
+            )
+            
+            messages.success(request, f'Permiso "{permiso.nombre}" actualizado exitosamente')
+            return redirect('config_system:permisos_list')
+    else:
+        form = PermisoCustomForm(instance=permiso)
+    
+    context = {
+        'form': form,
+        'permiso': permiso,
+        'title': f'Editar Permiso: {permiso.nombre}',
+        'action': 'Actualizar'
+    }
+    
+    return render(request, 'config_system/permisos/permiso_form.html', context)
+
+
+@superadmin_required
+def permiso_detail(request, pk):
+    """Ver detalles de un permiso"""
+    permiso = get_object_or_404(PermisoCustom, pk=pk)
+    
+    # Obtener perfiles que usan este permiso
+    perfiles_con_permiso = PerfilUsuario.objects.filter(permisos=permiso)
+    
+    # Obtener usuarios que tienen perfiles con este permiso
+    usuarios_con_permiso = User.objects.filter(
+        perfiles_asignados__perfil__permisos=permiso,
+        perfiles_asignados__activo=True
+    ).distinct()
+    
+    context = {
+        'permiso': permiso,
+        'perfiles_con_permiso': perfiles_con_permiso,
+        'usuarios_con_permiso': usuarios_con_permiso,
+        'title': f'Detalles del Permiso: {permiso.nombre}',
+    }
+    
+    return render(request, 'config_system/permisos/permiso_detail.html', context)
+
+
+@superadmin_required 
+def usuario_perfiles_asignar(request):
+    """Asignar perfil a usuario"""
+    if request.method == 'POST':
+        form = UsuarioPerfilForm(request.POST)
+        if form.is_valid():
+            asignacion = form.save(commit=False)
+            asignacion.asignado_por = request.user
+            asignacion.save()
+            
+            # Log de la acción
+            LogPermisos.objects.create(
+                accion='perfil_asignado',
+                usuario_afectado=asignacion.usuario,
+                usuario_ejecutor=request.user,
+                perfil_nombre=asignacion.perfil.nombre,
+                mensaje=f'Perfil "{asignacion.perfil.nombre}" asignado a {asignacion.usuario.username}'
+            )
+            
+            messages.success(request, f'Perfil asignado exitosamente')
+            return redirect('config_system:usuarios_perfiles_list')
+    else:
+        form = UsuarioPerfilForm()
+    
+    context = {
+        'form': form,
+        'title': 'Asignar Perfil a Usuario',
+        'action': 'Asignar'
+    }
+    
+    return render(request, 'config_system/perfiles/usuario_perfil_form.html', context)
+
+
+@superadmin_required
+def usuario_perfiles_delete(request, pk):
+    """Eliminar asignación de perfil"""
+    asignacion = get_object_or_404(UsuarioPerfil, pk=pk)
+    
+    if request.method == 'POST':
+        usuario = asignacion.usuario
+        perfil_nombre = asignacion.perfil.nombre
+        
+        # Log antes de eliminar
+        LogPermisos.objects.create(
+            accion='perfil_removido',
+            usuario_afectado=usuario,
+            usuario_ejecutor=request.user,
+            perfil_nombre=perfil_nombre,
+            mensaje=f'Perfil "{perfil_nombre}" removido de {usuario.username}'
+        )
+        
+        asignacion.delete()
+        messages.success(request, f'Asignación de perfil eliminada exitosamente')
+        return redirect('config_system:usuarios_perfiles_list')
+    
+    context = {
+        'asignacion': asignacion,
+        'title': f'Eliminar Asignación: {asignacion.perfil.nombre} - {asignacion.usuario.username}',
+    }
+    
+    return render(request, 'config_system/perfiles/usuario_perfil_delete.html', context)
+
+
+@superadmin_required
+def asignacion_masiva(request):
+    """Asignación masiva de perfiles"""
+    if request.method == 'POST':
+        form = AsignacionMasivaForm(request.POST)
+        if form.is_valid():
+            usuarios = form.cleaned_data['usuarios']
+            perfil = form.cleaned_data['perfil']
+            es_principal = form.cleaned_data['es_principal']
+            notas = form.cleaned_data['notas']
+            
+            # Crear asignaciones en lote
+            asignaciones_creadas = 0
+            for usuario in usuarios:
+                # Verificar si ya existe la asignación
+                if not UsuarioPerfil.objects.filter(usuario=usuario, perfil=perfil).exists():
+                    UsuarioPerfil.objects.create(
+                        usuario=usuario,
+                        perfil=perfil,
+                        es_principal=es_principal,
+                        notas=notas,
+                        asignado_por=request.user
+                    )
+                    asignaciones_creadas += 1
+                    
+                    # Log individual
+                    LogPermisos.objects.create(
+                        accion='perfil_asignado',
+                        usuario_afectado=usuario,
+                        usuario_ejecutor=request.user,
+                        perfil_nombre=perfil.nombre,
+                        mensaje=f'Perfil "{perfil.nombre}" asignado masivamente'
+                    )
+            
+            messages.success(request, f'Se crearon {asignaciones_creadas} asignaciones exitosamente')
+            return redirect('config_system:usuarios_perfiles_list')
+    else:
+        form = AsignacionMasivaForm()
+    
+    context = {
+        'form': form,
+        'title': 'Asignación Masiva de Perfiles',
+    }
+    
+    return render(request, 'config_system/perfiles/asignacion_masiva.html', context)
+
+
+# ================== SISTEMA DE PERMISOS - FUNCIONES ADICIONALES ==================
+
+@superadmin_required
+def permisos_dashboard(request):
+    """Dashboard principal del sistema de permisos"""
+    
+    # Estadísticas generales
+    total_permisos = PermisoCustom.objects.count()
+    total_perfiles = PerfilUsuario.objects.count()
+    total_asignaciones = UsuarioPerfil.objects.filter(activo=True).count()
+    permisos_activos = PermisoCustom.objects.filter(activo=True).count()
+    total_usuarios = User.objects.filter(is_active=True).count()
+    
+    # Usuarios con y sin perfiles
+    usuarios_con_perfiles = User.objects.filter(
+        perfiles_usuario__activo=True
+    ).distinct().count()
+    usuarios_sin_perfil = total_usuarios - usuarios_con_perfiles
+    
+    # Permisos por categoría
+    permisos_por_categoria = {}
+    for categoria_code, categoria_name in PermisoCustom.CATEGORIAS:
+        count = PermisoCustom.objects.filter(categoria=categoria_code, activo=True).count()
+        if count > 0:
+            permisos_por_categoria[categoria_name] = count
+    
+    # Perfiles más usados
+    from django.db.models import Count
+    from django.db import models
+    perfiles_populares = PerfilUsuario.objects.annotate(
+        usuarios_count=Count('usuarios_con_perfil', filter=models.Q(usuarios_con_perfil__activo=True))
+    ).order_by('-usuarios_count')[:5]
+    
+    # Actividad reciente
+    logs_recientes = LogPermisos.objects.order_by('-fecha')[:10]
+    
+    context = {
+        'title': 'Dashboard de Permisos',
+        'total_permisos': total_permisos,
+        'total_perfiles': total_perfiles,
+        'total_asignaciones': total_asignaciones,
+        'permisos_activos': permisos_activos,
+        'total_usuarios': total_usuarios,
+        'usuarios_con_perfiles': usuarios_con_perfiles,
+        'usuarios_sin_perfil': usuarios_sin_perfil,
+        'permisos_por_categoria': permisos_por_categoria,
+        'perfiles_populares': perfiles_populares,
+        'logs_recientes': logs_recientes,
+    }
+    
+    return render(request, 'config_system/permisos/dashboard.html', context)
+
+
+@superadmin_required
+def permiso_delete(request, pk):
+    """Eliminar permiso"""
+    permiso = get_object_or_404(PermisoCustom, pk=pk)
+    
+    # No permitir eliminar permisos del sistema
+    if permiso.es_sistema:
+        messages.error(request, 'No se pueden eliminar permisos del sistema')
+        return redirect('config_system:permisos_list')
+    
+    if request.method == 'POST':
+        nombre = permiso.nombre
+        codigo = permiso.codigo
+        
+        # Log antes de eliminar
+        LogPermisos.objects.create(
+            accion='permiso_eliminado',
+            usuario_afectado=request.user,
+            usuario_ejecutor=request.user,
+            permiso_codigo=codigo,
+            mensaje=f'Permiso "{nombre}" eliminado'
+        )
+        
+        permiso.delete()
+        messages.success(request, f'Permiso "{nombre}" eliminado exitosamente')
+        return redirect('config_system:permisos_list')
+    
+    # Verificar si está en uso
+    perfiles_usando = PerfilUsuario.objects.filter(permisos=permiso)
+    
+    context = {
+        'permiso': permiso,
+        'perfiles_usando': perfiles_usando,
+        'title': f'Eliminar Permiso: {permiso.nombre}',
+    }
+    
+    return render(request, 'config_system/permisos/permiso_delete.html', context)
+
+
+# ==================== GESTIÓN DE PERFILES ====================
+
+@superadmin_required
+def perfiles_list(request):
+    """Lista de perfiles de usuario"""
+    
+    # Filtros
+    activo = request.GET.get('activo', '')
+    nivel = request.GET.get('nivel', '')
+    search = request.GET.get('search', '')
+    
+    perfiles = PerfilUsuario.objects.annotate(
+        total_usuarios=Count('usuarios_con_perfil', filter=Q(usuarios_con_perfil__activo=True)),
+        total_permisos=Count('permisos', filter=Q(permisos__activo=True))
+    )
+    
+    if activo:
+        perfiles = perfiles.filter(activo=activo == 'true')
+    
+    if nivel:
+        perfiles = perfiles.filter(nivel_jerarquia=int(nivel))
+    
+    if search:
+        perfiles = perfiles.filter(
+            Q(nombre__icontains=search) |
+            Q(descripcion__icontains=search)
+        )
+    
+    perfiles = perfiles.order_by('-nivel_jerarquia', 'nombre')
+    
+    # Estadísticas
+    stats = {
+        'total': PerfilUsuario.objects.count(),
+        'activos': PerfilUsuario.objects.filter(activo=True).count(),
+        'sistema': PerfilUsuario.objects.filter(es_sistema=True).count(),
+        'personalizados': PerfilUsuario.objects.filter(es_sistema=False).count(),
+    }
+    
+    context = {
+        'perfiles': perfiles,
+        'stats': stats,
+        'niveles_jerarquia': range(4),  # 0-3
+        'filtros': {
+            'activo': activo,
+            'nivel': nivel,
+            'search': search,
+        },
+        'title': 'Gestión de Perfiles',
+    }
+    
+    return render(request, 'config_system/perfiles/perfiles_list.html', context)
+
+
+@superadmin_required
+def perfil_create(request):
+    """Crear nuevo perfil"""
+    if request.method == 'POST':
+        form = PerfilUsuarioForm(request.POST)
+        if form.is_valid():
+            perfil = form.save(commit=False)
+            perfil.creado_por = request.user
+            perfil.save()
+            
+            # Guardar los permisos many-to-many
+            form.save_m2m()
+            
+            # Log de la acción
+            LogPermisos.objects.create(
+                accion='perfil_creado',
+                usuario_afectado=request.user,
+                usuario_ejecutor=request.user,
+                perfil_nombre=perfil.nombre,
+                mensaje=f'Perfil "{perfil.nombre}" creado exitosamente'
+            )
+            
+            messages.success(request, f'Perfil "{perfil.nombre}" creado exitosamente')
+            return redirect('config_system:perfiles_list')
+    else:
+        form = PerfilUsuarioForm()
+    
+    context = {
+        'form': form,
+        'title': 'Crear Perfil',
+        'action': 'Crear'
+    }
+    
+    return render(request, 'config_system/perfiles/perfil_form.html', context)
+
+
+@superadmin_required
+def perfil_edit(request, pk):
+    """Editar perfil existente"""
+    perfil = get_object_or_404(PerfilUsuario, pk=pk)
+    
+    # No permitir editar perfiles del sistema
+    if perfil.es_sistema:
+        messages.error(request, 'No se pueden editar perfiles del sistema')
+        return redirect('config_system:perfiles_list')
+    
+    if request.method == 'POST':
+        # Procesar formulario
+        nombre = request.POST.get('nombre', '').strip()
+        descripcion = request.POST.get('descripcion', '').strip()
+        color = request.POST.get('color', '#007bff')
+        es_publico = request.POST.get('es_publico') == 'on'
+        nivel_jerarquia = int(request.POST.get('nivel_jerarquia', 0))
+        dashboard_personalizado = request.POST.get('dashboard_personalizado') == 'on'
+        pagina_inicio = request.POST.get('pagina_inicio', '').strip()
+        activo = request.POST.get('activo') == 'on'
+        permisos_ids = request.POST.getlist('permisos')
+        
+        if not nombre:
+            messages.error(request, 'El nombre es obligatorio')
+        elif PerfilUsuario.objects.filter(nombre=nombre).exclude(pk=perfil.pk).exists():
+            messages.error(request, f'Ya existe otro perfil con el nombre "{nombre}"')
+        else:
+            # Actualizar perfil
+            perfil.nombre = nombre
+            perfil.descripcion = descripcion
+            perfil.color = color
+            perfil.es_publico = es_publico
+            perfil.nivel_jerarquia = nivel_jerarquia
+            perfil.dashboard_personalizado = dashboard_personalizado
+            perfil.pagina_inicio = pagina_inicio
+            perfil.activo = activo
+            perfil.modificado_por = request.user
+            perfil.save()
+            
+            # Actualizar permisos
+            if permisos_ids:
+                permisos = PermisoCustom.objects.filter(id__in=permisos_ids)
+                perfil.permisos.set(permisos)
+            else:
+                perfil.permisos.clear()
+            
+            # Log de la acción
+            LogPermisos.objects.create(
+                accion='perfil_modificado',
+                usuario_afectado=request.user,
+                usuario_ejecutor=request.user,
+                perfil_nombre=perfil.nombre,
+                mensaje=f'Perfil "{perfil.nombre}" modificado'
+            )
+            
+            messages.success(request, f'Perfil "{perfil.nombre}" actualizado exitosamente')
+            return redirect('config_system:perfiles_list')
+    
+    # Obtener permisos por categoría
+    permisos_por_categoria = {}
+    permisos_asignados = set(perfil.permisos.values_list('id', flat=True))
+    
+    for categoria_code, categoria_name in PermisoCustom.CATEGORIAS:
+        permisos = PermisoCustom.objects.filter(categoria=categoria_code, activo=True)
+        if permisos.exists():
+            permisos_por_categoria[categoria_name] = permisos
+    
+    context = {
+        'perfil': perfil,
+        'permisos_por_categoria': permisos_por_categoria,
+        'permisos_asignados': permisos_asignados,
+        'niveles_jerarquia': [
+            (0, 'Usuario Común'),
+            (1, 'Supervisor'),
+            (2, 'Administrador'),
+            (3, 'Super Administrador')
+        ],
+        'title': f'Editar Perfil: {perfil.nombre}',
+    }
+    
+    return render(request, 'config_system/perfiles/perfil_form.html', context)
+
+
+@superadmin_required
+def perfil_delete(request, pk):
+    """Eliminar perfil"""
+    perfil = get_object_or_404(PerfilUsuario, pk=pk)
+    
+    # No permitir eliminar perfiles del sistema
+    if perfil.es_sistema:
+        messages.error(request, 'No se pueden eliminar perfiles del sistema')
+        return redirect('config_system:perfiles_list')
+    
+    if request.method == 'POST':
+        nombre = perfil.nombre
+        
+        # Log antes de eliminar
+        LogPermisos.objects.create(
+            accion='perfil_eliminado',
+            usuario_afectado=request.user,
+            usuario_ejecutor=request.user,
+            perfil_nombre=nombre,
+            mensaje=f'Perfil "{nombre}" eliminado'
+        )
+        
+        perfil.delete()
+        messages.success(request, f'Perfil "{nombre}" eliminado exitosamente')
+        return redirect('config_system:perfiles_list')
+    
+    # Verificar usuarios asignados
+    usuarios_asignados = UsuarioPerfil.objects.filter(perfil=perfil, activo=True)
+    
+    context = {
+        'perfil': perfil,
+        'usuarios_asignados': usuarios_asignados,
+        'title': f'Eliminar Perfil: {perfil.nombre}',
+    }
+    
+    return render(request, 'config_system/permisos/perfil_delete.html', context)
+
+
+@superadmin_required
+def perfil_detail(request, pk):
+    """Detalle del perfil con usuarios asignados"""
+    perfil = get_object_or_404(PerfilUsuario, pk=pk)
+    
+    # Usuarios con este perfil
+    asignaciones = UsuarioPerfil.objects.filter(
+        perfil=perfil, activo=True
+    ).select_related('usuario').order_by('-es_principal', 'usuario__username')
+    
+    # Permisos del perfil por categoría
+    permisos_por_categoria = perfil.get_permisos_por_categoria()
+    
+    # Actividad reciente relacionada
+    actividad_reciente = LogPermisos.objects.filter(
+        Q(perfil_nombre=perfil.nombre) |
+        Q(usuario_afectado__in=[a.usuario for a in asignaciones])
+    ).order_by('-fecha')[:10]
+    
+    context = {
+        'perfil': perfil,
+        'asignaciones': asignaciones,
+        'permisos_por_categoria': permisos_por_categoria,
+        'actividad_reciente': actividad_reciente,
+        'title': f'Perfil: {perfil.nombre}',
+    }
+    
+    return render(request, 'config_system/permisos/perfil_detail.html', context)
+
+
+# ==================== GESTIÓN DE USUARIOS Y ASIGNACIONES ====================
+
+@superadmin_required
+def usuarios_perfiles_list(request):
+    """Lista de usuarios con sus perfiles asignados"""
+    
+    # Filtros
+    perfil_id = request.GET.get('perfil', '')
+    activo = request.GET.get('activo', '')
+    search = request.GET.get('search', '')
+    
+    usuarios = User.objects.prefetch_related(
+        'perfiles_usuario__perfil'
+    ).annotate(
+        total_perfiles=Count('perfiles_usuario', filter=Q(perfiles_usuario__activo=True))
+    )
+    
+    if search:
+        usuarios = usuarios.filter(
+            Q(username__icontains=search) |
+            Q(first_name__icontains=search) |
+            Q(last_name__icontains=search) |
+            Q(email__icontains=search)
+        )
+    
+    if activo:
+        usuarios = usuarios.filter(is_active=activo == 'true')
+    
+    if perfil_id:
+        usuarios = usuarios.filter(perfiles_usuario__perfil_id=perfil_id, perfiles_usuario__activo=True)
+    
+    usuarios = usuarios.order_by('-is_superuser', '-is_staff', 'username')
+    
+    # Estadísticas
+    stats = {
+        'total_usuarios': User.objects.count(),
+        'usuarios_activos': User.objects.filter(is_active=True).count(),
+        'usuarios_con_perfiles': UsuarioPerfil.objects.filter(activo=True).values('usuario').distinct().count(),
+        'usuarios_sin_perfiles': User.objects.filter(perfiles_usuario__isnull=True, is_active=True).count(),
+    }
+    
+    # Todos los perfiles para el filtro
+    perfiles = PerfilUsuario.objects.filter(activo=True).order_by('nombre')
+    
+    context = {
+        'usuarios': usuarios,
+        'stats': stats,
+        'perfiles': perfiles,
+        'filtros': {
+            'perfil': perfil_id,
+            'activo': activo,
+            'search': search,
+        },
+        'title': 'Gestión de Usuarios y Perfiles',
+    }
+    
+    return render(request, 'config_system/permisos/usuarios_perfiles_list.html', context)
+
+
+@superadmin_required
+def usuario_perfiles_edit(request, user_id):
+    """Editar perfiles de un usuario"""
+    usuario = get_object_or_404(User, pk=user_id)
+    
+    if request.method == 'POST':
+        # Obtener perfiles seleccionados
+        perfiles_data = []
+        perfil_principal = request.POST.get('perfil_principal')
+        
+        for key, value in request.POST.items():
+            if key.startswith('perfil_') and key != 'perfil_principal':
+                perfil_id = key.replace('perfil_', '')
+                if value == 'on':
+                    es_principal = (perfil_id == perfil_principal)
+                    notas = request.POST.get(f'notas_{perfil_id}', '')
+                    perfiles_data.append({
+                        'perfil_id': perfil_id,
+                        'es_principal': es_principal,
+                        'notas': notas
+                    })
+        
+        # Desactivar asignaciones actuales
+        UsuarioPerfil.objects.filter(usuario=usuario).update(activo=False)
+        
+        # Crear nuevas asignaciones
+        for perfil_data in perfiles_data:
+            perfil = PerfilUsuario.objects.get(pk=perfil_data['perfil_id'])
+            
+            # Verificar si ya existe la asignación
+            asignacion, created = UsuarioPerfil.objects.get_or_create(
+                usuario=usuario,
+                perfil=perfil,
+                defaults={
+                    'es_principal': perfil_data['es_principal'],
+                    'notas': perfil_data['notas'],
+                    'asignado_por': request.user,
+                    'activo': True
+                }
+            )
+            
+            if not created:
+                # Reactivar y actualizar
+                asignacion.es_principal = perfil_data['es_principal']
+                asignacion.notas = perfil_data['notas']
+                asignacion.asignado_por = request.user
+                asignacion.activo = True
+                asignacion.save()
+            
+            # Log de la asignación
+            LogPermisos.objects.create(
+                accion='perfil_asignado',
+                usuario_afectado=usuario,
+                usuario_ejecutor=request.user,
+                perfil_nombre=perfil.nombre,
+                mensaje=f'Perfil "{perfil.nombre}" asignado a {usuario.username}'
+            )
+        
+        messages.success(request, f'Perfiles de {usuario.username} actualizados exitosamente')
+        return redirect('config_system:usuarios_perfiles_list')
+    
+    # Perfiles actuales del usuario
+    asignaciones_actuales = UsuarioPerfil.objects.filter(
+        usuario=usuario, activo=True
+    ).select_related('perfil')
+    
+    perfiles_asignados = {a.perfil.id: a for a in asignaciones_actuales}
+    perfil_principal_id = None
+    
+    for asignacion in asignaciones_actuales:
+        if asignacion.es_principal:
+            perfil_principal_id = asignacion.perfil.id
+            break
+    
+    # Todos los perfiles disponibles
+    perfiles_disponibles = PerfilUsuario.objects.filter(
+        activo=True
+    ).order_by('nivel_jerarquia', 'nombre')
+    
+    context = {
+        'usuario': usuario,
+        'perfiles_disponibles': perfiles_disponibles,
+        'perfiles_asignados': perfiles_asignados,
+        'perfil_principal_id': perfil_principal_id,
+        'title': f'Perfiles de {usuario.username}',
+    }
+    
+    return render(request, 'config_system/permisos/usuario_perfiles_edit.html', context)
+
+
+# ==================== LOGS Y REPORTES ====================
+
+@superadmin_required
+def logs_permisos(request):
+    """Lista de logs del sistema de permisos"""
+    
+    # Filtros
+    accion = request.GET.get('accion', '')
+    usuario = request.GET.get('usuario', '')
+    fecha_desde = request.GET.get('fecha_desde', '')
+    fecha_hasta = request.GET.get('fecha_hasta', '')
+    
+    logs = LogPermisos.objects.select_related(
+        'usuario_afectado', 'usuario_ejecutor'
+    )
+    
+    if accion:
+        logs = logs.filter(accion=accion)
+    
+    if usuario:
+        logs = logs.filter(
+            Q(usuario_afectado__username__icontains=usuario) |
+            Q(usuario_ejecutor__username__icontains=usuario)
+        )
+    
+    if fecha_desde:
+        from datetime import datetime
+        fecha_desde_dt = datetime.strptime(fecha_desde, '%Y-%m-%d')
+        logs = logs.filter(fecha__gte=fecha_desde_dt)
+    
+    if fecha_hasta:
+        from datetime import datetime
+        fecha_hasta_dt = datetime.strptime(fecha_hasta, '%Y-%m-%d')
+        logs = logs.filter(fecha__lte=fecha_hasta_dt)
+    
+    logs = logs.order_by('-fecha')[:100]  # Limitar a 100 registros
+    
+    context = {
+        'logs': logs,
+        'acciones': LogPermisos.ACCIONES,
+        'filtros': {
+            'accion': accion,
+            'usuario': usuario,
+            'fecha_desde': fecha_desde,
+            'fecha_hasta': fecha_hasta,
+        },
+        'title': 'Logs del Sistema de Permisos',
+    }
+    
+    return render(request, 'config_system/permisos/logs_list.html', context)
+
+
+@superadmin_required
+def reportes_permisos(request):
+    """Reportes y estadísticas del sistema de permisos"""
+    from django.db.models import Count, Q
+    from django.utils import timezone
+    from datetime import timedelta, datetime
+    
+    # Parámetros de filtro
+    fecha_desde = request.GET.get('fecha_desde')
+    fecha_hasta = request.GET.get('fecha_hasta')
+    tipo_reporte = request.GET.get('tipo_reporte', 'usuarios')
+    
+    # Fechas por defecto (último mes)
+    if not fecha_desde:
+        fecha_desde = (timezone.now() - timedelta(days=30)).date()
+    else:
+        fecha_desde = datetime.strptime(fecha_desde, '%Y-%m-%d').date()
+    
+    if not fecha_hasta:
+        fecha_hasta = timezone.now().date()
+    else:
+        fecha_hasta = datetime.strptime(fecha_hasta, '%Y-%m-%d').date()
+    
+    # Estadísticas generales
+    total_usuarios = User.objects.filter(is_active=True).count()
+    total_perfiles = PerfilUsuario.objects.filter(activo=True).count()
+    total_permisos = PermisoCustom.objects.filter(activo=True).count()
+    total_asignaciones = UsuarioPerfil.objects.filter(activo=True).count()
+    
+    # Usuarios por perfil
+    usuarios_por_perfil = PerfilUsuario.objects.annotate(
+        total_usuarios=Count('usuarios_con_perfil', filter=Q(usuarios_con_perfil__activo=True))
+    ).filter(activo=True).order_by('-total_usuarios')
+    
+    # Perfiles más asignados (últimos 30 días)
+    perfiles_populares = PerfilUsuario.objects.annotate(
+        asignaciones_recientes=Count('usuarios_con_perfil', 
+            filter=Q(usuarios_con_perfil__fecha_asignacion__gte=timezone.now() - timedelta(days=30),
+                     usuarios_con_perfil__activo=True))
+    ).filter(activo=True).order_by('-asignaciones_recientes')[:10]
+    
+    # Usuarios sin perfiles asignados
+    usuarios_sin_perfil = User.objects.filter(
+        is_active=True,
+        perfiles_usuario__isnull=True
+    ).count()
+    
+    # Permisos por categoría
+    permisos_por_categoria = PermisoCustom.objects.values('categoria').annotate(
+        total=Count('id')
+    ).filter(activo=True)
+    
+    # Actividad reciente (últimos logs)
+    actividad_reciente = LogPermisos.objects.filter(
+        fecha__date__gte=fecha_desde,
+        fecha__date__lte=fecha_hasta
+    ).select_related('usuario_afectado', 'usuario_ejecutor').order_by('-fecha')[:20]
+    
+    # Usuarios más activos
+    usuarios_activos = LogPermisos.objects.filter(
+        fecha__date__gte=fecha_desde,
+        fecha__date__lte=fecha_hasta
+    ).values('usuario_afectado__username', 'usuario_afectado__first_name', 'usuario_afectado__last_name').annotate(
+        total_actividad=Count('id')
+    ).order_by('-total_actividad')[:10]
+    
+    # Perfiles por nivel jerárquico
+    perfiles_por_nivel = PerfilUsuario.objects.values('nivel_jerarquia').annotate(
+        total=Count('id')
+    ).filter(activo=True).order_by('nivel_jerarquia')
+    
+    context = {
+        'fecha_desde': fecha_desde,
+        'fecha_hasta': fecha_hasta,
+        'tipo_reporte': tipo_reporte,
+        'total_usuarios': total_usuarios,
+        'total_perfiles': total_perfiles,
+        'total_permisos': total_permisos,
+        'total_asignaciones': total_asignaciones,
+        'usuarios_por_perfil': usuarios_por_perfil,
+        'perfiles_populares': perfiles_populares,
+        'usuarios_sin_perfil': usuarios_sin_perfil,
+        'permisos_por_categoria': permisos_por_categoria,
+        'actividad_reciente': actividad_reciente,
+        'usuarios_activos': usuarios_activos,
+        'perfiles_por_nivel': perfiles_por_nivel,
+        'title': 'Reportes del Sistema de Permisos',
+    }
+    
+    return render(request, 'config_system/permisos/reportes_list.html', context)

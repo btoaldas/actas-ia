@@ -147,8 +147,8 @@ class ConfiguracionIA(models.Model):
         return config
 
 
-class PerfilUsuario(models.Model):
-    """Perfiles y permisos de usuarios en el sistema de actas municipales"""
+class PerfilUsuarioLegacy(models.Model):
+    """Perfiles y permisos de usuarios en el sistema de actas municipales (LEGACY)"""
     usuario = models.OneToOneField(User, on_delete=models.CASCADE, verbose_name="Usuario")
     
     ROLES = [
@@ -202,8 +202,9 @@ class PerfilUsuario(models.Model):
     fecha_actualizacion = models.DateTimeField(auto_now=True)
     
     class Meta:
-        verbose_name = "Perfil de Usuario"
-        verbose_name_plural = "Perfiles de Usuario"
+        verbose_name = "Perfil de Usuario Legacy"
+        verbose_name_plural = "Perfiles de Usuario Legacy"
+        db_table = "config_system_perfil_usuario_legacy"
         
     def __str__(self):
         return f"{self.usuario.username} - {self.get_rol_display()}"
@@ -284,7 +285,7 @@ class LogConfiguracion(models.Model):
 
 class PermisosDetallados(models.Model):
     """Modelo para gestionar permisos granulares del sistema"""
-    perfil = models.OneToOneField(PerfilUsuario, on_delete=models.CASCADE, related_name='permisos_detallados')
+    perfil = models.OneToOneField(PerfilUsuarioLegacy, on_delete=models.CASCADE, related_name='permisos_detallados')
     
     # Permisos de Menús y Navegación
     ver_menu_dashboard = models.BooleanField(default=True, verbose_name="Ver menú Dashboard")
@@ -781,3 +782,343 @@ class LogEnvioEmail(models.Model):
     
     def __str__(self):
         return f"{self.estado.upper()} - {self.destinatario} - {self.asunto[:50]}"
+
+
+# ==================== SISTEMA DE PERMISOS Y PERFILES ====================
+
+class PermisoCustom(models.Model):
+    """Permisos personalizados del sistema"""
+    
+    CATEGORIAS = [
+        ('actas', 'Gestión de Actas'),
+        ('users', 'Gestión de Usuarios'),
+        ('config', 'Configuración del Sistema'),
+        ('reports', 'Reportes y Estadísticas'),
+        ('files', 'Gestión de Archivos'),
+        ('portal', 'Portal Ciudadano'),
+        ('api', 'API y Integraciones'),
+        ('logs', 'Logs del Sistema'),
+        ('dashboard', 'Dashboard y Métricas'),
+        ('smtp', 'Sistema de Email'),
+        ('ia', 'Inteligencia Artificial'),
+        ('whisper', 'Transcripción de Audio'),
+        ('custom', 'Personalizado'),
+    ]
+    
+    # Información básica
+    codigo = models.CharField(
+        max_length=100, 
+        unique=True, 
+        verbose_name="Código del permiso",
+        help_text="Código único del permiso (ej: actas.crear, users.editar)"
+    )
+    nombre = models.CharField(max_length=200, verbose_name="Nombre del permiso")
+    descripcion = models.TextField(blank=True, verbose_name="Descripción detallada")
+    categoria = models.CharField(
+        max_length=20, 
+        choices=CATEGORIAS, 
+        default='custom',
+        verbose_name="Categoría"
+    )
+    
+    # Control de acceso
+    nivel_acceso = models.CharField(
+        max_length=20,
+        choices=[
+            ('leer', 'Solo Lectura'),
+            ('escribir', 'Lectura y Escritura'),
+            ('eliminar', 'Lectura, Escritura y Eliminación'),
+            ('admin', 'Administración Completa'),
+        ],
+        default='leer',
+        verbose_name="Nivel de acceso"
+    )
+    
+    # URLs/Vistas relacionadas
+    urls_permitidas = models.TextField(
+        blank=True,
+        verbose_name="URLs permitidas",
+        help_text="URLs separadas por comas (ej: /actas/, /actas/crear/)"
+    )
+    
+    # Menús y frontend
+    mostrar_en_menu = models.BooleanField(
+        default=True,
+        verbose_name="Mostrar en menú",
+        help_text="Si debe aparecer en el menú lateral"
+    )
+    icono_menu = models.CharField(
+        max_length=50,
+        blank=True,
+        verbose_name="Icono del menú",
+        help_text="Clase CSS del icono (ej: fas fa-file-alt)"
+    )
+    orden_menu = models.IntegerField(
+        default=100,
+        verbose_name="Orden en menú",
+        help_text="Orden de aparición en el menú (menor = primero)"
+    )
+    
+    # Estado y metadatos
+    activo = models.BooleanField(default=True, verbose_name="Activo")
+    es_sistema = models.BooleanField(
+        default=False,
+        verbose_name="Es del sistema",
+        help_text="Permisos creados por el sistema (no editables)"
+    )
+    
+    # Metadatos
+    fecha_creacion = models.DateTimeField(auto_now_add=True)
+    fecha_modificacion = models.DateTimeField(auto_now=True)
+    creado_por = models.ForeignKey(
+        User, 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        blank=True,
+        related_name='permisos_creados'
+    )
+    modificado_por = models.ForeignKey(
+        User, 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        blank=True,
+        related_name='permisos_modificados'
+    )
+    
+    class Meta:
+        verbose_name = "Permiso Personalizado"
+        verbose_name_plural = "Permisos Personalizados"
+        ordering = ['categoria', 'orden_menu', 'nombre']
+    
+    def __str__(self):
+        return f"{self.codigo} - {self.nombre}"
+    
+    def get_urls_list(self):
+        """Retorna la lista de URLs permitidas"""
+        if not self.urls_permitidas:
+            return []
+        return [url.strip() for url in self.urls_permitidas.split(',') if url.strip()]
+    
+    def save(self, *args, **kwargs):
+        # Convertir código a minúsculas y reemplazar espacios
+        self.codigo = self.codigo.lower().replace(' ', '_')
+        super().save(*args, **kwargs)
+
+
+class PerfilUsuario(models.Model):
+    """Perfiles de usuario con permisos asociados"""
+    
+    # Información básica
+    nombre = models.CharField(max_length=100, unique=True, verbose_name="Nombre del perfil")
+    descripcion = models.TextField(blank=True, verbose_name="Descripción del perfil")
+    color = models.CharField(
+        max_length=7,
+        default='#007bff',
+        verbose_name="Color identificativo",
+        help_text="Color en hexadecimal (ej: #007bff)"
+    )
+    
+    # Configuración del perfil
+    es_publico = models.BooleanField(
+        default=False,
+        verbose_name="Perfil público",
+        help_text="Si puede ser asignado por otros administradores"
+    )
+    nivel_jerarquia = models.IntegerField(
+        default=0,
+        verbose_name="Nivel jerárquico",
+        help_text="0=Usuario común, 1=Supervisor, 2=Administrador, 3=Super Admin"
+    )
+    
+    # Relaciones
+    permisos = models.ManyToManyField(
+        PermisoCustom,
+        blank=True,
+        verbose_name="Permisos asignados",
+        help_text="Permisos que tendrán los usuarios con este perfil"
+    )
+    
+    # Configuración de dashboard
+    dashboard_personalizado = models.BooleanField(
+        default=False,
+        verbose_name="Dashboard personalizado",
+        help_text="Si tiene un dashboard específico"
+    )
+    pagina_inicio = models.CharField(
+        max_length=200,
+        blank=True,
+        verbose_name="Página de inicio",
+        help_text="URL de la página inicial tras login"
+    )
+    
+    # Estado y metadatos
+    activo = models.BooleanField(default=True, verbose_name="Activo")
+    es_sistema = models.BooleanField(
+        default=False,
+        verbose_name="Es del sistema",
+        help_text="Perfiles creados por el sistema (no editables)"
+    )
+    
+    # Estadísticas
+    usuarios_asignados = models.IntegerField(
+        default=0,
+        verbose_name="Usuarios asignados",
+        help_text="Contador de usuarios con este perfil"
+    )
+    
+    # Metadatos
+    fecha_creacion = models.DateTimeField(auto_now_add=True)
+    fecha_modificacion = models.DateTimeField(auto_now=True)
+    creado_por = models.ForeignKey(
+        User, 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        blank=True,
+        related_name='perfiles_creados'
+    )
+    modificado_por = models.ForeignKey(
+        User, 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        blank=True,
+        related_name='perfiles_modificados'
+    )
+    
+    class Meta:
+        verbose_name = "Perfil de Usuario"
+        verbose_name_plural = "Perfiles de Usuario"
+        ordering = ['-nivel_jerarquia', 'nombre']
+    
+    def __str__(self):
+        return f"{self.nombre} (Nivel {self.nivel_jerarquia})"
+    
+    def get_permisos_por_categoria(self):
+        """Retorna los permisos agrupados por categoría"""
+        permisos_dict = {}
+        for permiso in self.permisos.filter(activo=True):
+            categoria = permiso.get_categoria_display()
+            if categoria not in permisos_dict:
+                permisos_dict[categoria] = []
+            permisos_dict[categoria].append(permiso)
+        return permisos_dict
+    
+    def tiene_permiso(self, codigo_permiso):
+        """Verifica si el perfil tiene un permiso específico"""
+        return self.permisos.filter(codigo=codigo_permiso, activo=True).exists()
+    
+    def actualizar_contador_usuarios(self):
+        """Actualiza el contador de usuarios asignados"""
+        self.usuarios_asignados = self.usuarios_con_perfil.count()
+        self.save(update_fields=['usuarios_asignados'])
+
+
+class UsuarioPerfil(models.Model):
+    """Relación entre usuarios y perfiles (tabla intermedia con metadatos)"""
+    
+    usuario = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='perfiles_usuario'
+    )
+    perfil = models.ForeignKey(
+        PerfilUsuario,
+        on_delete=models.CASCADE,
+        related_name='usuarios_con_perfil'
+    )
+    
+    # Metadatos de la asignación
+    es_principal = models.BooleanField(
+        default=False,
+        verbose_name="Perfil principal",
+        help_text="Si es el perfil principal del usuario"
+    )
+    fecha_asignacion = models.DateTimeField(auto_now_add=True)
+    fecha_expiracion = models.DateTimeField(
+        null=True, 
+        blank=True,
+        verbose_name="Fecha de expiración",
+        help_text="Fecha hasta cuando es válida la asignación"
+    )
+    asignado_por = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='asignaciones_realizadas'
+    )
+    
+    # Estado
+    activo = models.BooleanField(default=True)
+    notas = models.TextField(
+        blank=True,
+        verbose_name="Notas de la asignación"
+    )
+    
+    class Meta:
+        verbose_name = "Asignación Usuario-Perfil"
+        verbose_name_plural = "Asignaciones Usuario-Perfil"
+        unique_together = ['usuario', 'perfil']
+        ordering = ['-es_principal', '-fecha_asignacion']
+    
+    def __str__(self):
+        principal = " (Principal)" if self.es_principal else ""
+        return f"{self.usuario.username} → {self.perfil.nombre}{principal}"
+    
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        # Actualizar contador en el perfil
+        self.perfil.actualizar_contador_usuarios()
+
+
+class LogPermisos(models.Model):
+    """Log de acciones relacionadas con permisos"""
+    
+    ACCIONES = [
+        ('login', 'Inicio de sesión'),
+        ('logout', 'Cierre de sesión'),
+        ('acceso_denegado', 'Acceso denegado'),
+        ('permiso_verificado', 'Permiso verificado'),
+        ('perfil_asignado', 'Perfil asignado'),
+        ('perfil_removido', 'Perfil removido'),
+        ('permiso_creado', 'Permiso creado'),
+        ('permiso_modificado', 'Permiso modificado'),
+        ('perfil_creado', 'Perfil creado'),
+        ('perfil_modificado', 'Perfil modificado'),
+    ]
+    
+    # Información de la acción
+    accion = models.CharField(max_length=30, choices=ACCIONES)
+    usuario_afectado = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='logs_permisos'
+    )
+    usuario_ejecutor = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='acciones_permisos'
+    )
+    
+    # Detalles
+    url_solicitada = models.CharField(max_length=500, blank=True)
+    permiso_codigo = models.CharField(max_length=100, blank=True)
+    perfil_nombre = models.CharField(max_length=100, blank=True)
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    user_agent = models.TextField(blank=True)
+    
+    # Resultado
+    exitoso = models.BooleanField(default=True)
+    mensaje = models.TextField(blank=True)
+    
+    # Metadatos
+    fecha = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        verbose_name = "Log de Permisos"
+        verbose_name_plural = "Logs de Permisos"
+        ordering = ['-fecha']
+    
+    def __str__(self):
+        return f"{self.accion} - {self.usuario_afectado.username} - {self.fecha.strftime('%d/%m/%Y %H:%M')}"

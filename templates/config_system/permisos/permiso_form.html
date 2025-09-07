@@ -1,0 +1,154 @@
+{% extends 'layouts/base.html' %}
+{% load static %}
+
+{% block title %}{% if form.instance.pk %}Editar{% else %}Crear{% endif %} Permiso{% endblock title %}
+
+{% block bodyclass %}hold-transition sidebar-mini{% endblock bodyclass %}
+
+{% block content %}
+
+  <!-- Content Wrapper. Contains page content -->
+  <div class="content-wrapper">
+    <!-- Content Header (Page header) -->
+    <section class="content-header">
+      <div class="container-fluid">
+        <div class="row mb-2">
+          <div class="col-sm-6">
+            <h1>{% if form.instance.pk %}Editar Permiso{% else %}Crear Permiso{% endif %}</h1>
+          </div>
+          <div class="col-sm-6">
+            <ol class="breadcrumb float-sm-right">
+              <li class="breadcrumb-item"><a href="{% url 'dashboardv3' %}">Inicio</a></li>
+              <li class="breadcrumb-item"><a href="{% url 'config_system:permisos_list' %}">Permisos</a></li>
+              <li class="breadcrumb-item active">{% if form.instance.pk %}Editar{% else %}Crear{% endif %}</li>
+            </ol>
+          </div>
+        </div>
+      </div><!-- /.container-fluid -->
+    </section>
+
+    <!-- Main content -->
+    <section class="content">
+      <div class="container-fluid">
+        <div class="row">
+          <!-- left column -->
+          <div class="col-md-6">
+            <!-- general form elements -->
+            <div class="card card-primary">
+              <div class="card-header">
+                <h3 class="card-title">Información del Permiso</h3>
+              </div>
+              <!-- /.card-header -->
+              <!-- form start -->
+              <form method="post">
+                {% csrf_token %}
+                <div class="card-body">
+                  <div class="form-group">
+                    <label for="{{ form.codigo.id_for_label }}">{{ form.codigo.label }}</label>
+                    {{ form.codigo }}
+                    {% if form.codigo.errors %}
+                      <div class="text-danger">{{ form.codigo.errors.0 }}</div>
+                    {% endif %}
+                  </div>
+                  <div class="form-group">
+                    <label for="{{ form.nombre.id_for_label }}">{{ form.nombre.label }}</label>
+                    {{ form.nombre }}
+                    {% if form.nombre.errors %}
+                      <div class="text-danger">{{ form.nombre.errors.0 }}</div>
+                    {% endif %}
+                  </div>
+                  <div class="form-group">
+                    <label for="{{ form.descripcion.id_for_label }}">{{ form.descripcion.label }}</label>
+                    {{ form.descripcion }}
+                    {% if form.descripcion.errors %}
+                      <div class="text-danger">{{ form.descripcion.errors.0 }}</div>
+                    {% endif %}
+                  </div>
+                  <div class="form-check">
+                    {{ form.activo }}
+                    <label class="form-check-label" for="{{ form.activo.id_for_label }}">
+                      {{ form.activo.label }}
+                    </label>
+                  </div>
+                </div>
+                <!-- /.card-body -->
+
+                <div class="card-footer">
+                  <button type="submit" class="btn btn-primary">
+                    {% if form.instance.pk %}Actualizar{% else %}Crear{% endif %}
+                  </button>
+                  <a href="{% url 'config_system:permisos_list' %}" class="btn btn-secondary">Cancelar</a>
+                </div>
+              </form>
+            </div>
+            <!-- /.card -->
+
+          </div>
+          <!--/.col (left) -->
+          <!-- right column -->
+          <div class="col-md-6">
+            <!-- Form Element sizes -->
+            <div class="card card-success">
+              <div class="card-header">
+                <h3 class="card-title">Configuración Adicional</h3>
+              </div>
+              <div class="card-body">
+                <div class="form-group">
+                  <label for="{{ form.categoria.id_for_label }}">{{ form.categoria.label }}</label>
+                  {{ form.categoria }}
+                </div>
+                <div class="form-group">
+                  <label for="{{ form.nivel_acceso.id_for_label }}">{{ form.nivel_acceso.label }}</label>
+                  {{ form.nivel_acceso }}
+                </div>
+                <div class="form-group">
+                  <label for="{{ form.urls_permitidas.id_for_label }}">{{ form.urls_permitidas.label }}</label>
+                  {{ form.urls_permitidas }}
+                </div>
+              </div>
+              <!-- /.card-body -->
+            </div>
+            <!-- /.card -->
+
+            <div class="card card-warning">
+              <div class="card-header">
+                <h3 class="card-title">Configuración del Menú</h3>
+              </div>
+              <!-- /.card-header -->
+              <div class="card-body">
+                <div class="form-check">
+                  {{ form.mostrar_en_menu }}
+                  <label class="form-check-label" for="{{ form.mostrar_en_menu.id_for_label }}">
+                    {{ form.mostrar_en_menu.label }}
+                  </label>
+                </div>
+                <div class="form-group">
+                  <label for="{{ form.icono_menu.id_for_label }}">{{ form.icono_menu.label }}</label>
+                  {{ form.icono_menu }}
+                </div>
+                <div class="form-group">
+                  <label for="{{ form.orden_menu.id_for_label }}">{{ form.orden_menu.label }}</label>
+                  {{ form.orden_menu }}
+                </div>
+                <div class="form-check">
+                  {{ form.es_sistema }}
+                  <label class="form-check-label" for="{{ form.es_sistema.id_for_label }}">
+                    {{ form.es_sistema.label }}
+                  </label>
+                </div>
+              </div>
+              <!-- /.card-body -->
+            </div>
+            <!-- /.card -->
+
+          </div>
+          <!--/.col (right) -->
+        </div>
+        <!-- /.row -->
+      </div><!-- /.container-fluid -->
+    </section>
+    <!-- /.content -->
+  </div>
+  <!-- /.content-wrapper -->
+
+{% endblock content %}

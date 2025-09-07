@@ -1,0 +1,401 @@
+{% extends 'config_system/base.html' %}
+{% load static %}
+
+{% block title %}{{ title }} - Sistema de Permisos{% endblock %}
+
+{% block extra_css %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+{% endblock %}
+
+{% block page_title %}
+    <i class="fas fa-chart-bar mr-2"></i>{{ title }}
+{% endblock %}
+
+{% block breadcrumb_active %}Reportes{% endblock %}
+
+{% block main_content %}
+
+    <!-- Filtros -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h3 class="card-title">
+                <i class="fas fa-calendar mr-1"></i>Filtros de Reporte
+            </h3>
+            <div class="card-tools">
+                <a href="{% url 'config_system:permisos_dashboard' %}" class="btn btn-tool">
+                    <i class="fas fa-arrow-left"></i> Dashboard
+                </a>
+            </div>
+        </div>
+        <div class="card-body">
+            <form method="get" class="row">
+                <div class="col-md-3">
+                    <label for="fecha_desde" class="form-label">Fecha Desde</label>
+                    <input type="date" name="fecha_desde" id="fecha_desde" class="form-control" 
+                           value="{{ fecha_desde|date:'Y-m-d' }}">
+                </div>
+                <div class="col-md-3">
+                    <label for="fecha_hasta" class="form-label">Fecha Hasta</label>
+                    <input type="date" name="fecha_hasta" id="fecha_hasta" class="form-control" 
+                           value="{{ fecha_hasta|date:'Y-m-d' }}">
+                </div>
+                <div class="col-md-3">
+                    <label for="tipo_reporte" class="form-label">Tipo de Reporte</label>
+                    <select name="tipo_reporte" id="tipo_reporte" class="form-control">
+                        <option value="usuarios" {% if tipo_reporte == 'usuarios' %}selected{% endif %}>Usuarios</option>
+                        <option value="perfiles" {% if tipo_reporte == 'perfiles' %}selected{% endif %}>Perfiles</option>
+                        <option value="permisos" {% if tipo_reporte == 'permisos' %}selected{% endif %}>Permisos</option>
+                        <option value="actividad" {% if tipo_reporte == 'actividad' %}selected{% endif %}>Actividad</option>
+                    </select>
+                </div>
+                <div class="col-md-3 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary me-2">
+                        <i class="fas fa-search mr-1"></i>Generar Reporte
+                    </button>
+                    <button type="button" class="btn btn-success" onclick="exportarReporte()">
+                        <i class="fas fa-download mr-1"></i>Exportar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Estadísticas principales -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card border-left-primary">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                Total Usuarios
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_usuarios }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-users fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-left-success">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                Total Perfiles
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_perfiles }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-user-tag fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-left-info">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                                Total Permisos
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_permisos }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-key fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-left-warning">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                Asignaciones
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_asignaciones }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-link fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Gráficos y reportes -->
+    <div class="row">
+        <!-- Usuarios por perfil -->
+        <div class="col-lg-6 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-chart-pie mr-1"></i>Usuarios por Perfil
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <canvas id="usuariosPorPerfilChart" width="400" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Perfiles por nivel jerárquico -->
+        <div class="col-lg-6 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-chart-bar mr-1"></i>Perfiles por Nivel Jerárquico
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <canvas id="perfilesPorNivelChart" width="400" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Tabla de usuarios más activos -->
+        <div class="col-lg-6 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-trophy mr-1"></i>Usuarios Más Activos
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Usuario</th>
+                                    <th>Nombre</th>
+                                    <th class="text-center">Actividad</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for usuario in usuarios_activos %}
+                                <tr>
+                                    <td><strong>{{ usuario.usuario_afectado__username }}</strong></td>
+                                    <td>{{ usuario.usuario_afectado__first_name }} {{ usuario.usuario_afectado__last_name|default:'' }}</td>
+                                    <td class="text-center">
+                                        <span class="badge badge-primary">{{ usuario.total_actividad }}</span>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="3" class="text-center text-muted">No hay actividad registrada</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Perfiles más populares -->
+        <div class="col-lg-6 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-star mr-1"></i>Perfiles Más Populares (30 días)
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Perfil</th>
+                                    <th>Nivel</th>
+                                    <th class="text-center">Asignaciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for perfil in perfiles_populares %}
+                                <tr>
+                                    <td>
+                                        <span class="badge" style="background-color: {{ perfil.color }}; color: white;">
+                                            {{ perfil.nombre }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        {% if perfil.nivel_jerarquia == 0 %}Usuario
+                                        {% elif perfil.nivel_jerarquia == 1 %}Supervisor
+                                        {% elif perfil.nivel_jerarquia == 2 %}Administrador
+                                        {% elif perfil.nivel_jerarquia == 3 %}Super Admin
+                                        {% else %}Nivel {{ perfil.nivel_jerarquia }}
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-center">
+                                        <span class="badge badge-success">{{ perfil.asignaciones_recientes }}</span>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="3" class="text-center text-muted">No hay perfiles asignados recientemente</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Actividad reciente -->
+    <div class="row">
+        <div class="col-12 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-clock mr-1"></i>Actividad Reciente
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Fecha/Hora</th>
+                                    <th>Acción</th>
+                                    <th>Usuario</th>
+                                    <th>Estado</th>
+                                    <th>Detalles</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for log in actividad_reciente %}
+                                <tr>
+                                    <td>
+                                        <small>
+                                            {{ log.fecha|date:"d/m/Y H:i" }}
+                                        </small>
+                                    </td>
+                                    <td>
+                                        <small class="badge badge-secondary">{{ log.get_accion_display }}</small>
+                                    </td>
+                                    <td>{{ log.usuario_afectado.username }}</td>
+                                    <td>
+                                        {% if log.exitoso %}
+                                            <span class="badge badge-success">Exitoso</span>
+                                        {% else %}
+                                            <span class="badge badge-danger">Fallido</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <small class="text-muted">{{ log.mensaje|truncatechars:50 }}</small>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="5" class="text-center text-muted">No hay actividad reciente</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Alertas -->
+    {% if usuarios_sin_perfil > 0 %}
+    <div class="row">
+        <div class="col-12">
+            <div class="alert alert-warning">
+                <i class="fas fa-exclamation-triangle mr-2"></i>
+                <strong>Atención:</strong> Hay {{ usuarios_sin_perfil }} usuario{{ usuarios_sin_perfil|pluralize }} sin perfil asignado.
+                <a href="{% url 'config_system:usuarios_perfiles_list' %}" class="alert-link">Ver usuarios</a>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+// Gráfico de usuarios por perfil
+const ctx1 = document.getElementById('usuariosPorPerfilChart').getContext('2d');
+const usuariosPorPerfilChart = new Chart(ctx1, {
+    type: 'doughnut',
+    data: {
+        labels: [
+            {% for perfil in usuarios_por_perfil %}
+                '{{ perfil.nombre }}'{% if not forloop.last %},{% endif %}
+            {% endfor %}
+        ],
+        datasets: [{
+            data: [
+                {% for perfil in usuarios_por_perfil %}
+                    {{ perfil.total_usuarios }}{% if not forloop.last %},{% endif %}
+                {% endfor %}
+            ],
+            backgroundColor: [
+                {% for perfil in usuarios_por_perfil %}
+                    '{{ perfil.color }}'{% if not forloop.last %},{% endif %}
+                {% endfor %}
+            ]
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false
+    }
+});
+
+// Gráfico de perfiles por nivel
+const ctx2 = document.getElementById('perfilesPorNivelChart').getContext('2d');
+const perfilesPorNivelChart = new Chart(ctx2, {
+    type: 'bar',
+    data: {
+        labels: [
+            {% for nivel in perfiles_por_nivel %}
+                {% if nivel.nivel_jerarquia == 0 %}'Usuario'
+                {% elif nivel.nivel_jerarquia == 1 %}'Supervisor'
+                {% elif nivel.nivel_jerarquia == 2 %}'Administrador' 
+                {% elif nivel.nivel_jerarquia == 3 %}'Super Admin'
+                {% else %}'Nivel {{ nivel.nivel_jerarquia }}'
+                {% endif %}{% if not forloop.last %},{% endif %}
+            {% endfor %}
+        ],
+        datasets: [{
+            label: 'Cantidad de Perfiles',
+            data: [
+                {% for nivel in perfiles_por_nivel %}
+                    {{ nivel.total }}{% if not forloop.last %},{% endif %}
+                {% endfor %}
+            ],
+            backgroundColor: [
+                '#007bff', '#28a745', '#ffc107', '#dc3545', '#6f42c1'
+            ]
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+            y: {
+                beginAtZero: true
+            }
+        }
+    }
+});
+
+function exportarReporte() {
+    // Implementar exportación a PDF/Excel
+    alert('Función de exportación en desarrollo');
+}
+</script>
+{% endblock %}
