@@ -126,6 +126,35 @@
                 <div class="alert alert-success">
                   <i class="fas fa-file-audio mr-2"></i>
                   <span id="fileName"></span>
+                  <div class="mt-2">
+                    <small class="text-muted">
+                      Tamaño: <span id="fileSize"></span> | 
+                      Tipo: <span id="fileType"></span>
+                    </small>
+                  </div>
+                </div>
+                
+                <!-- Reproductor para archivo subido -->
+                <div id="uploadedAudioPlayer" class="mt-3" style="display: none;">
+                  <div class="card card-outline card-info">
+                    <div class="card-header">
+                      <h6 class="card-title">
+                        <i class="fas fa-headphones"></i> Vista previa del audio
+                      </h6>
+                    </div>
+                    <div class="card-body">
+                      <audio id="previewAudio" controls class="w-100" preload="metadata">
+                        Tu navegador no soporta la reproducción de audio.
+                      </audio>
+                      <div class="mt-2">
+                        <small class="text-muted">
+                          <span id="audioDuration"></span> | 
+                          <span id="audioChannels"></span> | 
+                          <span id="audioSampleRate"></span>
+                        </small>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -171,15 +200,40 @@
                   </div>
                 </div>
 
-                <!-- Segunda fila -->
+                <!-- Segunda fila - Participantes Avanzados -->
                 <div class="row">
-                  <div class="col-md-6">
+                  <div class="col-12">
                     <div class="form-group">
-                      <label for="participantes">Participantes</label>
-                      <textarea class="form-control" id="participantes" name="participantes" rows="3"
-                                placeholder="Lista de participantes separados por comas"></textarea>
+                      <label><i class="fas fa-users"></i> Participantes de la Reunión</label>
+                      <div class="card card-outline card-info">
+                        <div class="card-header">
+                          <h6 class="card-title">Gestión de Participantes</h6>
+                          <div class="card-tools">
+                            <button type="button" id="addParticipant" class="btn btn-sm btn-success">
+                              <i class="fas fa-plus"></i> Agregar Participante
+                            </button>
+                          </div>
+                        </div>
+                        <div class="card-body">
+                          <div id="participantsList">
+                            <!-- Los participantes se agregarán dinámicamente aquí -->
+                          </div>
+                          
+                          <!-- Participantes en texto libre (backup) -->
+                          <div class="mt-3">
+                            <label for="participantes_texto">Participantes (texto libre - opcional)</label>
+                            <textarea class="form-control" id="participantes_texto" name="participantes_texto" rows="2"
+                                      placeholder="Lista adicional de participantes en formato libre"></textarea>
+                            <small class="text-muted">Este campo es opcional y complementario a la lista detallada de arriba.</small>
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   </div>
+                </div>
+
+                <!-- Tercera fila - Ubicación -->
+                <div class="row">
                   <div class="col-md-6">
                     <div class="form-group">
                       <label for="ubicacion">Ubicación</label>
@@ -187,9 +241,15 @@
                              placeholder="Ej: Sala de Juntas A, Online, etc.">
                     </div>
                   </div>
+                  <div class="col-md-6">
+                    <div class="form-group">
+                      <label for="fecha_reunion">Fecha de la Reunión</label>
+                      <input type="datetime-local" class="form-control" id="fecha_reunion" name="fecha_reunion">
+                    </div>
+                  </div>
                 </div>
 
-                <!-- Tercera fila -->
+                <!-- Cuarta fila -->
                 <div class="row">
                   <div class="col-md-8">
                     <div class="form-group">
@@ -252,6 +312,7 @@
                       <th>Fecha</th>
                       <th>Estado</th>
                       <th>Progreso</th>
+                      <th>Audio Procesado</th>
                       <th>Acciones</th>
                     </tr>
                   </thead>
@@ -321,6 +382,31 @@
                             {% endif %}
                           </td>
                           <td>
+                            {% if proceso.estado == 'completado' and proceso.archivo_mejorado %}
+                              <div class="audio-player-mini">
+                                <audio controls preload="none" style="width: 200px; height: 30px;">
+                                  <source src="{{ proceso.archivo_mejorado.url }}" type="audio/mpeg">
+                                  <source src="{{ proceso.archivo_mejorado.url }}" type="audio/wav">
+                                  Tu navegador no soporta audio HTML5.
+                                </audio>
+                                <br><small class="text-muted">Audio procesado</small>
+                              </div>
+                            {% elif proceso.archivo_audio %}
+                              <div class="audio-player-mini">
+                                <audio controls preload="none" style="width: 200px; height: 30px;">
+                                  <source src="{{ proceso.archivo_audio.url }}" type="audio/mpeg">
+                                  <source src="{{ proceso.archivo_audio.url }}" type="audio/wav">
+                                  Tu navegador no soporta audio HTML5.
+                                </audio>
+                                <br><small class="text-muted">Audio original</small>
+                              </div>
+                            {% else %}
+                              <span class="text-muted">
+                                <i class="fas fa-times"></i> Sin audio
+                              </span>
+                            {% endif %}
+                          </td>
+                          <td>
                             <div class="btn-group btn-group-sm">
                               {% if proceso.estado == 'completado' %}
                                 <a href="{% url 'audio_processing:detalle_procesamiento' proceso.id %}" 
@@ -349,7 +435,7 @@
                       {% endfor %}
                     {% else %}
                       <tr>
-                        <td colspan="5" class="text-center text-muted">
+                        <td colspan="6" class="text-center text-muted">
                           <i class="fas fa-info-circle mr-2"></i>
                           {% if es_demo %}
                             Inicia sesión para ver tus procesos
@@ -502,6 +588,178 @@ document.addEventListener('DOMContentLoaded', function() {
         if (file.type.startsWith('audio/')) {
             selectedAudioFile = file;
             fileName.textContent = file.name;
+            document.getElementById('fileSize').textContent = (file.size / 1024 / 1024).toFixed(2) + ' MB';
+            document.getElementById('fileType').textContent = file.type;
+            selectedFileDiv.style.display = 'block';
+            processButton.disabled = false;
+            
+            // Mostrar reproductor con metadatos
+            showAudioPreview(file);
+            
+            // Ocultar reproductor de grabación si estaba visible
+            audioPlayer.style.display = 'none';
+        } else {
+            alert('Por favor selecciona un archivo de audio válido.');
+        }
+    }
+
+    // ===== NUEVA FUNCIÓN: MOSTRAR VISTA PREVIA DE AUDIO =====
+    function showAudioPreview(file) {
+        const uploadedAudioPlayer = document.getElementById('uploadedAudioPlayer');
+        const previewAudio = document.getElementById('previewAudio');
+        
+        // Crear URL temporal para el archivo
+        const audioUrl = URL.createObjectURL(file);
+        previewAudio.src = audioUrl;
+        
+        // Mostrar el reproductor
+        uploadedAudioPlayer.style.display = 'block';
+        
+        // Obtener metadatos cuando se cargue
+        previewAudio.addEventListener('loadedmetadata', function() {
+            const duration = Math.round(previewAudio.duration);
+            const minutes = Math.floor(duration / 60);
+            const seconds = duration % 60;
+            
+            document.getElementById('audioDuration').textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+            
+            // Intentar obtener más metadatos usando Web Audio API
+            if (window.AudioContext || window.webkitAudioContext) {
+                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                const reader = new FileReader();
+                
+                reader.onload = function(e) {
+                    audioContext.decodeAudioData(e.target.result)
+                        .then(audioBuffer => {
+                            document.getElementById('audioChannels').textContent = `${audioBuffer.numberOfChannels} canal(es)`;
+                            document.getElementById('audioSampleRate').textContent = `${audioBuffer.sampleRate} Hz`;
+                        })
+                        .catch(error => {
+                            console.log('No se pudieron obtener metadatos adicionales:', error);
+                            document.getElementById('audioChannels').textContent = 'N/A canales';
+                            document.getElementById('audioSampleRate').textContent = 'N/A Hz';
+                        });
+                };
+                
+                reader.readAsArrayBuffer(file);
+            }
+        });
+    }
+
+    // ===== GESTIÓN DE PARTICIPANTES =====
+    let participantsCounter = 0;
+    const participantsList = document.getElementById('participantsList');
+    const addParticipantBtn = document.getElementById('addParticipant');
+
+    function createParticipantRow(participant = null) {
+        participantsCounter++;
+        const participantId = participant ? participant.id : participantsCounter;
+        
+        const participantHtml = `
+            <div class="participant-row border rounded p-3 mb-3" data-participant-id="${participantId}">
+                <div class="row">
+                    <div class="col-md-3">
+                        <div class="form-group">
+                            <label>Nombres</label>
+                            <input type="text" class="form-control participant-name" 
+                                   value="${participant ? participant.nombres : ''}" 
+                                   placeholder="Nombres">
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="form-group">
+                            <label>Apellidos</label>
+                            <input type="text" class="form-control participant-lastname" 
+                                   value="${participant ? participant.apellidos : ''}" 
+                                   placeholder="Apellidos">
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="form-group">
+                            <label>Cargo</label>
+                            <input type="text" class="form-control participant-position" 
+                                   value="${participant ? participant.cargo : ''}" 
+                                   placeholder="Cargo">
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="form-group">
+                            <label>Institución</label>
+                            <input type="text" class="form-control participant-institution" 
+                                   value="${participant ? participant.institucion : ''}" 
+                                   placeholder="Institución">
+                        </div>
+                    </div>
+                    <div class="col-md-1">
+                        <div class="form-group">
+                            <label>Orden</label>
+                            <div class="input-group">
+                                <input type="number" class="form-control participant-order" 
+                                       value="${participant ? participant.orden : participantsCounter}" 
+                                       min="1" max="20">
+                                <div class="input-group-append">
+                                    <button type="button" class="btn btn-danger btn-sm remove-participant" 
+                                            title="Eliminar participante">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        participantsList.insertAdjacentHTML('beforeend', participantHtml);
+        
+        // Agregar evento para eliminar
+        const newRow = participantsList.lastElementChild;
+        const removeBtn = newRow.querySelector('.remove-participant');
+        removeBtn.addEventListener('click', function() {
+            newRow.remove();
+        });
+    }
+
+    function getParticipantsData() {
+        const participants = [];
+        const participantRows = document.querySelectorAll('.participant-row');
+        
+        participantRows.forEach(row => {
+            const nombres = row.querySelector('.participant-name').value.trim();
+            const apellidos = row.querySelector('.participant-lastname').value.trim();
+            const cargo = row.querySelector('.participant-position').value.trim();
+            const institucion = row.querySelector('.participant-institution').value.trim();
+            const orden = parseInt(row.querySelector('.participant-order').value) || 1;
+            
+            if (nombres || apellidos) { // Solo agregar si tiene al menos nombre o apellido
+                participants.push({
+                    nombres,
+                    apellidos,
+                    cargo,
+                    institucion,
+                    orden
+                });
+            }
+        });
+        
+        // Ordenar por orden
+        participants.sort((a, b) => a.orden - b.orden);
+        
+        return participants;
+    }
+
+    // Evento para agregar participante
+    addParticipantBtn.addEventListener('click', function() {
+        createParticipantRow();
+    });
+
+    // Agregar un participante por defecto
+    createParticipantRow();
+
+    function handleFileSelection(file) {
+        if (file.type.startsWith('audio/')) {
+            selectedAudioFile = file;
+            fileName.textContent = file.name;
             selectedFileDiv.style.display = 'block';
             processButton.disabled = false;
             
@@ -531,13 +789,18 @@ document.addEventListener('DOMContentLoaded', function() {
         // Datos del formulario
         formData.append('nombre_proceso', document.getElementById('proceso_nombre').value);
         formData.append('tipo_reunion', document.getElementById('tipo_reunion').value);
-        formData.append('participantes', document.getElementById('participantes').value);
+        formData.append('participantes_texto', document.getElementById('participantes_texto').value);
         formData.append('ubicacion', document.getElementById('ubicacion').value);
         formData.append('descripcion', document.getElementById('descripcion').value);
         formData.append('etiquetas', document.getElementById('etiquetas').value);
         formData.append('confidencial', document.getElementById('confidencial').checked);
-        formData.append('archivo', selectedAudioFile);  // Cambiar audio_file por archivo
+        formData.append('fecha_reunion', document.getElementById('fecha_reunion').value);
+        formData.append('archivo', selectedAudioFile);
         formData.append('csrfmiddlewaretoken', csrfToken);
+        
+        // Datos de participantes detallados
+        const participantsData = getParticipantsData();
+        formData.append('participantes_detallados', JSON.stringify(participantsData));
 
         // Debug: mostrar los datos que se envían
         console.log('Datos del formulario:');
@@ -646,7 +909,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     if (data.processes.length === 0) {
                         tbody.innerHTML = `
                             <tr>
-                                <td colspan="5" class="text-center text-muted">
+                                <td colspan="6" class="text-center text-muted">
                                     <i class="fas fa-info-circle mr-2"></i>
                                     No hay procesos recientes
                                 </td>
@@ -690,6 +953,36 @@ document.addEventListener('DOMContentLoaded', function() {
                                 acciones = '<button class="btn btn-secondary btn-sm" disabled><i class="fas fa-clock"></i></button>';
                         }
 
+                        // Reproductor de audio
+                        let audioPlayer = '<span class="text-muted"><i class="fas fa-times"></i> Sin audio</span>';
+                        if (proceso.estado === 'completado' && proceso.audio_procesado_url) {
+                            audioPlayer = `
+                                <div class="audio-player-mini">
+                                    <audio controls preload="none" style="width: 200px; height: 30px;">
+                                        <source src="${proceso.audio_procesado_url}" type="audio/mpeg">
+                                        <source src="${proceso.audio_procesado_url}" type="audio/wav">
+                                        Tu navegador no soporta audio HTML5.
+                                    </audio>
+                                    <br><small class="text-muted">Audio procesado</small>
+                                    ${proceso.duracion ? `<br><small class="text-info">${proceso.duracion}</small>` : ''}
+                                    ${proceso.tamano_mb ? `<br><small class="text-info">${proceso.tamano_mb} MB</small>` : ''}
+                                </div>
+                            `;
+                        } else if (proceso.audio_original_url) {
+                            audioPlayer = `
+                                <div class="audio-player-mini">
+                                    <audio controls preload="none" style="width: 200px; height: 30px;">
+                                        <source src="${proceso.audio_original_url}" type="audio/mpeg">
+                                        <source src="${proceso.audio_original_url}" type="audio/wav">
+                                        Tu navegador no soporta audio HTML5.
+                                    </audio>
+                                    <br><small class="text-muted">Audio original</small>
+                                    ${proceso.duracion ? `<br><small class="text-info">${proceso.duracion}</small>` : ''}
+                                    ${proceso.tamano_mb ? `<br><small class="text-info">${proceso.tamano_mb} MB</small>` : ''}
+                                </div>
+                            `;
+                        }
+
                         html += `
                             <tr>
                                 <td>
@@ -702,6 +995,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                 </td>
                                 <td>${estadoBadge}</td>
                                 <td>${progresoBarra}</td>
+                                <td>${audioPlayer}</td>
                                 <td><div class="btn-group btn-group-sm">${acciones}</div></td>
                             </tr>
                         `;

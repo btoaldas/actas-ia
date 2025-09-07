@@ -499,15 +499,24 @@ def api_recent_processes(request):
     
     processes_data = []
     for proceso in recent_processes:
-        processes_data.append({
+        proceso_data = {
             'id': proceso.id,
             'titulo': proceso.titulo or "Sin título",
             'estado': proceso.estado,
             'tipo_reunion': proceso.tipo_reunion.nombre if proceso.tipo_reunion else None,
             'fecha': proceso.created_at.strftime('%d/%m/%Y'),
             'hora': proceso.created_at.strftime('%H:%M'),
-            'progreso': getattr(proceso, 'progreso', 0)
-        })
+            'progreso': getattr(proceso, 'progreso', 0),
+            'duracion': proceso.duracion_formateada if proceso.duracion else None,
+            'tamano_mb': str(proceso.tamano_mb) if proceso.tamano_mb else None,
+            'formato': proceso.formato or None,
+            'sample_rate': proceso.sample_rate or None,
+            'canales': proceso.canales or None,
+            'audio_original_url': proceso.archivo_audio.url if proceso.archivo_audio else None,
+            'audio_procesado_url': proceso.archivo_mejorado.url if proceso.archivo_mejorado else None,
+            'tiene_audio_procesado': bool(proceso.archivo_mejorado),
+        }
+        processes_data.append(proceso_data)
     
     return JsonResponse({
         'status': 'success',
@@ -586,11 +595,21 @@ def api_procesar_audio(request):
             usuario=request.user,
             archivo_audio=archivo,
             titulo=nombre_proceso,  # Mapear nombre_proceso a titulo
-            participantes=request.POST.get('participantes', ''),
+            participantes=request.POST.get('participantes_texto', ''),  # Texto libre como backup
             ubicacion=request.POST.get('ubicacion', ''),
             descripcion=request.POST.get('descripcion', ''),
             estado='pendiente'
         )
+        
+        # Procesar participantes detallados
+        participantes_detallados_str = request.POST.get('participantes_detallados', '')
+        if participantes_detallados_str:
+            try:
+                import json
+                participantes_detallados = json.loads(participantes_detallados_str)
+                procesamiento.participantes_detallados = participantes_detallados
+            except json.JSONDecodeError:
+                logger.warning(f"Error parsing participantes_detallados: {participantes_detallados_str}")
         
         # Manejar tipo de reunión
         tipo_reunion_value = request.POST.get('tipo_reunion')
@@ -617,12 +636,72 @@ def api_procesar_audio(request):
         # Manejar etiquetas
         etiquetas = request.POST.get('etiquetas', '').strip()
         if etiquetas:
-            # Guardar como string separado por comas o como JSON según el modelo
             procesamiento.etiquetas = etiquetas
         
         # Manejar confidencialidad
         confidencial = request.POST.get('confidencial', 'false')
         procesamiento.confidencial = confidencial.lower() == 'true'
+        
+        # Extraer metadatos del archivo de audio
+        try:
+            import subprocess
+            import json
+            import tempfile
+            import os
+            
+            # Guardar archivo temporalmente para analizar
+            with tempfile.NamedTemporaryFile(delete=False, suffix=os.path.splitext(archivo.name)[1]) as temp_file:
+                for chunk in archivo.chunks():
+                    temp_file.write(chunk)
+                temp_path = temp_file.name
+            
+            # Usar ffprobe para extraer metadatos
+            cmd = [
+                'ffprobe', '-v', 'quiet', '-print_format', 'json', '-show_format', '-show_streams',
+                temp_path
+            ]
+            
+            result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
+            
+            if result.returncode == 0:
+                metadata = json.loads(result.stdout)
+                
+                # Extraer información del primer stream de audio
+                audio_stream = None
+                for stream in metadata.get('streams', []):
+                    if stream.get('codec_type') == 'audio':
+                        audio_stream = stream
+                        break
+                
+                if audio_stream:
+                    # Guardar metadatos específicos
+                    procesamiento.sample_rate = int(audio_stream.get('sample_rate', 0)) or None
+                    procesamiento.canales = int(audio_stream.get('channels', 0)) or None
+                    procesamiento.bit_rate = int(audio_stream.get('bit_rate', 0)) or None
+                    procesamiento.codec = audio_stream.get('codec_name', '')
+                    
+                    # Duración
+                    duration = float(audio_stream.get('duration', 0)) or float(metadata.get('format', {}).get('duration', 0))
+                    if duration:
+                        procesamiento.duracion_seg = duration
+                        procesamiento.duracion = int(duration)
+                
+                # Formato y tamaño
+                format_info = metadata.get('format', {})
+                procesamiento.formato = format_info.get('format_name', '').split(',')[0] if format_info.get('format_name') else ''
+                procesamiento.tamano_mb = round(archivo.size / (1024 * 1024), 2)
+                
+                # Guardar metadatos completos
+                procesamiento.metadatos_originales = metadata
+                
+            # Limpiar archivo temporal
+            os.unlink(temp_path)
+            
+        except Exception as metadata_error:
+            logger.warning(f"Error extrayendo metadatos: {metadata_error}")
+            # Fallback: solo tamaño y formato básico
+            procesamiento.tamano_mb = round(archivo.size / (1024 * 1024), 2)
+            procesamiento.formato = os.path.splitext(archivo.name)[1][1:].upper()
         
         # Información adicional del source
         source = request.POST.get('source', 'upload')  # 'record' o 'upload'
@@ -638,7 +717,14 @@ def api_procesar_audio(request):
                 'status': 'success',
                 'message': 'Procesamiento iniciado exitosamente',
                 'procesamiento_id': procesamiento.id,
-                'task_id': str(task.id) if task else None
+                'task_id': str(task.id) if task else None,
+                'metadatos': {
+                    'tamano_mb': float(procesamiento.tamano_mb) if procesamiento.tamano_mb else None,
+                    'duracion': procesamiento.duracion,
+                    'formato': procesamiento.formato,
+                    'sample_rate': procesamiento.sample_rate,
+                    'canales': procesamiento.canales
+                }
             })
             
         except Exception as celery_error:
@@ -648,7 +734,14 @@ def api_procesar_audio(request):
                 'status': 'success',
                 'message': 'Procesamiento en cola (Celery no disponible)',
                 'procesamiento_id': procesamiento.id,
-                'task_id': None
+                'task_id': None,
+                'metadatos': {
+                    'tamano_mb': float(procesamiento.tamano_mb) if procesamiento.tamano_mb else None,
+                    'duracion': procesamiento.duracion,
+                    'formato': procesamiento.formato,
+                    'sample_rate': procesamiento.sample_rate,
+                    'canales': procesamiento.canales
+                }
             })
         
     except Exception as e:

@@ -55,7 +55,12 @@ class ProcesamientoAudio(models.Model):
     descripcion = models.TextField(blank=True, help_text="Descripción adicional del proceso")
     
     # Información de la reunión/proceso  
-    participantes = models.TextField(blank=True, help_text="Lista de participantes")
+    participantes = models.TextField(blank=True, help_text="Lista de participantes (texto libre para compatibilidad)")
+    participantes_detallados = models.JSONField(
+        default=list, 
+        blank=True, 
+        help_text="Lista detallada de participantes con nombre, apellido, cargo, institución y orden"
+    )
     ubicacion = models.CharField(max_length=200, blank=True, help_text="Ubicación donde se realizó la reunión")
     
     # Campos nuevos según la guía
@@ -75,12 +80,16 @@ class ProcesamientoAudio(models.Model):
         help_text="Archivo de audio procesado y mejorado"
     )
     
-    # Metadatos del audio
+    # Metadatos del audio original
     duracion = models.PositiveIntegerField(blank=True, null=True, help_text="Duración en segundos")
     duracion_seg = models.FloatField(blank=True, null=True, help_text="Duración exacta en segundos (decimal)")
     sample_rate = models.IntegerField(blank=True, null=True, help_text="Frecuencia de muestreo")
     formato = models.CharField(max_length=10, blank=True)
     tamano_mb = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
+    canales = models.IntegerField(blank=True, null=True, help_text="Número de canales de audio")
+    bit_rate = models.IntegerField(blank=True, null=True, help_text="Bit rate del audio")
+    codec = models.CharField(max_length=50, blank=True, help_text="Codec utilizado")
+    metadatos_originales = models.JSONField(default=dict, blank=True, help_text="Metadatos completos del archivo original")
     metadatos_procesamiento = models.JSONField(default=dict, blank=True, help_text="Metadatos del pipeline de procesamiento")
     
     # Estado y control
