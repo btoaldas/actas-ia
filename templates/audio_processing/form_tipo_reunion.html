@@ -1,0 +1,314 @@
+{% extends "layouts/base.html" %}
+{% load static %}
+
+{% block title %} 
+{% if form.instance.pk %}Editar Tipo de Reunión{% else %}Crear Tipo de Reunión{% endif %}
+{% endblock %}
+
+{% block stylesheets %}
+<style>
+.form-container {
+    background: white;
+    border-radius: 15px;
+    padding: 2rem;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+    margin-bottom: 2rem;
+}
+
+.form-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 15px 15px 0 0;
+    padding: 2rem;
+    margin: -2rem -2rem 2rem -2rem;
+    text-align: center;
+}
+
+.form-group label {
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 0.5rem;
+}
+
+.form-control:focus {
+    border-color: #667eea;
+    box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+}
+
+.btn-submit {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border: none;
+    padding: 0.8rem 2rem;
+    border-radius: 25px;
+    font-weight: bold;
+    color: white;
+    transition: all 0.3s ease;
+}
+
+.btn-submit:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+    color: white;
+}
+
+.info-box {
+    background: #f8f9fa;
+    border-left: 4px solid #17a2b8;
+    padding: 1rem;
+    border-radius: 0 8px 8px 0;
+    margin-bottom: 1.5rem;
+}
+
+.required {
+    color: #dc3545;
+}
+</style>
+{% endblock stylesheets %}
+
+{% block content %}
+
+<div class="content-wrapper">
+    <div class="content-header">
+        <div class="container-fluid">
+            <div class="row mb-2">
+                <div class="col-sm-6">
+                    <h1 class="m-0">
+                        <i class="fas fa-cogs text-primary"></i>
+                        {% if form.instance.pk %}
+                            Editar Tipo de Reunión
+                        {% else %}
+                            Crear Tipo de Reunión
+                        {% endif %}
+                    </h1>
+                </div>
+                <div class="col-sm-6">
+                    <ol class="breadcrumb float-sm-right">
+                        <li class="breadcrumb-item"><a href="{% url 'index' %}">Inicio</a></li>
+                        <li class="breadcrumb-item"><a href="{% url 'audio_processing:centro_audio' %}">Audio</a></li>
+                        <li class="breadcrumb-item"><a href="{% url 'audio_processing:tipos_reunion' %}">Tipos de Reunión</a></li>
+                        <li class="breadcrumb-item active">
+                            {% if form.instance.pk %}Editar{% else %}Crear{% endif %}
+                        </li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <section class="content">
+        <div class="container-fluid">
+            
+            <div class="row justify-content-center">
+                <div class="col-md-8">
+                    
+                    <div class="form-container">
+                        <div class="form-header">
+                            <h3>
+                                {% if form.instance.pk %}
+                                    <i class="fas fa-edit"></i> Editar Tipo: {{ form.instance.nombre }}
+                                {% else %}
+                                    <i class="fas fa-plus-circle"></i> Nuevo Tipo de Reunión
+                                {% endif %}
+                            </h3>
+                            <p class="mb-0">
+                                {% if form.instance.pk %}
+                                    Modifica la información del tipo de reunión
+                                {% else %}
+                                    Configura un nuevo tipo de reunión para categorizar los procesamientos
+                                {% endif %}
+                            </p>
+                        </div>
+
+                        <!-- Información de ayuda -->
+                        <div class="info-box">
+                            <h6><i class="fas fa-info-circle"></i> Información</h6>
+                            <ul class="mb-0">
+                                <li>Los tipos de reunión ayudan a categorizar y organizar los procesamientos de audio</li>
+                                <li>Solo los tipos activos aparecerán disponibles en los formularios</li>
+                                <li>El nombre debe ser único y descriptivo</li>
+                                <li>La descripción es opcional pero recomendada para claridad</li>
+                            </ul>
+                        </div>
+
+                        <!-- Formulario -->
+                        <form method="post" novalidate>
+                            {% csrf_token %}
+                            
+                            <!-- Mostrar errores generales -->
+                            {% if form.non_field_errors %}
+                            <div class="alert alert-danger">
+                                {{ form.non_field_errors }}
+                            </div>
+                            {% endif %}
+
+                            <!-- Campo Nombre -->
+                            <div class="form-group">
+                                <label for="{{ form.nombre.id_for_label }}">
+                                    <i class="fas fa-tag"></i> Nombre del Tipo <span class="required">*</span>
+                                </label>
+                                {{ form.nombre }}
+                                {% if form.nombre.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.nombre.errors }}
+                                </div>
+                                {% endif %}
+                                <small class="form-text text-muted">
+                                    Ejemplo: "Sesión Ordinaria", "Audiencia Pública", "Sesión Extraordinaria"
+                                </small>
+                            </div>
+
+                            <!-- Campo Descripción -->
+                            <div class="form-group">
+                                <label for="{{ form.descripcion.id_for_label }}">
+                                    <i class="fas fa-align-left"></i> Descripción
+                                </label>
+                                {{ form.descripcion }}
+                                {% if form.descripcion.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.descripcion.errors }}
+                                </div>
+                                {% endif %}
+                                <small class="form-text text-muted">
+                                    Descripción opcional para aclarar el propósito de este tipo de reunión
+                                </small>
+                            </div>
+
+                            <!-- Campo Activo -->
+                            <div class="form-group">
+                                <div class="custom-control custom-switch">
+                                    {{ form.activo }}
+                                    <label class="custom-control-label" for="{{ form.activo.id_for_label }}">
+                                        <i class="fas fa-toggle-on text-success"></i> Tipo activo
+                                    </label>
+                                </div>
+                                {% if form.activo.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.activo.errors }}
+                                </div>
+                                {% endif %}
+                                <small class="form-text text-muted">
+                                    Solo los tipos activos aparecen disponibles en los formularios de procesamiento
+                                </small>
+                            </div>
+
+                            <!-- Botones de acción -->
+                            <div class="form-group text-center mt-4">
+                                <button type="submit" class="btn btn-submit">
+                                    {% if form.instance.pk %}
+                                        <i class="fas fa-save"></i> Actualizar Tipo
+                                    {% else %}
+                                        <i class="fas fa-plus"></i> Crear Tipo
+                                    {% endif %}
+                                </button>
+                                
+                                <a href="{% url 'audio_processing:tipos_reunion' %}" class="btn btn-secondary ml-2">
+                                    <i class="fas fa-times"></i> Cancelar
+                                </a>
+                            </div>
+
+                        </form>
+                    </div>
+
+                    <!-- Panel de ayuda adicional -->
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-body">
+                                    <h5><i class="fas fa-lightbulb text-warning"></i> Sugerencias</h5>
+                                    <ul class="mb-0">
+                                        <li>Usa nombres claros y concisos</li>
+                                        <li>Considera el flujo de trabajo municipal</li>
+                                        <li>Agrupa tipos similares con descripciones</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-body">
+                                    <h5><i class="fas fa-examples text-info"></i> Ejemplos Comunes</h5>
+                                    <ul class="mb-0">
+                                        <li>Sesión Ordinaria</li>
+                                        <li>Sesión Extraordinaria</li>
+                                        <li>Audiencia Pública</li>
+                                        <li>Comisión Especial</li>
+                                        <li>Reunión de Trabajo</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+        </div>
+    </section>
+</div>
+
+{% endblock content %}
+
+{% block javascripts %}
+<script>
+$(document).ready(function() {
+    // Validación en tiempo real
+    $('#{{ form.nombre.id_for_label }}').on('input', function() {
+        const value = $(this).val().trim();
+        if (value.length < 3) {
+            $(this).addClass('is-invalid');
+        } else {
+            $(this).removeClass('is-invalid').addClass('is-valid');
+        }
+    });
+    
+    // Formateo automático del nombre (capitalizar)
+    $('#{{ form.nombre.id_for_label }}').on('blur', function() {
+        const value = $(this).val().trim();
+        if (value) {
+            // Capitalizar primera letra de cada palabra
+            const formatted = value.replace(/\w\S*/g, (txt) => 
+                txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase()
+            );
+            $(this).val(formatted);
+        }
+    });
+    
+    // Contador de caracteres para descripción
+    const descripcionField = $('#{{ form.descripcion.id_for_label }}');
+    if (descripcionField.length) {
+        const maxLength = descripcionField.attr('maxlength') || 500;
+        const counter = $('<small class="form-text text-muted character-counter"></small>');
+        descripcionField.after(counter);
+        
+        function updateCounter() {
+            const remaining = maxLength - descripcionField.val().length;
+            counter.text(`${remaining} caracteres restantes`);
+            
+            if (remaining < 50) {
+                counter.addClass('text-warning').removeClass('text-muted');
+            } else {
+                counter.addClass('text-muted').removeClass('text-warning');
+            }
+        }
+        
+        descripcionField.on('input', updateCounter);
+        updateCounter();
+    }
+    
+    // Confirmación antes de cancelar si hay cambios
+    let formChanged = false;
+    $('form input, form textarea, form select').on('change input', function() {
+        formChanged = true;
+    });
+    
+    $('a[href*="tipos_reunion"]').on('click', function(e) {
+        if (formChanged) {
+            if (!confirm('¿Estás seguro de salir? Los cambios no guardados se perderán.')) {
+                e.preventDefault();
+            }
+        }
+    });
+});
+</script>
+{% endblock javascripts %}

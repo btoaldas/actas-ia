@@ -1,0 +1,332 @@
+{% extends "layouts/base.html" %}
+{% load static %}
+
+{% block title %} {{ title }} {% endblock %}
+
+{% block stylesheets %}
+<style>
+.upload-area {
+    border: 2px dashed #dee2e6;
+    border-radius: 10px;
+    padding: 3rem;
+    text-align: center;
+    transition: all 0.3s ease;
+    background: #f8f9fa;
+}
+
+.upload-area:hover {
+    border-color: #007bff;
+    background: #e7f3ff;
+}
+
+.upload-area.dragover {
+    border-color: #28a745;
+    background: #d4edda;
+}
+
+.file-info {
+    background: white;
+    border-radius: 8px;
+    padding: 1rem;
+    margin-top: 1rem;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.config-section {
+    background: white;
+    border-radius: 10px;
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.progress-container {
+    display: none;
+    margin-top: 2rem;
+}
+</style>
+{% endblock stylesheets %}
+
+{% block content %}
+
+<div class="content-wrapper">
+    <div class="content-header">
+        <div class="container-fluid">
+            <div class="row mb-2">
+                <div class="col-sm-6">
+                    <h1 class="m-0">
+                        <i class="fas fa-cloud-upload-alt text-primary"></i>
+                        Subir Archivo de Audio
+                    </h1>
+                    <p class="text-muted">Sube una grabación existente para procesamiento automático</p>
+                </div>
+                <div class="col-sm-6">
+                    <ol class="breadcrumb float-sm-right">
+                        <li class="breadcrumb-item"><a href="{% url 'index' %}">Inicio</a></li>
+                        <li class="breadcrumb-item"><a href="{% url 'audio_processing:centro_audio' %}">Audio</a></li>
+                        <li class="breadcrumb-item active">Subir Archivo</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <section class="content">
+        <div class="container-fluid">
+            
+            <form method="post" enctype="multipart/form-data" id="uploadForm">
+                {% csrf_token %}
+                
+                <div class="row">
+                    <!-- Información básica -->
+                    <div class="col-md-6">
+                        <div class="config-section">
+                            <h4><i class="fas fa-info-circle text-info"></i> Información de la Reunión</h4>
+                            
+                            <div class="form-group">
+                                <label for="{{ form.nombre_proceso.id_for_label }}">{{ form.nombre_proceso.label }}</label>
+                                {{ form.nombre_proceso }}
+                                {% if form.nombre_proceso.errors %}
+                                    <div class="text-danger">{{ form.nombre_proceso.errors }}</div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="{{ form.tipo_reunion.id_for_label }}">{{ form.tipo_reunion.label }}</label>
+                                {{ form.tipo_reunion }}
+                                {% if form.tipo_reunion.errors %}
+                                    <div class="text-danger">{{ form.tipo_reunion.errors }}</div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="{{ form.fecha_reunion.id_for_label }}">{{ form.fecha_reunion.label }}</label>
+                                {{ form.fecha_reunion }}
+                                {% if form.fecha_reunion.errors %}
+                                    <div class="text-danger">{{ form.fecha_reunion.errors }}</div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="{{ form.descripcion.id_for_label }}">{{ form.descripcion.label }}</label>
+                                {{ form.descripcion }}
+                                {% if form.descripcion.errors %}
+                                    <div class="text-danger">{{ form.descripcion.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Configuración de procesamiento -->
+                    <div class="col-md-6">
+                        <div class="config-section">
+                            <h4><i class="fas fa-cogs text-secondary"></i> Configuración de Procesamiento</h4>
+                            
+                            <div class="form-group">
+                                <div class="form-check">
+                                    {{ config_form.normalizar_audio }}
+                                    <label class="form-check-label" for="{{ config_form.normalizar_audio.id_for_label }}">
+                                        {{ config_form.normalizar_audio.label }}
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <div class="form-check">
+                                    {{ config_form.reducir_ruido }}
+                                    <label class="form-check-label" for="{{ config_form.reducir_ruido.id_for_label }}">
+                                        {{ config_form.reducir_ruido.label }}
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="{{ config_form.calidad_audio.id_for_label }}">{{ config_form.calidad_audio.label }}</label>
+                                {{ config_form.calidad_audio }}
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="{{ config_form.modelo_transcripcion.id_for_label }}">{{ config_form.modelo_transcripcion.label }}</label>
+                                {{ config_form.modelo_transcripcion }}
+                            </div>
+                            
+                            <div class="form-group">
+                                <div class="form-check">
+                                    {{ config_form.diarizar_speakers }}
+                                    <label class="form-check-label" for="{{ config_form.diarizar_speakers.id_for_label }}">
+                                        {{ config_form.diarizar_speakers.label }}
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <div class="form-check">
+                                    {{ config_form.generar_acta_automatica }}
+                                    <label class="form-check-label" for="{{ config_form.generar_acta_automatica.id_for_label }}">
+                                        {{ config_form.generar_acta_automatica.label }}
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Área de subida de archivo -->
+                <div class="row">
+                    <div class="col-12">
+                        <div class="config-section">
+                            <h4><i class="fas fa-file-audio text-success"></i> Archivo de Audio</h4>
+                            
+                            <div class="upload-area" id="uploadArea">
+                                <i class="fas fa-cloud-upload-alt fa-3x text-muted mb-3"></i>
+                                <h5>Arrastra tu archivo aquí o haz clic para seleccionar</h5>
+                                <p class="text-muted">
+                                    Formatos soportados: MP3, WAV, MP4, M4A, WebM, OGG, FLAC<br>
+                                    Tamaño máximo: 500MB
+                                </p>
+                                {{ form.archivo_audio_original }}
+                                {% if form.archivo_audio_original.errors %}
+                                    <div class="text-danger mt-2">{{ form.archivo_audio_original.errors }}</div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="file-info" id="fileInfo" style="display: none;">
+                                <div class="row">
+                                    <div class="col-md-8">
+                                        <h6 id="fileName"></h6>
+                                        <small class="text-muted" id="fileDetails"></small>
+                                    </div>
+                                    <div class="col-md-4 text-right">
+                                        <button type="button" class="btn btn-sm btn-outline-danger" id="removeFile">
+                                            <i class="fas fa-times"></i> Quitar
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Botones de acción -->
+                <div class="row">
+                    <div class="col-12">
+                        <div class="config-section">
+                            <div class="text-center">
+                                <a href="{% url 'audio_processing:centro_audio' %}" class="btn btn-secondary btn-lg">
+                                    <i class="fas fa-arrow-left"></i> Cancelar
+                                </a>
+                                <button type="submit" class="btn btn-success btn-lg ml-3" id="submitBtn" disabled>
+                                    <i class="fas fa-upload"></i> Subir y Procesar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Barra de progreso (oculta inicialmente) -->
+                <div class="progress-container">
+                    <div class="config-section">
+                        <h5><i class="fas fa-spinner fa-spin"></i> Subiendo archivo...</h5>
+                        <div class="progress">
+                            <div class="progress-bar" role="progressbar" style="width: 0%"></div>
+                        </div>
+                        <small class="text-muted">No cierres esta ventana hasta que se complete la subida</small>
+                    </div>
+                </div>
+                
+            </form>
+
+        </div>
+    </section>
+</div>
+
+{% endblock content %}
+
+{% block javascripts %}
+<script>
+$(document).ready(function() {
+    const uploadArea = $('#uploadArea');
+    const fileInput = $('#id_archivo_audio_original');
+    const fileInfo = $('#fileInfo');
+    const submitBtn = $('#submitBtn');
+    const uploadForm = $('#uploadForm');
+    const progressContainer = $('.progress-container');
+    
+    // Ocultar el input original
+    fileInput.hide();
+    
+    // Click en área de subida
+    uploadArea.on('click', function() {
+        fileInput.click();
+    });
+    
+    // Drag and drop
+    uploadArea.on('dragover', function(e) {
+        e.preventDefault();
+        uploadArea.addClass('dragover');
+    });
+    
+    uploadArea.on('dragleave', function(e) {
+        e.preventDefault();
+        uploadArea.removeClass('dragover');
+    });
+    
+    uploadArea.on('drop', function(e) {
+        e.preventDefault();
+        uploadArea.removeClass('dragover');
+        
+        const files = e.originalEvent.dataTransfer.files;
+        if (files.length > 0) {
+            fileInput[0].files = files;
+            handleFileSelection();
+        }
+    });
+    
+    // Cambio en el input de archivo
+    fileInput.on('change', handleFileSelection);
+    
+    function handleFileSelection() {
+        const file = fileInput[0].files[0];
+        
+        if (file) {
+            // Mostrar información del archivo
+            $('#fileName').text(file.name);
+            $('#fileDetails').text(`Tamaño: ${formatFileSize(file.size)} | Tipo: ${file.type}`);
+            
+            fileInfo.show();
+            uploadArea.hide();
+            submitBtn.prop('disabled', false);
+        }
+    }
+    
+    // Quitar archivo
+    $('#removeFile').on('click', function() {
+        fileInput.val('');
+        fileInfo.hide();
+        uploadArea.show();
+        submitBtn.prop('disabled', true);
+    });
+    
+    function formatFileSize(bytes) {
+        if (bytes === 0) return '0 Bytes';
+        const k = 1024;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
+    
+    // Envío del formulario
+    uploadForm.on('submit', function(e) {
+        if (!fileInput[0].files[0]) {
+            e.preventDefault();
+            alert('Por favor selecciona un archivo de audio');
+            return;
+        }
+        
+        // Mostrar barra de progreso
+        progressContainer.show();
+        submitBtn.prop('disabled', true);
+    });
+});
+</script>
+{% endblock javascripts %}

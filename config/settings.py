@@ -78,6 +78,7 @@ INSTALLED_APPS = [
     'apps.dyn_api',
     'apps.charts',
     'apps.file_manager',
+    'apps.audio_processing',
     'apps.tasks',
     'apps.users',
     'apps.react',
@@ -97,6 +98,8 @@ MIDDLEWARE = [
     'debug_toolbar.middleware.DebugToolbarMiddleware',
     "django.contrib.sessions.middleware.SessionMiddleware",
     "apps.auditoria.session_middleware.AdvancedSessionMiddleware",  # Middleware de sesiones avanzado
+    "apps.audio_processing.middleware.AuditMiddleware",  # Middleware de auditoría general
+    "apps.audio_processing.middleware.AudioProcessingAuditMiddleware",  # Middleware específico de audio
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
@@ -545,6 +548,22 @@ LOGGING = {
             'backupCount': 20,
             'formatter': 'verbose',
         },
+        'file_audio_audit': {
+            'level': 'INFO',
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': os.path.join(BASE_DIR, 'logs', 'audio_audit.log'),
+            'maxBytes': 1024*1024*20,  # 20MB
+            'backupCount': 12,
+            'formatter': 'audit',
+        },
+        'file_system_audit': {
+            'level': 'INFO',
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': os.path.join(BASE_DIR, 'logs', 'system_audit.log'),
+            'maxBytes': 1024*1024*25,  # 25MB
+            'backupCount': 15,
+            'formatter': 'audit',
+        },
     },
     'loggers': {
         'django': {
@@ -576,6 +595,24 @@ LOGGING = {
         'sistema_errores': {
             'handlers': ['file_errors', 'console'],
             'level': 'ERROR',
+            'propagate': False,
+        },
+        # Logger para auditoría general del sistema
+        'audit': {
+            'handlers': ['file_system_audit', 'console'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        # Logger específico para auditoría de audio
+        'audio_audit': {
+            'handlers': ['file_audio_audit', 'console'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        # Logger para el sistema de audio processing
+        'apps.audio_processing': {
+            'handlers': ['file_audio_audit', 'console'],
+            'level': 'INFO',
             'propagate': False,
         },
     },

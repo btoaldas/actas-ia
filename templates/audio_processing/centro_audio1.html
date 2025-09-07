@@ -1,0 +1,762 @@
+{% extends "layouts/base.html" %}
+{% load static %}
+
+{% block title %} {{ title }} {% endblock %}
+
+{% block stylesheets %}
+<style>
+.audio-center {
+    padding: 20px 0;
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.stat-card {
+    background: white;
+    border-radius: 10px;
+    padding: 1.5rem;
+    text-align: center;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    transition: transform 0.3s ease;
+}
+
+.stat-card:hover {
+    transform: translateY(-5px);
+}
+
+.stat-number {
+    font-size: 2.5rem;
+    font-weight: bold;
+    margin-bottom: 0.5rem;
+}
+
+.stat-label {
+    color: #6c757d;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.total { color: #007bff; }
+.completed { color: #28a745; }
+.processing { color: #ffc107; }
+.error { color: #dc3545; }
+
+.audio-tabs {
+    margin: 2rem 0;
+}
+
+.tab-content {
+    background: white;
+    border-radius: 0 10px 10px 10px;
+    padding: 2rem;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+.record-zone, .upload-zone {
+    border: 3px dashed #dee2e6;
+    border-radius: 15px;
+    padding: 3rem;
+    text-align: center;
+    transition: all 0.3s ease;
+    margin-bottom: 2rem;
+}
+
+.record-zone.recording {
+    border-color: #dc3545;
+    background-color: rgba(220, 53, 69, 0.1);
+    animation: pulse 1.5s infinite;
+}
+
+.upload-zone.drag-over {
+    border-color: #007bff;
+    background-color: rgba(0, 123, 255, 0.1);
+}
+
+.record-controls {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    margin: 1rem 0;
+}
+
+.btn-record {
+    background: #dc3545;
+    border: none;
+    border-radius: 50%;
+    width: 80px;
+    height: 80px;
+    color: white;
+    font-size: 2rem;
+    transition: all 0.3s ease;
+}
+
+.btn-record:hover {
+    background: #c82333;
+    transform: scale(1.1);
+}
+
+.btn-record.recording {
+    background: #6c757d;
+    animation: pulse 1.5s infinite;
+}
+
+.audio-preview {
+    margin: 1rem 0;
+    padding: 1rem;
+    background: #f8f9fa;
+    border-radius: 8px;
+    display: none;
+}
+
+.audio-preview.show {
+    display: block;
+}
+
+.processing-form {
+    background: white;
+    border-radius: 10px;
+    padding: 2rem;
+    margin-top: 2rem;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.recent-list {
+    background: white;
+    border-radius: 10px;
+    padding: 1.5rem;
+    margin-top: 2rem;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.recent-item {
+    display: flex;
+    justify-content: between;
+    align-items: center;
+    padding: 0.8rem 0;
+    border-bottom: 1px solid #eee;
+}
+
+.recent-item:last-child {
+    border-bottom: none;
+}
+
+.progress-indicator {
+    display: none;
+    text-align: center;
+    margin: 2rem 0;
+}
+
+.progress-indicator.show {
+    display: block;
+}
+
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.5; }
+    100% { opacity: 1; }
+}
+
+.file-preview {
+    display: none;
+    margin: 1rem 0;
+    padding: 1rem;
+    background: #e9ecef;
+    border-radius: 8px;
+}
+
+.file-preview.show {
+    display: block;
+}
+
+.form-section {
+    margin-bottom: 1.5rem;
+}
+
+.form-section label {
+    font-weight: 600;
+    color: #495057;
+    margin-bottom: 0.5rem;
+    display: block;
+}
+
+.btn-process {
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+    border: none;
+    color: white;
+    padding: 1rem 3rem;
+    border-radius: 25px;
+    font-size: 1.1rem;
+    font-weight: bold;
+    transition: all 0.3s ease;
+    width: 100%;
+    margin-top: 1rem;
+}
+
+.btn-process:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(40, 167, 69, 0.4);
+}
+
+.btn-process:disabled {
+    background: #6c757d;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+</style>
+{% endblock stylesheets %}
+
+{% block content %}
+
+<div class="content-wrapper">
+    <div class="content-header">
+        <div class="container-fluid">
+            <div class="row mb-2">
+                <div class="col-sm-6">
+                    <h1 class="m-0">
+                        <i class="fas fa-microphone text-primary"></i>
+                        {{ title }}
+                    </h1>
+                    <p class="text-muted">Grabación, subida y procesamiento de audio en un solo lugar</p>
+                </div>
+                <div class="col-sm-6">
+                    <ol class="breadcrumb float-sm-right">
+                        <li class="breadcrumb-item"><a href="{% url 'index' %}">Inicio</a></li>
+                        <li class="breadcrumb-item active">Centro de Audio</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <section class="content">
+        <div class="container-fluid audio-center">
+            
+            <!-- Estadísticas -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-number total">{{ estadisticas.total }}</div>
+                    <div class="stat-label">Total Procesamientos</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number completed">{{ estadisticas.completados }}</div>
+                    <div class="stat-label">Completados</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number processing">{{ estadisticas.en_proceso }}</div>
+                    <div class="stat-label">En Proceso</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number error">{{ estadisticas.con_error }}</div>
+                    <div class="stat-label">Con Error</div>
+                </div>
+            </div>
+
+            <!-- Tabs de Grabación y Subida -->
+            <div class="audio-tabs">
+                <ul class="nav nav-tabs" id="audioTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="record-tab" data-bs-toggle="tab" data-bs-target="#record" type="button" role="tab">
+                            <i class="fas fa-microphone"></i> Grabar Audio
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="upload-tab" data-bs-toggle="tab" data-bs-target="#upload" type="button" role="tab">
+                            <i class="fas fa-upload"></i> Subir Archivo
+                        </button>
+                    </li>
+                </ul>
+                
+                <div class="tab-content" id="audioTabContent">
+                    <!-- Tab de Grabación -->
+                    <div class="tab-pane fade show active" id="record" role="tabpanel">
+                        <div class="record-zone" id="recordZone">
+                            <i class="fas fa-microphone fa-3x text-muted mb-3"></i>
+                            <h4>Graba tu audio</h4>
+                            <p class="text-muted">Presiona el botón rojo para comenzar a grabar</p>
+                            
+                            <div class="record-controls">
+                                <button type="button" class="btn btn-record" id="btnRecord">
+                                    <i class="fas fa-microphone"></i>
+                                </button>
+                                <button type="button" class="btn btn-secondary btn-lg rounded-circle" id="btnStop" style="display: none;">
+                                    <i class="fas fa-stop"></i>
+                                </button>
+                                <button type="button" class="btn btn-info btn-lg rounded-circle" id="btnReset" style="display: none;">
+                                    <i class="fas fa-redo"></i>
+                                </button>
+                            </div>
+                            
+                            <div id="recordingStatus" class="mt-3" style="display: none;">
+                                <p class="text-danger mb-1">
+                                    <i class="fas fa-circle text-danger"></i> Grabando...
+                                </p>
+                                <span id="recordingTime">00:00</span>
+                            </div>
+                        </div>
+                        
+                        <!-- Preview del audio grabado -->
+                        <div class="audio-preview" id="audioPreview">
+                            <h6><i class="fas fa-headphones"></i> Vista previa</h6>
+                            <audio controls id="audioPlayer" class="w-100">
+                                Tu navegador no soporta el elemento audio.
+                            </audio>
+                            <div class="mt-2">
+                                <small class="text-muted">
+                                    Duración: <span id="audioDuration">--:--</span> | 
+                                    Tamaño: <span id="audioSize">-- KB</span>
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Tab de Subida -->
+                    <div class="tab-pane fade" id="upload" role="tabpanel">
+                        <div class="upload-zone" id="uploadZone">
+                            <i class="fas fa-cloud-upload-alt fa-3x text-muted mb-3"></i>
+                            <h4>Sube tu archivo de audio</h4>
+                            <p class="text-muted">Arrastra y suelta tu archivo aquí o haz clic para seleccionar</p>
+                            
+                            <input type="file" id="fileInput" accept="audio/*,.mp3,.wav,.mp4,.m4a,.webm,.ogg" style="display: none;">
+                            <button type="button" class="btn btn-primary btn-lg" id="btnSelectFile">
+                                <i class="fas fa-folder-open"></i> Seleccionar Archivo
+                            </button>
+                        </div>
+                        
+                        <!-- Preview del archivo subido -->
+                        <div class="file-preview" id="filePreview">
+                            <h6><i class="fas fa-file-audio"></i> Archivo seleccionado</h6>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <strong id="fileName">archivo.mp3</strong><br>
+                                    <small class="text-muted">
+                                        Tamaño: <span id="fileSize">-- MB</span> | 
+                                        Tipo: <span id="fileType">audio/mpeg</span>
+                                    </small>
+                                </div>
+                                <button type="button" class="btn btn-sm btn-outline-danger" id="btnRemoveFile">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                            <audio controls id="fileAudioPlayer" class="w-100 mt-2">
+                                Tu navegador no soporta el elemento audio.
+                            </audio>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Formulario de Procesamiento -->
+            <div class="processing-form" id="processingForm" style="display: none;">
+                <h5><i class="fas fa-cogs"></i> Configuración del Procesamiento</h5>
+                
+                <form id="audioProcessForm">
+                    {% csrf_token %}
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-section">
+                                <label for="titulo">Título del Procesamiento *</label>
+                                <input type="text" class="form-control" id="titulo" name="titulo" required 
+                                       placeholder="Ej: Concejo Municipal - Sesión Ordinaria">
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="form-section">
+                                <label for="tipo_reunion">Tipo de Reunión *</label>
+                                <select class="form-control" id="tipo_reunion" name="tipo_reunion" required>
+                                    <option value="">Seleccionar tipo...</option>
+                                    {% for tipo in tipos_reunion %}
+                                    <option value="{{ tipo.id }}">{{ tipo.nombre }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-section">
+                        <label for="descripcion">Descripción (opcional)</label>
+                        <textarea class="form-control" id="descripcion" name="descripcion" rows="3"
+                                  placeholder="Descripción adicional del procesamiento..."></textarea>
+                    </div>
+                    
+                    <div class="text-center">
+                        <button type="submit" class="btn btn-process" id="btnProcess">
+                            <i class="fas fa-play"></i> Procesar Audio
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Indicador de Progreso -->
+            <div class="progress-indicator" id="progressIndicator">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="sr-only">Cargando...</span>
+                </div>
+                <h5 class="mt-3">Procesando audio...</h5>
+                <p class="text-muted">Esto puede tomar unos minutos</p>
+            </div>
+
+            <!-- Procesamientos Recientes -->
+            <div class="recent-list">
+                <h5><i class="fas fa-history"></i> Procesamientos Recientes</h5>
+                
+                {% if procesamientos_recientes %}
+                    {% for procesamiento in procesamientos_recientes %}
+                    <div class="recent-item">
+                        <div class="flex-grow-1">
+                            <strong>{{ procesamiento.titulo }}</strong><br>
+                            <small class="text-muted">
+                                {{ procesamiento.tipo_reunion.nombre }} - 
+                                {{ procesamiento.created_at|date:"d/m/Y H:i" }}
+                            </small>
+                        </div>
+                        <div>
+                            {% if procesamiento.estado == 'completado' %}
+                                <span class="badge badge-success">Completado</span>
+                            {% elif procesamiento.estado == 'procesando' %}
+                                <span class="badge badge-info">Procesando</span>
+                            {% elif procesamiento.estado == 'error' %}
+                                <span class="badge badge-danger">Error</span>
+                            {% else %}
+                                <span class="badge badge-warning">{{ procesamiento.get_estado_display }}</span>
+                            {% endif %}
+                        </div>
+                        <div class="ml-2">
+                            <a href="{% url 'audio_processing:detalle_procesamiento' procesamiento.id %}" 
+                               class="btn btn-sm btn-outline-primary">
+                                <i class="fas fa-eye"></i>
+                            </a>
+                        </div>
+                    </div>
+                    {% endfor %}
+                    
+                    <div class="text-center mt-3">
+                        <a href="{% url 'audio_processing:lista_procesamientos' %}" class="btn btn-outline-primary">
+                            <i class="fas fa-list"></i> Ver Todos los Procesamientos
+                        </a>
+                    </div>
+                {% else %}
+                    <div class="text-center text-muted py-4">
+                        <i class="fas fa-inbox fa-2x mb-3"></i>
+                        <p>No tienes procesamientos recientes</p>
+                        <p>¡Graba o sube tu primer audio para comenzar!</p>
+                    </div>
+                {% endif %}
+            </div>
+
+        </div>
+    </section>
+</div>
+
+{% endblock content %}
+
+{% block javascripts %}
+<script>
+$(document).ready(function() {
+    let mediaRecorder;
+    let audioChunks = [];
+    let recordingStream;
+    let recordingTimer;
+    let recordingSeconds = 0;
+    let currentAudioBlob;
+    let selectedFile;
+
+    // ===== GRABACIÓN DE AUDIO =====
+    
+    // Solicitar permisos al cargar
+    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+        navigator.mediaDevices.getUserMedia({ audio: true })
+            .then(stream => {
+                console.log('Permisos de micrófono concedidos');
+                recordingStream = stream;
+                // Pausar el stream inicialmente
+                stream.getTracks().forEach(track => track.enabled = false);
+            })
+            .catch(err => {
+                console.error('Error al acceder al micrófono:', err);
+                alert('No se pudo acceder al micrófono. Verifica los permisos.');
+            });
+    }
+
+    // Botón de grabar
+    $('#btnRecord').on('click', function() {
+        if (!recordingStream) {
+            alert('No se puede acceder al micrófono. Verifica los permisos.');
+            return;
+        }
+
+        startRecording();
+    });
+
+    // Botón de parar
+    $('#btnStop').on('click', function() {
+        stopRecording();
+    });
+
+    // Botón de reiniciar
+    $('#btnReset').on('click', function() {
+        resetRecording();
+    });
+
+    function startRecording() {
+        // Activar el stream
+        recordingStream.getTracks().forEach(track => track.enabled = true);
+        
+        mediaRecorder = new MediaRecorder(recordingStream, {
+            mimeType: 'audio/webm;codecs=opus'
+        });
+        
+        audioChunks = [];
+        recordingSeconds = 0;
+        
+        mediaRecorder.ondataavailable = event => {
+            audioChunks.push(event.data);
+        };
+        
+        mediaRecorder.onstop = () => {
+            currentAudioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+            showAudioPreview(currentAudioBlob);
+            showProcessingForm();
+        };
+        
+        mediaRecorder.start();
+        
+        // UI updates
+        $('#recordZone').addClass('recording');
+        $('#btnRecord').hide();
+        $('#btnStop, #btnReset').show();
+        $('#recordingStatus').show();
+        
+        // Timer
+        recordingTimer = setInterval(() => {
+            recordingSeconds++;
+            const minutes = Math.floor(recordingSeconds / 60);
+            const seconds = recordingSeconds % 60;
+            $('#recordingTime').text(
+                `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`
+            );
+        }, 1000);
+    }
+
+    function stopRecording() {
+        if (mediaRecorder && mediaRecorder.state === 'recording') {
+            mediaRecorder.stop();
+        }
+        
+        // Pausar el stream
+        recordingStream.getTracks().forEach(track => track.enabled = false);
+        
+        clearInterval(recordingTimer);
+        
+        // UI updates
+        $('#recordZone').removeClass('recording');
+        $('#btnRecord').show();
+        $('#btnStop').hide();
+        $('#recordingStatus').hide();
+    }
+
+    function resetRecording() {
+        audioChunks = [];
+        currentAudioBlob = null;
+        recordingSeconds = 0;
+        
+        $('#audioPreview').removeClass('show');
+        $('#processingForm').hide();
+        $('#btnReset').hide();
+        $('#recordingTime').text('00:00');
+    }
+
+    function showAudioPreview(audioBlob) {
+        const audioUrl = URL.createObjectURL(audioBlob);
+        $('#audioPlayer')[0].src = audioUrl;
+        
+        // Calcular duración y tamaño
+        $('#audioDuration').text(formatTime(recordingSeconds));
+        $('#audioSize').text(formatBytes(audioBlob.size));
+        
+        $('#audioPreview').addClass('show');
+    }
+
+    // ===== SUBIDA DE ARCHIVOS =====
+    
+    // Drag and Drop
+    const uploadZone = $('#uploadZone')[0];
+    
+    uploadZone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        $(uploadZone).addClass('drag-over');
+    });
+    
+    uploadZone.addEventListener('dragleave', (e) => {
+        e.preventDefault();
+        $(uploadZone).removeClass('drag-over');
+    });
+    
+    uploadZone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        $(uploadZone).removeClass('drag-over');
+        
+        const files = e.dataTransfer.files;
+        if (files.length > 0) {
+            handleFileSelect(files[0]);
+        }
+    });
+
+    // Botón seleccionar archivo
+    $('#btnSelectFile').on('click', function() {
+        $('#fileInput').click();
+    });
+
+    $('#fileInput').on('change', function(e) {
+        if (e.target.files.length > 0) {
+            handleFileSelect(e.target.files[0]);
+        }
+    });
+
+    // Remover archivo
+    $('#btnRemoveFile').on('click', function() {
+        selectedFile = null;
+        $('#filePreview').removeClass('show');
+        $('#processingForm').hide();
+        $('#fileInput').val('');
+    });
+
+    function handleFileSelect(file) {
+        // Validar tipo de archivo
+        const validTypes = ['audio/mpeg', 'audio/wav', 'audio/mp4', 'audio/webm', 'audio/ogg'];
+        if (!validTypes.includes(file.type) && !file.name.match(/\.(mp3|wav|mp4|m4a|webm|ogg)$/i)) {
+            alert('Tipo de archivo no válido. Por favor selecciona un archivo de audio.');
+            return;
+        }
+        
+        // Validar tamaño (máximo 100MB)
+        if (file.size > 100 * 1024 * 1024) {
+            alert('El archivo es demasiado grande. Máximo 100MB.');
+            return;
+        }
+        
+        selectedFile = file;
+        
+        // Mostrar preview
+        $('#fileName').text(file.name);
+        $('#fileSize').text(formatBytes(file.size));
+        $('#fileType').text(file.type);
+        
+        // Crear URL para el reproductor
+        const fileUrl = URL.createObjectURL(file);
+        $('#fileAudioPlayer')[0].src = fileUrl;
+        
+        $('#filePreview').addClass('show');
+        showProcessingForm();
+    }
+
+    // ===== PROCESAMIENTO =====
+    
+    function showProcessingForm() {
+        $('#processingForm').show();
+        
+        // Auto-generar título basado en la fecha
+        const now = new Date();
+        const dateStr = now.toLocaleDateString('es-ES');
+        const timeStr = now.toLocaleTimeString('es-ES', {hour: '2-digit', minute: '2-digit'});
+        $('#titulo').val(`Procesamiento ${dateStr} ${timeStr}`);
+    }
+
+    // Enviar formulario
+    $('#audioProcessForm').on('submit', function(e) {
+        e.preventDefault();
+        
+        const titulo = $('#titulo').val().trim();
+        const tipo_reunion = $('#tipo_reunion').val();
+        const descripcion = $('#descripcion').val().trim();
+        
+        if (!titulo) {
+            alert('El título es requerido');
+            return;
+        }
+        
+        if (!tipo_reunion) {
+            alert('Selecciona un tipo de reunión');
+            return;
+        }
+        
+        // Determinar qué audio usar
+        let audioFile;
+        if (currentAudioBlob) {
+            // Audio grabado
+            audioFile = new File([currentAudioBlob], 'grabacion.webm', { type: 'audio/webm' });
+        } else if (selectedFile) {
+            // Archivo subido
+            audioFile = selectedFile;
+        } else {
+            alert('No hay audio para procesar');
+            return;
+        }
+        
+        // Crear FormData
+        const formData = new FormData();
+        formData.append('titulo', titulo);
+        formData.append('tipo_reunion', tipo_reunion);
+        formData.append('descripcion', descripcion);
+        formData.append('archivo_audio', audioFile);
+        formData.append('csrfmiddlewaretoken', $('[name=csrfmiddlewaretoken]').val());
+        
+        // Mostrar progreso
+        $('#processingForm').hide();
+        $('#progressIndicator').addClass('show');
+        
+        // Enviar al servidor
+        $.ajax({
+            url: '{% url "audio_processing:api_procesar_audio" %}',
+            type: 'POST',
+            data: formData,
+            processData: false,
+            contentType: false,
+            success: function(response) {
+                if (response.success) {
+                    alert(response.message);
+                    window.location.href = response.redirect_url;
+                } else {
+                    alert('Error: ' + response.error);
+                    $('#progressIndicator').removeClass('show');
+                    $('#processingForm').show();
+                }
+            },
+            error: function(xhr) {
+                let errorMessage = 'Error al procesar el audio';
+                if (xhr.responseJSON && xhr.responseJSON.error) {
+                    errorMessage = xhr.responseJSON.error;
+                }
+                alert(errorMessage);
+                $('#progressIndicator').removeClass('show');
+                $('#processingForm').show();
+            }
+        });
+    });
+
+    // ===== UTILIDADES =====
+    
+    function formatTime(seconds) {
+        const mins = Math.floor(seconds / 60);
+        const secs = seconds % 60;
+        return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    }
+    
+    function formatBytes(bytes) {
+        if (bytes === 0) return '0 Bytes';
+        const k = 1024;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
+});
+</script>
+{% endblock javascripts %}

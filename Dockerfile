@@ -11,6 +11,8 @@ RUN apt-get update && apt-get install -y \
     libpq-dev \
     postgresql-client \
     ffmpeg \
+    sox \
+    libsox-fmt-all \
     && rm -rf /var/lib/apt/lists/* \
     && apt-get clean
 
@@ -20,9 +22,11 @@ WORKDIR /app
 # Copiar requirements y instalar dependencias Python (primero para aprovechar cache)
 COPY requirements.basic.txt .
 COPY requirements.essential.txt .
+COPY requirements.txt .
 RUN pip install --upgrade pip \
     && pip install --no-cache-dir -r requirements.basic.txt \
-    && pip install --no-cache-dir -r requirements.essential.txt
+    && pip install --no-cache-dir -r requirements.essential.txt \
+    && pip install --no-cache-dir -r requirements.txt
 
 # Copiar el código de la aplicación
 COPY . .

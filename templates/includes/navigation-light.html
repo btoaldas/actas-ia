@@ -7,34 +7,56 @@
       <li class="nav-item">
         <a class="nav-link" data-widget="pushmenu" href="#" role="button"><i class="fas fa-bars"></i></a>
       </li>
-      <li class="nav-item d-none d-sm-inline-block">
+      <!-- Enlace de Inicio comentado -->
+      <!-- <li class="nav-item d-none d-sm-inline-block">
         <a href="{% url 'dashboardv3' %}" class="nav-link">Inicio</a>
+      </li> -->
+      <li class="nav-item d-none d-sm-inline-block">
+        <a href="{% url 'portal_ciudadano' %}" class="nav-link">
+          <i class="fas fa-scroll text-primary"></i> 
+          <strong>Actas Públicas</strong>
+        </a>
       </li>
       <li class="nav-item d-none d-sm-inline-block">
-        <a href="{% url 'portal_ciudadano' %}" class="nav-link">Portal Ciudadano</a>
-      </li>
-      <li class="nav-item d-none d-sm-inline-block">
-        <a href="{% url 'transparencia_index' %}" class="nav-link">Transparencia</a>
+        <a href="{% url 'transparencia_index' %}" class="nav-link">
+          <i class="fas fa-eye text-info"></i> 
+          <strong class="text-info">Portal Transparencia</strong>
+        </a>
       </li>
       {% if request.user.is_authenticated %}
         {% if request.user.is_superuser %}
           <li class="nav-item d-none d-sm-inline-block">
-            <a href="{% url 'admin:password_change' %}" class="nav-link">Cambiar Contraseña</a>
+            <a href="{% url 'admin:password_change' %}" class="nav-link">
+              <i class="fas fa-key text-warning"></i> 
+              <strong class="text-warning">Cambiar Contraseña</strong>
+            </a>
           </li>
           <li class="nav-item d-none d-sm-inline-block">
-            <a href="{% url 'admin:logout' %}" class="nav-link">Cerrar Sesión</a>
+            <a href="{% url 'admin:logout' %}" class="nav-link">
+              <i class="fas fa-sign-out-alt text-danger"></i> 
+              <strong class="text-danger">Cerrar Sesión</strong>
+            </a>
           </li>
         {% else %}
           <li class="nav-item d-none d-sm-inline-block">
-            <a href="{% url 'admin:password_change' %}" class="nav-link">Cambiar Contraseña</a>
+            <a href="{% url 'admin:password_change' %}" class="nav-link">
+              <i class="fas fa-key text-warning"></i> 
+              <strong class="text-warning">Cambiar Contraseña</strong>
+            </a>
           </li>
           <li class="nav-item d-none d-sm-inline-block">
-            <a href="{% url 'admin:logout' %}" class="nav-link">Cerrar Sesión</a>
+            <a href="{% url 'admin:logout' %}" class="nav-link">
+              <i class="fas fa-sign-out-alt text-danger"></i> 
+              <strong class="text-danger">Cerrar Sesión</strong>
+            </a>
           </li>
         {% endif %}
       {% else %}
         <li class="nav-item d-none d-sm-inline-block">
-          <a href="{% url 'login' %}" class="nav-link">Iniciar Sesión</a>
+          <a href="{% url 'login' %}" class="nav-link">
+            <i class="fas fa-sign-in-alt text-success"></i> 
+            <strong class="text-success">Iniciar Sesión</strong>
+          </a>
         </li>
       {% endif %}
     </ul>

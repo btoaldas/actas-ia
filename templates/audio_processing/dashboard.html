@@ -1,0 +1,322 @@
+{% extends "layouts/base.html" %}
+{% load static %}
+
+{% block title %} {{ title }} {% endblock %}
+
+{% block stylesheets %}
+<style>
+.stats-card {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 15px;
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+.stats-card h3 {
+    font-size: 2rem;
+    font-weight: bold;
+    margin-bottom: 0.5rem;
+}
+
+.stats-card p {
+    margin: 0;
+    opacity: 0.9;
+}
+
+.progress-card {
+    background: white;
+    border-radius: 10px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    border-left: 4px solid #28a745;
+}
+
+.progress-card.error {
+    border-left-color: #dc3545;
+}
+
+.progress-card.warning {
+    border-left-color: #ffc107;
+}
+
+.progress-card.info {
+    border-left-color: #17a2b8;
+}
+
+.btn-record {
+    background: linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%);
+    border: none;
+    color: white;
+    padding: 15px 30px;
+    font-size: 1.1rem;
+    border-radius: 50px;
+    box-shadow: 0 4px 15px rgba(255, 107, 107, 0.3);
+    transition: all 0.3s ease;
+}
+
+.btn-record:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(255, 107, 107, 0.4);
+    color: white;
+}
+
+.btn-upload {
+    background: linear-gradient(135deg, #4ecdc4 0%, #44a08d 100%);
+    border: none;
+    color: white;
+    padding: 15px 30px;
+    font-size: 1.1rem;
+    border-radius: 50px;
+    box-shadow: 0 4px 15px rgba(78, 205, 196, 0.3);
+    transition: all 0.3s ease;
+}
+
+.btn-upload:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(78, 205, 196, 0.4);
+    color: white;
+}
+</style>
+{% endblock stylesheets %}
+
+{% block content %}
+
+<div class="content-wrapper">
+    <div class="content-header">
+        <div class="container-fluid">
+            <div class="row mb-2">
+                <div class="col-sm-6">
+                    <h1 class="m-0">
+                        <i class="fas fa-microphone-alt text-primary"></i>
+                        Procesamiento de Audio
+                    </h1>
+                    <p class="text-muted">Panel de control para transcripción y procesamiento de grabaciones municipales</p>
+                </div>
+                <div class="col-sm-6">
+                    <ol class="breadcrumb float-sm-right">
+                        <li class="breadcrumb-item"><a href="{% url 'index' %}">Inicio</a></li>
+                        <li class="breadcrumb-item active">Audio</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <section class="content">
+        <div class="container-fluid">
+            
+            <!-- Estadísticas principales -->
+            <div class="row">
+                <div class="col-lg-3 col-6">
+                    <div class="stats-card text-center">
+                        <h3>{{ estadisticas.total }}</h3>
+                        <p><i class="fas fa-file-audio"></i> Total de Archivos</p>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-6">
+                    <div class="stats-card text-center">
+                        <h3>{{ estadisticas.completados }}</h3>
+                        <p><i class="fas fa-check-circle"></i> Completados</p>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-6">
+                    <div class="stats-card text-center">
+                        <h3>{{ estadisticas.en_proceso }}</h3>
+                        <p><i class="fas fa-spinner"></i> En Proceso</p>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-6">
+                    <div class="stats-card text-center">
+                        <h3>{{ estadisticas.con_error }}</h3>
+                        <p><i class="fas fa-exclamation-triangle"></i> Con Error</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Acciones principales -->
+            <div class="row mt-4">
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-body text-center">
+                            <i class="fas fa-microphone fa-3x text-danger mb-3"></i>
+                            <h4>Grabar Audio</h4>
+                            <p class="text-muted">Graba directamente desde tu navegador durante la reunión</p>
+                            <a href="{% url 'audio_processing:centro_audio' %}" class="btn btn-record">
+                                <i class="fas fa-microphone"></i> Iniciar Grabación
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-body text-center">
+                            <i class="fas fa-cloud-upload-alt fa-3x text-info mb-3"></i>
+                            <h4>Subir Archivo</h4>
+                            <p class="text-muted">Sube una grabación existente para procesamiento</p>
+                            <a href="{% url 'audio_processing:centro_audio' %}" class="btn btn-upload">
+                                <i class="fas fa-upload"></i> Subir Archivo
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Procesamientos recientes -->
+            <div class="row mt-4">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">
+                                <i class="fas fa-clock text-primary"></i>
+                                Procesamientos Recientes
+                            </h3>
+                            <div class="card-tools">
+                                <a href="{% url 'audio_processing:lista_procesamientos' %}" class="btn btn-sm btn-primary">
+                                    <i class="fas fa-list"></i> Ver Todos
+                                </a>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            {% if procesamientos_recientes %}
+                                <div class="table-responsive">
+                                    <table class="table table-hover">
+                                        <thead>
+                                            <tr>
+                                                <th>Título</th>
+                                                <th>Tipo</th>
+                                                <th>Fecha Reunión</th>
+                                                <th>Estado</th>
+                                                <th>Progreso</th>
+                                                <th>Acciones</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for procesamiento in procesamientos_recientes %}
+                                            <tr>
+                                                <td>
+                                                    <strong>{{ procesamiento.nombre_proceso }}</strong>
+                                                    <br>
+                                                    <small class="text-muted">Creado: {{ procesamiento.created_at|date:"d/m/Y H:i" }}</small>
+                                                </td>
+                                                <td>
+                                                    <span class="badge badge-secondary">
+                                                        {{ procesamiento.tipo_reunion.nombre }}
+                                                    </span>
+                                                </td>
+                                                <td>{{ procesamiento.fecha_reunion|date:"d/m/Y H:i" }}</td>
+                                                <td>
+                                                    {% if procesamiento.estado.nombre == 'completado' %}
+                                                        <span class="badge badge-success">
+                                                            <i class="fas fa-check"></i> Completado
+                                                        </span>
+                                                    {% elif procesamiento.estado.nombre == 'error' %}
+                                                        <span class="badge badge-danger">
+                                                            <i class="fas fa-times"></i> Error
+                                                        </span>
+                                                    {% elif procesamiento.estado.nombre == 'cancelado' %}
+                                                        <span class="badge badge-secondary">
+                                                            <i class="fas fa-ban"></i> Cancelado
+                                                        </span>
+                                                    {% elif procesamiento.estado.nombre in 'pendiente,procesando,transcribiendo,diarizando' %}
+                                                        <span class="badge badge-warning">
+                                                            <i class="fas fa-spinner fa-spin"></i> {{ procesamiento.estado.descripcion }}
+                                                        </span>
+                                                    {% endif %}
+                                                </td>
+                                                <td>
+                                                    <div class="progress" style="height: 8px;">
+                                                        <div class="progress-bar" 
+                                                             role="progressbar" 
+                                                             style="width: {{ procesamiento.progreso_porcentaje }}%"
+                                                             aria-valuenow="{{ procesamiento.progreso_porcentaje }}" 
+                                                             aria-valuemin="0" 
+                                                             aria-valuemax="100">
+                                                        </div>
+                                                    </div>
+                                                    <small>{{ procesamiento.progreso_porcentaje }}%</small>
+                                                </td>
+                                                <td>
+                                                    <a href="{% url 'audio_processing:detalle_procesamiento' procesamiento.id %}" 
+                                                       class="btn btn-sm btn-outline-primary">
+                                                        <i class="fas fa-eye"></i>
+                                                    </a>
+                                                </td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            {% else %}
+                                <div class="text-center py-4">
+                                    <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                                    <h5 class="text-muted">No hay procesamientos aún</h5>
+                                    <p class="text-muted">Comienza grabando o subiendo tu primer archivo de audio</p>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Enlaces rápidos -->
+            <div class="row mt-4">
+                <div class="col-md-4">
+                    <div class="card">
+                        <div class="card-body text-center">
+                            <i class="fas fa-cogs text-secondary mb-2"></i>
+                            <h6>Tipos de Reunión</h6>
+                            <a href="{% url 'audio_processing:tipos_reunion' %}" class="btn btn-sm btn-outline-secondary">
+                                Gestionar
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card">
+                        <div class="card-body text-center">
+                            <i class="fas fa-history text-info mb-2"></i>
+                            <h6>Historial Completo</h6>
+                            <a href="{% url 'audio_processing:lista_procesamientos' %}" class="btn btn-sm btn-outline-info">
+                                Ver Lista
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card">
+                        <div class="card-body text-center">
+                            <i class="fas fa-question-circle text-warning mb-2"></i>
+                            <h6>Ayuda</h6>
+                            <a href="#" class="btn btn-sm btn-outline-warning">
+                                Guía de Uso
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </section>
+</div>
+
+{% endblock content %}
+
+{% block javascripts %}
+<script>
+// Auto-refresh para procesamientos en curso
+$(document).ready(function() {
+    // Verificar si hay procesamientos en curso
+    var procesosEnCurso = {{ estadisticas.en_proceso }};
+    
+    if (procesosEnCurso > 0) {
+        // Actualizar cada 30 segundos
+        setInterval(function() {
+            location.reload();
+        }, 30000);
+    }
+});
+</script>
+{% endblock javascripts %}

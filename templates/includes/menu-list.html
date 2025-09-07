@@ -9,6 +9,37 @@
         </a>
     </li>
 
+    <!-- Procesamiento de Audio -->
+    <li class="nav-item {% if 'audio' in parent %} menu-open {% endif %}">
+        <a href="#" class="nav-link {% if 'audio' in parent %} active {% endif %}">
+            <i class="nav-icon fas fa-microphone-alt"></i>
+            <p>
+                🎙️ Audio & Transcripción
+                <i class="right fas fa-angle-left"></i>
+            </p>
+        </a>
+        <ul class="nav nav-treeview">
+            <li class="nav-item">
+                <a href="{% url 'audio_processing:centro_audio' %}" class="nav-link {% if 'centro-audio' in segment or 'dashboard' in segment or 'grabar-audio' in segment or 'subir-archivo' in segment %} active {% endif %}">
+                    <i class="far fa-circle nav-icon"></i>
+                    <p>🎯 Centro de Audio</p>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="{% url 'audio_processing:lista_procesamientos' %}" class="nav-link {% if 'lista-procesamientos' in segment %} active {% endif %}">
+                    <i class="far fa-circle nav-icon"></i>
+                    <p>📋 Lista de Procesos</p>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="{% url 'audio_processing:tipos_reunion' %}" class="nav-link {% if 'tipos-reunion' in segment %} active {% endif %}">
+                    <i class="far fa-circle nav-icon"></i>
+                    <p>⚙️ Tipos de Reunión</p>
+                </a>
+            </li>
+        </ul>
+    </li>
+
     <!-- Gestión de Actas (simplificado) -->
     <li class="nav-item {% if 'actas' in parent %} menu-open {% endif %}">
         <a href="#" class="nav-link {% if 'actas' in parent %} active {% endif %}">
@@ -45,7 +76,7 @@
         </a>
         <ul class="nav nav-treeview">
             <li class="nav-item">
-                <a href="{% url 'actas_transcripcion' %}" class="nav-link {% if 'react_charts' == segment %} active {% endif %}">
+                <a href="{% url 'audio_processing:centro_audio' %}" class="nav-link {% if 'audio_processing' in segment %} active {% endif %}">
                     <i class="far fa-circle nav-icon"></i>
                     <p>🎤 Transcripción de Audio</p>
                 </a>

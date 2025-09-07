@@ -111,6 +111,11 @@ def user_logout_view(request):
 
 # pages
 def index(request):
+  # Si el usuario NO está autenticado, redirigir al portal ciudadano
+  if not request.user.is_authenticated:
+    return redirect('portal_ciudadano')
+  
+  # Si el usuario SÍ está autenticado, mostrar el dashboard normal
   context = {
     'parent': 'dashboard',
     'segment': 'dashboardv1'

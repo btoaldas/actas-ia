@@ -1,0 +1,230 @@
+{% extends "layouts/base.html" %}
+{% load static %}
+
+{% block title %} {{ title }} {% endblock %}
+
+{% block stylesheets %}
+<style>
+.tipo-card {
+    background: white;
+    border-radius: 10px;
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    transition: all 0.3s ease;
+}
+
+.tipo-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+}
+
+.tipo-activo {
+    border-left: 4px solid #28a745;
+}
+
+.tipo-inactivo {
+    border-left: 4px solid #dc3545;
+    opacity: 0.7;
+}
+
+.actions-card {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 15px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+    text-align: center;
+}
+
+.btn-create {
+    background: white;
+    color: #667eea;
+    border: none;
+    padding: 0.8rem 2rem;
+    border-radius: 25px;
+    font-weight: bold;
+    transition: all 0.3s ease;
+}
+
+.btn-create:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(255,255,255,0.3);
+    color: #667eea;
+}
+</style>
+{% endblock stylesheets %}
+
+{% block content %}
+
+<div class="content-wrapper">
+    <div class="content-header">
+        <div class="container-fluid">
+            <div class="row mb-2">
+                <div class="col-sm-6">
+                    <h1 class="m-0">
+                        <i class="fas fa-cogs text-primary"></i>
+                        Tipos de Reunión
+                    </h1>
+                    <p class="text-muted">Gestiona los diferentes tipos de reuniones municipales</p>
+                </div>
+                <div class="col-sm-6">
+                    <ol class="breadcrumb float-sm-right">
+                        <li class="breadcrumb-item"><a href="{% url 'index' %}">Inicio</a></li>
+                        <li class="breadcrumb-item"><a href="{% url 'audio_processing:centro_audio' %}">Audio</a></li>
+                        <li class="breadcrumb-item active">Tipos de Reunión</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <section class="content">
+        <div class="container-fluid">
+            
+            <!-- Acciones principales -->
+            <div class="actions-card">
+                <h3><i class="fas fa-plus-circle"></i> Gestión de Tipos de Reunión</h3>
+                <p>Configura los diferentes tipos de reuniones que maneja tu municipio</p>
+                <a href="{% url 'audio_processing:crear_tipo_reunion' %}" class="btn btn-create">
+                    <i class="fas fa-plus"></i> Crear Nuevo Tipo
+                </a>
+            </div>
+
+            <!-- Lista de tipos de reunión -->
+            <div class="row">
+                {% for tipo in tipos %}
+                <div class="col-md-6">
+                    <div class="tipo-card {% if tipo.activo %}tipo-activo{% else %}tipo-inactivo{% endif %}">
+                        <div class="row align-items-center">
+                            <div class="col-md-8">
+                                <h5>
+                                    {% if tipo.activo %}
+                                        <i class="fas fa-check-circle text-success"></i>
+                                    {% else %}
+                                        <i class="fas fa-times-circle text-danger"></i>
+                                    {% endif %}
+                                    {{ tipo.nombre }}
+                                </h5>
+                                
+                                {% if tipo.descripcion %}
+                                <p class="text-muted mb-2">{{ tipo.descripcion }}</p>
+                                {% endif %}
+                                
+                                <small class="text-muted">
+                                    <i class="fas fa-calendar"></i>
+                                    Creado: {{ tipo.created_at|date:"d/m/Y" }}
+                                </small>
+                            </div>
+                            
+                            <div class="col-md-4 text-right">
+                                <div class="btn-group" role="group">
+                                    <a href="{% url 'audio_processing:editar_tipo_reunion' tipo.id %}" 
+                                       class="btn btn-sm btn-outline-primary" 
+                                       title="Editar">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    
+                                    <form method="post" 
+                                          action="{% url 'audio_processing:eliminar_tipo_reunion' tipo.id %}" 
+                                          style="display: inline;"
+                                          onsubmit="return confirm('¿Estás seguro de eliminar este tipo de reunión? Esta acción no se puede deshacer.')">
+                                        {% csrf_token %}
+                                        <button type="submit" 
+                                                class="btn btn-sm btn-outline-danger"
+                                                title="Eliminar">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </form>
+                                </div>
+                                
+                                <div class="mt-2">
+                                    {% if tipo.activo %}
+                                        <span class="badge badge-success">Activo</span>
+                                    {% else %}
+                                        <span class="badge badge-secondary">Inactivo</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="col-12">
+                    <div class="tipo-card text-center">
+                        <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                        <h5 class="text-muted">No hay tipos de reunión configurados</h5>
+                        <p class="text-muted">Crea el primer tipo de reunión para comenzar</p>
+                        <a href="{% url 'audio_processing:crear_tipo_reunion' %}" class="btn btn-primary">
+                            <i class="fas fa-plus"></i> Crear Primer Tipo
+                        </a>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- Información adicional -->
+            <div class="row mt-4">
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5><i class="fas fa-info-circle text-info"></i> Información</h5>
+                            <p>Los tipos de reunión te permiten categorizar y organizar mejor los procesamientos de audio.</p>
+                            <ul>
+                                <li>Solo los tipos activos aparecen en los formularios</li>
+                                <li>No puedes eliminar tipos que tienen procesamientos asociados</li>
+                                <li>Puedes desactivar tipos temporalmente</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5><i class="fas fa-chart-bar text-success"></i> Estadísticas</h5>
+                            <div class="row">
+                                <div class="col-6">
+                                    <div class="text-center">
+                                        <h3 class="text-success">{{ tipos|length }}</h3>
+                                        <small>Total de tipos</small>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="text-center">
+                                        <h3 class="text-primary">
+                                            {% for tipo in tipos %}
+                                                {% if tipo.activo %}{{ forloop.counter }}{% endif %}
+                                            {% empty %}0{% endfor %}
+                                        </h3>
+                                        <small>Tipos activos</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </section>
+</div>
+
+{% endblock content %}
+
+{% block javascripts %}
+<script>
+$(document).ready(function() {
+    // Tooltip para botones
+    $('[title]').tooltip();
+    
+    // Confirmación de eliminación más detallada
+    $('form[action*="eliminar"]').on('submit', function(e) {
+        const tipoNombre = $(this).closest('.tipo-card').find('h5').text().trim();
+        if (!confirm(`¿Estás seguro de eliminar el tipo "${tipoNombre}"?\n\nEsta acción no se puede deshacer y no será posible si hay procesamientos asociados.`)) {
+            e.preventDefault();
+        }
+    });
+});
+</script>
+{% endblock javascripts %}

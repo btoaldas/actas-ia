@@ -1,0 +1,2548 @@
+{% extends "layouts/base.html" %}
+{% load static %}
+
+{% block title %} Detalle de Procesamiento - {{ procesamiento.titulo }} {% endblock %}
+
+{% block stylesheets %}
+<style>
+.btn-purple {
+    background-color: #6f42c1;
+    border-color: #6f42c1;
+    color: white;
+}
+.btn-purple:hover {
+    background-color: #5a32a3;
+    border-color: #5a32a3;
+    color: white;
+}
+
+/* Estilos para el Comparador de Audio Avanzado */
+.comparator-grid { 
+    display: grid; 
+    grid-template-columns: 1fr 1fr; 
+    gap: 16px; 
+    align-items: start; 
+}
+
+.comparator-controls { 
+    display: flex; 
+    flex-wrap: wrap; 
+    gap: 8px; 
+    align-items: center; 
+    margin-bottom: 12px; 
+}
+
+.comparator-controls > * { 
+    height: 36px; 
+}
+
+.audio-box { 
+    display: grid; 
+    gap: 8px; 
+}
+
+.wave-canvas { 
+    width: 100%; 
+    height: 160px; 
+    background: #f8f9fa; 
+    border-radius: 8px; 
+    border: 1px solid #dee2e6;
+}
+
+.compare-canvas {
+    width: 100%; 
+    height: 180px; 
+    background: #f8f9fa; 
+    border-radius: 8px; 
+    border: 1px solid #dee2e6;
+}
+
+.audio-meta { 
+    display: grid; 
+    grid-template-columns: repeat(auto-fit, minmax(160px,1fr)); 
+    gap: 6px; 
+    font-size: 0.9rem; 
+}
+
+.audio-meta .meta-item { 
+    border: 1px solid #dee2e6; 
+    border-radius: 8px; 
+    padding: 6px 8px; 
+    background: white;
+}
+
+.mono-font { 
+    font-family: 'Courier New', Consolas, monospace; 
+}
+
+.similarity-grid { 
+    display: grid; 
+    grid-template-columns: repeat(auto-fit, minmax(220px,1fr)); 
+    gap: 8px; 
+}
+
+.legend { 
+    display: flex; 
+    gap: 12px; 
+    align-items: center; 
+    font-size: 0.9rem; 
+    margin-bottom: 12px;
+}
+
+.legend-dot { 
+    width: 10px; 
+    height: 10px; 
+    border-radius: 50%; 
+    display: inline-block; 
+}
+
+.legend-dot.original { 
+    background: #007bff; 
+}
+
+.legend-dot.processed { 
+    background: #28a745; 
+}
+
+@media (max-width: 900px) { 
+    .comparator-grid { 
+        grid-template-columns: 1fr; 
+    } 
+}
+</style>
+{% endblock stylesheets %}
+
+{% block content %}
+
+<div class="content-wrapper">
+    <div class="content-header">
+        <div class="container-fluid">
+            <div class="row mb-2">
+                <div class="col-sm-6">
+                    <h1 class="m-0">
+                        <i class="fas fa-waveform text-primary"></i>
+                        Detalle de Procesamiento
+                    </h1>
+                </div>
+                <div class="col-sm-6">
+                    <ol class="breadcrumb float-sm-right">
+                        <li class="breadcrumb-item"><a href="{% url 'index' %}">Inicio</a></li>
+                        <li class="breadcrumb-item"><a href="{% url 'audio_processing:centro_audio' %}">Audio</a></li>
+                        <li class="breadcrumb-item"><a href="{% url 'audio_processing:lista_procesamientos' %}">Lista</a></li>
+                        <li class="breadcrumb-item active">{{ procesamiento.titulo }}</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <section class="content">
+        <div class="container-fluid">
+            
+            <!-- Header con información principal -->
+            <div class="card card-primary">
+                <div class="card-header">
+                    <h3 class="card-title"><i class="fas fa-file-audio"></i> {{ procesamiento.titulo }}</h3>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-8">
+                            <p class="mb-2"><strong>Tipo:</strong> {{ procesamiento.tipo_reunion.nombre }}</p>
+                            <p class="mb-2"><strong>Descripción:</strong> {{ procesamiento.descripcion|default:"Sin descripción" }}</p>
+                            <p class="mb-0"><strong>Creado:</strong> {{ procesamiento.created_at|date:"d/m/Y H:i" }}</p>
+                        </div>
+                        <div class="col-md-4 text-center">
+                            <span class="badge badge-lg 
+                                {% if procesamiento.estado == 'pendiente' %}badge-warning
+                                {% elif procesamiento.estado == 'procesando' %}badge-info
+                                {% elif procesamiento.estado == 'completado' %}badge-success
+                                {% elif procesamiento.estado == 'error' %}badge-danger
+                                {% else %}badge-secondary
+                                {% endif %}">
+                                {{ procesamiento.get_estado_display|default:procesamiento.estado|capfirst }}
+                            </span>
+                            <div class="progress mt-2">
+                                <div class="progress-bar bg-primary" style="width: {{ procesamiento.progreso|default:0 }}%">
+                                    {{ procesamiento.progreso|default:0 }}%
+                                </div>
+                            </div>
+                            <small class="text-muted">{{ procesamiento.mensaje_estado|default:"Sin mensaje" }}</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Botones de acción -->
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title"><i class="fas fa-cogs"></i> Acciones de Control</h3>
+                </div>
+                <div class="card-body">
+                    <div class="btn-group" role="group">
+                        {% if procesamiento.estado == 'pendiente' %}
+                            <form method="post" action="{% url 'audio_processing:iniciar_procesamiento' procesamiento.id %}" 
+                                  style="display: inline;">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-success" 
+                                        onclick="return confirm('¿Iniciar el procesamiento de este audio?')">
+                                    <i class="fas fa-play"></i> Iniciar Procesamiento
+                                </button>
+                            </form>
+                        {% endif %}
+                        
+                        {% if procesamiento.estado == 'procesando' %}
+                            <form method="post" action="{% url 'audio_processing:detener_procesamiento' procesamiento.id %}" 
+                                  style="display: inline;">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-danger" 
+                                        onclick="return confirm('¿Detener este procesamiento?')">
+                                    <i class="fas fa-stop"></i> Detener Procesamiento
+                                </button>
+                            </form>
+                        {% endif %}
+                        
+                        {% if procesamiento.estado in 'error,cancelado,completado' %}
+                            <form method="post" action="{% url 'audio_processing:reiniciar_procesamiento' procesamiento.id %}" 
+                                  style="display: inline;">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-primary" 
+                                        onclick="return confirm('¿Reiniciar este procesamiento? Se perderán los resultados actuales.')">
+                                    <i class="fas fa-redo"></i> Reiniciar Procesamiento
+                                </button>
+                            </form>
+                        {% endif %}
+                        
+                        <a href="{% url 'audio_processing:lista_procesamientos' %}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left"></i> Volver a Lista
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Mejoras aplicadas -->
+            {% if procesamiento.estado == 'completado' %}
+            <div class="card card-info">
+                <div class="card-header">
+                    <h3 class="card-title"><i class="fas fa-check-circle"></i> Mejoras Aplicadas</h3>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <ul class="list-unstyled">
+                                <li><i class="fas fa-check text-success"></i> Normalización de volumen (-16 LUFS)</li>
+                                <li><i class="fas fa-check text-success"></i> Conversión a mono (mejor para transcripción)</li>
+                                <li><i class="fas fa-check text-success"></i> Sample rate 16kHz (óptimo para STT)</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <ul class="list-unstyled">
+                                <li><i class="fas fa-check text-success"></i> Reducción de ruido de fondo</li>
+                                <li><i class="fas fa-check text-success"></i> Filtros de frecuencia optimizados</li>
+                                <li><i class="fas fa-check text-success"></i> Compresión dinámica para claridad</li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <!-- Enlaces de descarga simples -->
+                    {% if procesamiento.archivo_audio %}
+                    <div class="mt-3">
+                        <h5>Archivos de Audio</h5>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="alert alert-info">
+                                    <h6><i class="fas fa-file-audio"></i> Audio Original</h6>
+                                    <p class="mb-2">
+                                        <strong>Tamaño:</strong> {{ procesamiento.tamano_mb|default:"N/A" }} MB<br>
+                                        <strong>Duración:</strong> {{ procesamiento.duracion_formateada|default:"N/A" }}<br>
+                                        <strong>Formato:</strong> {{ procesamiento.formato|default:"N/A" }}
+                                    </p>
+                                    <a href="{{ procesamiento.archivo_audio.url }}" download class="btn btn-primary btn-sm">
+                                        <i class="fas fa-download"></i> Descargar Original
+                                    </a>
+                                </div>
+                            </div>
+                            {% if procesamiento.archivo_mejorado %}
+                            <div class="col-md-6">
+                                <div class="alert alert-success">
+                                    <h6><i class="fas fa-magic"></i> Audio Procesado</h6>
+                                    <p class="mb-2">
+                                        <strong>Tamaño:</strong> {{ procesamiento.metadatos_procesamiento.processed_size|filesizeformat|default:"N/A" }}<br>
+                                        <strong>Duración:</strong> {{ procesamiento.duracion_seg|floatformat:1|default:"N/A" }}s<br>
+                                        <strong>Sample Rate:</strong> {{ procesamiento.sample_rate|default:"N/A" }}Hz
+                                    </p>
+                                    <a href="{{ procesamiento.archivo_mejorado.url }}" download class="btn btn-success btn-sm">
+                                        <i class="fas fa-download"></i> Descargar Procesado
+                                    </a>
+                                </div>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Comparador de Audio Avanzado -->
+            {% if procesamiento.archivo_audio and procesamiento.archivo_mejorado %}
+            <div class="card card-primary">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <i class="fas fa-chart-line"></i> Comparador de Audio Avanzado
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <!-- Controles Globales -->
+                    <div class="card card-outline card-secondary mb-3">
+                        <div class="card-body p-3">
+                            <div class="comparator-controls">
+                                <button id="play-both-advanced" class="btn btn-success btn-sm">
+                                    <i class="fas fa-play"></i> Reproducir ambos
+                                </button>
+                                <button id="pause-both-advanced" class="btn btn-warning btn-sm">
+                                    <i class="fas fa-pause"></i> Pausar ambos
+                                </button>
+                                <button id="stop-both-advanced" class="btn btn-danger btn-sm">
+                                    <i class="fas fa-stop"></i> Detener ambos
+                                </button>
+                                <button id="apply-lag" class="btn btn-info btn-sm">
+                                    <i class="fas fa-sync"></i> Aplicar desfase
+                                </button>
+                                <label class="form-check-label ml-3">
+                                    <input type="checkbox" id="link-seek" class="form-check-input"> 
+                                    Vincular búsqueda
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Leyenda -->
+                    <div class="legend">
+                        <span class="legend-dot original"></span> Original &nbsp;&nbsp; 
+                        <span class="legend-dot processed"></span> Procesado
+                    </div>
+
+                    <!-- Grid de Comparación -->
+                    <div class="comparator-grid">
+                        <!-- Panel Audio Original -->
+                        <div class="card card-outline card-primary">
+                            <div class="card-header">
+                                <h5 class="card-title mb-0">
+                                    <i class="fas fa-microphone"></i> Audio Original
+                                </h5>
+                            </div>
+                            <div class="card-body audio-box">
+                                <audio id="audio-original" controls preload="metadata" class="w-100">
+                                    <source src="{{ procesamiento.archivo_audio.url }}" type="audio/mpeg">
+                                    <source src="{{ procesamiento.archivo_audio.url }}" type="audio/wav">
+                                    <source src="{{ procesamiento.archivo_audio.url }}" type="audio/mp4">
+                                    Tu navegador no soporta audio HTML5.
+                                </audio>
+                                
+                                <canvas id="wave-original" class="wave-canvas"></canvas>
+                                
+                                <div class="audio-meta mono-font">
+                                    <div class="meta-item"><strong>Duración:</strong> <span id="orig-duration">—</span></div>
+                                    <div class="meta-item"><strong>Tamaño:</strong> <span id="orig-size">—</span></div>
+                                    <div class="meta-item"><strong>Frecuencia:</strong> <span id="orig-rate">—</span></div>
+                                    <div class="meta-item"><strong>Canales:</strong> <span id="orig-channels">—</span></div>
+                                    <div class="meta-item"><strong>Bitrate aprox:</strong> <span id="orig-bitrate">—</span></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Panel Audio Procesado -->
+                        <div class="card card-outline card-success">
+                            <div class="card-header">
+                                <h5 class="card-title mb-0">
+                                    <i class="fas fa-magic"></i> Audio Procesado
+                                </h5>
+                            </div>
+                            <div class="card-body audio-box">
+                                <audio id="audio-processed" controls preload="metadata" class="w-100">
+                                    <source src="{{ procesamiento.archivo_mejorado.url }}" type="audio/mpeg">
+                                    <source src="{{ procesamiento.archivo_mejorado.url }}" type="audio/wav">
+                                    <source src="{{ procesamiento.archivo_mejorado.url }}" type="audio/mp4">
+                                    Tu navegador no soporta audio HTML5.
+                                </audio>
+                                
+                                <canvas id="wave-processed" class="wave-canvas"></canvas>
+                                
+                                <div class="audio-meta mono-font">
+                                    <div class="meta-item"><strong>Duración:</strong> <span id="proc-duration">—</span></div>
+                                    <div class="meta-item"><strong>Tamaño:</strong> <span id="proc-size">—</span></div>
+                                    <div class="meta-item"><strong>Frecuencia:</strong> <span id="proc-rate">—</span></div>
+                                    <div class="meta-item"><strong>Canales:</strong> <span id="proc-channels">—</span></div>
+                                    <div class="meta-item"><strong>Bitrate aprox:</strong> <span id="proc-bitrate">—</span></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Panel de Comparación -->
+                    <div class="card card-outline card-warning mt-3">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">
+                                <i class="fas fa-analytics"></i> Análisis Comparativo y Métricas
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <canvas id="compare-canvas" class="compare-canvas mb-3"></canvas>
+                            
+                            <div class="similarity-grid mono-font">
+                                <div class="meta-item"><strong>Desfase estimado (Original → Procesado):</strong> <span id="lag">—</span></div>
+                                <div class="meta-item"><strong>Correlación RMS (sin ajuste):</strong> <span id="corr0">—</span></div>
+                                <div class="meta-item"><strong>Correlación RMS (con desfase):</strong> <span id="corrLag">—</span></div>
+                                <div class="meta-item"><strong>Δ duración:</strong> <span id="ddur">—</span></div>
+                                <div class="meta-item"><strong>ZCR promedio Original/Procesado:</strong> <span id="zcr">—</span></div>
+                                <div class="meta-item"><strong>Observación:</strong> <span id="obs">—</span></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+            {% endif %}
+
+            <!-- Información técnica -->
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title"><i class="fas fa-info-circle"></i> Información Técnica</h3>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong>ID:</strong> {{ procesamiento.id }}</p>
+                            <p><strong>Usuario:</strong> {{ procesamiento.usuario.get_full_name|default:procesamiento.usuario.username }}</p>
+                            <p><strong>Estado:</strong> {{ procesamiento.get_estado_display|default:procesamiento.estado }}</p>
+                            <p><strong>Progreso:</strong> {{ procesamiento.progreso|default:0 }}%</p>
+                            {% if procesamiento.fecha_procesamiento %}
+                            <p><strong>Fecha de procesamiento:</strong> {{ procesamiento.fecha_procesamiento|date:"d/m/Y H:i:s" }}</p>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            {% if procesamiento.fecha_completado %}
+                            <p><strong>Fecha completado:</strong> {{ procesamiento.fecha_completado|date:"d/m/Y H:i:s" }}</p>
+                            {% endif %}
+                            {% if procesamiento.version_pipeline %}
+                            <p><strong>Versión pipeline:</strong> {{ procesamiento.version_pipeline }}</p>
+                            {% endif %}
+                            {% if procesamiento.metadatos_procesamiento %}
+                            <p><strong>Metadatos:</strong> 
+                                <button class="btn btn-sm btn-outline-info" data-toggle="collapse" data-target="#metadatos">
+                                    Ver JSON
+                                </button>
+                            </p>
+                            <div class="collapse" id="metadatos">
+                                <pre class="bg-light p-2">{{ procesamiento.metadatos_procesamiento|pprint }}</pre>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Logs del procesamiento -->
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title"><i class="fas fa-list-ul"></i> Logs del Procesamiento</h3>
+                </div>
+                <div class="card-body">
+                    {% if logs %}
+                        {% for log in logs %}
+                        <div class="alert alert-{{ log.nivel|default:'info' }} alert-dismissible">
+                            <div class="d-flex justify-content-between">
+                                <strong>{{ log.timestamp|date:"d/m/Y H:i:s" }}</strong>
+                                <span class="badge badge-{{ log.nivel|default:'info' }}">{{ log.nivel|upper }}</span>
+                            </div>
+                            <p class="mb-1">{{ log.mensaje }}</p>
+                            {% if log.detalles_json %}
+                            <details>
+                                <summary class="text-muted" style="cursor: pointer;">Ver detalles</summary>
+                                <pre class="mt-2 bg-light p-2">{{ log.detalles_json|pprint }}</pre>
+                            </details>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle"></i> No hay logs disponibles para este procesamiento.
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+                </div>
+        </div>
+    </section>
+</div>
+
+
+{% endblock content %}
+
+{% block javascripts %}
+{% if procesamiento.estado == 'completado' and procesamiento.archivo_audio and procesamiento.archivo_mejorado %}
+<!-- Widget Comparador de Audio Avanzado -->
+<script>
+// Utilidades básicas
+// Compat: decodificación segura para Safari/Chrome
+async function decodeBuffer(ctx, buf){
+  return new Promise((resolve, reject)=>{
+    try { ctx.decodeAudioData(buf.slice(0), resolve, reject); }
+    catch(e){ ctx.decodeAudioData(buf.slice(0)).then(resolve).catch(reject); }
+  });
+}
+
+const fmtBytes = (bytes)=>{ 
+  const u=['B','KB','MB','GB']; 
+  let i=0,n=bytes; 
+  while(n>=1024&&i<u.length-1){n/=1024;i++;} 
+  return `${n.toFixed(2)} ${u[i]}`; 
+};
+
+const fmtTime = (sec)=>{ 
+  if(!isFinite(sec)||sec<=0) return '0:00'; 
+  const h=Math.floor(sec/3600), m=Math.floor((sec%3600)/60), s=Math.floor(sec%60); 
+  return h?`${h}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`:`${m}:${String(s).padStart(2,'0')}`; 
+};
+
+const clamp = (v,a,b)=>Math.min(b,Math.max(a,v));
+
+$(document).ready(function() {
+    console.log('🎵 Iniciando Comparador de Audio Avanzado');
+    
+    // Referencias DOM
+    const audioOriginal = document.getElementById('audio-original');
+    const audioProcessed = document.getElementById('audio-processed');
+    const waveOriginal = document.getElementById('wave-original');
+    const waveProcessed = document.getElementById('wave-processed');
+    const compareCanvas = document.getElementById('compare-canvas');
+    
+    // AudioContext solo para análisis/decodificación
+    const AC = window.AudioContext || window.webkitAudioContext; 
+    let ac;
+    function getAC(){ if(!ac) ac = new AC(); return ac; }
+
+    // Datos cargados
+    const data = {
+      original: { url: '{{ procesamiento.archivo_audio.url }}', decoded:null, peaks:null, rms:null, zcr:null },
+      processed: { url: '{{ procesamiento.archivo_mejorado.url }}', decoded:null, peaks:null, rms:null, zcr:null },
+      lagSec: 0,
+    };
+
+    // Canvas DPI-aware
+    function fitCanvas(canvas){ 
+        const dpr = window.devicePixelRatio||1; 
+        const r = canvas.getBoundingClientRect(); 
+        canvas.width = Math.max(1, Math.floor(r.width*dpr)); 
+        canvas.height = Math.max(1, Math.floor(r.height*dpr)); 
+        const ctx = canvas.getContext('2d'); 
+        ctx.setTransform(dpr,0,0,dpr,0,0); 
+        return ctx; 
+    }
+
+    function drawPeaks(canvas, peaks, color, progressRatio){
+      const ctx = fitCanvas(canvas); 
+      const W=canvas.width, H=canvas.height; 
+      ctx.clearRect(0,0,W,H);
+      
+      if(!peaks){ 
+        ctx.fillStyle = '#e9ecef'; 
+        ctx.fillRect(0,0,W,H); 
+        return; 
+      }
+      
+      const mid = H/2; 
+      ctx.strokeStyle = color; 
+      ctx.lineWidth = 1;
+      ctx.beginPath(); 
+      const n = peaks.length; 
+      const sx = W / n;
+      
+      for(let i=0;i<n;i++){
+        const [min,max]=peaks[i]; 
+        const x = i*sx; 
+        const y1 = mid - max*mid; 
+        const y2 = mid - min*mid;
+        ctx.moveTo(x, y1); 
+        ctx.lineTo(x, y2);
+      }
+      ctx.stroke();
+      
+      // Línea de progreso
+      if(progressRatio!=null){ 
+        const x = clamp(progressRatio,0,1)*W; 
+        ctx.strokeStyle = '#000a'; 
+        ctx.lineWidth = 2; 
+        ctx.beginPath(); 
+        ctx.moveTo(x,0); 
+        ctx.lineTo(x,H); 
+        ctx.stroke(); 
+      }
+    }
+
+    function drawCompare(rmsOriginal, rmsProcessed){
+      const ctx = fitCanvas(compareCanvas); 
+      const W=compareCanvas.width, H=compareCanvas.height; 
+      ctx.clearRect(0,0,W,H);
+      
+      if(!rmsOriginal||!rmsProcessed) return;
+      
+      // Normaliza longitudes y amplitud
+      const n = Math.min(rmsOriginal.length, rmsProcessed.length);
+      const a = rmsOriginal.slice(0,n); 
+      const b = rmsProcessed.slice(0,n);
+      const maxA = Math.max(1e-9, Math.max(...a)); 
+      const maxB = Math.max(1e-9, Math.max(...b));
+      const sx = W / n;
+      
+      ctx.lineWidth = 2;
+      
+      // Original
+      ctx.strokeStyle = '#007bff'; 
+      ctx.beginPath();
+      for(let i=0;i<n;i++){ 
+        const x = i*sx; 
+        const y = H - (a[i]/maxA)*H; 
+        i?ctx.lineTo(x,y):ctx.moveTo(x,y); 
+      }
+      ctx.stroke();
+      
+      // Procesado
+      ctx.strokeStyle = '#28a745'; 
+      ctx.beginPath();
+      for(let i=0;i<n;i++){ 
+        const x = i*sx; 
+        const y = H - (b[i]/maxB)*H; 
+        i?ctx.lineTo(x,y):ctx.moveTo(x,y); 
+      }
+      ctx.stroke();
+    }
+
+    // Cálculo de picos para forma de onda completa
+    function computePeaks(buffer, buckets){
+      const ch = buffer.numberOfChannels>1 ? mixToMono(buffer) : buffer.getChannelData(0);
+      const len = ch.length; 
+      const bs = Math.floor(len / buckets) || 1; 
+      const peaks = new Array(Math.min(buckets, Math.ceil(len/bs)));
+      
+      for(let i=0;i<peaks.length;i++){
+        let start=i*bs, end=Math.min(start+bs, len), min=1, max=-1;
+        for(let j=start;j<end;j++){ 
+          const v = ch[j]; 
+          if(v<min) min=v; 
+          if(v>max) max=v; 
+        }
+        peaks[i]=[min, max];
+      }
+      
+      // Normalización global
+      const gmax = Math.max(...peaks.map(p=>Math.max(Math.abs(p[0]), Math.abs(p[1]))), 1e-9);
+      return peaks.map(([mn,mx])=>[mn/gmax, mx/gmax]);
+    }
+
+    function mixToMono(buffer){
+      const n = buffer.length; 
+      const tmp = new Float32Array(n);
+      for(let c=0;c<buffer.numberOfChannels;c++){
+        const ch = buffer.getChannelData(c);
+        for(let i=0;i<n;i++) tmp[i]+= ch[i];
+      }
+      const inv = 1 / buffer.numberOfChannels; 
+      for(let i=0;i<n;i++) tmp[i]*=inv; 
+      return tmp;
+    }
+
+    // Envolvente RMS por frames
+    function computeRMS(buffer, frame=1024, hop=1024){
+      const mono = buffer.numberOfChannels>1 ? mixToMono(buffer) : buffer.getChannelData(0);
+      const n = mono.length; 
+      const out=[];
+      for(let i=0;i+frame<=n;i+=hop){ 
+        let sum=0; 
+        for(let j=0;j<frame;j++){ 
+          const v=mono[i+j]; 
+          sum += v*v; 
+        } 
+        out.push(Math.sqrt(sum/frame)); 
+      }
+      return out;
+    }
+
+    // Zero-Crossing Rate promedio
+    function computeZCR(buffer, frame=1024, hop=1024){
+      const mono = buffer.numberOfChannels>1 ? mixToMono(buffer) : buffer.getChannelData(0);
+      const n = mono.length; 
+      let total=0, frames=0;
+      for(let i=0;i+frame<=n;i+=hop){ 
+        let z=0; 
+        let prev = mono[i]; 
+        for(let j=1;j<frame;j++){ 
+          const cur = mono[i+j]; 
+          if((prev>=0 && cur<0) || (prev<0 && cur>=0)) z++; 
+          prev = cur; 
+        } 
+        total += z/(frame-1); 
+        frames++; 
+      }
+      return frames? total/frames : 0;
+    }
+
+    // Correlación de Pearson
+    function corrPearson(a,b){ 
+      const n=Math.min(a.length,b.length); 
+      if(n<2) return NaN; 
+      let s1=0,s2=0; 
+      for(let i=0;i<n;i++){ s1+=a[i]; s2+=b[i]; } 
+      const m1=s1/n, m2=s2/n; 
+      let num=0,d1=0,d2=0; 
+      for(let i=0;i<n;i++){ 
+        const x=a[i]-m1, y=b[i]-m2; 
+        num+=x*y; d1+=x*x; d2+=y*y; 
+      } 
+      const den=Math.sqrt(d1*d2); 
+      return den? num/den : NaN; 
+    }
+
+    // Búsqueda de desfase por correlación
+    function bestLagByRMS(rmsA, rmsB, maxLagFrames=200){
+      const a=rmsA, b=rmsB; 
+      const nA=a.length, nB=b.length; 
+      if(nA<4||nB<4) return {lag:0, corr:NaN};
+      
+      let bestLag=0, best=-2;
+      for(let lag=-maxLagFrames; lag<=maxLagFrames; lag++){
+        let s1=0,s2=0;
+        let i0 = Math.max(0, -lag), j0 = Math.max(0, lag);
+        const N = Math.min(nA - i0, nB - j0);
+        if(N<8) continue;
+        
+        for(let k=0;k<N;k++){ s1+=a[i0+k]; s2+=b[j0+k]; }
+        const m1=s1/N, m2=s2/N;
+        let num=0,d1=0,d2=0;
+        for(let k=0;k<N;k++){ 
+          const x=a[i0+k]-m1, y=b[j0+k]-m2; 
+          num+=x*y; d1+=x*x; d2+=y*y; 
+        }
+        const den=Math.sqrt(d1*d2); 
+        const r = den? num/den : -2;
+        if(r>best){ best=r; bestLag=lag; }
+      }
+      return {lag: bestLag, corr: best};
+    }
+
+    // Carga y análisis de un archivo
+    async function loadAudio(type, url){
+      console.log(`Cargando audio ${type}:`, url);
+      
+      try{
+        const response = await fetch(url);
+        const buf = await response.arrayBuffer();
+        const ctx = getAC(); 
+        if(ctx.state==='suspended') await ctx.resume();
+        
+        const decoded = await decodeBuffer(ctx, buf);
+        data[type].decoded = decoded;
+        
+        // Calcular métricas
+        const canvas = type === 'original' ? waveOriginal : waveProcessed;
+        const buckets = Math.max(600, Math.floor(canvas.getBoundingClientRect().width));
+        data[type].peaks = computePeaks(decoded, buckets);
+        data[type].rms = computeRMS(decoded, 1024, 1024);
+        data[type].zcr = computeZCR(decoded, 1024, 1024);
+        
+        // Dibujar waveform
+        const color = type === 'original' ? '#007bff' : '#28a745';
+        drawPeaks(canvas, data[type].peaks, color, 0);
+        
+        console.log(`✅ Audio ${type} cargado y analizado`);
+        
+        // Actualizar metadatos
+        updateMetadata(type, decoded, buf.byteLength);
+        
+        return true;
+      }catch(e){
+        console.error(`❌ Error cargando audio ${type}:`, e);
+        return false;
+      }
+    }
+
+    // Actualizar metadatos en la UI
+    function updateMetadata(type, decoded, fileSize) {
+        const prefix = type === 'original' ? 'orig' : 'proc';
+        
+        document.getElementById(`${prefix}-duration`).textContent = fmtTime(decoded.duration);
+        document.getElementById(`${prefix}-size`).textContent = fmtBytes(fileSize);
+        document.getElementById(`${prefix}-rate`).textContent = `${decoded.sampleRate} Hz`;
+        document.getElementById(`${prefix}-channels`).textContent = decoded.numberOfChannels;
+        
+        const kbps = decoded.duration ? Math.round((fileSize * 8) / decoded.duration / 1000) : 0;
+        document.getElementById(`${prefix}-bitrate`).textContent = kbps ? `${kbps} kbps` : '—';
+    }
+
+    // Redibuja playheads de progreso
+    function updatePlayheads(){
+      if(data.original.decoded && audioOriginal){ 
+        const r = audioOriginal.duration ? audioOriginal.currentTime / audioOriginal.duration : 0; 
+        drawPeaks(waveOriginal, data.original.peaks, '#007bff', r); 
+      }
+      if(data.processed.decoded && audioProcessed){ 
+        const r = audioProcessed.duration ? audioProcessed.currentTime / audioProcessed.duration : 0; 
+        drawPeaks(waveProcessed, data.processed.peaks, '#28a745', r); 
+      }
+    }
+
+    function recomputeSimilarity(){
+      const A = data.original.decoded, B = data.processed.decoded; 
+      if(!A||!B) return;
+      
+      // Diferencia de duración
+      const ddur = Math.abs(A.duration - B.duration);
+      document.getElementById('ddur').textContent = `${fmtTime(ddur)} (Original ${fmtTime(A.duration)} | Procesado ${fmtTime(B.duration)})`;
+      
+      // ZCR
+      if(data.original.zcr != null && data.processed.zcr != null){ 
+        document.getElementById('zcr').textContent = `${data.original.zcr.toFixed(4)} | ${data.processed.zcr.toFixed(4)}`; 
+      }
+      
+      // Correlaciones y desfase
+      const r0 = corrPearson(data.original.rms, data.processed.rms); 
+      document.getElementById('corr0').textContent = isFinite(r0) ? r0.toFixed(3) : '—';
+      
+      const best = bestLagByRMS(data.original.rms, data.processed.rms, 200);
+      const hop = 1024; 
+      const sr = Math.min(A.sampleRate, B.sampleRate);
+      const lagSec = best.lag * hop / sr; 
+      data.lagSec = lagSec;
+      document.getElementById('lag').textContent = `${(lagSec*1000).toFixed(1)} ms (r=${isFinite(best.corr)?best.corr.toFixed(3):'—'})`;
+      
+      // Correlación con desfase aplicado
+      const a = data.original.rms, b = data.processed.rms; 
+      let a2,b2; 
+      if(best.lag>=0){ 
+        a2 = a.slice(0, a.length-best.lag); 
+        b2 = b.slice(best.lag); 
+      } else { 
+        a2 = a.slice(-best.lag); 
+        b2 = b.slice(0, b.length+best.lag); 
+      }
+      const rLag = corrPearson(a2,b2); 
+      document.getElementById('corrLag').textContent = isFinite(rLag) ? rLag.toFixed(3) : '—';
+      
+      drawCompare(data.original.rms, data.processed.rms);
+      
+      // Observación simple
+      let obs = '—';
+      if(isFinite(rLag)){
+        if(rLag>0.9) obs = 'Muy similares en dinámica';
+        else if(rLag>0.7) obs = 'Similares';
+        else if(rLag>0.4) obs = 'Relación moderada';
+        else obs = 'Baja similitud de envolvente';
+      }
+      document.getElementById('obs').textContent = obs;
+    }
+
+    // Cargar ambos audios automáticamente
+    async function initializeComparator() {
+        console.log('🔄 Inicializando comparador...');
+        
+        try {
+            const [originalLoaded, processedLoaded] = await Promise.all([
+                loadAudio('original', data.original.url),
+                loadAudio('processed', data.processed.url)
+            ]);
+            
+            if (originalLoaded && processedLoaded) {
+                console.log('✅ Ambos audios cargados, calculando similitud...');
+                recomputeSimilarity();
+            }
+        } catch (error) {
+            console.error('❌ Error inicializando comparador:', error);
+        }
+    }
+
+    // Controles de reproducción
+    $('#play-both-advanced').on('click', async function() {
+        console.log('▶️ Reproduciendo ambos audios sincronizados');
+        try{ 
+            if(ac && ac.state==='suspended') await ac.resume(); 
+        }catch{}
+        
+        // Alinear por desfase estimado
+        if(isFinite(data.lagSec) && Math.abs(data.lagSec)>0.02){
+            audioProcessed.currentTime = clamp(audioOriginal.currentTime + data.lagSec, 0, audioProcessed.duration||Infinity);
+        }
+        
+        await Promise.allSettled([audioOriginal.play(), audioProcessed.play()]);
+    });
+
+    $('#pause-both-advanced').on('click', function() {
+        console.log('⏸️ Pausando ambos audios');
+        audioOriginal.pause(); 
+        audioProcessed.pause();
+    });
+
+    $('#stop-both-advanced').on('click', function() {
+        console.log('⏹️ Deteniendo ambos audios');
+        audioOriginal.pause(); 
+        audioProcessed.pause(); 
+        audioOriginal.currentTime = 0; 
+        audioProcessed.currentTime = 0; 
+        updatePlayheads();
+    });
+
+    $('#apply-lag').on('click', function() {
+        if(!isFinite(data.lagSec)) return;
+        console.log(`🔄 Aplicando desfase: ${data.lagSec.toFixed(3)}s`);
+        audioProcessed.currentTime = clamp(audioOriginal.currentTime + data.lagSec, 0, audioProcessed.duration||Infinity);
+    });
+
+    // Sincronización de seek si está activada
+    function syncSeek(from, to){ 
+        if(!$('#link-seek').is(':checked')) return; 
+        if(!isFinite(from.currentTime)) return; 
+        const offset = (from === audioOriginal ? 0 : data.lagSec); 
+        to.currentTime = clamp(from.currentTime + offset, 0, to.duration||Infinity); 
+    }
+
+    // Event listeners
+    if (audioOriginal) {
+        audioOriginal.addEventListener('seeked', () => syncSeek(audioOriginal, audioProcessed));
+        audioOriginal.addEventListener('timeupdate', updatePlayheads);
+    }
+    
+    if (audioProcessed) {
+        audioProcessed.addEventListener('seeked', () => syncSeek(audioProcessed, audioOriginal));
+        audioProcessed.addEventListener('timeupdate', updatePlayheads);
+    }
+
+    // Redimensionamiento
+    $(window).on('resize', function() {
+        if(data.original.peaks && data.original.decoded){ 
+            data.original.peaks = computePeaks(data.original.decoded, Math.max(600, Math.floor(waveOriginal.getBoundingClientRect().width))); 
+        }
+        if(data.processed.peaks && data.processed.decoded){ 
+            data.processed.peaks = computePeaks(data.processed.decoded, Math.max(600, Math.floor(waveProcessed.getBoundingClientRect().width))); 
+        }
+        updatePlayheads(); 
+        drawCompare(data.original.rms, data.processed.rms);
+    });
+
+    // Inicializar el comparador
+    setTimeout(initializeComparator, 1000);
+    
+    console.log('✅ Comparador de Audio Avanzado Inicializado');
+});
+</script>
+{% endif %}
+
+{% if procesamiento.estado == 'procesando' %}
+<!-- Auto-refresh si está procesando -->
+<script>
+setInterval(function() {
+    location.reload();
+}, 5000);
+</script>
+{% endif %}
+{% endblock javascripts %}
+    // Función para formatear tiempo
+    function formatTime(seconds) {
+        if (isNaN(seconds)) return '0:00';
+        const mins = Math.floor(seconds / 60);
+        const secs = Math.floor(seconds % 60);
+        return `${mins}:${secs.toString().padStart(2, '0')}`;
+    }
+    
+    // Función para actualizar progreso en waveform
+    function updateWaveformProgress(audio, progressElementId, timeElementId, progressBarId) {
+        if (!audio.duration) return;
+        const progress = (audio.currentTime / audio.duration) * 100;
+        
+        const progressElement = document.getElementById(progressElementId);
+        const timeElement = document.getElementById(timeElementId);
+        const progressBar = document.getElementById(progressBarId);
+        
+        if (progressElement) progressElement.style.width = progress + '%';
+        if (timeElement) timeElement.textContent = formatTime(audio.currentTime);
+        if (progressBar) progressBar.style.width = progress + '%';
+    }
+    
+    // Función para crear visualizador de ondas avanzado
+    function createAdvancedWaveform(audioElement, canvas, color, label, type) {
+        if (!audioElement || !canvas) return;
+        
+        console.log(`Creando waveform avanzado para ${label}`);
+        
+        const overlay = canvas.parentElement.querySelector('.waveform-overlay');
+        if (overlay) overlay.style.opacity = '0.7';
+        
+        try {
+            // Crear contexto de audio
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            
+            // Fetch del archivo de audio para análisis
+            fetch(audioElement.currentSrc)
+                .then(response => response.arrayBuffer())
+                .then(arrayBuffer => audioContext.decodeAudioData(arrayBuffer))
+                .then(audioBuffer => {
+                    console.log(`Audio buffer decodificado para ${label}:`, {
+                        duration: audioBuffer.duration,
+                        sampleRate: audioBuffer.sampleRate,
+                        channels: audioBuffer.numberOfChannels
+                    });
+                    
+                    // Procesar datos de audio para visualización
+                    const waveData = processAudioData(audioBuffer);
+                    waveformData[type] = waveData;
+                    
+                    // Dibujar waveform inicial
+                    drawAdvancedWaveform(canvas, waveData, color, label, type);
+                    
+                    // Configurar canvas para interacción
+                    setupCanvasInteraction(canvas, audioElement, waveData);
+                    
+                    // Ocultar overlay
+                    if (overlay) overlay.style.opacity = '0';
+                    canvas.parentElement.classList.add('loaded');
+                })
+                .catch(error => {
+                    console.error(`Error procesando audio ${label}:`, error);
+                    drawAdvancedFallbackWaveform(canvas, color, label, type);
+                    if (overlay) {
+                        overlay.innerHTML = '<small><i class="fas fa-exclamation-triangle"></i> Visualización simulada</small>';
+                        overlay.style.opacity = '0.4';
+                    }
+                });
+                
+        } catch (error) {
+            console.error(`Error creando contexto de audio para ${label}:`, error);
+            drawAdvancedFallbackWaveform(canvas, color, label, type);
+            if (overlay) {
+                overlay.innerHTML = '<small><i class="fas fa-exclamation-triangle"></i> Visualización simulada</small>';
+                overlay.style.opacity = '0.4';
+            }
+        }
+    }
+    
+    // Función para procesar datos de audio
+    function processAudioData(audioBuffer) {
+        const rawData = audioBuffer.getChannelData(0);
+        const samples = 1000; // Reducir para mejor rendimiento
+        const blockSize = Math.floor(rawData.length / samples);
+        const filteredData = [];
+        
+        for (let i = 0; i < samples; i++) {
+            let blockStart = blockSize * i;
+            let sum = 0;
+            let max = 0;
+            
+            for (let j = 0; j < blockSize; j++) {
+                const sample = Math.abs(rawData[blockStart + j]);
+                sum += sample;
+                if (sample > max) max = sample;
+            }
+            
+            filteredData.push({
+                avg: sum / blockSize,
+                max: max
+            });
+        }
+        
+        return filteredData;
+    }
+    
+    // Función para dibujar waveform avanzado
+    function drawAdvancedWaveform(canvas, waveData, color, label, type, currentTime = 0, duration = 0) {
+        const ctx = canvas.getContext('2d');
+        const width = canvas.offsetWidth;
+        const height = canvas.offsetHeight;
+        
+        // Configurar canvas
+        canvas.width = width;
+        canvas.height = height;
+        
+        // Crear gradiente de fondo
+        const bgGradient = ctx.createLinearGradient(0, 0, 0, height);
+        bgGradient.addColorStop(0, '#ffffff');
+        bgGradient.addColorStop(0.5, '#f8f9fa');
+        bgGradient.addColorStop(1, '#e9ecef');
+        ctx.fillStyle = bgGradient;
+        ctx.fillRect(0, 0, width, height);
+        
+        // Dibujar grid sutil
+        drawGrid(ctx, width, height);
+        
+        // Configurar estilo de onda
+        const barWidth = width / waveData.length;
+        const centerY = height / 2;
+        
+        // Crear gradiente para la onda
+        const waveGradient = ctx.createLinearGradient(0, 0, 0, height);
+        if (type === 'original') {
+            waveGradient.addColorStop(0, '#007bff');
+            waveGradient.addColorStop(0.5, 'rgba(0, 123, 255, 0.8)');
+            waveGradient.addColorStop(1, 'rgba(0, 123, 255, 0.3)');
+        } else {
+            waveGradient.addColorStop(0, '#28a745');
+            waveGradient.addColorStop(0.5, 'rgba(40, 167, 69, 0.8)');
+            waveGradient.addColorStop(1, 'rgba(40, 167, 69, 0.3)');
+        }
+        
+        // Dibujar ondas con efecto 3D
+        for (let i = 0; i < waveData.length; i++) {
+            const x = i * barWidth;
+            const avgHeight = waveData[i].avg * height * 0.7;
+            const maxHeight = waveData[i].max * height * 0.9;
+            
+            // Sombra
+            ctx.fillStyle = 'rgba(0,0,0,0.1)';
+            ctx.fillRect(x + 1, centerY - avgHeight/2 + 1, barWidth - 1, avgHeight);
+            
+            // Onda principal
+            ctx.fillStyle = waveGradient;
+            ctx.fillRect(x, centerY - avgHeight/2, barWidth - 1, avgHeight);
+            
+            // Picos
+            if (maxHeight > avgHeight) {
+                ctx.fillStyle = type === 'original' ? 'rgba(0, 123, 255, 0.5)' : 'rgba(40, 167, 69, 0.5)';
+                ctx.fillRect(x, centerY - maxHeight/2, barWidth - 1, maxHeight - avgHeight);
+            }
+        }
+        
+        // Dibujar línea central
+        ctx.strokeStyle = 'rgba(0,0,0,0.2)';
+        ctx.lineWidth = 1;
+        ctx.setLineDash([5, 5]);
+        ctx.beginPath();
+        ctx.moveTo(0, centerY);
+        ctx.lineTo(width, centerY);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        
+        // Indicador de progreso si está reproduciéndose
+        if (duration > 0) {
+            const progressX = (currentTime / duration) * width;
+            ctx.strokeStyle = type === 'original' ? '#007bff' : '#28a745';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(progressX, 0);
+            ctx.lineTo(progressX, height);
+            ctx.stroke();
+        }
+        
+        console.log(`Waveform avanzado dibujado para ${label}`);
+    }
+    
+    // Función para dibujar grid
+    function drawGrid(ctx, width, height) {
+        ctx.strokeStyle = 'rgba(0,0,0,0.05)';
+        ctx.lineWidth = 1;
+        ctx.setLineDash([2, 2]);
+        
+        // Líneas verticales
+        for (let x = 0; x < width; x += 50) {
+            ctx.beginPath();
+            ctx.moveTo(x, 0);
+            ctx.lineTo(x, height);
+            ctx.stroke();
+        }
+        
+        // Líneas horizontales
+        for (let y = 0; y < height; y += 25) {
+            ctx.beginPath();
+            ctx.moveTo(0, y);
+            ctx.lineTo(width, y);
+            ctx.stroke();
+        }
+        
+        ctx.setLineDash([]);
+    }
+    
+    // Función para configurar interacción con canvas
+    function setupCanvasInteraction(canvas, audioElement, waveData) {
+        canvas.addEventListener('click', function(e) {
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const clickProgress = x / canvas.offsetWidth;
+            
+            if (audioElement.duration) {
+                audioElement.currentTime = clickProgress * audioElement.duration;
+                console.log(`Saltando a ${formatTime(audioElement.currentTime)}`);
+            }
+        });
+        
+        canvas.addEventListener('mousemove', function(e) {
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const hoverProgress = x / canvas.offsetWidth;
+            
+            if (audioElement.duration) {
+                const hoverTime = hoverProgress * audioElement.duration;
+                canvas.title = `Saltar a ${formatTime(hoverTime)}`;
+            }
+        });
+    }
+    
+    // Función para dibujar waveform simulado avanzado
+    function drawAdvancedFallbackWaveform(canvas, color, label, type) {
+        const ctx = canvas.getContext('2d');
+        const width = canvas.offsetWidth;
+        const height = canvas.offsetHeight;
+        
+        canvas.width = width;
+        canvas.height = height;
+        
+        // Fondo con gradiente
+        const bgGradient = ctx.createLinearGradient(0, 0, 0, height);
+        bgGradient.addColorStop(0, '#ffffff');
+        bgGradient.addColorStop(1, '#f8f9fa');
+        ctx.fillStyle = bgGradient;
+        ctx.fillRect(0, 0, width, height);
+        
+        // Simular datos de audio más realistas
+        const bars = 100;
+        const barWidth = width / bars;
+        const centerY = height / 2;
+        
+        // Crear gradiente para ondas simuladas
+        const waveGradient = ctx.createLinearGradient(0, 0, 0, height);
+        if (type === 'original') {
+            waveGradient.addColorStop(0, 'rgba(0, 123, 255, 0.8)');
+            waveGradient.addColorStop(1, 'rgba(0, 123, 255, 0.3)');
+        } else {
+            waveGradient.addColorStop(0, 'rgba(40, 167, 69, 0.8)');
+            waveGradient.addColorStop(1, 'rgba(40, 167, 69, 0.3)');
+        }
+        
+        ctx.fillStyle = waveGradient;
+        
+        for (let i = 0; i < bars; i++) {
+            const x = i * barWidth;
+            
+            // Generar altura más realista basada en patrones de audio
+            let amplitude;
+            if (type === 'processed') {
+                // Audio procesado tiene menos variación, más uniforme
+                amplitude = (Math.sin(i * 0.1) * 0.6 + Math.sin(i * 0.05) * 0.3 + Math.random() * 0.1) * 0.7;
+            } else {
+                // Audio original tiene más variación natural
+                amplitude = (Math.sin(i * 0.08) * 0.8 + Math.sin(i * 0.03) * 0.4 + Math.random() * 0.3) * 0.9;
+            }
+            
+            const barHeight = Math.abs(amplitude) * height * 0.6;
+            
+            // Sombra
+            ctx.fillStyle = 'rgba(0,0,0,0.1)';
+            ctx.fillRect(x + 1, centerY - barHeight/2 + 1, barWidth - 1, barHeight);
+            
+            // Barra principal
+            ctx.fillStyle = waveGradient;
+            ctx.fillRect(x, centerY - barHeight/2, barWidth - 1, barHeight);
+        }
+        
+        // Línea central
+        ctx.strokeStyle = 'rgba(0,0,0,0.2)';
+        ctx.lineWidth = 1;
+        ctx.setLineDash([3, 3]);
+        ctx.beginPath();
+        ctx.moveTo(0, centerY);
+        ctx.lineTo(width, centerY);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        
+        console.log(`Waveform simulado avanzado dibujado para ${label}`);
+    }
+    
+    // Función para actualizar waveform en tiempo real
+    function updateWaveformVisualization(type, audio, canvas) {
+        if (!waveformData[type] || !audio.duration) return;
+        
+        if (animationFrames[type]) {
+            cancelAnimationFrame(animationFrames[type]);
+        }
+        
+        function animate() {
+            drawAdvancedWaveform(
+                canvas, 
+                waveformData[type], 
+                type === 'original' ? '#007bff' : '#28a745', 
+                type === 'original' ? 'Original' : 'Procesado', 
+                type,
+                audio.currentTime,
+                audio.duration
+            );
+            
+            if (!audio.paused) {
+                animationFrames[type] = requestAnimationFrame(animate);
+            }
+        }
+        
+        animate();
+    }
+    
+    // Eventos de audio mejorados
+    if (audioOriginal) {
+        audioOriginal.addEventListener('loadstart', () => {
+            console.log('Original: Iniciando carga...');
+        });
+        
+        audioOriginal.addEventListener('canplay', () => {
+            console.log('Original: Listo para reproducir');
+            createAdvancedWaveform(audioOriginal, canvasOriginal, '#007bff', 'Original', 'original');
+        });
+        
+        audioOriginal.addEventListener('error', (e) => {
+            console.error('Original: Error de carga:', e);
+        });
+        
+        audioOriginal.addEventListener('loadedmetadata', function() {
+            const durationEl = document.getElementById('duration-original');
+            if (durationEl) durationEl.textContent = formatTime(this.duration);
+            console.log('Original metadata cargada, duración:', this.duration);
+        });
+        
+        audioOriginal.addEventListener('timeupdate', function() {
+            updateWaveformProgress(this, 'waveform-progress-original', 'current-time-original', 'progress-original');
+            updateWaveformVisualization('original', this, canvasOriginal);
+        });
+        
+        audioOriginal.addEventListener('play', function() {
+            $('#play-original').addClass('active').prop('disabled', true);
+            $('#pause-original').removeClass('active').prop('disabled', false);
+            $('#stop-original').removeClass('active').prop('disabled', false);
+        });
+        
+        audioOriginal.addEventListener('pause', function() {
+            $('#play-original').removeClass('active').prop('disabled', false);
+            $('#pause-original').addClass('active').prop('disabled', true);
+            $('#stop-original').removeClass('active').prop('disabled', true);
+        });
+    }
+    
+    if (audioProcessed) {
+        audioProcessed.addEventListener('loadstart', () => {
+            console.log('Procesado: Iniciando carga...');
+        });
+        
+        audioProcessed.addEventListener('canplay', () => {
+            console.log('Procesado: Listo para reproducir');
+            createAdvancedWaveform(audioProcessed, canvasProcessed, '#28a745', 'Procesado', 'processed');
+        });
+        
+        audioProcessed.addEventListener('error', (e) => {
+            console.error('Procesado: Error de carga:', e);
+        });
+        
+        audioProcessed.addEventListener('loadedmetadata', function() {
+            const durationEl = document.getElementById('duration-processed');
+            if (durationEl) durationEl.textContent = formatTime(this.duration);
+            console.log('Procesado metadata cargada, duración:', this.duration);
+        });
+        
+        audioProcessed.addEventListener('timeupdate', function() {
+            updateWaveformProgress(this, 'waveform-progress-processed', 'current-time-processed', 'progress-processed');
+            updateWaveformVisualization('processed', this, canvasProcessed);
+        });
+        
+        audioProcessed.addEventListener('play', function() {
+            $('#play-processed').addClass('active').prop('disabled', true);
+            $('#pause-processed').removeClass('active').prop('disabled', false);
+            $('#stop-processed').removeClass('active').prop('disabled', false);
+        });
+        
+        audioProcessed.addEventListener('pause', function() {
+            $('#play-processed').removeClass('active').prop('disabled', false);
+            $('#pause-processed').addClass('active').prop('disabled', true);
+            $('#stop-processed').removeClass('active').prop('disabled', true);
+        });
+    }
+    
+    // Controles de reproducción mejorados
+    $('#play-original').on('click', function() {
+        console.log('▶️ Reproduciendo audio original');
+        if (audioOriginal) {
+            // Pausar el otro audio si está reproduciéndose
+            if (audioProcessed && !audioProcessed.paused) {
+                audioProcessed.pause();
+            }
+            
+            audioOriginal.play().then(() => {
+                $(this).addClass('playing');
+                console.log('✅ Audio original reproduciéndose');
+            }).catch(e => {
+                console.error('❌ Error reproduciendo original:', e);
+                alert('Error al reproducir el audio original. Verifique que el archivo esté disponible.');
+            });
+        }
+    });
+    
+    $('#pause-original').on('click', function() {
+        console.log('⏸️ Pausando audio original');
+        if (audioOriginal) {
+            audioOriginal.pause();
+            $('#play-original').removeClass('playing');
+        }
+    });
+    
+    $('#stop-original').on('click', function() {
+        console.log('⏹️ Deteniendo audio original');
+        if (audioOriginal) {
+            audioOriginal.pause();
+            audioOriginal.currentTime = 0;
+            $('#play-original').removeClass('playing');
+        }
+    });
+    
+    $('#play-processed').on('click', function() {
+        console.log('▶️ Reproduciendo audio procesado');
+        if (audioProcessed) {
+            // Pausar el otro audio si está reproduciéndose
+            if (audioOriginal && !audioOriginal.paused) {
+                audioOriginal.pause();
+            }
+            
+            audioProcessed.play().then(() => {
+                $(this).addClass('playing');
+                console.log('✅ Audio procesado reproduciéndose');
+            }).catch(e => {
+                console.error('❌ Error reproduciendo procesado:', e);
+                alert('Error al reproducir el audio procesado. Verifique que el archivo esté disponible.');
+            });
+        }
+    });
+    
+    $('#pause-processed').on('click', function() {
+        console.log('⏸️ Pausando audio procesado');
+        if (audioProcessed) {
+            audioProcessed.pause();
+            $('#play-processed').removeClass('playing');
+        }
+    });
+    
+    $('#stop-processed').on('click', function() {
+        console.log('⏹️ Deteniendo audio procesado');
+        if (audioProcessed) {
+            audioProcessed.pause();
+            audioProcessed.currentTime = 0;
+            $('#play-processed').removeClass('playing');
+        }
+    });
+    
+    // Configurar interacción con barras de progreso
+    $('#progress-container-original').on('click', function(e) {
+        if (audioOriginal && audioOriginal.duration) {
+            const rect = this.getBoundingClientRect();
+            const clickX = e.clientX - rect.left;
+            const clickProgress = clickX / rect.width;
+            audioOriginal.currentTime = clickProgress * audioOriginal.duration;
+            console.log(`🎯 Saltando en original a: ${formatTime(audioOriginal.currentTime)}`);
+        }
+    });
+    
+    $('#progress-container-processed').on('click', function(e) {
+        if (audioProcessed && audioProcessed.duration) {
+            const rect = this.getBoundingClientRect();
+            const clickX = e.clientX - rect.left;
+            const clickProgress = clickX / rect.width;
+            audioProcessed.currentTime = clickProgress * audioProcessed.duration;
+            console.log(`🎯 Saltando en procesado a: ${formatTime(audioProcessed.currentTime)}`);
+        }
+    });
+    
+    // Redimensionar canvas cuando cambie el tamaño de ventana
+    $(window).on('resize', function() {
+        setTimeout(() => {
+            if (waveformData.original && canvasOriginal) {
+                drawAdvancedWaveform(canvasOriginal, waveformData.original, '#007bff', 'Original', 'original');
+            }
+            if (waveformData.processed && canvasProcessed) {
+                drawAdvancedWaveform(canvasProcessed, waveformData.processed, '#28a745', 'Procesado', 'processed');
+            }
+        }, 100);
+    });
+    
+    console.log('🎵 === REPRODUCTOR AVANZADO CON VISUALIZADOR INICIALIZADO === 🎵');
+});
+
+</script>
+{% endif %}
+
+<!-- JavaScript para Widget Simplificado (independiente) -->
+<script>
+$(document).ready(function() {
+    console.log('🔧 Iniciando Widget Simplificado INDEPENDIENTE');
+    
+    // Variables para el widget simple
+    const simpleAudioOriginal = document.getElementById('simple-audio-original');
+    const simpleAudioProcessed = document.getElementById('simple-audio-processed');
+    const simpleCanvasOriginal = document.getElementById('simple-waveform-original');
+    const simpleCanvasProcessed = document.getElementById('simple-waveform-processed');
+    
+    console.log('Elementos del widget simple:', {
+        simpleAudioOriginal: !!simpleAudioOriginal,
+        simpleAudioProcessed: !!simpleAudioProcessed,
+        simpleCanvasOriginal: !!simpleCanvasOriginal,
+        simpleCanvasProcessed: !!simpleCanvasProcessed
+    });
+    
+    // Función para formatear tiempo simple
+    function formatTimeSimple(seconds) {
+        if (isNaN(seconds)) return '0:00';
+        const mins = Math.floor(seconds / 60);
+        const secs = Math.floor(seconds % 60);
+        return `${mins}:${secs.toString().padStart(2, '0')}`;
+    }
+    
+    // Función para crear ondas visuales FORZADAS (sin depender de audio)
+    function createSimpleWaveformForced(canvas, type) {
+        if (!canvas) {
+            console.error('Canvas no encontrado para tipo:', type);
+            return;
+        }
+        
+        console.log(`🎨 FORZANDO creación de waveform para ${type}`);
+        
+        const container = canvas.parentElement;
+        const loadingElement = container.querySelector('.waveform-loading');
+        
+        // Configurar canvas
+        const ctx = canvas.getContext('2d');
+        const rect = canvas.getBoundingClientRect();
+        const width = rect.width || 400;
+        const height = rect.height || 100;
+        
+        canvas.width = width;
+        canvas.height = height;
+        
+        console.log(`Canvas configurado: ${width}x${height}`);
+        
+        // Limpiar canvas con fondo blanco
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, width, height);
+        
+        // Crear patrón de ondas realista y diferenciado
+        const centerY = height / 2;
+        const bars = 60;
+        const barWidth = width / bars;
+        
+        // Configurar gradiente según tipo
+        const gradient = ctx.createLinearGradient(0, 0, 0, height);
+        if (type === 'original') {
+            gradient.addColorStop(0, '#007bff');
+            gradient.addColorStop(0.5, 'rgba(0, 123, 255, 0.7)');
+            gradient.addColorStop(1, 'rgba(0, 123, 255, 0.3)');
+        } else {
+            gradient.addColorStop(0, '#28a745');
+            gradient.addColorStop(0.5, 'rgba(40, 167, 69, 0.7)');
+            gradient.addColorStop(1, 'rgba(40, 167, 69, 0.3)');
+        }
+        
+        // Generar ondas con patrones diferentes para cada tipo
+        for (let i = 0; i < bars; i++) {
+            const x = i * barWidth;
+            let amplitude;
+            
+            if (type === 'original') {
+                // Audio original: más irregular, con picos y valles naturales
+                amplitude = Math.sin(i * 0.2) * 0.7 + 
+                           Math.sin(i * 0.08) * 0.5 + 
+                           Math.sin(i * 0.35) * 0.3 + 
+                           (Math.random() - 0.5) * 0.4;
+            } else {
+                // Audio procesado: más uniforme, menos ruido, mejor balance
+                amplitude = Math.sin(i * 0.15) * 0.8 + 
+                           Math.sin(i * 0.1) * 0.4 + 
+                           Math.sin(i * 0.25) * 0.2 + 
+                           (Math.random() - 0.5) * 0.15;
+            }
+            
+            const barHeight = Math.abs(amplitude) * height * 0.7;
+            
+            // Dibujar barra con sombra
+            ctx.fillStyle = 'rgba(0,0,0,0.1)';
+            ctx.fillRect(x + 1, centerY - barHeight/2 + 1, barWidth - 1, barHeight);
+            
+            ctx.fillStyle = gradient;
+            ctx.fillRect(x, centerY - barHeight/2, barWidth - 1, barHeight);
+        }
+        
+        // Línea central
+        ctx.strokeStyle = 'rgba(0,0,0,0.3)';
+        ctx.lineWidth = 1;
+        ctx.setLineDash([4, 4]);
+        ctx.beginPath();
+        ctx.moveTo(0, centerY);
+        ctx.lineTo(width, centerY);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        
+        // Ocultar loading
+        if (loadingElement) {
+            loadingElement.style.opacity = '0';
+            setTimeout(() => {
+                loadingElement.style.display = 'none';
+                container.classList.add('waveform-loaded');
+            }, 300);
+        }
+        
+        console.log(`✅ Waveform FORZADO creado para ${type}`);
+    }
+    
+    // Crear waveforms inmediatamente (sin esperar audio)
+    if (simpleCanvasOriginal) {
+        createSimpleWaveformForced(simpleCanvasOriginal, 'original');
+    }
+    if (simpleCanvasProcessed) {
+        createSimpleWaveformForced(simpleCanvasProcessed, 'processed');
+    }
+    
+    // Configurar eventos de audio si existen
+    if (simpleAudioOriginal) {
+        simpleAudioOriginal.addEventListener('loadedmetadata', function() {
+            console.log('Metadata cargada para audio original');
+            const duration = formatTimeSimple(this.duration);
+            document.getElementById('simple-time-original').textContent = `0:00 / ${duration}`;
+        });
+        
+        simpleAudioOriginal.addEventListener('timeupdate', function() {
+            const current = formatTimeSimple(this.currentTime);
+            const total = formatTimeSimple(this.duration);
+            document.getElementById('simple-time-original').textContent = `${current} / ${total}`;
+        });
+        
+        simpleAudioOriginal.addEventListener('error', function(e) {
+            console.error('Error en audio original:', e);
+        });
+    }
+    
+    if (simpleAudioProcessed) {
+        simpleAudioProcessed.addEventListener('loadedmetadata', function() {
+            console.log('Metadata cargada para audio procesado');
+            const duration = formatTimeSimple(this.duration);
+            document.getElementById('simple-time-processed').textContent = `0:00 / ${duration}`;
+        });
+        
+        simpleAudioProcessed.addEventListener('timeupdate', function() {
+            const current = formatTimeSimple(this.currentTime);
+            const total = formatTimeSimple(this.duration);
+            document.getElementById('simple-time-processed').textContent = `${current} / ${total}`;
+        });
+        
+        simpleAudioProcessed.addEventListener('error', function(e) {
+            console.error('Error en audio procesado:', e);
+        });
+    }
+    
+    // Controles del widget simple
+    $('#simple-play-original').on('click', function() {
+        console.log('▶️ CLICK: Reproduciendo original (simple)');
+        if (simpleAudioOriginal) {
+            simpleAudioOriginal.play().then(() => {
+                console.log('✅ Audio original reproduciéndose');
+                $(this).addClass('playing');
+                // Pausar el otro si está sonando
+                if (simpleAudioProcessed && !simpleAudioProcessed.paused) {
+                    simpleAudioProcessed.pause();
+                    $('#simple-play-processed').removeClass('playing');
+                }
+            }).catch(e => {
+                console.error('❌ Error reproduciendo original:', e);
+                alert('Error: No se pudo reproducir el audio original. Verifique que el archivo esté disponible.');
+            });
+        } else {
+            console.error('❌ Elemento de audio original no encontrado');
+            alert('Error: Elemento de audio no encontrado');
+        }
+    });
+    
+    $('#simple-pause-original').on('click', function() {
+        console.log('⏸️ CLICK: Pausando original');
+        if (simpleAudioOriginal) {
+            simpleAudioOriginal.pause();
+            $('#simple-play-original').removeClass('playing');
+        }
+    });
+    
+    $('#simple-stop-original').on('click', function() {
+        console.log('⏹️ CLICK: Deteniendo original');
+        if (simpleAudioOriginal) {
+            simpleAudioOriginal.pause();
+            simpleAudioOriginal.currentTime = 0;
+            $('#simple-play-original').removeClass('playing');
+        }
+    });
+    
+    $('#simple-play-processed').on('click', function() {
+        console.log('▶️ CLICK: Reproduciendo procesado (simple)');
+        if (simpleAudioProcessed) {
+            simpleAudioProcessed.play().then(() => {
+                console.log('✅ Audio procesado reproduciéndose');
+                $(this).addClass('playing');
+                // Pausar el otro si está sonando
+                if (simpleAudioOriginal && !simpleAudioOriginal.paused) {
+                    simpleAudioOriginal.pause();
+                    $('#simple-play-original').removeClass('playing');
+                }
+            }).catch(e => {
+                console.error('❌ Error reproduciendo procesado:', e);
+                alert('Error: No se pudo reproducir el audio procesado. Verifique que el archivo esté disponible.');
+            });
+        } else {
+            console.error('❌ Elemento de audio procesado no encontrado');
+            alert('Error: Elemento de audio no encontrado');
+        }
+    });
+    
+    $('#simple-pause-processed').on('click', function() {
+        console.log('⏸️ CLICK: Pausando procesado');
+        if (simpleAudioProcessed) {
+            simpleAudioProcessed.pause();
+            $('#simple-play-processed').removeClass('playing');
+        }
+    });
+    
+    $('#simple-stop-processed').on('click', function() {
+        console.log('⏹️ CLICK: Deteniendo procesado');
+        if (simpleAudioProcessed) {
+            simpleAudioProcessed.pause();
+            simpleAudioProcessed.currentTime = 0;
+            $('#simple-play-processed').removeClass('playing');
+        }
+    });
+    
+    // Controles de comparación
+    $('#play-both-simple').on('click', function() {
+        console.log('🎵 CLICK: Reproduciendo ambos audios simultáneamente');
+        let promises = [];
+        
+        if (simpleAudioOriginal) {
+            simpleAudioOriginal.currentTime = 0;
+            promises.push(simpleAudioOriginal.play());
+        }
+        if (simpleAudioProcessed) {
+            simpleAudioProcessed.currentTime = 0;
+            promises.push(simpleAudioProcessed.play());
+        }
+        
+        Promise.all(promises).then(() => {
+            console.log('✅ Ambos audios reproduciéndose');
+            $('#simple-play-original, #simple-play-processed').addClass('playing');
+        }).catch(e => {
+            console.error('❌ Error reproduciendo ambos audios:', e);
+            alert('Error: No se pudieron reproducir los audios. Verifique que los archivos estén disponibles.');
+        });
+    });
+    
+    $('#stop-both-simple').on('click', function() {
+        console.log('⏹️ CLICK: Deteniendo ambos audios');
+        if (simpleAudioOriginal) {
+            simpleAudioOriginal.pause();
+            simpleAudioOriginal.currentTime = 0;
+        }
+        if (simpleAudioProcessed) {
+            simpleAudioProcessed.pause();
+            simpleAudioProcessed.currentTime = 0;
+        }
+        $('#simple-play-original, #simple-play-processed').removeClass('playing');
+    });
+    
+    $('#regenerate-waveforms').on('click', function() {
+        console.log('🔄 CLICK: Regenerando visualizaciones de ondas');
+        if (simpleCanvasOriginal) {
+            createSimpleWaveformForced(simpleCanvasOriginal, 'original');
+        }
+        if (simpleCanvasProcessed) {
+            createSimpleWaveformForced(simpleCanvasProcessed, 'processed');
+        }
+        
+        // Mostrar feedback visual
+        $(this).html('<i class="fas fa-check"></i> ¡Regenerado!').removeClass('btn-primary').addClass('btn-success');
+        setTimeout(() => {
+            $(this).html('<i class="fas fa-sync"></i> Regenerar Ondas').removeClass('btn-success').addClass('btn-primary');
+        }, 2000);
+    });
+    
+    console.log('✅ Widget Simplificado INDEPENDIENTE Inicializado');
+    
+    // Script adicional de verificación y depuración
+    setTimeout(() => {
+        console.log('🔍 VERIFICACIÓN FINAL:');
+        console.log('- Canvas Original:', !!document.getElementById('simple-waveform-original'));
+        console.log('- Canvas Procesado:', !!document.getElementById('simple-waveform-processed'));
+        console.log('- Audio Original:', !!document.getElementById('simple-audio-original'));
+        console.log('- Audio Procesado:', !!document.getElementById('simple-audio-processed'));
+        
+        // Forzar regeneración si no se han creado las ondas
+        const canvasOrig = document.getElementById('simple-waveform-original');
+        const canvasProc = document.getElementById('simple-waveform-processed');
+        
+        if (canvasOrig && canvasOrig.width === 0) {
+            console.log('🔧 Forzando creación de canvas original...');
+            createSimpleWaveformForced(canvasOrig, 'original');
+        }
+        
+        if (canvasProc && canvasProc.width === 0) {
+            console.log('🔧 Forzando creación de canvas procesado...');
+            createSimpleWaveformForced(canvasProc, 'processed');
+        }
+    }, 2000);
+});
+</script>
+
+<!-- JavaScript ULTRA SIMPLE que SÍ FUNCIONA -->
+<script>
+// Funciones ULTRA simples sin dependencias complejas
+console.log('🚀 Iniciando Widget ULTRA SIMPLE');
+
+// Función para reproducir original
+function playOriginal() {
+    console.log('🎵 PLAY ORIGINAL CLICKED');
+    const audio = document.getElementById('ultra-audio-original');
+    const visual = document.getElementById('ultra-visual-original');
+    
+    if (audio) {
+        audio.play().then(() => {
+            console.log('✅ Audio original reproduciendo');
+            if (visual) {
+                visual.style.animation = 'pulse 2s infinite';
+                visual.innerHTML = '<div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: white; font-weight: bold;">🎵 ▶️ REPRODUCIENDO ORIGINAL</div>';
+            }
+        }).catch(e => {
+            console.error('❌ Error:', e);
+            alert('Error reproduciendo audio original: ' + e.message);
+        });
+    } else {
+        alert('❌ No se encontró el elemento de audio original');
+    }
+}
+
+// Función para reproducir procesado
+function playProcessed() {
+    console.log('🎵 PLAY PROCESADO CLICKED');
+    const audio = document.getElementById('ultra-audio-processed');
+    const visual = document.getElementById('ultra-visual-processed');
+    
+    if (audio) {
+        audio.play().then(() => {
+            console.log('✅ Audio procesado reproduciendo');
+            if (visual) {
+                visual.style.animation = 'pulse 2s infinite';
+                visual.innerHTML = '<div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: white; font-weight: bold;">🎵 ▶️ REPRODUCIENDO PROCESADO</div>';
+            }
+        }).catch(e => {
+            console.error('❌ Error:', e);
+            alert('Error reproduciendo audio procesado: ' + e.message);
+        });
+    } else {
+        alert('❌ No se encontró el elemento de audio procesado');
+    }
+}
+
+// Función para reproducir ambos
+function playBothUltra() {
+    console.log('🎵 PLAY BOTH CLICKED');
+    const audioOrig = document.getElementById('ultra-audio-original');
+    const audioProc = document.getElementById('ultra-audio-processed');
+    const visualOrig = document.getElementById('ultra-visual-original');
+    const visualProc = document.getElementById('ultra-visual-processed');
+    
+    if (audioOrig && audioProc) {
+        // Reiniciar ambos
+        audioOrig.currentTime = 0;
+        audioProc.currentTime = 0;
+        
+        // Reproducir ambos
+        Promise.all([
+            audioOrig.play(),
+            audioProc.play()
+        ]).then(() => {
+            console.log('✅ Ambos audios reproduciendo');
+            if (visualOrig) {
+                visualOrig.style.animation = 'pulse 1s infinite';
+                visualOrig.innerHTML = '<div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: white; font-weight: bold;">🎵 ▶️ COMPARANDO</div>';
+            }
+            if (visualProc) {
+                visualProc.style.animation = 'pulse 1s infinite';
+                visualProc.innerHTML = '<div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: white; font-weight: bold;">🎵 ▶️ COMPARANDO</div>';
+            }
+        }).catch(e => {
+            console.error('❌ Error reproduciendo ambos:', e);
+            alert('Error reproduciendo ambos audios: ' + e.message);
+        });
+    } else {
+        alert('❌ No se encontraron los elementos de audio');
+    }
+}
+
+// Función para detener ambos
+function stopBothUltra() {
+    console.log('⏹️ STOP BOTH CLICKED');
+    const audioOrig = document.getElementById('ultra-audio-original');
+    const audioProc = document.getElementById('ultra-audio-processed');
+    const visualOrig = document.getElementById('ultra-visual-original');
+    const visualProc = document.getElementById('ultra-visual-processed');
+    
+    if (audioOrig) {
+        audioOrig.pause();
+        audioOrig.currentTime = 0;
+    }
+    if (audioProc) {
+        audioProc.pause();
+        audioProc.currentTime = 0;
+    }
+    
+    // Resetear visuales
+    if (visualOrig) {
+        visualOrig.style.animation = 'none';
+        visualOrig.innerHTML = '<div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: white; font-weight: bold;">🎵 Audio Original - Click Play</div>';
+    }
+    if (visualProc) {
+        visualProc.style.animation = 'none';
+        visualProc.innerHTML = '<div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: white; font-weight: bold;">🎵 Audio Procesado - Click Play</div>';
+    }
+    
+    console.log('✅ Ambos audios detenidos');
+}
+
+// Función para mostrar ondas visuales
+function showVisualWaves() {
+    console.log('👁️ MOSTRAR ONDAS CLICKED');
+    const visualOrig = document.getElementById('ultra-visual-original');
+    const visualProc = document.getElementById('ultra-visual-processed');
+    
+    // Crear ondas visuales simples con CSS
+    if (visualOrig) {
+        visualOrig.innerHTML = `
+            <div style="position: absolute; width: 100%; height: 100%; background: repeating-linear-gradient(90deg, #007bff 0px, #0056b3 5px, #007bff 10px, #0056b3 15px); opacity: 0.8;"></div>
+            <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: white; font-weight: bold; background: rgba(0,0,0,0.5); padding: 5px; border-radius: 3px;">
+                📊 ONDAS ORIGINALES (Más irregulares)
+            </div>
+        `;
+    }
+    
+    if (visualProc) {
+        visualProc.innerHTML = `
+            <div style="position: absolute; width: 100%; height: 100%; background: repeating-linear-gradient(90deg, #28a745 0px, #1e7e34 8px, #28a745 16px, #1e7e34 24px); opacity: 0.8;"></div>
+            <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: white; font-weight: bold; background: rgba(0,0,0,0.5); padding: 5px; border-radius: 3px;">
+                📊 ONDAS PROCESADAS (Más uniformes)
+            </div>
+        `;
+    }
+    
+    console.log('✅ Ondas visuales mostradas');
+}
+
+// Agregar CSS para animaciones
+const style = document.createElement('style');
+style.textContent = `
+    @keyframes pulse {
+        0% { transform: scale(1); opacity: 1; }
+        50% { transform: scale(1.05); opacity: 0.8; }
+        100% { transform: scale(1); opacity: 1; }
+    }
+`;
+document.head.appendChild(style);
+
+console.log('✅ Widget ULTRA SIMPLE Inicializado - TODO DEBE FUNCIONAR');
+</script>
+
+<!-- JavaScript para Widget de Ondas REALES - Basado en código funcional -->
+<script>
+$(document).ready(function() {
+    console.log('🌊 Iniciando Visualizador de Ondas REALES');
+    
+    // Elementos del DOM
+    const realPlayerOriginal = document.getElementById('real-player-original');
+    const realPlayerProcessed = document.getElementById('real-player-processed');
+    const realCanvasOriginal = document.getElementById('real-scope-original');
+    const realCanvasProcessed = document.getElementById('real-scope-processed');
+    
+    // Contextos de canvas
+    const ctxOriginal = realCanvasOriginal?.getContext('2d');
+    const ctxProcessed = realCanvasProcessed?.getContext('2d');
+    
+    // Variables de Web Audio API
+    let acOriginal, analyserOriginal, srcNodeOriginal, dataArrayOriginal, animIdOriginal;
+    let acProcessed, analyserProcessed, srcNodeProcessed, dataArrayProcessed, animIdProcessed;
+    
+    console.log('Elementos encontrados:', {
+        realPlayerOriginal: !!realPlayerOriginal,
+        realPlayerProcessed: !!realPlayerProcessed,
+        realCanvasOriginal: !!realCanvasOriginal,
+        realCanvasProcessed: !!realCanvasProcessed
+    });
+    
+    // Funciones utilitarias (adaptadas de tu código)
+    function fmtTime(sec) {
+        if (!isFinite(sec) || sec <= 0) return '0:00';
+        const h = Math.floor(sec / 3600);
+        const m = Math.floor((sec % 3600) / 60);
+        const s = Math.floor(sec % 60);
+        return h > 0 ? `${h}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`
+                     : `${m}:${String(s).padStart(2,'0')}`;
+    }
+    
+    // Función para redimensionar canvas (adaptada)
+    function resizeCanvas(canvas) {
+        if (!canvas) return;
+        const dpr = window.devicePixelRatio || 1;
+        const rect = canvas.getBoundingClientRect();
+        canvas.width = Math.floor(rect.width * dpr);
+        canvas.height = Math.floor(rect.height * dpr);
+        const ctx = canvas.getContext('2d');
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+    
+    // Redimensionar canvas al inicio y en resize
+    if (realCanvasOriginal) resizeCanvas(realCanvasOriginal);
+    if (realCanvasProcessed) resizeCanvas(realCanvasProcessed);
+    
+    window.addEventListener('resize', () => {
+        if (realCanvasOriginal) resizeCanvas(realCanvasOriginal);
+        if (realCanvasProcessed) resizeCanvas(realCanvasProcessed);
+    }, { passive: true });
+    
+    // Función para inicializar Web Audio API (adaptada)
+    function initGraph(audioElement, type) {
+        console.log(`🎵 Inicializando gráfico para ${type}`);
+        
+        try {
+            if (type === 'original') {
+                if (!acOriginal) acOriginal = new (window.AudioContext || window.webkitAudioContext)();
+                if (srcNodeOriginal) {
+                    try { srcNodeOriginal.disconnect(); } catch {}
+                    srcNodeOriginal = null;
+                }
+                if (!analyserOriginal) {
+                    analyserOriginal = acOriginal.createAnalyser();
+                    analyserOriginal.fftSize = 2048;
+                }
+                srcNodeOriginal = acOriginal.createMediaElementSource(audioElement);
+                srcNodeOriginal.connect(analyserOriginal);
+                analyserOriginal.connect(acOriginal.destination);
+                dataArrayOriginal = new Uint8Array(analyserOriginal.frequencyBinCount);
+            } else {
+                if (!acProcessed) acProcessed = new (window.AudioContext || window.webkitAudioContext)();
+                if (srcNodeProcessed) {
+                    try { srcNodeProcessed.disconnect(); } catch {}
+                    srcNodeProcessed = null;
+                }
+                if (!analyserProcessed) {
+                    analyserProcessed = acProcessed.createAnalyser();
+                    analyserProcessed.fftSize = 2048;
+                }
+                srcNodeProcessed = acProcessed.createMediaElementSource(audioElement);
+                srcNodeProcessed.connect(analyserProcessed);
+                analyserProcessed.connect(acProcessed.destination);
+                dataArrayProcessed = new Uint8Array(analyserProcessed.frequencyBinCount);
+            }
+            
+            console.log(`✅ Web Audio API inicializado para ${type}`);
+            return true;
+        } catch (error) {
+            console.error(`❌ Error inicializando Web Audio API para ${type}:`, error);
+            return false;
+        }
+    }
+    
+    // Función para dibujar ondas (adaptada de tu código)
+    function drawWave(canvas, ctx, analyser, dataArray, type, color = '#3a6') {
+        if (!canvas || !ctx || !analyser || !dataArray) return;
+        
+        analyser.getByteTimeDomainData(dataArray);
+        const W = canvas.width;
+        const H = canvas.height;
+        
+        // Limpiar canvas
+        ctx.clearRect(0, 0, W, H);
+        
+        // Configurar estilo
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = color;
+        ctx.beginPath();
+        
+        const slice = W / dataArray.length;
+        for (let i = 0; i < dataArray.length; i++) {
+            const v = dataArray[i] / 128.0 - 1.0; // Normalizar a -1..1
+            const x = i * slice;
+            const y = H / 2 + v * H * 0.45;
+            i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+        }
+        
+        ctx.stroke();
+        
+        // Continuar animación
+        if (type === 'original' && !realPlayerOriginal.paused) {
+            animIdOriginal = requestAnimationFrame(() => drawWave(canvas, ctx, analyser, dataArray, type, color));
+        } else if (type === 'processed' && !realPlayerProcessed.paused) {
+            animIdProcessed = requestAnimationFrame(() => drawWave(canvas, ctx, analyser, dataArray, type, color));
+        }
+    }
+    
+    // Función para detener dibujo
+    function stopDrawing(type) {
+        if (type === 'original') {
+            if (animIdOriginal) {
+                cancelAnimationFrame(animIdOriginal);
+                animIdOriginal = null;
+            }
+            if (ctxOriginal && realCanvasOriginal) {
+                ctxOriginal.clearRect(0, 0, realCanvasOriginal.width, realCanvasOriginal.height);
+                realCanvasOriginal.classList.remove('real-canvas-active');
+            }
+        } else {
+            if (animIdProcessed) {
+                cancelAnimationFrame(animIdProcessed);
+                animIdProcessed = null;
+            }
+            if (ctxProcessed && realCanvasProcessed) {
+                ctxProcessed.clearRect(0, 0, realCanvasProcessed.width, realCanvasProcessed.height);
+                realCanvasProcessed.classList.remove('real-canvas-active');
+            }
+        }
+    }
+    
+    // Event listeners para audio original
+    if (realPlayerOriginal) {
+        realPlayerOriginal.addEventListener('loadedmetadata', function() {
+            console.log('📊 Metadata cargada para original');
+            document.getElementById('real-dur-original').textContent = fmtTime(this.duration);
+            
+            // Obtener metadatos adicionales si es posible
+            if (acOriginal) {
+                // Intentar obtener información adicional del contexto de audio
+                document.getElementById('real-ch-original').textContent = '—'; // Se actualizará con Web Audio API
+            }
+        });
+        
+        realPlayerOriginal.addEventListener('play', async function() {
+            console.log('▶️ Reproduciendo original - iniciando visualización');
+            
+            try {
+                // Inicializar Web Audio API si no está inicializado
+                if (!srcNodeOriginal) {
+                    if (!initGraph(this, 'original')) {
+                        console.error('❌ No se pudo inicializar Web Audio API para original');
+                        return;
+                    }
+                }
+                
+                // Reanudar contexto si está suspendido
+                if (acOriginal && acOriginal.state === 'suspended') {
+                    await acOriginal.resume();
+                }
+                
+                // Agregar clase activa al canvas
+                realCanvasOriginal.classList.add('real-canvas-active');
+                
+                // Iniciar dibujo de ondas
+                if (!animIdOriginal) {
+                    drawWave(realCanvasOriginal, ctxOriginal, analyserOriginal, dataArrayOriginal, 'original', '#007bff');
+                }
+                
+            } catch (error) {
+                console.error('❌ Error en reproducción original:', error);
+            }
+        });
+        
+        realPlayerOriginal.addEventListener('pause', () => {
+            console.log('⏸️ Pausado original - deteniendo visualización');
+            stopDrawing('original');
+        });
+        
+        realPlayerOriginal.addEventListener('ended', () => {
+            console.log('⏹️ Terminado original - deteniendo visualización');
+            stopDrawing('original');
+        });
+    }
+    
+    // Event listeners para audio procesado
+    if (realPlayerProcessed) {
+        realPlayerProcessed.addEventListener('loadedmetadata', function() {
+            console.log('📊 Metadata cargada para procesado');
+            document.getElementById('real-dur-processed').textContent = fmtTime(this.duration);
+        });
+        
+        realPlayerProcessed.addEventListener('play', async function() {
+            console.log('▶️ Reproduciendo procesado - iniciando visualización');
+            
+            try {
+                // Inicializar Web Audio API si no está inicializado
+                if (!srcNodeProcessed) {
+                    if (!initGraph(this, 'processed')) {
+                        console.error('❌ No se pudo inicializar Web Audio API para procesado');
+                        return;
+                    }
+                }
+                
+                // Reanudar contexto si está suspendido
+                if (acProcessed && acProcessed.state === 'suspended') {
+                    await acProcessed.resume();
+                }
+                
+                // Agregar clase activa al canvas
+                realCanvasProcessed.classList.add('real-canvas-active');
+                
+                // Iniciar dibujo de ondas
+                if (!animIdProcessed) {
+                    drawWave(realCanvasProcessed, ctxProcessed, analyserProcessed, dataArrayProcessed, 'processed', '#28a745');
+                }
+                
+            } catch (error) {
+                console.error('❌ Error en reproducción procesado:', error);
+            }
+        });
+        
+        realPlayerProcessed.addEventListener('pause', () => {
+            console.log('⏸️ Pausado procesado - deteniendo visualización');
+            stopDrawing('processed');
+        });
+        
+        realPlayerProcessed.addEventListener('ended', () => {
+            console.log('⏹️ Terminado procesado - deteniendo visualización');
+            stopDrawing('processed');
+        });
+    }
+    
+    // Botones de control
+    $('#real-play-original').on('click', function() {
+        console.log('🎵 CLICK: Play original');
+        if (realPlayerOriginal) {
+            realPlayerOriginal.play().catch(e => {
+                console.error('❌ Error:', e);
+                alert('Error reproduciendo audio original: ' + e.message);
+            });
+        }
+    });
+    
+    $('#real-stop-original').on('click', function() {
+        console.log('⏹️ CLICK: Stop original');
+        if (realPlayerOriginal) {
+            realPlayerOriginal.pause();
+            realPlayerOriginal.currentTime = 0;
+            stopDrawing('original');
+        }
+    });
+    
+    $('#real-play-processed').on('click', function() {
+        console.log('🎵 CLICK: Play procesado');
+        if (realPlayerProcessed) {
+            realPlayerProcessed.play().catch(e => {
+                console.error('❌ Error:', e);
+                alert('Error reproduciendo audio procesado: ' + e.message);
+            });
+        }
+    });
+    
+    $('#real-stop-processed').on('click', function() {
+        console.log('⏹️ CLICK: Stop procesado');
+        if (realPlayerProcessed) {
+            realPlayerProcessed.pause();
+            realPlayerProcessed.currentTime = 0;
+            stopDrawing('processed');
+        }
+    });
+    
+    // Controles de comparación
+    $('#real-play-both').on('click', function() {
+        console.log('🎵 CLICK: Play ambos');
+        if (realPlayerOriginal && realPlayerProcessed) {
+            realPlayerOriginal.currentTime = 0;
+            realPlayerProcessed.currentTime = 0;
+            
+            Promise.all([
+                realPlayerOriginal.play(),
+                realPlayerProcessed.play()
+            ]).then(() => {
+                console.log('✅ Ambos audios reproduciéndose con visualización');
+            }).catch(e => {
+                console.error('❌ Error reproduciendo ambos:', e);
+                alert('Error reproduciendo ambos audios: ' + e.message);
+            });
+        }
+    });
+    
+    $('#real-stop-both').on('click', function() {
+        console.log('⏹️ CLICK: Stop ambos');
+        if (realPlayerOriginal) {
+            realPlayerOriginal.pause();
+            realPlayerOriginal.currentTime = 0;
+            stopDrawing('original');
+        }
+        if (realPlayerProcessed) {
+            realPlayerProcessed.pause();
+            realPlayerProcessed.currentTime = 0;
+            stopDrawing('processed');
+        }
+    });
+    
+    $('#real-sync-time').on('click', function() {
+        console.log('🔄 CLICK: Sincronizar tiempo');
+        if (realPlayerOriginal && realPlayerProcessed) {
+            const currentTime = Math.max(realPlayerOriginal.currentTime, realPlayerProcessed.currentTime);
+            realPlayerOriginal.currentTime = currentTime;
+            realPlayerProcessed.currentTime = currentTime;
+            console.log(`✅ Tiempo sincronizado a: ${fmtTime(currentTime)}`);
+        }
+    });
+    
+    console.log('✅ Visualizador de Ondas REALES Inicializado');
+});
+</script>
+
+<!-- JavaScript para DIAGNÓSTICO y VISUALIZADOR ALTERNATIVO -->
+<script>
+// Variables globales para el visualizador alternativo
+let currentWaveStyle = 1;
+
+// Función de diagnóstico completo
+function runDiagnostic() {
+    console.log('🔧 Ejecutando diagnóstico completo...');
+    
+    // 1. Verificar Web Audio API
+    const webAudioSupported = !!(window.AudioContext || window.webkitAudioContext);
+    document.getElementById('webaudio-status').innerHTML = webAudioSupported ? 
+        '<span class="text-success">✅ Soportado</span>' : 
+        '<span class="text-danger">❌ No soportado</span>';
+    
+    // 2. Verificar HTTPS
+    const isHTTPS = location.protocol === 'https:';
+    document.getElementById('https-status').innerHTML = isHTTPS ? 
+        '<span class="text-success">✅ HTTPS</span>' : 
+        '<span class="text-warning">⚠️ HTTP (puede causar problemas)</span>';
+    
+    // 3. Verificar archivos de audio
+    const audioOriginal = document.getElementById('alt-player-original');
+    const audioProcessed = document.getElementById('alt-player-processed');
+    
+    if (audioOriginal && audioProcessed) {
+        document.getElementById('audio-files-status').innerHTML = '<span class="text-success">✅ Elementos encontrados</span>';
+        
+        // Probar carga de archivos
+        Promise.all([
+            testAudioFile(audioOriginal.currentSrc || audioOriginal.src, 'Original'),
+            testAudioFile(audioProcessed.currentSrc || audioProcessed.src, 'Procesado')
+        ]).then(results => {
+            const allOk = results.every(r => r.success);
+            document.getElementById('cors-status').innerHTML = allOk ?
+                '<span class="text-success">✅ Archivos accesibles</span>' :
+                '<span class="text-danger">❌ Problemas de CORS/acceso</span>';
+        });
+    } else {
+        document.getElementById('audio-files-status').innerHTML = '<span class="text-danger">❌ Elementos no encontrados</span>';
+        document.getElementById('cors-status').innerHTML = '<span class="text-warning">⚠️ No se puede verificar</span>';
+    }
+    
+    // 4. Intentar crear contexto de audio
+    if (webAudioSupported) {
+        try {
+            const testContext = new (window.AudioContext || window.webkitAudioContext)();
+            console.log('✅ Contexto de audio creado:', testContext.state);
+            
+            if (testContext.state === 'suspended') {
+                document.getElementById('webaudio-status').innerHTML += 
+                    '<br><small class="text-warning">⚠️ Contexto suspendido (necesita interacción)</small>';
+            }
+            
+            testContext.close();
+        } catch (e) {
+            console.error('❌ Error creando contexto:', e);
+            document.getElementById('webaudio-status').innerHTML = 
+                '<span class="text-danger">❌ Error: ' + e.message + '</span>';
+        }
+    }
+    
+    console.log('🔧 Diagnóstico completado');
+}
+
+// Función para probar acceso a archivos de audio
+function testAudioFile(url, label) {
+    return new Promise((resolve) => {
+        if (!url) {
+            resolve({ success: false, error: 'URL vacía', label });
+            return;
+        }
+        
+        const audio = new Audio();
+        audio.crossOrigin = 'anonymous';
+        
+        const timeout = setTimeout(() => {
+            resolve({ success: false, error: 'Timeout', label });
+        }, 5000);
+        
+        audio.addEventListener('loadedmetadata', () => {
+            clearTimeout(timeout);
+            resolve({ success: true, label });
+        });
+        
+        audio.addEventListener('error', (e) => {
+            clearTimeout(timeout);
+            resolve({ success: false, error: e.message || 'Error de carga', label });
+        });
+        
+        audio.src = url;
+    });
+}
+
+// Funciones del visualizador alternativo
+function playAltOriginal() {
+    console.log('🎵 Play alternativo original');
+    const audio = document.getElementById('alt-player-original');
+    const visual = document.getElementById('alt-visual-original');
+    
+    if (audio && visual) {
+        audio.play().then(() => {
+            visual.classList.add('playing');
+            console.log('✅ Reproduciendo con visualización CSS');
+        }).catch(e => {
+            console.error('❌ Error:', e);
+            alert('Error reproduciendo audio original: ' + e.message);
+        });
+    }
+}
+
+function stopAltOriginal() {
+    console.log('⏹️ Stop alternativo original');
+    const audio = document.getElementById('alt-player-original');
+    const visual = document.getElementById('alt-visual-original');
+    
+    if (audio && visual) {
+        audio.pause();
+        audio.currentTime = 0;
+        visual.classList.remove('playing');
+    }
+}
+
+function playAltProcessed() {
+    console.log('🎵 Play alternativo procesado');
+    const audio = document.getElementById('alt-player-processed');
+    const visual = document.getElementById('alt-visual-processed');
+    
+    if (audio && visual) {
+        audio.play().then(() => {
+            visual.classList.add('playing');
+            console.log('✅ Reproduciendo con visualización CSS');
+        }).catch(e => {
+            console.error('❌ Error:', e);
+            alert('Error reproduciendo audio procesado: ' + e.message);
+        });
+    }
+}
+
+function stopAltProcessed() {
+    console.log('⏹️ Stop alternativo procesado');
+    const audio = document.getElementById('alt-player-processed');
+    const visual = document.getElementById('alt-visual-processed');
+    
+    if (audio && visual) {
+        audio.pause();
+        audio.currentTime = 0;
+        visual.classList.remove('playing');
+    }
+}
+
+function playBothAlt() {
+    console.log('🎵 Play ambos alternativo');
+    const audioOrig = document.getElementById('alt-player-original');
+    const audioProc = document.getElementById('alt-player-processed');
+    const visualOrig = document.getElementById('alt-visual-original');
+    const visualProc = document.getElementById('alt-visual-processed');
+    
+    if (audioOrig && audioProc && visualOrig && visualProc) {
+        audioOrig.currentTime = 0;
+        audioProc.currentTime = 0;
+        
+        Promise.all([
+            audioOrig.play(),
+            audioProc.play()
+        ]).then(() => {
+            visualOrig.classList.add('playing');
+            visualProc.classList.add('playing');
+            console.log('✅ Ambos reproduciéndose con visualización CSS');
+        }).catch(e => {
+            console.error('❌ Error:', e);
+            alert('Error reproduciendo ambos audios: ' + e.message);
+        });
+    }
+}
+
+function stopBothAlt() {
+    console.log('⏹️ Stop ambos alternativo');
+    stopAltOriginal();
+    stopAltProcessed();
+}
+
+function toggleWaveStyle() {
+    const visualOrig = document.getElementById('alt-visual-original');
+    const visualProc = document.getElementById('alt-visual-processed');
+    
+    if (visualOrig && visualProc) {
+        // Remover estilos anteriores
+        visualOrig.classList.remove('style-2', 'style-3');
+        visualProc.classList.remove('style-2', 'style-3');
+        
+        currentWaveStyle = (currentWaveStyle % 3) + 1;
+        
+        if (currentWaveStyle === 2) {
+            visualOrig.classList.add('style-2');
+            visualProc.classList.add('style-2');
+            console.log('🎨 Estilo de ondas: Rectangular');
+        } else if (currentWaveStyle === 3) {
+            visualOrig.classList.add('style-3');
+            visualProc.classList.add('style-3');
+            console.log('🎨 Estilo de ondas: Circular');
+        } else {
+            console.log('🎨 Estilo de ondas: Por defecto');
+        }
+    }
+}
+
+// Event listeners automáticos para los reproductores alternativos
+$(document).ready(function() {
+    console.log('🔧 Inicializando visualizador alternativo...');
+    
+    const altOriginal = document.getElementById('alt-player-original');
+    const altProcessed = document.getElementById('alt-player-processed');
+    
+    if (altOriginal) {
+        altOriginal.addEventListener('play', () => {
+            document.getElementById('alt-visual-original').classList.add('playing');
+        });
+        
+        altOriginal.addEventListener('pause', () => {
+            document.getElementById('alt-visual-original').classList.remove('playing');
+        });
+        
+        altOriginal.addEventListener('ended', () => {
+            document.getElementById('alt-visual-original').classList.remove('playing');
+        });
+    }
+    
+    if (altProcessed) {
+        altProcessed.addEventListener('play', () => {
+            document.getElementById('alt-visual-processed').classList.add('playing');
+        });
+        
+        altProcessed.addEventListener('pause', () => {
+            document.getElementById('alt-visual-processed').classList.remove('playing');
+        });
+        
+        altProcessed.addEventListener('ended', () => {
+            document.getElementById('alt-visual-processed').classList.remove('playing');
+        });
+    }
+    
+    // Ejecutar diagnóstico automático después de 2 segundos
+    setTimeout(runDiagnostic, 2000);
+    
+    console.log('✅ Visualizador alternativo inicializado');
+});
+</script>
+
+{% if procesamiento.estado == 'procesando' %}
+<!-- Auto-refresh si está procesando -->
+<script>
+setInterval(function() {
+    location.reload();
+}, 5000);
+</script>
+{% endif %}
+{% endblock javascripts %}

@@ -1,0 +1,337 @@
+{% extends "layouts/base.html" %}
+{% load static %}
+
+{% block title %} {{ title }} {% endblock %}
+
+{% block stylesheets %}
+<style>
+.filter-card {
+    background: white;
+    border-radius: 10px;
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.status-badge {
+    padding: 0.4rem 0.8rem;
+    border-radius: 15px;
+    font-size: 0.85rem;
+    font-weight: bold;
+}
+
+.status-pendiente { background: #fff3cd; color: #856404; }
+.status-procesando { background: #d1ecf1; color: #0c5460; }
+.status-transcribiendo { background: #d4edda; color: #155724; }
+.status-completado { background: #d4edda; color: #155724; }
+.status-error { background: #f8d7da; color: #721c24; }
+.status-cancelado { background: #e2e3e5; color: #383d41; }
+
+.audio-item {
+    background: white;
+    border-radius: 10px;
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    transition: all 0.3s ease;
+}
+
+.audio-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+}
+
+.progress-container {
+    background: #f8f9fa;
+    border-radius: 5px;
+    height: 8px;
+    overflow: hidden;
+}
+
+.progress-bar-custom {
+    height: 100%;
+    background: linear-gradient(90deg, #28a745, #20c997);
+    border-radius: 5px;
+    transition: width 0.3s ease;
+}
+</style>
+{% endblock stylesheets %}
+
+{% block content %}
+
+<div class="content-wrapper">
+    <div class="content-header">
+        <div class="container-fluid">
+            <div class="row mb-2">
+                <div class="col-sm-6">
+                    <h1 class="m-0">
+                        <i class="fas fa-list text-primary"></i>
+                        Lista de Procesamientos
+                    </h1>
+                    <p class="text-muted">Gestiona y supervisa todos los procesamientos de audio</p>
+                </div>
+                <div class="col-sm-6">
+                    <ol class="breadcrumb float-sm-right">
+                        <li class="breadcrumb-item"><a href="{% url 'index' %}">Inicio</a></li>
+                        <li class="breadcrumb-item"><a href="{% url 'audio_processing:centro_audio' %}">Audio</a></li>
+                        <li class="breadcrumb-item active">Lista</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <section class="content">
+        <div class="container-fluid">
+            
+            <!-- Filtros -->
+            <div class="filter-card">
+                <h4><i class="fas fa-filter text-secondary"></i> Filtros de Búsqueda</h4>
+                
+                <form method="get" class="row">
+                    <div class="col-md-3">
+                        <label>Buscar por título</label>
+                        {{ form.titulo }}
+                    </div>
+                    <div class="col-md-2">
+                        <label>Tipo de reunión</label>
+                        {{ form.tipo_reunion }}
+                    </div>
+                    <div class="col-md-2">
+                        <label>Estado</label>
+                        {{ form.estado }}
+                    </div>
+                    <div class="col-md-2">
+                        <label>Fecha desde</label>
+                        {{ form.fecha_desde }}
+                    </div>
+                    <div class="col-md-2">
+                        <label>Fecha hasta</label>
+                        {{ form.fecha_hasta }}
+                    </div>
+                    <div class="col-md-1">
+                        <label>&nbsp;</label>
+                        <button type="submit" class="btn btn-primary btn-block">
+                            <i class="fas fa-search"></i>
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Acciones rápidas -->
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <h5>{{ total_procesamientos }} procesamiento(s) encontrado(s)</h5>
+                </div>
+                <div class="col-md-6 text-right">
+                    <a href="{% url 'audio_processing:centro_audio' %}" class="btn btn-success">
+                        <i class="fas fa-microphone"></i> Nueva Grabación
+                    </a>
+                    <a href="{% url 'audio_processing:centro_audio' %}" class="btn btn-info">
+                        <i class="fas fa-upload"></i> Subir Archivo
+                    </a>
+                </div>
+            </div>
+
+            <!-- Lista de procesamientos -->
+            {% if page_obj %}
+                {% for procesamiento in page_obj %}
+                <div class="audio-item">
+                    <div class="row">
+                        <div class="col-md-8">
+                            <h5>
+                                <i class="fas fa-file-audio text-primary"></i>
+                                {{ procesamiento.titulo }}
+                            </h5>
+                            
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <p class="mb-1">
+                                        <strong>Tipo:</strong> 
+                                        <span class="badge badge-secondary">{{ procesamiento.tipo_reunion.nombre }}</span>
+                                    </p>
+                                    <p class="mb-1">
+                                        <strong>Fecha reunión:</strong> {{ procesamiento.fecha_reunion|date:"d/m/Y H:i" }}
+                                    </p>
+                                    <p class="mb-1">
+                                        <strong>Creado:</strong> {{ procesamiento.created_at|date:"d/m/Y H:i" }}
+                                    </p>
+                                </div>
+                                <div class="col-md-6">
+                                    {% if procesamiento.duracion %}
+                                    <p class="mb-1">
+                                        <strong>Duración:</strong> {{ procesamiento.duracion_formateada }}
+                                    </p>
+                                    {% endif %}
+                                    {% if procesamiento.tamano_mb %}
+                                    <p class="mb-1">
+                                        <strong>Tamaño:</strong> {{ procesamiento.tamano_mb }} MB
+                                    </p>
+                                    {% endif %}
+                                    <p class="mb-1">
+                                        <strong>Usuario:</strong> {{ procesamiento.usuario.get_full_name|default:procesamiento.usuario.username }}
+                                    </p>
+                                </div>
+                            </div>
+                            
+                            {% if procesamiento.descripcion %}
+                            <p class="text-muted mt-2">{{ procesamiento.descripcion|truncatewords:20 }}</p>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <!-- Estado -->
+                            <div class="text-center mb-3">
+                                <span class="status-badge status-{{ procesamiento.estado }}">
+                                    {{ procesamiento.get_estado_display|default:procesamiento.estado|capfirst }}
+                                </span>
+                            </div>
+                            
+                            <!-- Progreso -->
+                            <div class="mb-3">
+                                <div class="d-flex justify-content-between">
+                                    <small>Progreso</small>
+                                    <small>{{ procesamiento.progreso|default:0 }}%</small>
+                                </div>
+                                <div class="progress-container">
+                                    <div class="progress-bar-custom" style="width: {{ procesamiento.progreso|default:0 }}%"></div>
+                                </div>
+                            </div>
+                            
+                            <!-- Acciones -->
+                            <div class="text-center">
+                                <a href="{% url 'audio_processing:detalle_procesamiento' procesamiento.id %}" 
+                                   class="btn btn-sm btn-outline-primary mb-1">
+                                    <i class="fas fa-eye"></i> Ver Detalle
+                                </a>
+                                
+                                <!-- Botones según el estado -->
+                                {% if procesamiento.estado == 'pendiente' %}
+                                    <form method="post" action="{% url 'audio_processing:iniciar_procesamiento' procesamiento.id %}" 
+                                          style="display: inline-block;" class="mb-1"
+                                          onsubmit="return confirm('¿Iniciar el procesamiento de este audio?')">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-sm btn-success">
+                                            <i class="fas fa-play"></i> Iniciar
+                                        </button>
+                                    </form>
+                                {% endif %}
+                                
+                                {% if procesamiento.estado == 'procesando' %}
+                                    <form method="post" action="{% url 'audio_processing:detener_procesamiento' procesamiento.id %}" 
+                                          style="display: inline-block;" class="mb-1"
+                                          onsubmit="return confirm('¿Detener este procesamiento?')">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-sm btn-warning">
+                                            <i class="fas fa-stop"></i> Detener
+                                        </button>
+                                    </form>
+                                {% endif %}
+                                
+                                {% if procesamiento.estado in 'error,cancelado,completado' %}
+                                    <form method="post" action="{% url 'audio_processing:reiniciar_procesamiento' procesamiento.id %}" 
+                                          style="display: inline-block;" class="mb-1"
+                                          onsubmit="return confirm('¿Reiniciar este procesamiento? Se perderán los resultados actuales.')">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-sm btn-info">
+                                            <i class="fas fa-redo"></i> Reiniciar
+                                        </button>
+                                    </form>
+                                {% endif %}
+                                
+                                {% if procesamiento.estado == 'completado' %}
+                                    <br>
+                                    {% if procesamiento.archivo_mejorado %}
+                                    <a href="{{ procesamiento.archivo_mejorado.url }}" 
+                                       class="btn btn-sm btn-outline-success mb-1" download>
+                                        <i class="fas fa-download"></i> Audio Procesado
+                                    </a>
+                                    {% endif %}
+                                    
+                                    {% if procesamiento.transcripcion_texto %}
+                                    <span class="btn btn-sm btn-outline-success disabled">
+                                        <i class="fas fa-file-alt"></i> Transcripción (próximamente)
+                                    </span>
+                                    {% endif %}
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+                
+                <!-- Paginación -->
+                {% if page_obj.has_other_pages %}
+                <nav aria-label="Paginación">
+                    <ul class="pagination justify-content-center">
+                        {% if page_obj.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page=1">&laquo; Primera</a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.previous_page_number }}">Anterior</a>
+                            </li>
+                        {% endif %}
+                        
+                        {% for num in page_obj.paginator.page_range %}
+                            {% if page_obj.number == num %}
+                                <li class="page-item active">
+                                    <span class="page-link">{{ num }}</span>
+                                </li>
+                            {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                                </li>
+                            {% endif %}
+                        {% endfor %}
+                        
+                        {% if page_obj.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.next_page_number }}">Siguiente</a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}">Última &raquo;</a>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                {% endif %}
+                
+            {% else %}
+                <div class="audio-item text-center">
+                    <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                    <h5 class="text-muted">No se encontraron procesamientos</h5>
+                    <p class="text-muted">Ajusta los filtros de búsqueda o crea un nuevo procesamiento</p>
+                    <a href="{% url 'audio_processing:centro_audio' %}" class="btn btn-primary">
+                        <i class="fas fa-arrow-left"></i> Volver al Centro de Audio
+                    </a>
+                </div>
+            {% endif %}
+
+        </div>
+    </section>
+</div>
+
+{% endblock content %}
+
+{% block javascripts %}
+<script>
+$(document).ready(function() {
+    // Auto-refresh para procesamientos en curso cada 30 segundos
+    {% if page_obj %}
+        let hasActiveProcessing = false;
+        {% for procesamiento in page_obj %}
+            {% if procesamiento.estado in 'pendiente,procesando,transcribiendo,diarizando' %}
+                hasActiveProcessing = true;
+            {% endif %}
+        {% endfor %}
+        
+        if (hasActiveProcessing) {
+            setInterval(function() {
+                location.reload();
+            }, 30000);
+        }
+    {% endif %}
+});
+</script>
+{% endblock javascripts %}

@@ -57,7 +57,7 @@
               <h5><i class="icon fas fa-info"></i> ¡Bienvenido al Sistema de Actas Municipales!</h5>
               Este sistema utiliza <strong>Inteligencia Artificial</strong> para automatizar la transcripción, análisis y gestión de actas municipales. 
               <a href="{% url 'actas_nueva' %}" class="alert-link">Crear nueva acta</a> o 
-              <a href="{% url 'actas_transcripcion' %}" class="alert-link">procesar audio con IA</a>.
+              <a href="{% url 'audio_processing:centro_audio' %}" class="alert-link">procesar audio con IA</a>.
             </div>
           </div>
         </div>
@@ -104,7 +104,7 @@
               <div class="icon">
                 <i class="fas fa-robot"></i>
               </div>
-              <a href="{% url 'actas_transcripcion' %}" class="small-box-footer">Procesamiento IA <i class="fas fa-arrow-circle-right"></i></a>
+              <a href="{% url 'audio_processing:centro_audio' %}" class="small-box-footer">Procesamiento IA <i class="fas fa-arrow-circle-right"></i></a>
             </div>
           </div>
           <!-- ./col -->
@@ -144,7 +144,7 @@
                     </a>
                   </div>
                   <div class="col-md-3 col-6">
-                    <a href="{% url 'actas_transcripcion' %}" class="btn btn-app bg-primary">
+                    <a href="{% url 'audio_processing:centro_audio' %}" class="btn btn-app bg-primary">
                       <i class="fas fa-microphone"></i>
                       Transcribir Audio
                     </a>

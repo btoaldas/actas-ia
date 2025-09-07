@@ -1,0 +1,499 @@
+{% extends "layouts/base.html" %}
+{% load static %}
+
+{% block title %}Centro de Procesamiento de Audio - {{ title }}{% endblock %}
+
+{% block content %}
+<!-- Content Wrapper. Contains page content -->
+<div class="content-wrapper">
+  <!-- Content Header (Page header) -->
+  <div class="content-header">
+    <div class="container-fluid">
+      <div class="row mb-2">
+        <div class="col-sm-6">
+          <h1><i class="fas fa-microphone-alt mr-2"></i>Centro de Procesamiento de Audio</h1>
+        </div>
+        <div class="col-sm-6">
+          <ol class="breadcrumb float-sm-right">
+            <li class="breadcrumb-item"><a href="/">Inicio</a></li>
+            <li class="breadcrumb-item active">Audio</li>
+          </ol>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main content -->
+  <section class="content">
+    <div class="container-fluid">
+      <!-- Info boxes -->
+      <div class="row">
+        <div class="col-12 col-sm-6 col-md-3">
+          <div class="info-box">
+            <span class="info-box-icon bg-info elevation-1"><i class="fas fa-cog"></i></span>
+            <div class="info-box-content">
+              <span class="info-box-text">Total Procesos</span>
+              <span class="info-box-number">0</span>
+            </div>
+          </div>
+        </div>
+        
+        <div class="col-12 col-sm-6 col-md-3">
+          <div class="info-box mb-3">
+            <span class="info-box-icon bg-success elevation-1"><i class="fas fa-check"></i></span>
+            <div class="info-box-content">
+              <span class="info-box-text">Completados</span>
+              <span class="info-box-number">0</span>
+            </div>
+          </div>
+        </div>
+        
+        <div class="col-12 col-sm-6 col-md-3">
+          <div class="info-box mb-3">
+            <span class="info-box-icon bg-warning elevation-1"><i class="fas fa-spinner"></i></span>
+            <div class="info-box-content">
+              <span class="info-box-text">Procesando</span>
+              <span class="info-box-number">0</span>
+            </div>
+          </div>
+        </div>
+        
+        <div class="col-12 col-sm-6 col-md-3">
+          <div class="info-box mb-3">
+            <span class="info-box-icon bg-danger elevation-1"><i class="fas fa-exclamation-triangle"></i></span>
+            <div class="info-box-content">
+              <span class="info-box-text">Errores</span>
+              <span class="info-box-number">0</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Audio Processing Cards -->
+      <div class="row">
+        <!-- Recording Card -->
+        <div class="col-md-6">
+          <div class="card card-outline card-danger">
+            <div class="card-header">
+              <h3 class="card-title">
+                <i class="fas fa-microphone mr-2"></i>
+                Grabar Audio
+              </h3>
+            </div>
+            <div class="card-body">
+              <p class="text-muted">Graba audio directamente desde tu micrófono para procesamiento inmediato.</p>
+              
+              <div class="recording-controls">
+                <button id="recordButton" class="btn btn-danger btn-lg btn-block">
+                  <i class="fas fa-circle mr-2"></i>
+                  Iniciar Grabación
+                </button>
+                
+                <div id="recordingStatus" class="alert alert-info mt-3" style="display: none;">
+                  <i class="fas fa-circle text-danger"></i>
+                  <span class="ml-2">Grabando...</span>
+                  <span id="recordingTimer" class="float-right font-weight-bold">00:00</span>
+                </div>
+                
+                <div id="audioPlayer" class="mt-3" style="display: none;">
+                  <audio controls class="w-100"></audio>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Upload Card -->
+        <div class="col-md-6">
+          <div class="card card-outline card-primary">
+            <div class="card-header">
+              <h3 class="card-title">
+                <i class="fas fa-upload mr-2"></i>
+                Subir Archivo
+              </h3>
+            </div>
+            <div class="card-body">
+              <p class="text-muted">Arrastra y suelta o selecciona un archivo de audio para procesar.</p>
+              
+              <div id="uploadZone" class="border border-dashed border-primary rounded p-4 text-center">
+                <i class="fas fa-cloud-upload-alt fa-3x text-primary mb-3"></i>
+                <p class="mb-2"><strong>Arrastra archivos aquí o haz clic para seleccionar</strong></p>
+                <p class="text-muted small">Formatos soportados: MP3, WAV, M4A, WEBM</p>
+                <input type="file" id="fileInput" accept="audio/*" class="d-none">
+              </div>
+              
+              <div id="selectedFile" class="mt-3" style="display: none;">
+                <div class="alert alert-success">
+                  <i class="fas fa-file-audio mr-2"></i>
+                  <span id="fileName"></span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Processing Form -->
+      <div class="row">
+        <div class="col-12">
+          <div class="card card-outline card-success">
+            <div class="card-header">
+              <h3 class="card-title">
+                <i class="fas fa-cogs mr-2"></i>
+                Configuración del Procesamiento
+              </h3>
+            </div>
+            <div class="card-body">
+              <form id="audioForm">
+                {% csrf_token %}
+                
+                <!-- Primera fila -->
+                <div class="row">
+                  <div class="col-md-6">
+                    <div class="form-group">
+                      <label for="proceso_nombre">Nombre del Proceso</label>
+                      <input type="text" class="form-control" id="proceso_nombre" name="proceso_nombre" 
+                             placeholder="Ej: Reunión del 15 de Enero">
+                    </div>
+                  </div>
+                  <div class="col-md-6">
+                    <div class="form-group">
+                      <label for="tipo_reunion">Tipo de Reunión</label>
+                      <select class="form-control" id="tipo_reunion" name="tipo_reunion">
+                        <option value="reunion_trabajo">Reunión de Trabajo</option>
+                        <option value="conferencia">Conferencia</option>
+                        <option value="entrevista">Entrevista</option>
+                        <option value="seminario">Seminario</option>
+                        <option value="llamada">Llamada</option>
+                        <option value="otro">Otro</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Segunda fila -->
+                <div class="row">
+                  <div class="col-md-6">
+                    <div class="form-group">
+                      <label for="participantes">Participantes</label>
+                      <textarea class="form-control" id="participantes" name="participantes" rows="3"
+                                placeholder="Lista de participantes separados por comas"></textarea>
+                    </div>
+                  </div>
+                  <div class="col-md-6">
+                    <div class="form-group">
+                      <label for="ubicacion">Ubicación</label>
+                      <input type="text" class="form-control" id="ubicacion" name="ubicacion"
+                             placeholder="Ej: Sala de Juntas A, Online, etc.">
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Tercera fila -->
+                <div class="row">
+                  <div class="col-md-8">
+                    <div class="form-group">
+                      <label for="descripcion">Descripción</label>
+                      <textarea class="form-control" id="descripcion" name="descripcion" rows="3"
+                                placeholder="Descripción opcional del contenido del audio"></textarea>
+                    </div>
+                  </div>
+                  <div class="col-md-4">
+                    <div class="form-group">
+                      <label for="etiquetas">Etiquetas</label>
+                      <input type="text" class="form-control" id="etiquetas" name="etiquetas"
+                             placeholder="trabajo, importante, urgente">
+                    </div>
+                    <div class="form-group">
+                      <div class="custom-control custom-switch">
+                        <input type="checkbox" class="custom-control-input" id="confidencial" name="confidencial">
+                        <label class="custom-control-label" for="confidencial">Contenido Confidencial</label>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Botón de procesamiento -->
+                <div class="row">
+                  <div class="col-12">
+                    <button type="submit" id="processButton" class="btn btn-success btn-lg btn-block" disabled>
+                      <i class="fas fa-play mr-2"></i>
+                      <span class="btn-text">Procesar Audio</span>
+                    </button>
+                  </div>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Recent Processes -->
+      <div class="row">
+        <div class="col-12">
+          <div class="card">
+            <div class="card-header">
+              <h3 class="card-title">
+                <i class="fas fa-history mr-2"></i>
+                Procesos Recientes
+              </h3>
+            </div>
+            <div class="card-body">
+              <div class="table-responsive">
+                <table class="table table-bordered table-striped">
+                  <thead>
+                    <tr>
+                      <th>Nombre</th>
+                      <th>Fecha</th>
+                      <th>Estado</th>
+                      <th>Progreso</th>
+                      <th>Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody id="recentProcesses">
+                    <tr>
+                      <td colspan="5" class="text-center text-muted">
+                        <i class="fas fa-info-circle mr-2"></i>
+                        No hay procesos recientes
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+</div>
+
+<!-- JavaScript -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    let mediaRecorder;
+    let audioChunks = [];
+    let recordingTimer;
+    let recordingTime = 0;
+    let selectedAudioFile = null;
+
+    // Elementos del DOM
+    const recordButton = document.getElementById('recordButton');
+    const uploadZone = document.getElementById('uploadZone');
+    const fileInput = document.getElementById('fileInput');
+    const audioForm = document.getElementById('audioForm');
+    const processButton = document.getElementById('processButton');
+    const recordingStatus = document.getElementById('recordingStatus');
+    const recordingTimerDisplay = document.getElementById('recordingTimer');
+    const audioPlayer = document.getElementById('audioPlayer');
+    const selectedFileDiv = document.getElementById('selectedFile');
+    const fileName = document.getElementById('fileName');
+
+    // ===== GRABACIÓN DE AUDIO =====
+    recordButton.addEventListener('click', async function() {
+        if (!mediaRecorder || mediaRecorder.state === 'inactive') {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                mediaRecorder = new MediaRecorder(stream);
+                
+                mediaRecorder.ondataavailable = function(event) {
+                    audioChunks.push(event.data);
+                };
+                
+                mediaRecorder.onstop = function() {
+                    const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                    selectedAudioFile = audioBlob;
+                    
+                    // Mostrar reproductor
+                    const audioUrl = URL.createObjectURL(audioBlob);
+                    const audio = audioPlayer.querySelector('audio');
+                    audio.src = audioUrl;
+                    audioPlayer.style.display = 'block';
+                    
+                    // Habilitar botón de procesamiento
+                    processButton.disabled = false;
+                    
+                    // Limpiar chunks para próxima grabación
+                    audioChunks = [];
+                };
+                
+                mediaRecorder.start();
+                startRecording();
+                
+            } catch (error) {
+                console.error('Error al acceder al micrófono:', error);
+                alert('Error al acceder al micrófono. Verifica los permisos.');
+            }
+        } else {
+            mediaRecorder.stop();
+            stopRecording();
+        }
+    });
+
+    function startRecording() {
+        recordButton.innerHTML = '<i class="fas fa-stop mr-2"></i>Detener Grabación';
+        recordButton.classList.remove('btn-danger');
+        recordButton.classList.add('btn-warning');
+        recordingStatus.style.display = 'block';
+        
+        recordingTime = 0;
+        recordingTimer = setInterval(function() {
+            recordingTime++;
+            const minutes = Math.floor(recordingTime / 60);
+            const seconds = recordingTime % 60;
+            recordingTimerDisplay.textContent = 
+                String(minutes).padStart(2, '0') + ':' + String(seconds).padStart(2, '0');
+        }, 1000);
+    }
+
+    function stopRecording() {
+        recordButton.innerHTML = '<i class="fas fa-circle mr-2"></i>Iniciar Grabación';
+        recordButton.classList.remove('btn-warning');
+        recordButton.classList.add('btn-danger');
+        recordingStatus.style.display = 'none';
+        
+        if (recordingTimer) {
+            clearInterval(recordingTimer);
+        }
+    }
+
+    // ===== SUBIDA DE ARCHIVOS =====
+    uploadZone.addEventListener('click', function() {
+        fileInput.click();
+    });
+
+    uploadZone.addEventListener('dragover', function(e) {
+        e.preventDefault();
+        uploadZone.classList.add('border-success');
+    });
+
+    uploadZone.addEventListener('dragleave', function(e) {
+        e.preventDefault();
+        uploadZone.classList.remove('border-success');
+    });
+
+    uploadZone.addEventListener('drop', function(e) {
+        e.preventDefault();
+        uploadZone.classList.remove('border-success');
+        
+        const files = e.dataTransfer.files;
+        if (files.length > 0) {
+            handleFileSelection(files[0]);
+        }
+    });
+
+    fileInput.addEventListener('change', function(e) {
+        if (e.target.files.length > 0) {
+            handleFileSelection(e.target.files[0]);
+        }
+    });
+
+    function handleFileSelection(file) {
+        if (file.type.startsWith('audio/')) {
+            selectedAudioFile = file;
+            fileName.textContent = file.name;
+            selectedFileDiv.style.display = 'block';
+            processButton.disabled = false;
+            
+            // Ocultar reproductor de grabación si estaba visible
+            audioPlayer.style.display = 'none';
+        } else {
+            alert('Por favor selecciona un archivo de audio válido.');
+        }
+    }
+
+    // ===== PROCESAMIENTO =====
+    audioForm.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        if (!selectedAudioFile) {
+            alert('Por favor graba o selecciona un archivo de audio primero.');
+            return;
+        }
+
+        const formData = new FormData();
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+        
+        // Datos del formulario
+        formData.append('nombre_proceso', document.getElementById('proceso_nombre').value);
+        formData.append('tipo_reunion', document.getElementById('tipo_reunion').value);
+        formData.append('participantes', document.getElementById('participantes').value);
+        formData.append('ubicacion', document.getElementById('ubicacion').value);
+        formData.append('descripcion', document.getElementById('descripcion').value);
+        formData.append('etiquetas', document.getElementById('etiquetas').value);
+        formData.append('confidencial', document.getElementById('confidencial').checked);
+        formData.append('audio_file', selectedAudioFile);
+        formData.append('csrfmiddlewaretoken', csrfToken);
+
+        // Cambiar estado del botón
+        processButton.disabled = true;
+        processButton.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Procesando...';
+
+        try {
+            const response = await fetch('/audio/api/procesar/', {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-CSRFToken': csrfToken
+                }
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                // Mostrar mensaje de éxito
+                const alertHtml = `
+                    <div class="alert alert-success alert-dismissible">
+                        <button type="button" class="close" data-dismiss="alert">×</button>
+                        <i class="fas fa-check-circle mr-2"></i>
+                        Audio procesado exitosamente. ID: ${result.proceso_id}
+                    </div>
+                `;
+                document.querySelector('.content').insertAdjacentHTML('afterbegin', alertHtml);
+                
+                // Limpiar formulario
+                audioForm.reset();
+                selectedAudioFile = null;
+                selectedFileDiv.style.display = 'none';
+                audioPlayer.style.display = 'none';
+                
+            } else {
+                throw new Error(result.message || 'Error en el procesamiento');
+            }
+
+        } catch (error) {
+            console.error('Error:', error);
+            const alertHtml = `
+                <div class="alert alert-danger alert-dismissible">
+                    <button type="button" class="close" data-dismiss="alert">×</button>
+                    <i class="fas fa-exclamation-triangle mr-2"></i>
+                    Error al procesar el audio: ${error.message}
+                </div>
+            `;
+            document.querySelector('.content').insertAdjacentHTML('afterbegin', alertHtml);
+        } finally {
+            // Restaurar botón
+            processButton.disabled = false;
+            processButton.innerHTML = '<i class="fas fa-play mr-2"></i>Procesar Audio';
+        }
+    });
+
+    // ===== OBTENER CSRF TOKEN =====
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+});
+</script>
+{% endblock %}
