@@ -1,0 +1,459 @@
+{% extends "layouts/base.html" %}
+{% load static %}
+{% load permissions_tags %}
+
+{% block title %}Asignar Permisos a Perfil - {{ profile.name }}{% endblock %}
+
+{% block stylesheets %}
+<style>
+.permission-group {
+    border: 1px solid #dee2e6;
+    border-radius: 0.25rem;
+    margin-bottom: 1rem;
+    background: #f8f9fa;
+}
+
+.permission-group-header {
+    background: #e9ecef;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid #dee2e6;
+    font-weight: 600;
+}
+
+.permission-item {
+    padding: 0.5rem 1rem;
+    border-bottom: 1px solid #f1f3f4;
+}
+
+.permission-item:last-child {
+    border-bottom: none;
+}
+
+.permission-code {
+    font-family: 'Courier New', monospace;
+    background: #e9ecef;
+    padding: 0.2rem 0.4rem;
+    border-radius: 0.2rem;
+    font-size: 0.85rem;
+}
+
+.select-all-group {
+    background: #fff3cd;
+    border: 1px solid #ffeaa7;
+    padding: 0.5rem;
+    margin-bottom: 0.5rem;
+    border-radius: 0.25rem;
+}
+</style>
+{% endblock stylesheets %}
+
+{% block content %}
+<div class="content-wrapper">
+    <!-- Encabezado de contenido -->
+    <div class="content-header">
+        <div class="container-fluid">
+            <div class="row mb-2">
+                <div class="col-sm-6">
+                    <h1>Asignar Permisos</h1>
+                    <p class="lead">Perfil: <strong>{{ profile.name }}</strong></p>
+                </div>
+                <div class="col-sm-6">
+                    <ol class="breadcrumb float-sm-right">
+                        <li class="breadcrumb-item"><a href="{% url 'config_system:new_permissions:dashboard' %}">Permisos</a></li>
+                        <li class="breadcrumb-item"><a href="{% url 'config_system:new_permissions:profile_management_advanced' %}">Gestión de Perfiles</a></li>
+                        <li class="breadcrumb-item active">Asignar Permisos</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Contenido principal -->
+    <section class="content">
+        <div class="container-fluid">
+            <div class="row">
+                
+                <!-- Formulario principal -->
+                <div class="col-md-9">
+                    <div class="card card-primary">
+                        <div class="card-header">
+                            <h3 class="card-title">
+                                <i class="fas fa-key"></i>
+                                Seleccionar Permisos para "{{ profile.name }}"
+                            </h3>
+                            <div class="card-tools">
+                                <button type="button" class="btn btn-sm btn-success" onclick="selectAllPermissions()">
+                                    <i class="fas fa-check-square"></i> Seleccionar Todos
+                                </button>
+                                <button type="button" class="btn btn-sm btn-warning" onclick="clearAllPermissions()">
+                                    <i class="fas fa-square"></i> Limpiar Todo
+                                </button>
+                            </div>
+                        </div>
+                        <form method="post">
+                            {% csrf_token %}
+                            <div class="card-body">
+                                {% if form.errors %}
+                                    <div class="alert alert-danger">
+                                        <h5><i class="icon fas fa-exclamation-triangle"></i> Errores encontrados:</h5>
+                                        {{ form.errors }}
+                                    </div>
+                                {% endif %}
+
+                                <div class="alert alert-info">
+                                    <i class="fas fa-info-circle"></i>
+                                    <strong>Información:</strong> Los permisos están organizados por tipo. 
+                                    Selecciona los permisos que deseas asignar a este perfil.
+                                    Los usuarios con este perfil tendrán acceso a las funcionalidades correspondientes.
+                                </div>
+
+                                <!-- Permisos agrupados por tipo -->
+                                {% for type_name, permissions in permissions_by_type.items %}
+                                <div class="permission-group">
+                                    <div class="permission-group-header">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <span>
+                                                <i class="
+                                                    {% if type_name == 'Menú' %}fas fa-bars text-primary{% endif %}
+                                                    {% if type_name == 'Vista' %}fas fa-eye text-success{% endif %}
+                                                    {% if type_name == 'Widget' %}fas fa-puzzle-piece text-warning{% endif %}
+                                                    {% if type_name == 'Módulo' %}fas fa-cube text-info{% endif %}
+                                                "></i>
+                                                {{ type_name }} ({{ permissions.count }} permisos)
+                                            </span>
+                                            <div class="select-all-group">
+                                                <button type="button" class="btn btn-sm btn-outline-primary" 
+                                                        onclick="toggleGroupPermissions('{{ type_name|lower }}')">
+                                                    <i class="fas fa-check"></i> Alternar Grupo
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="permission-list">
+                                        {% for permission in permissions %}
+                                        <div class="permission-item">
+                                            <div class="form-check">
+                                                <input class="form-check-input permission-checkbox" 
+                                                       type="checkbox" 
+                                                       name="permissions" 
+                                                       value="{{ permission.id }}"
+                                                       id="permission_{{ permission.id }}"
+                                                       data-group="{{ type_name|lower }}"
+                                                       {% if permission in current_permissions %}checked{% endif %}>
+                                                <label class="form-check-label" for="permission_{{ permission.id }}">
+                                                    <div class="d-flex justify-content-between align-items-start">
+                                                        <div>
+                                                            <strong>{{ permission.name }}</strong>
+                                                            <br>
+                                                            <code class="permission-code">{{ permission.code }}</code>
+                                                            {% if permission.description %}
+                                                                <br>
+                                                                <small class="text-muted">{{ permission.description }}</small>
+                                                            {% endif %}
+                                                        </div>
+                                                        <div class="text-right">
+                                                            {% if permission.app_name %}
+                                                                <span class="badge badge-secondary">{{ permission.app_name }}</span>
+                                                            {% endif %}
+                                                            {% if permission.auto_generated %}
+                                                                <span class="badge badge-info">Auto</span>
+                                                            {% else %}
+                                                                <span class="badge badge-success">Manual</span>
+                                                            {% endif %}
+                                                        </div>
+                                                    </div>
+                                                </label>
+                                            </div>
+                                        </div>
+                                        {% empty %}
+                                        <div class="permission-item text-center text-muted">
+                                            <i class="fas fa-info-circle"></i>
+                                            No hay permisos de tipo {{ type_name }}
+                                        </div>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                            <div class="card-footer">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save"></i> Guardar Permisos
+                                </button>
+                                <a href="{% url 'config_system:new_permissions:profile_management_advanced' %}" 
+                                   class="btn btn-secondary">
+                                    <i class="fas fa-arrow-left"></i> Volver a Perfiles
+                                </a>
+                                <button type="button" class="btn btn-info" onclick="showPermissionsSummary()">
+                                    <i class="fas fa-list"></i> Ver Resumen
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Panel de información -->
+                <div class="col-md-3">
+                    <!-- Información del perfil -->
+                    <div class="card card-outline card-info">
+                        <div class="card-header">
+                            <h3 class="card-title">
+                                <i class="fas fa-id-badge"></i>
+                                Información del Perfil
+                            </h3>
+                        </div>
+                        <div class="card-body">
+                            <table class="table table-sm">
+                                <tr>
+                                    <td><strong>Nombre:</strong></td>
+                                    <td>{{ profile.name }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Descripción:</strong></td>
+                                    <td>{{ profile.description|truncatewords:10 }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Usuarios:</strong></td>
+                                    <td>{{ users_with_profile }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Creado:</strong></td>
+                                    <td>
+                                        {% if profile.created_at %}
+                                            {{ profile.created_at|date:"d/m/Y" }}
+                                        {% else %}
+                                            N/A
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Estadísticas de selección -->
+                    <div class="card card-outline card-success">
+                        <div class="card-header">
+                            <h3 class="card-title">
+                                <i class="fas fa-chart-pie"></i>
+                                Estadísticas
+                            </h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="info-box">
+                                <span class="info-box-icon bg-primary"><i class="fas fa-check-square"></i></span>
+                                <div class="info-box-content">
+                                    <span class="info-box-text">Seleccionados</span>
+                                    <span class="info-box-number" id="selected-count">{{ current_permissions.count }}</span>
+                                </div>
+                            </div>
+                            
+                            <div class="info-box">
+                                <span class="info-box-icon bg-info"><i class="fas fa-list"></i></span>
+                                <div class="info-box-content">
+                                    <span class="info-box-text">Total Disponibles</span>
+                                    <span class="info-box-number" id="total-permissions">
+                                        {% for type_name, permissions in permissions_by_type.items %}
+                                            {{ permissions.count|add:0 }}{% if not forloop.last %} + {% endif %}
+                                        {% endfor %}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Acciones rápidas -->
+                    <div class="card card-outline card-warning">
+                        <div class="card-header">
+                            <h3 class="card-title">
+                                <i class="fas fa-bolt"></i>
+                                Plantillas Rápidas
+                            </h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="btn-group-vertical w-100">
+                                <button type="button" class="btn btn-outline-primary btn-sm" onclick="selectMenuPermissions()">
+                                    <i class="fas fa-bars"></i> Solo Menús
+                                </button>
+                                <button type="button" class="btn btn-outline-success btn-sm" onclick="selectViewPermissions()">
+                                    <i class="fas fa-eye"></i> Solo Vistas
+                                </button>
+                                <button type="button" class="btn btn-outline-warning btn-sm" onclick="selectBasicPermissions()">
+                                    <i class="fas fa-star"></i> Permisos Básicos
+                                </button>
+                                <button type="button" class="btn btn-outline-danger btn-sm" onclick="selectAdminPermissions()">
+                                    <i class="fas fa-shield-alt"></i> Permisos Admin
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+</div>
+
+<!-- Modal de resumen -->
+<div class="modal fade" id="summaryModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-list"></i>
+                    Resumen de Permisos Seleccionados
+                </h5>
+                <button type="button" class="close" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div id="summaryContent">
+                    <!-- Se llenará dinámicamente -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content %}
+
+{% block javascripts %}
+<script>
+function updateCounter() {
+    const checkedBoxes = document.querySelectorAll('.permission-checkbox:checked');
+    document.getElementById('selected-count').textContent = checkedBoxes.length;
+}
+
+function selectAllPermissions() {
+    const checkboxes = document.querySelectorAll('.permission-checkbox');
+    checkboxes.forEach(cb => cb.checked = true);
+    updateCounter();
+}
+
+function clearAllPermissions() {
+    const checkboxes = document.querySelectorAll('.permission-checkbox');
+    checkboxes.forEach(cb => cb.checked = false);
+    updateCounter();
+}
+
+function toggleGroupPermissions(groupName) {
+    const groupCheckboxes = document.querySelectorAll(`[data-group="${groupName}"]`);
+    const allChecked = Array.from(groupCheckboxes).every(cb => cb.checked);
+    
+    groupCheckboxes.forEach(cb => {
+        cb.checked = !allChecked;
+    });
+    
+    updateCounter();
+}
+
+function selectMenuPermissions() {
+    clearAllPermissions();
+    const menuCheckboxes = document.querySelectorAll('[data-group="menú"]');
+    menuCheckboxes.forEach(cb => cb.checked = true);
+    updateCounter();
+}
+
+function selectViewPermissions() {
+    clearAllPermissions();
+    const viewCheckboxes = document.querySelectorAll('[data-group="vista"]');
+    viewCheckboxes.forEach(cb => cb.checked = true);
+    updateCounter();
+}
+
+function selectBasicPermissions() {
+    clearAllPermissions();
+    // Seleccionar permisos básicos (menús principales)
+    const basicCodes = ['menu.dashboard', 'menu.actas', 'view.actas_list'];
+    const checkboxes = document.querySelectorAll('.permission-checkbox');
+    
+    checkboxes.forEach(cb => {
+        const label = cb.nextElementSibling;
+        const codeElement = label.querySelector('.permission-code');
+        if (codeElement) {
+            const code = codeElement.textContent;
+            if (basicCodes.some(basicCode => code.includes(basicCode))) {
+                cb.checked = true;
+            }
+        }
+    });
+    
+    updateCounter();
+}
+
+function selectAdminPermissions() {
+    clearAllPermissions();
+    // Seleccionar permisos de administración
+    const adminCodes = ['menu.config', 'menu.users', 'menu.permissions'];
+    const checkboxes = document.querySelectorAll('.permission-checkbox');
+    
+    checkboxes.forEach(cb => {
+        const label = cb.nextElementSibling;
+        const codeElement = label.querySelector('.permission-code');
+        if (codeElement) {
+            const code = codeElement.textContent;
+            if (adminCodes.some(adminCode => code.includes(adminCode))) {
+                cb.checked = true;
+            }
+        }
+    });
+    
+    updateCounter();
+}
+
+function showPermissionsSummary() {
+    const checkedBoxes = document.querySelectorAll('.permission-checkbox:checked');
+    let content = '<div class="row">';
+    
+    // Agrupar por tipo
+    const groups = {};
+    checkedBoxes.forEach(cb => {
+        const group = cb.dataset.group;
+        if (!groups[group]) groups[group] = [];
+        
+        const label = cb.nextElementSibling;
+        const name = label.querySelector('strong').textContent;
+        const code = label.querySelector('.permission-code').textContent;
+        
+        groups[group].push({ name, code });
+    });
+    
+    for (const [groupName, permissions] of Object.entries(groups)) {
+        content += `<div class="col-md-6">
+            <h6 class="text-capitalize">${groupName} (${permissions.length})</h6>
+            <ul class="list-group list-group-flush">`;
+        
+        permissions.forEach(perm => {
+            content += `<li class="list-group-item py-1">
+                <small><strong>${perm.name}</strong><br>
+                <code>${perm.code}</code></small>
+            </li>`;
+        });
+        
+        content += `</ul></div>`;
+    }
+    
+    content += '</div>';
+    
+    if (checkedBoxes.length === 0) {
+        content = '<div class="text-center text-muted"><i class="fas fa-info-circle fa-2x mb-2"></i><p>No hay permisos seleccionados</p></div>';
+    }
+    
+    document.getElementById('summaryContent').innerHTML = content;
+    $('#summaryModal').modal('show');
+}
+
+// Event listeners
+document.addEventListener('DOMContentLoaded', function() {
+    // Actualizar contador al cargar
+    updateCounter();
+    
+    // Agregar event listeners a todos los checkboxes
+    const checkboxes = document.querySelectorAll('.permission-checkbox');
+    checkboxes.forEach(cb => {
+        cb.addEventListener('change', updateCounter);
+    });
+});
+</script>
+{% endblock javascripts %}

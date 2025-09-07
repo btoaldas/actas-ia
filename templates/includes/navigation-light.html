@@ -26,10 +26,10 @@
           </li>
         {% else %}
           <li class="nav-item d-none d-sm-inline-block">
-            <a href="{% url 'password_change' %}" class="nav-link">Cambiar Contraseña</a>
+            <a href="{% url 'admin:password_change' %}" class="nav-link">Cambiar Contraseña</a>
           </li>
           <li class="nav-item d-none d-sm-inline-block">
-            <a href="{% url 'logout' %}" class="nav-link">Cerrar Sesión</a>
+            <a href="{% url 'admin:logout' %}" class="nav-link">Cerrar Sesión</a>
           </li>
         {% endif %}
       {% else %}

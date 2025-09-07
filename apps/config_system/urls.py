@@ -107,4 +107,16 @@ urlpatterns = [
     # API endpoints para estadísticas
     path('api/estadisticas/', views.api_estadisticas, name='api_estadisticas'),
     path('api/configuraciones-activas/', views.api_configuraciones_activas, name='api_configuraciones_activas'),
+    
+    # ==================== NUEVO SISTEMA DE PERMISOS ====================
+    # Incluir las nuevas URLs del sistema de permisos simplificado
+]
+
+# Agregar las URLs del nuevo sistema de permisos
+from django.urls import include
+from . import urls_new_permissions
+
+# Agregar al final para evitar conflictos
+urlpatterns += [
+    path('new-permissions/', include(urls_new_permissions, namespace='new_permissions')),
 ]

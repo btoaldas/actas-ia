@@ -1,0 +1,312 @@
+{% extends "layouts/base.html" %}
+{% load static %}
+{% load permissions_tags %}
+
+{% block title %}Gestión de Usuarios - Sistema de Permisos{% endblock %}
+
+{% block stylesheets %}
+<link rel="stylesheet" href="{% static 'plugins/datatables-bs4/css/dataTables.bootstrap4.min.css' %}">
+<link rel="stylesheet" href="{% static 'plugins/datatables-responsive/css/responsive.bootstrap4.min.css' %}">
+{% endblock stylesheets %}
+
+{% block content %}
+<div class="content-wrapper">
+    <!-- Encabezado de contenido -->
+    <div class="content-header">
+        <div class="container-fluid">
+            <div class="row mb-2">
+                <div class="col-sm-6">
+                    <h1>Gestión de Usuarios</h1>
+                </div>
+                <div class="col-sm-6">
+                    <ol class="breadcrumb float-sm-right">
+                        <li class="breadcrumb-item"><a href="{% url 'config_system:new_permissions:dashboard' %}">Permisos</a></li>
+                        <li class="breadcrumb-item active">Gestión de Usuarios</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Contenido principal -->
+    <section class="content">
+        <div class="container-fluid">
+            
+            <!-- Filtros y búsqueda -->
+            <div class="card card-outline card-info">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <i class="fas fa-filter"></i>
+                        Filtros de búsqueda
+                    </h3>
+                    <div class="card-tools">
+                        <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                            <i class="fas fa-minus"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <form method="get" class="row">
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label>Buscar usuario</label>
+                                <input type="text" name="search" class="form-control" 
+                                       placeholder="Nombre, email, usuario..." 
+                                       value="{{ search_query }}">
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-group">
+                                <label>Filtrar por perfil</label>
+                                <select name="profile" class="form-control">
+                                    <option value="">Todos los perfiles</option>
+                                    {% for profile in profiles %}
+                                    <option value="{{ profile.id }}" 
+                                            {% if profile.id|stringformat:"s" == profile_filter %}selected{% endif %}>
+                                        {{ profile.name }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-group">
+                                <label>Estado</label>
+                                <select name="status" class="form-control">
+                                    <option value="">Todos</option>
+                                    <option value="active" {% if status_filter == 'active' %}selected{% endif %}>Activos</option>
+                                    <option value="inactive" {% if status_filter == 'inactive' %}selected{% endif %}>Inactivos</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-2">
+                            <div class="form-group">
+                                <label>&nbsp;</label>
+                                <button type="submit" class="btn btn-primary btn-block">
+                                    <i class="fas fa-search"></i> Buscar
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Estadísticas -->
+            <div class="row">
+                <div class="col-md-3">
+                    <div class="info-box">
+                        <span class="info-box-icon bg-info"><i class="fas fa-users"></i></span>
+                        <div class="info-box-content">
+                            <span class="info-box-text">Total Usuarios</span>
+                            <span class="info-box-number">{{ total_users }}</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="info-box">
+                        <span class="info-box-icon bg-success"><i class="fas fa-user-check"></i></span>
+                        <div class="info-box-content">
+                            <span class="info-box-text">Con Perfiles</span>
+                            <span class="info-box-number">{{ page_obj.paginator.count }}</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="info-box">
+                        <span class="info-box-icon bg-warning"><i class="fas fa-id-badge"></i></span>
+                        <div class="info-box-content">
+                            <span class="info-box-text">Perfiles Disponibles</span>
+                            <span class="info-box-number">{{ profiles.count }}</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="info-box">
+                        <span class="info-box-icon bg-danger"><i class="fas fa-user-plus"></i></span>
+                        <div class="info-box-content">
+                            <span class="info-box-text">Página Actual</span>
+                            <span class="info-box-number">{{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Lista de usuarios -->
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <i class="fas fa-users"></i>
+                        Lista de Usuarios
+                    </h3>
+                    <div class="card-tools">
+                        <a href="{% url 'config_system:new_permissions:profile_management_advanced' %}" 
+                           class="btn btn-success btn-sm">
+                            <i class="fas fa-plus"></i> Gestionar Perfiles
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    {% if page_obj %}
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Usuario</th>
+                                    <th>Email</th>
+                                    <th>Perfiles Asignados</th>
+                                    <th>Estado</th>
+                                    <th>Último Acceso</th>
+                                    <th width="150">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for user in page_obj %}
+                                <tr>
+                                    <td>
+                                        <div class="user-block">
+                                            <span class="username">
+                                                <strong>{{ user.get_full_name|default:user.username }}</strong>
+                                            </span>
+                                            <span class="description">@{{ user.username }}</span>
+                                        </div>
+                                    </td>
+                                    <td>{{ user.email|default:"No configurado" }}</td>
+                                    <td>
+                                        {% for assignment in user.userprofileassignment_set.all %}
+                                            <span class="badge badge-info">{{ assignment.profile.name }}</span>
+                                        {% empty %}
+                                            <span class="text-muted">Sin perfiles</span>
+                                        {% endfor %}
+                                    </td>
+                                    <td>
+                                        {% if user.is_active %}
+                                            <span class="badge badge-success">Activo</span>
+                                        {% else %}
+                                            <span class="badge badge-danger">Inactivo</span>
+                                        {% endif %}
+                                        {% if user.is_superuser %}
+                                            <span class="badge badge-warning">Superusuario</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if user.last_login %}
+                                            {{ user.last_login|date:"d/m/Y H:i" }}
+                                        {% else %}
+                                            <span class="text-muted">Nunca</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="btn-group">
+                                            <a href="{% url 'config_system:new_permissions:user_profile_assignment' user.id %}" 
+                                               class="btn btn-info btn-sm" title="Gestionar perfiles">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                            <button type="button" class="btn btn-warning btn-sm" 
+                                                    title="Ver permisos"
+                                                    onclick="viewUserPermissions({{ user.id }})">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Paginación -->
+                    {% if page_obj.has_other_pages %}
+                    <div class="d-flex justify-content-center">
+                        <nav aria-label="Navegación de páginas">
+                            <ul class="pagination">
+                                {% if page_obj.has_previous %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page=1{% if search_query %}&search={{ search_query }}{% endif %}{% if profile_filter %}&profile={{ profile_filter }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}">&laquo; Primera</a>
+                                    </li>
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if profile_filter %}&profile={{ profile_filter }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}">Anterior</a>
+                                    </li>
+                                {% endif %}
+
+                                <li class="page-item active">
+                                    <span class="page-link">
+                                        Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}
+                                    </span>
+                                </li>
+
+                                {% if page_obj.has_next %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if profile_filter %}&profile={{ profile_filter }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}">Siguiente</a>
+                                    </li>
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if search_query %}&search={{ search_query }}{% endif %}{% if profile_filter %}&profile={{ profile_filter }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}">Última &raquo;</a>
+                                    </li>
+                                {% endif %}
+                            </ul>
+                        </nav>
+                    </div>
+                    {% endif %}
+
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-users fa-3x text-muted mb-3"></i>
+                        <h4 class="text-muted">No se encontraron usuarios</h4>
+                        <p class="text-muted">No hay usuarios que coincidan con los criterios de búsqueda.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </section>
+</div>
+
+<!-- Modal para ver permisos de usuario -->
+<div class="modal fade" id="userPermissionsModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Permisos del Usuario</h5>
+                <button type="button" class="close" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div id="userPermissionsContent">
+                    <div class="text-center">
+                        <i class="fas fa-spinner fa-spin fa-2x"></i>
+                        <p>Cargando permisos...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content %}
+
+{% block javascripts %}
+<script>
+function viewUserPermissions(userId) {
+    $('#userPermissionsModal').modal('show');
+    
+    fetch(`{% url 'config_system:new_permissions:api_user_permissions' 0 %}`.replace('0', userId))
+        .then(response => response.json())
+        .then(data => {
+            let content = '<h6>Perfiles asignados:</h6><ul>';
+            data.profiles.forEach(profile => {
+                content += `<li><strong>${profile.name}</strong>: ${profile.description}</li>`;
+            });
+            content += '</ul><h6>Permisos efectivos:</h6><ul>';
+            data.permissions.forEach(permission => {
+                content += `<li><code>${permission.code}</code> - ${permission.name}</li>`;
+            });
+            content += '</ul>';
+            
+            document.getElementById('userPermissionsContent').innerHTML = content;
+        })
+        .catch(error => {
+            document.getElementById('userPermissionsContent').innerHTML = 
+                '<div class="alert alert-danger">Error al cargar permisos</div>';
+        });
+}
+</script>
+{% endblock javascripts %}

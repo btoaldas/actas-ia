@@ -1,0 +1,316 @@
+{% extends "layouts/base.html" %}
+{% load permissions_tags %}
+
+{% block title %}Crear Nuevo Permiso - Sistema de Permisos{% endblock %}
+
+{% block content %}
+<div class="content-wrapper">
+    <!-- Encabezado de contenido -->
+    <div class="content-header">
+        <div class="container-fluid">
+            <div class="row mb-2">
+                <div class="col-sm-6">
+                    <h1>Crear Nuevo Permiso</h1>
+                </div>
+                <div class="col-sm-6">
+                    <ol class="breadcrumb float-sm-right">
+                        <li class="breadcrumb-item"><a href="{% url 'config_system:new_permissions:dashboard' %}">Permisos</a></li>
+                        <li class="breadcrumb-item"><a href="{% url 'config_system:new_permissions:system_list' %}">Lista de Permisos</a></li>
+                        <li class="breadcrumb-item active">Crear Permiso</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Contenido principal -->
+    <section class="content">
+        <div class="container-fluid">
+            <div class="row">
+                
+                <!-- Formulario principal -->
+                <div class="col-md-8">
+                    <div class="card card-primary">
+                        <div class="card-header">
+                            <h3 class="card-title">
+                                <i class="fas fa-plus"></i>
+                                Datos del Nuevo Permiso
+                            </h3>
+                        </div>
+                        <form method="post">
+                            {% csrf_token %}
+                            <div class="card-body">
+                                {% if form.errors %}
+                                    <div class="alert alert-danger">
+                                        <h5><i class="icon fas fa-exclamation-triangle"></i> Errores encontrados:</h5>
+                                        {{ form.errors }}
+                                    </div>
+                                {% endif %}
+
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label for="{{ form.name.id_for_label }}">{{ form.name.label }}</label>
+                                            {{ form.name }}
+                                            {% if form.name.help_text %}
+                                                <small class="form-text text-muted">{{ form.name.help_text }}</small>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label for="{{ form.code.id_for_label }}">{{ form.code.label }}</label>
+                                            {{ form.code }}
+                                            {% if form.code.help_text %}
+                                                <small class="form-text text-muted">{{ form.code.help_text }}</small>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label for="{{ form.permission_type.id_for_label }}">{{ form.permission_type.label }}</label>
+                                            {{ form.permission_type }}
+                                            <small class="form-text text-muted">
+                                                <strong>Menú:</strong> Acceso a secciones del menú<br>
+                                                <strong>Vista:</strong> Acceso a páginas/vistas específicas<br>
+                                                <strong>Widget:</strong> Acceso a componentes específicos<br>
+                                                <strong>Módulo:</strong> Acceso a módulos completos
+                                            </small>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label for="{{ form.app_name.id_for_label }}">{{ form.app_name.label }}</label>
+                                            {{ form.app_name }}
+                                            {% if form.app_name.help_text %}
+                                                <small class="form-text text-muted">{{ form.app_name.help_text }}</small>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label for="{{ form.url_pattern.id_for_label }}">{{ form.url_pattern.label }}</label>
+                                            {{ form.url_pattern }}
+                                            <small class="form-text text-muted">Opcional: Patrón URL asociado al permiso</small>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label for="{{ form.view_name.id_for_label }}">{{ form.view_name.label }}</label>
+                                            {{ form.view_name }}
+                                            <small class="form-text text-muted">Opcional: Nombre de la vista en Django</small>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="{{ form.description.id_for_label }}">{{ form.description.label }}</label>
+                                    {{ form.description }}
+                                    {% if form.description.help_text %}
+                                        <small class="form-text text-muted">{{ form.description.help_text }}</small>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="card-footer">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save"></i> Crear Permiso
+                                </button>
+                                <a href="{% url 'config_system:new_permissions:system_list' %}" 
+                                   class="btn btn-secondary">
+                                    <i class="fas fa-arrow-left"></i> Cancelar
+                                </a>
+                                <button type="button" class="btn btn-info" onclick="showCodeHelper()">
+                                    <i class="fas fa-question-circle"></i> Ayuda con Códigos
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Panel de ayuda -->
+                <div class="col-md-4">
+                    <!-- Ejemplos de códigos -->
+                    <div class="card card-outline card-info">
+                        <div class="card-header">
+                            <h3 class="card-title">
+                                <i class="fas fa-lightbulb"></i>
+                                Ejemplos de Códigos
+                            </h3>
+                        </div>
+                        <div class="card-body">
+                            <h6>Permisos de Menú:</h6>
+                            <ul class="list-unstyled">
+                                <li><code>menu.actas</code> - Acceso al menú de actas</li>
+                                <li><code>menu.usuarios</code> - Acceso al menú de usuarios</li>
+                                <li><code>menu.reportes</code> - Acceso al menú de reportes</li>
+                            </ul>
+
+                            <h6>Permisos de Vista:</h6>
+                            <ul class="list-unstyled">
+                                <li><code>view.actas_list</code> - Ver lista de actas</li>
+                                <li><code>view.actas_create</code> - Crear nuevas actas</li>
+                                <li><code>view.users_edit</code> - Editar usuarios</li>
+                            </ul>
+
+                            <h6>Permisos de Widget:</h6>
+                            <ul class="list-unstyled">
+                                <li><code>widget.stats_dashboard</code> - Ver estadísticas</li>
+                                <li><code>widget.calendar</code> - Acceso al calendario</li>
+                            </ul>
+
+                            <h6>Permisos de Módulo:</h6>
+                            <ul class="list-unstyled">
+                                <li><code>module.actas</code> - Módulo completo de actas</li>
+                                <li><code>module.config</code> - Módulo de configuración</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <!-- Permisos existentes por tipo -->
+                    <div class="card card-outline card-warning">
+                        <div class="card-header">
+                            <h3 class="card-title">
+                                <i class="fas fa-list"></i>
+                                Permisos Existentes
+                            </h3>
+                        </div>
+                        <div class="card-body" style="max-height: 400px; overflow-y: auto;">
+                            {% for type_code, type_name in permission_types %}
+                            <h6 class="text-primary">{{ type_name }}:</h6>
+                            {% if permissions_by_type|key:type_code %}
+                            <ul class="list-unstyled mb-3">
+                                {% for permission in permissions_by_type|key:type_code %}
+                                <li><small><code>{{ permission.code }}</code> - {{ permission.name|truncatechars:30 }}</small></li>
+                                {% endfor %}
+                            </ul>
+                            {% else %}
+                            <p class="text-muted small">No hay permisos de este tipo</p>
+                            {% endif %}
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <!-- Acciones rápidas -->
+                    <div class="card card-outline card-success">
+                        <div class="card-header">
+                            <h3 class="card-title">
+                                <i class="fas fa-bolt"></i>
+                                Acciones Rápidas
+                            </h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="btn-group-vertical w-100">
+                                <a href="{% url 'config_system:new_permissions:discover_routes_permissions' %}" 
+                                   class="btn btn-info btn-sm">
+                                    <i class="fas fa-search"></i> Descubrir desde rutas
+                                </a>
+                                <a href="{% url 'config_system:new_permissions:system_list' %}" 
+                                   class="btn btn-secondary btn-sm">
+                                    <i class="fas fa-list"></i> Ver todos los permisos
+                                </a>
+                                <a href="{% url 'config_system:new_permissions:profile_management_advanced' %}" 
+                                   class="btn btn-success btn-sm">
+                                    <i class="fas fa-users"></i> Gestionar perfiles
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+</div>
+
+<!-- Modal de ayuda con códigos -->
+<div class="modal fade" id="codeHelperModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-question-circle"></i>
+                    Guía para Códigos de Permisos
+                </h5>
+                <button type="button" class="close" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>Convenciones de Nomenclatura:</h6>
+                        <ul>
+                            <li><strong>Prefijo:</strong> Tipo de permiso (menu, view, widget, module)</li>
+                            <li><strong>Separador:</strong> Punto (.) para separar categorías</li>
+                            <li><strong>Nombres:</strong> En minúsculas, sin espacios</li>
+                            <li><strong>Guiones bajos:</strong> Para separar palabras</li>
+                        </ul>
+
+                        <h6>Ejemplos Recomendados:</h6>
+                        <table class="table table-sm">
+                            <tr><td><code>menu.actas</code></td><td>Menú de actas</td></tr>
+                            <tr><td><code>view.actas_list</code></td><td>Lista de actas</td></tr>
+                            <tr><td><code>view.actas_create</code></td><td>Crear acta</td></tr>
+                            <tr><td><code>widget.calendar</code></td><td>Widget calendario</td></tr>
+                            <tr><td><code>module.admin</code></td><td>Módulo admin</td></tr>
+                        </table>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Buenas Prácticas:</h6>
+                        <ul>
+                            <li>Mantén los códigos cortos pero descriptivos</li>
+                            <li>Usa nombres consistentes en todo el sistema</li>
+                            <li>Agrupa permisos relacionados con el mismo prefijo</li>
+                            <li>Evita caracteres especiales excepto punto y guión bajo</li>
+                        </ul>
+
+                        <h6>Ejemplos de URLs y Vistas:</h6>
+                        <table class="table table-sm">
+                            <tr><td><strong>URL:</strong></td><td><code>/actas/</code></td></tr>
+                            <tr><td><strong>Vista:</strong></td><td><code>actas_list</code></td></tr>
+                            <tr><td><strong>App:</strong></td><td><code>actas</code></td></tr>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content %}
+
+{% block javascripts %}
+<script>
+function showCodeHelper() {
+    $('#codeHelperModal').modal('show');
+}
+
+// Auto-generar código basado en el nombre
+document.getElementById('{{ form.name.id_for_label }}').addEventListener('input', function() {
+    const name = this.value.toLowerCase()
+        .replace(/[^a-z0-9\s]/g, '')
+        .replace(/\s+/g, '_')
+        .substring(0, 30);
+    
+    const typeSelect = document.getElementById('{{ form.permission_type.id_for_label }}');
+    const type = typeSelect.value || 'view';
+    
+    if (name && type) {
+        document.getElementById('{{ form.code.id_for_label }}').value = `${type}.${name}`;
+    }
+});
+
+// Auto-actualizar código cuando cambia el tipo
+document.getElementById('{{ form.permission_type.id_for_label }}').addEventListener('change', function() {
+    const nameInput = document.getElementById('{{ form.name.id_for_label }}');
+    nameInput.dispatchEvent(new Event('input'));
+});
+</script>
+{% endblock javascripts %}

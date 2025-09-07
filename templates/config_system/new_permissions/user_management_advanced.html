@@ -1,0 +1,569 @@
+{% extends "layouts/base.html" %}
+{% load static %}
+{% load permissions_tags %}
+
+{% block title %}Gestión Avanzada de Usuarios{% endblock %}
+
+{% block stylesheets %}
+<style>
+.user-card {
+    transition: all 0.3s ease;
+    border: 1px solid #dee2e6;
+}
+
+.user-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.permission-badge {
+    font-size: 0.75rem;
+    margin: 0.1rem;
+}
+
+.profile-assignment {
+    background: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 0.25rem;
+    padding: 0.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.quick-actions {
+    position: sticky;
+    top: 20px;
+}
+
+.user-status {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    display: inline-block;
+    margin-right: 0.5rem;
+}
+
+.status-active { background-color: #28a745; }
+.status-inactive { background-color: #dc3545; }
+.status-pending { background-color: #ffc107; }
+
+.search-filters {
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 0.5rem;
+    padding: 1rem;
+    margin-bottom: 1rem;
+}
+</style>
+{% endblock stylesheets %}
+
+{% block content %}
+<div class="content-wrapper">
+    <!-- Encabezado de contenido -->
+    <div class="content-header">
+        <div class="container-fluid">
+            <div class="row mb-2">
+                <div class="col-sm-6">
+                    <h1>Gestión Avanzada de Usuarios</h1>
+                    <p class="text-muted">Administra usuarios, perfiles y permisos desde una interfaz unificada</p>
+                </div>
+                <div class="col-sm-6">
+                    <ol class="breadcrumb float-sm-right">
+                        <li class="breadcrumb-item"><a href="{% url 'config_system:new_permissions:dashboard' %}">Permisos</a></li>
+                        <li class="breadcrumb-item active">Gestión Avanzada de Usuarios</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Contenido principal -->
+    <section class="content">
+        <div class="container-fluid">
+            
+            <!-- Filtros y búsqueda -->
+            <div class="search-filters">
+                <form method="get" id="searchForm">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label><i class="fas fa-search"></i> Buscar Usuario</label>
+                                <input type="text" name="search" class="form-control" 
+                                       placeholder="Nombre, email, username..." 
+                                       value="{{ request.GET.search }}">
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-group">
+                                <label><i class="fas fa-id-badge"></i> Perfil</label>
+                                <select name="profile" class="form-control">
+                                    <option value="">Todos los perfiles</option>
+                                    {% for profile in all_profiles %}
+                                        <option value="{{ profile.id }}" 
+                                                {% if request.GET.profile == profile.id|stringformat:"s" %}selected{% endif %}>
+                                            {{ profile.name }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-2">
+                            <div class="form-group">
+                                <label><i class="fas fa-toggle-on"></i> Estado</label>
+                                <select name="status" class="form-control">
+                                    <option value="">Todos</option>
+                                    <option value="active" {% if request.GET.status == 'active' %}selected{% endif %}>Activos</option>
+                                    <option value="inactive" {% if request.GET.status == 'inactive' %}selected{% endif %}>Inactivos</option>
+                                    <option value="staff" {% if request.GET.status == 'staff' %}selected{% endif %}>Staff</option>
+                                    <option value="superuser" {% if request.GET.status == 'superuser' %}selected{% endif %}>Superusuarios</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-group">
+                                <label>&nbsp;</label>
+                                <div class="btn-group w-100">
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="fas fa-search"></i> Buscar
+                                    </button>
+                                    <a href="{% url 'config_system:new_permissions:user_management_advanced' %}" 
+                                       class="btn btn-secondary">
+                                        <i class="fas fa-eraser"></i> Limpiar
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+
+            <div class="row">
+                <!-- Panel principal de usuarios -->
+                <div class="col-md-9">
+                    
+                    <!-- Toolbar -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">
+                                <i class="fas fa-users"></i>
+                                Lista de Usuarios ({{ users.count }})
+                            </h3>
+                            <div class="card-tools">
+                                <div class="btn-group">
+                                    <button type="button" class="btn btn-success" data-toggle="modal" data-target="#bulkActionModal">
+                                        <i class="fas fa-tasks"></i> Acciones Masivas
+                                    </button>
+                                    <a href="{% url 'admin:users_user_add' %}" class="btn btn-primary" target="_blank">
+                                        <i class="fas fa-plus"></i> Nuevo Usuario
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Lista de usuarios -->
+                    <div class="row">
+                        {% for user in users %}
+                        <div class="col-md-6 mb-3">
+                            <div class="card user-card">
+                                <div class="card-header py-2">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <span class="user-status {% if user.is_active %}status-active{% else %}status-inactive{% endif %}"></span>
+                                            <strong>{{ user.get_full_name|default:user.username }}</strong>
+                                            {% if user.is_superuser %}
+                                                <span class="badge badge-danger">Superuser</span>
+                                            {% elif user.is_staff %}
+                                                <span class="badge badge-warning">Staff</span>
+                                            {% endif %}
+                                        </div>
+                                        <div class="btn-group btn-group-sm">
+                                            <button type="button" class="btn btn-outline-primary btn-sm" 
+                                                    onclick="showUserDetails({{ user.id }})">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                            <button type="button" class="btn btn-outline-success btn-sm" 
+                                                    onclick="manageUserProfiles({{ user.id }})">
+                                                <i class="fas fa-id-badge"></i>
+                                            </button>
+                                            <a href="{% url 'admin:users_user_change' user.id %}" 
+                                               class="btn btn-outline-warning btn-sm" target="_blank">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="card-body py-2">
+                                    <div class="row">
+                                        <div class="col-12">
+                                            <small class="text-muted d-block">
+                                                <i class="fas fa-envelope"></i> {{ user.email|default:"Sin email" }}
+                                            </small>
+                                            <small class="text-muted d-block">
+                                                <i class="fas fa-calendar"></i> 
+                                                Último acceso: 
+                                                {% if user.last_login %}
+                                                    {{ user.last_login|date:"d/m/Y H:i" }}
+                                                {% else %}
+                                                    Nunca
+                                                {% endif %}
+                                            </small>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Perfiles asignados -->
+                                    <div class="mt-2">
+                                        <small><strong>Perfiles:</strong></small>
+                                        <div class="profile-assignments">
+                                            {% for assignment in user.userprofileassignmentproxy_set.all %}
+                                                <span class="badge badge-primary permission-badge">
+                                                    {{ assignment.profile.name }}
+                                                </span>
+                                            {% empty %}
+                                                <span class="text-muted">
+                                                    <i class="fas fa-exclamation-circle"></i> Sin perfiles asignados
+                                                </span>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+
+                                    <!-- Resumen de permisos -->
+                                    <div class="mt-2">
+                                        <small><strong>Permisos totales:</strong></small>
+                                        {% with user|get_user_permissions_proxy as user_permissions %}
+                                            <span class="badge badge-info">{{ user_permissions.count }} permisos</span>
+                                            
+                                            <!-- Mostrar algunos permisos importantes -->
+                                            {% for perm in user_permissions|slice:":3" %}
+                                                <span class="badge badge-light permission-badge" title="{{ perm.description }}">
+                                                    {{ perm.name|truncatechars:20 }}
+                                                </span>
+                                            {% endfor %}
+                                            
+                                            {% if user_permissions.count > 3 %}
+                                                <span class="badge badge-secondary">
+                                                    +{{ user_permissions.count|add:"-3" }} más
+                                                </span>
+                                            {% endif %}
+                                        {% endwith %}
+                                    </div>
+                                </div>
+                                <div class="card-footer py-1">
+                                    <div class="btn-group btn-group-sm w-100">
+                                        <button type="button" class="btn btn-outline-primary" 
+                                                onclick="quickAssignProfile({{ user.id }})">
+                                            <i class="fas fa-plus"></i> Asignar Perfil
+                                        </button>
+                                        <button type="button" class="btn btn-outline-warning" 
+                                                onclick="viewUserPermissions({{ user.id }})">
+                                            <i class="fas fa-key"></i> Ver Permisos
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% empty %}
+                        <div class="col-12">
+                            <div class="card">
+                                <div class="card-body text-center py-5">
+                                    <i class="fas fa-users fa-3x text-muted mb-3"></i>
+                                    <h5 class="text-muted">No se encontraron usuarios</h5>
+                                    <p class="text-muted">Intenta ajustar los filtros de búsqueda</p>
+                                    <a href="{% url 'admin:users_user_add' %}" class="btn btn-primary">
+                                        <i class="fas fa-plus"></i> Crear Primer Usuario
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+
+                    <!-- Paginación -->
+                    {% if users.has_other_pages %}
+                    <div class="card">
+                        <div class="card-body">
+                            <nav aria-label="Navegación de usuarios">
+                                <ul class="pagination justify-content-center">
+                                    {% if users.has_previous %}
+                                        <li class="page-item">
+                                            <a class="page-link" href="?{% if request.GET.search %}search={{ request.GET.search }}&{% endif %}{% if request.GET.profile %}profile={{ request.GET.profile }}&{% endif %}{% if request.GET.status %}status={{ request.GET.status }}&{% endif %}page={{ users.previous_page_number }}">
+                                                <i class="fas fa-chevron-left"></i> Anterior
+                                            </a>
+                                        </li>
+                                    {% endif %}
+                                    
+                                    <li class="page-item active">
+                                        <span class="page-link">
+                                            Página {{ users.number }} de {{ users.paginator.num_pages }}
+                                        </span>
+                                    </li>
+                                    
+                                    {% if users.has_next %}
+                                        <li class="page-item">
+                                            <a class="page-link" href="?{% if request.GET.search %}search={{ request.GET.search }}&{% endif %}{% if request.GET.profile %}profile={{ request.GET.profile }}&{% endif %}{% if request.GET.status %}status={{ request.GET.status }}&{% endif %}page={{ users.next_page_number }}">
+                                                Siguiente <i class="fas fa-chevron-right"></i>
+                                            </a>
+                                        </li>
+                                    {% endif %}
+                                </ul>
+                            </nav>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- Panel lateral -->
+                <div class="col-md-3">
+                    <div class="quick-actions">
+                        <!-- Estadísticas -->
+                        <div class="card card-outline card-primary">
+                            <div class="card-header">
+                                <h3 class="card-title">
+                                    <i class="fas fa-chart-bar"></i>
+                                    Estadísticas
+                                </h3>
+                            </div>
+                            <div class="card-body">
+                                <div class="info-box">
+                                    <span class="info-box-icon bg-primary"><i class="fas fa-users"></i></span>
+                                    <div class="info-box-content">
+                                        <span class="info-box-text">Total Usuarios</span>
+                                        <span class="info-box-number">{{ total_users }}</span>
+                                    </div>
+                                </div>
+                                
+                                <div class="info-box">
+                                    <span class="info-box-icon bg-success"><i class="fas fa-check-circle"></i></span>
+                                    <div class="info-box-content">
+                                        <span class="info-box-text">Activos</span>
+                                        <span class="info-box-number">{{ active_users }}</span>
+                                    </div>
+                                </div>
+                                
+                                <div class="info-box">
+                                    <span class="info-box-icon bg-warning"><i class="fas fa-shield-alt"></i></span>
+                                    <div class="info-box-content">
+                                        <span class="info-box-text">Con Perfiles</span>
+                                        <span class="info-box-number">{{ users_with_profiles }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Acciones rápidas -->
+                        <div class="card card-outline card-success">
+                            <div class="card-header">
+                                <h3 class="card-title">
+                                    <i class="fas fa-bolt"></i>
+                                    Acciones Rápidas
+                                </h3>
+                            </div>
+                            <div class="card-body">
+                                <div class="btn-group-vertical w-100">
+                                    <a href="{% url 'admin:users_user_add' %}" 
+                                       class="btn btn-outline-primary" target="_blank">
+                                        <i class="fas fa-plus"></i> Nuevo Usuario
+                                    </a>
+                                    <button type="button" class="btn btn-outline-success" 
+                                            data-toggle="modal" data-target="#bulkActionModal">
+                                        <i class="fas fa-tasks"></i> Acciones Masivas
+                                    </button>
+                                    <a href="{% url 'config_system:new_permissions:profile_management_advanced' %}" 
+                                       class="btn btn-outline-warning">
+                                        <i class="fas fa-id-badge"></i> Gestionar Perfiles
+                                    </a>
+                                    <button type="button" class="btn btn-outline-info" 
+                                            onclick="exportUserData()">
+                                        <i class="fas fa-download"></i> Exportar Datos
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Perfiles disponibles -->
+                        <div class="card card-outline card-info">
+                            <div class="card-header">
+                                <h3 class="card-title">
+                                    <i class="fas fa-id-badge"></i>
+                                    Perfiles Disponibles
+                                </h3>
+                            </div>
+                            <div class="card-body">
+                                {% for profile in all_profiles %}
+                                <div class="profile-assignment">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <strong>{{ profile.name }}</strong>
+                                            <br>
+                                            <small class="text-muted">
+                                                {{ profile.systempermissionproxy_set.count }} permisos
+                                            </small>
+                                        </div>
+                                        <button type="button" class="btn btn-sm btn-outline-primary" 
+                                                onclick="bulkAssignProfile({{ profile.id }})">
+                                            <i class="fas fa-plus"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                {% empty %}
+                                <div class="text-center text-muted">
+                                    <i class="fas fa-info-circle"></i>
+                                    <p>No hay perfiles disponibles</p>
+                                    <a href="{% url 'config_system:new_permissions:profile_management_advanced' %}" 
+                                       class="btn btn-sm btn-primary">
+                                        <i class="fas fa-plus"></i> Crear Perfil
+                                    </a>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+</div>
+
+<!-- Modal de acciones masivas -->
+<div class="modal fade" id="bulkActionModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-tasks"></i>
+                    Acciones Masivas
+                </h5>
+                <button type="button" class="close" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i>
+                    Selecciona usuarios y aplica acciones a múltiples usuarios simultáneamente.
+                </div>
+                
+                <!-- Formulario de acciones masivas -->
+                <form id="bulkActionForm">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Acción</label>
+                                <select class="form-control" id="bulkAction" required>
+                                    <option value="">Selecciona una acción</option>
+                                    <option value="assign_profile">Asignar Perfil</option>
+                                    <option value="remove_profile">Remover Perfil</option>
+                                    <option value="activate">Activar Usuarios</option>
+                                    <option value="deactivate">Desactivar Usuarios</option>
+                                    <option value="make_staff">Convertir en Staff</option>
+                                    <option value="remove_staff">Remover Staff</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group" id="profileSelectionGroup" style="display: none;">
+                                <label>Perfil</label>
+                                <select class="form-control" id="selectedProfile">
+                                    <option value="">Selecciona un perfil</option>
+                                    {% for profile in all_profiles %}
+                                        <option value="{{ profile.id }}">{{ profile.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Usuarios a procesar</label>
+                        <div id="userSelection">
+                            <!-- Se llena dinámicamente -->
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" onclick="executeBulkAction()">
+                    <i class="fas fa-check"></i> Ejecutar Acción
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Otros modales se pueden agregar aquí -->
+
+{% endblock content %}
+
+{% block javascripts %}
+<script>
+function showUserDetails(userId) {
+    // Implementar modal de detalles de usuario
+    console.log('Mostrar detalles del usuario:', userId);
+}
+
+function manageUserProfiles(userId) {
+    // Redirigir a gestión de perfiles del usuario
+    window.location.href = `/config-system/new-permissions/user/${userId}/profiles/`;
+}
+
+function quickAssignProfile(userId) {
+    // Implementar asignación rápida de perfil
+    console.log('Asignación rápida de perfil para usuario:', userId);
+}
+
+function viewUserPermissions(userId) {
+    // Implementar vista de permisos del usuario
+    console.log('Ver permisos del usuario:', userId);
+}
+
+function bulkAssignProfile(profileId) {
+    // Implementar asignación masiva de perfil
+    console.log('Asignación masiva de perfil:', profileId);
+}
+
+function exportUserData() {
+    // Implementar exportación de datos
+    console.log('Exportar datos de usuarios');
+}
+
+function executeBulkAction() {
+    const action = document.getElementById('bulkAction').value;
+    const profile = document.getElementById('selectedProfile').value;
+    
+    if (!action) {
+        alert('Por favor selecciona una acción');
+        return;
+    }
+    
+    // Implementar ejecución de acción masiva
+    console.log('Ejecutar acción masiva:', action, 'Perfil:', profile);
+}
+
+// Event listeners
+document.addEventListener('DOMContentLoaded', function() {
+    // Mostrar/ocultar selector de perfil según la acción
+    document.getElementById('bulkAction').addEventListener('change', function() {
+        const profileGroup = document.getElementById('profileSelectionGroup');
+        const action = this.value;
+        
+        if (action === 'assign_profile' || action === 'remove_profile') {
+            profileGroup.style.display = 'block';
+        } else {
+            profileGroup.style.display = 'none';
+        }
+    });
+    
+    // Auto-submit del formulario de búsqueda
+    const searchForm = document.getElementById('searchForm');
+    const searchInputs = searchForm.querySelectorAll('input, select');
+    
+    searchInputs.forEach(input => {
+        input.addEventListener('change', function() {
+            if (this.name !== 'search') {
+                searchForm.submit();
+            }
+        });
+    });
+});
+</script>
+{% endblock javascripts %}

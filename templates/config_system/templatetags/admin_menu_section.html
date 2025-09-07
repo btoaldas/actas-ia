@@ -1,0 +1,21 @@
+{% if has_items %}
+<li class="nav-item">
+    <a href="#" class="nav-link">
+        <i class="nav-icon fas fa-cogs"></i>
+        <p>
+            {{ title }}
+            <i class="fas fa-angle-left right"></i>
+        </p>
+    </a>
+    <ul class="nav nav-treeview">
+        {% for item in items %}
+        <li class="nav-item">
+            <a href="{{ item.url }}" class="nav-link">
+                <i class="{{ item.icon|default:'fas fa-circle' }} nav-icon"></i>
+                <p>{{ item.name }}</p>
+            </a>
+        </li>
+        {% endfor %}
+    </ul>
+</li>
+{% endif %}

@@ -1,0 +1,299 @@
+{% extends "layouts/base.html" %}
+{% load static %}
+
+{% block title %}Descubrir Permisos del Sistema{% endblock %}
+
+{% block stylesheets %}
+<style>
+.discovery-card {
+    border: 1px solid #dee2e6;
+    border-radius: 0.5rem;
+    transition: all 0.3s ease;
+}
+
+.discovery-card:hover {
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.app-info {
+    background: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 0.25rem;
+    padding: 1rem;
+    margin-bottom: 1rem;
+}
+
+.discovery-results {
+    max-height: 400px;
+    overflow-y: auto;
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 0.25rem;
+    padding: 1rem;
+}
+
+.url-pattern {
+    font-family: 'Courier New', monospace;
+    background: #e9ecef;
+    padding: 0.2rem 0.4rem;
+    border-radius: 0.2rem;
+    font-size: 0.85rem;
+}
+
+.warning-box {
+    background: #fff3cd;
+    border: 1px solid #ffeaa7;
+    border-radius: 0.25rem;
+    padding: 1rem;
+    margin-bottom: 1rem;
+}
+</style>
+{% endblock stylesheets %}
+
+{% block content %}
+<div class="content-wrapper">
+    <!-- Encabezado de contenido -->
+    <div class="content-header">
+        <div class="container-fluid">
+            <div class="row mb-2">
+                <div class="col-sm-6">
+                    <h1>
+                        <i class="fas fa-search"></i>
+                        Descubrir Permisos
+                    </h1>
+                    <p class="text-muted">Explora y crea permisos automáticamente desde las rutas de la aplicación</p>
+                </div>
+                <div class="col-sm-6">
+                    <ol class="breadcrumb float-sm-right">
+                        <li class="breadcrumb-item"><a href="{% url 'config_system:new_permissions:dashboard' %}">Permisos</a></li>
+                        <li class="breadcrumb-item active">Descubrir Permisos</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Contenido principal -->
+    <section class="content">
+        <div class="container-fluid">
+            <div class="row">
+                
+                <!-- Panel principal -->
+                <div class="col-md-8">
+                    <!-- Información del proceso -->
+                    <div class="card card-primary discovery-card">
+                        <div class="card-header">
+                            <h3 class="card-title">
+                                <i class="fas fa-magic"></i>
+                                Descubrimiento Automático
+                            </h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="warning-box">
+                                <h6><i class="fas fa-exclamation-triangle"></i> Importante</h6>
+                                <p class="mb-0">
+                                    Este proceso analiza todas las rutas (URLs) de la aplicación Django 
+                                    y crea permisos automáticamente. Los permisos creados se pueden 
+                                    asignar después a perfiles de usuario.
+                                </p>
+                            </div>
+
+                            <form method="post">
+                                {% csrf_token %}
+                                <div class="form-group">
+                                    <label>
+                                        <i class="fas fa-cogs"></i>
+                                        Aplicaciones a Analizar
+                                    </label>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" value="all" id="selectAll" checked>
+                                        <label class="form-check-label" for="selectAll">
+                                            <strong>Analizar todas las aplicaciones</strong>
+                                        </label>
+                                    </div>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label>
+                                        <i class="fas fa-filter"></i>
+                                        Filtros
+                                    </label>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="create_menu_permissions" id="createMenus" checked>
+                                        <label class="form-check-label" for="createMenus">
+                                            Crear permisos de menú automáticamente
+                                        </label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="create_view_permissions" id="createViews" checked>
+                                        <label class="form-check-label" for="createViews">
+                                            Crear permisos de vista automáticamente
+                                        </label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="overwrite_existing" id="overwriteExisting">
+                                        <label class="form-check-label" for="overwriteExisting">
+                                            Sobrescribir permisos existentes
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <button type="submit" class="btn btn-primary btn-lg">
+                                    <i class="fas fa-search"></i>
+                                    Iniciar Descubrimiento
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- Resultados si existen -->
+                    {% if discovery_results %}
+                    <div class="card card-success discovery-card mt-3">
+                        <div class="card-header">
+                            <h3 class="card-title">
+                                <i class="fas fa-check-circle"></i>
+                                Resultados del Descubrimiento
+                            </h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="discovery-results">
+                                <h6>Permisos creados:</h6>
+                                {% for result in discovery_results %}
+                                <div class="mb-2 p-2 border rounded">
+                                    <strong>{{ result.name }}</strong>
+                                    <br>
+                                    <code class="url-pattern">{{ result.code }}</code>
+                                    {% if result.description %}
+                                        <br>
+                                        <small class="text-muted">{{ result.description }}</small>
+                                    {% endif %}
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- Panel lateral -->
+                <div class="col-md-4">
+                    <!-- Estadísticas -->
+                    <div class="card card-outline card-info">
+                        <div class="card-header">
+                            <h3 class="card-title">
+                                <i class="fas fa-chart-pie"></i>
+                                Estadísticas Actuales
+                            </h3>
+                        </div>
+                        <div class="card-body">
+                            {% if stats %}
+                            <div class="info-box">
+                                <span class="info-box-icon bg-primary"><i class="fas fa-key"></i></span>
+                                <div class="info-box-content">
+                                    <span class="info-box-text">Total Permisos</span>
+                                    <span class="info-box-number">{{ stats.total_permissions }}</span>
+                                </div>
+                            </div>
+                            
+                            <div class="info-box">
+                                <span class="info-box-icon bg-success"><i class="fas fa-magic"></i></span>
+                                <div class="info-box-content">
+                                    <span class="info-box-text">Auto-generados</span>
+                                    <span class="info-box-number">{{ stats.auto_permissions }}</span>
+                                </div>
+                            </div>
+                            
+                            <div class="info-box">
+                                <span class="info-box-icon bg-warning"><i class="fas fa-hand-paper"></i></span>
+                                <div class="info-box-content">
+                                    <span class="info-box-text">Manuales</span>
+                                    <span class="info-box-number">{{ stats.manual_permissions }}</span>
+                                </div>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Información de aplicaciones -->
+                    <div class="card card-outline card-warning">
+                        <div class="card-header">
+                            <h3 class="card-title">
+                                <i class="fas fa-cube"></i>
+                                Aplicaciones Django
+                            </h3>
+                        </div>
+                        <div class="card-body">
+                            {% if apps_info %}
+                            {% for app in apps_info %}
+                            <div class="app-info">
+                                <strong>{{ app.name }}</strong>
+                                <br>
+                                <small class="text-muted">{{ app.description }}</small>
+                            </div>
+                            {% endfor %}
+                            {% else %}
+                            <div class="text-center text-muted">
+                                <i class="fas fa-info-circle"></i>
+                                <p>Información de aplicaciones no disponible</p>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Acciones rápidas -->
+                    <div class="card card-outline card-success">
+                        <div class="card-header">
+                            <h3 class="card-title">
+                                <i class="fas fa-bolt"></i>
+                                Acciones Rápidas
+                            </h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="btn-group-vertical w-100">
+                                <a href="{% url 'config_system:new_permissions:system_list' %}" 
+                                   class="btn btn-outline-primary">
+                                    <i class="fas fa-list"></i> Ver Todos los Permisos
+                                </a>
+                                <a href="{% url 'config_system:new_permissions:permission_creation' %}" 
+                                   class="btn btn-outline-success">
+                                    <i class="fas fa-plus"></i> Crear Permiso Manual
+                                </a>
+                                <a href="{% url 'config_system:new_permissions:profiles_list' %}" 
+                                   class="btn btn-outline-warning">
+                                    <i class="fas fa-id-badge"></i> Gestionar Perfiles
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+</div>
+{% endblock content %}
+
+{% block javascripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const selectAll = document.getElementById('selectAll');
+    
+    // Funcionalidad futura para selección de aplicaciones específicas
+    selectAll.addEventListener('change', function() {
+        console.log('Seleccionar todas las aplicaciones:', this.checked);
+    });
+    
+    // Confirmación antes de iniciar descubrimiento
+    const form = document.querySelector('form');
+    form.addEventListener('submit', function(e) {
+        const confirmed = confirm(
+            '¿Estás seguro de que deseas iniciar el descubrimiento automático de permisos?\n\n' +
+            'Este proceso puede crear muchos permisos nuevos en el sistema.'
+        );
+        
+        if (!confirmed) {
+            e.preventDefault();
+        }
+    });
+});
+</script>
+{% endblock javascripts %}

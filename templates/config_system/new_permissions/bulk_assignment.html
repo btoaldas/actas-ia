@@ -1,0 +1,280 @@
+{% extends "layouts/base.html" %}
+{% load static %}
+{% load permissions_tags %}
+
+{% block title %}Asignación Masiva de Perfiles{% endblock %}
+
+{% block content %}
+<div class="content-wrapper">
+    <!-- Encabezado de contenido -->
+    <div class="content-header">
+        <div class="container-fluid">
+            <div class="row mb-2">
+                <div class="col-sm-6">
+                    <h1>Asignación Masiva de Perfiles</h1>
+                </div>
+                <div class="col-sm-6">
+                    <ol class="breadcrumb float-sm-right">
+                        <li class="breadcrumb-item"><a href="{% url 'config_system:new_permissions:dashboard' %}">Permisos</a></li>
+                        <li class="breadcrumb-item active">Asignación Masiva</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Contenido principal -->
+    <section class="content">
+        <div class="container-fluid">
+            
+            <!-- Información -->
+            <div class="alert alert-info">
+                <h5><i class="icon fas fa-info"></i> Asignación Masiva de Perfiles</h5>
+                Selecciona múltiples usuarios y asígna un perfil a todos ellos simultáneamente.
+                Puedes elegir entre agregar el perfil manteniendo los existentes o reemplazar todos los perfiles actuales.
+            </div>
+
+            <div class="row">
+                <!-- Formulario principal -->
+                <div class="col-md-8">
+                    <div class="card card-primary">
+                        <div class="card-header">
+                            <h3 class="card-title">
+                                <i class="fas fa-users"></i>
+                                Selección de Usuarios y Perfil
+                            </h3>
+                        </div>
+                        <form method="post">
+                            {% csrf_token %}
+                            <div class="card-body">
+                                {% if form.errors %}
+                                    <div class="alert alert-danger">
+                                        <h5><i class="icon fas fa-exclamation-triangle"></i> Errores encontrados:</h5>
+                                        {{ form.errors }}
+                                    </div>
+                                {% endif %}
+
+                                <!-- Selección de perfil -->
+                                <div class="form-group">
+                                    <label for="{{ form.profile.id_for_label }}">{{ form.profile.label }}</label>
+                                    {{ form.profile }}
+                                    <small class="form-text text-muted">Perfil que será asignado a los usuarios seleccionados</small>
+                                </div>
+
+                                <!-- Tipo de acción -->
+                                <div class="form-group">
+                                    <label>{{ form.action.label }}</label>
+                                    <div class="row">
+                                        {% for choice in form.action %}
+                                        <div class="col-12">
+                                            <div class="form-check">
+                                                {{ choice.tag }}
+                                                <label class="form-check-label" for="{{ choice.id_for_label }}">
+                                                    {{ choice.choice_label }}
+                                                </label>
+                                            </div>
+                                        </div>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+
+                                <!-- Selección de usuarios -->
+                                <div class="form-group">
+                                    <label>{{ form.users.label }}</label>
+                                    <div class="row" style="max-height: 400px; overflow-y: auto;">
+                                        {% for choice in form.users %}
+                                        <div class="col-md-6 col-sm-12">
+                                            <div class="form-check mb-2">
+                                                {{ choice.tag }}
+                                                <label class="form-check-label" for="{{ choice.id_for_label }}">
+                                                    <span class="user-info">
+                                                        <strong>{{ choice.choice_label }}</strong>
+                                                        {% for user in all_users %}
+                                                            {% if user.username == choice.choice_label or user.get_full_name == choice.choice_label %}
+                                                                <br><small class="text-muted">{{ user.email|default:"Sin email" }}</small>
+                                                            {% endif %}
+                                                        {% endfor %}
+                                                    </span>
+                                                </label>
+                                            </div>
+                                        </div>
+                                        {% endfor %}
+                                    </div>
+                                    <small class="form-text text-muted">Selecciona los usuarios que recibirán el perfil</small>
+                                </div>
+                            </div>
+                            <div class="card-footer">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save"></i> Asignar Perfiles
+                                </button>
+                                <a href="{% url 'config_system:new_permissions:user_management_list' %}" 
+                                   class="btn btn-secondary">
+                                    <i class="fas fa-arrow-left"></i> Cancelar
+                                </a>
+                                <button type="button" class="btn btn-info" onclick="toggleAllUsers()">
+                                    <i class="fas fa-check-square"></i> Seleccionar Todos
+                                </button>
+                                <button type="button" class="btn btn-warning" onclick="clearAllUsers()">
+                                    <i class="fas fa-square"></i> Limpiar Selección
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Panel de información -->
+                <div class="col-md-4">
+                    <!-- Estadísticas -->
+                    <div class="card card-outline card-info">
+                        <div class="card-header">
+                            <h3 class="card-title">
+                                <i class="fas fa-chart-bar"></i>
+                                Estadísticas
+                            </h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="info-box">
+                                <span class="info-box-icon bg-info"><i class="fas fa-users"></i></span>
+                                <div class="info-box-content">
+                                    <span class="info-box-text">Usuarios Disponibles</span>
+                                    <span class="info-box-number">{{ total_users }}</span>
+                                </div>
+                            </div>
+                            <div class="info-box">
+                                <span class="info-box-icon bg-success"><i class="fas fa-id-badge"></i></span>
+                                <div class="info-box-content">
+                                    <span class="info-box-text">Perfiles Disponibles</span>
+                                    <span class="info-box-number">{{ total_profiles }}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Acciones rápidas -->
+                    <div class="card card-outline card-success">
+                        <div class="card-header">
+                            <h3 class="card-title">
+                                <i class="fas fa-bolt"></i>
+                                Acciones Rápidas
+                            </h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="btn-group-vertical w-100">
+                                <a href="{% url 'config_system:new_permissions:user_management_list' %}" 
+                                   class="btn btn-info btn-sm">
+                                    <i class="fas fa-list"></i> Ver todos los usuarios
+                                </a>
+                                <a href="{% url 'config_system:new_permissions:profile_management_advanced' %}" 
+                                   class="btn btn-success btn-sm">
+                                    <i class="fas fa-cogs"></i> Gestionar perfiles
+                                </a>
+                                <a href="{% url 'config_system:new_permissions:profiles_create' %}" 
+                                   class="btn btn-warning btn-sm">
+                                    <i class="fas fa-plus"></i> Crear nuevo perfil
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Ayuda -->
+                    <div class="card card-outline card-warning">
+                        <div class="card-header">
+                            <h3 class="card-title">
+                                <i class="fas fa-question-circle"></i>
+                                Ayuda
+                            </h3>
+                        </div>
+                        <div class="card-body">
+                            <h6>Tipos de Asignación:</h6>
+                            <ul class="list-unstyled">
+                                <li><strong>Agregar perfil:</strong> Mantiene los perfiles existentes del usuario y agrega el nuevo</li>
+                                <li><strong>Reemplazar perfiles:</strong> Elimina todos los perfiles actuales y asigna solo el seleccionado</li>
+                            </ul>
+                            
+                            <h6>Recomendaciones:</h6>
+                            <ul class="list-unstyled">
+                                <li>• Usa "Agregar" para perfiles complementarios</li>
+                                <li>• Usa "Reemplazar" para cambios de rol completos</li>
+                                <li>• Verifica la selección antes de confirmar</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+</div>
+{% endblock content %}
+
+{% block javascripts %}
+<script>
+function toggleAllUsers() {
+    const checkboxes = document.querySelectorAll('input[name="users"]');
+    const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+    
+    checkboxes.forEach(cb => {
+        cb.checked = !allChecked;
+    });
+    
+    updateButtonText();
+}
+
+function clearAllUsers() {
+    const checkboxes = document.querySelectorAll('input[name="users"]');
+    checkboxes.forEach(cb => {
+        cb.checked = false;
+    });
+    
+    updateButtonText();
+}
+
+function updateButtonText() {
+    const checkboxes = document.querySelectorAll('input[name="users"]:checked');
+    const button = document.querySelector('button[onclick="toggleAllUsers()"]');
+    
+    if (checkboxes.length === 0) {
+        button.innerHTML = '<i class="fas fa-check-square"></i> Seleccionar Todos';
+    } else {
+        button.innerHTML = '<i class="fas fa-square"></i> Deseleccionar Todos';
+    }
+}
+
+// Actualizar texto del botón al cargar la página
+document.addEventListener('DOMContentLoaded', function() {
+    updateButtonText();
+    
+    // Agregar event listeners a los checkboxes
+    const checkboxes = document.querySelectorAll('input[name="users"]');
+    checkboxes.forEach(cb => {
+        cb.addEventListener('change', updateButtonText);
+    });
+});
+
+// Validación antes de enviar
+document.querySelector('form').addEventListener('submit', function(e) {
+    const selectedUsers = document.querySelectorAll('input[name="users"]:checked');
+    const selectedProfile = document.querySelector('select[name="profile"]').value;
+    
+    if (selectedUsers.length === 0) {
+        e.preventDefault();
+        alert('Por favor selecciona al menos un usuario.');
+        return false;
+    }
+    
+    if (!selectedProfile) {
+        e.preventDefault();
+        alert('Por favor selecciona un perfil.');
+        return false;
+    }
+    
+    const confirmation = confirm(
+        `¿Está seguro de asignar el perfil a ${selectedUsers.length} usuario(s) seleccionado(s)?`
+    );
+    
+    if (!confirmation) {
+        e.preventDefault();
+        return false;
+    }
+});
+</script>
+{% endblock javascripts %}

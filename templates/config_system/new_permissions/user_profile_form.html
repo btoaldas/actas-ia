@@ -1,0 +1,430 @@
+{% extends "layouts/base.html" %}
+{% load static %}
+
+{% block title %}
+    {% if profile %}
+        Editar Perfil - {{ profile.name }}
+    {% else %}
+        Crear Nuevo Perfil
+    {% endif %}
+{% endblock %}
+
+{% block stylesheets %}
+<style>
+.profile-form-card {
+    border: 1px solid #dee2e6;
+    border-radius: 0.5rem;
+}
+
+.form-section {
+    background: #f8f9fa;
+    border-radius: 0.25rem;
+    padding: 1rem;
+    margin-bottom: 1rem;
+}
+
+.permission-preview {
+    max-height: 300px;
+    overflow-y: auto;
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 0.25rem;
+    padding: 0.5rem;
+}
+
+.field-help {
+    background: #e3f2fd;
+    border: 1px solid #bbdefb;
+    border-radius: 0.25rem;
+    padding: 0.5rem;
+    margin-top: 0.5rem;
+}
+</style>
+{% endblock stylesheets %}
+
+{% block content %}
+<div class="content-wrapper">
+    <!-- Encabezado de contenido -->
+    <div class="content-header">
+        <div class="container-fluid">
+            <div class="row mb-2">
+                <div class="col-sm-6">
+                    <h1>
+                        {% if profile %}
+                            <i class="fas fa-edit"></i> Editar Perfil
+                        {% else %}
+                            <i class="fas fa-plus"></i> Crear Perfil
+                        {% endif %}
+                    </h1>
+                    <p class="text-muted">
+                        {% if profile %}
+                            Modifica la información del perfil "{{ profile.name }}"
+                        {% else %}
+                            Crea un nuevo perfil de usuario para agrupar permisos
+                        {% endif %}
+                    </p>
+                </div>
+                <div class="col-sm-6">
+                    <ol class="breadcrumb float-sm-right">
+                        <li class="breadcrumb-item"><a href="{% url 'config_system:new_permissions:dashboard' %}">Permisos</a></li>
+                        <li class="breadcrumb-item"><a href="{% url 'config_system:new_permissions:profiles_list' %}">Perfiles</a></li>
+                        <li class="breadcrumb-item active">
+                            {% if profile %}Editar{% else %}Crear{% endif %}
+                        </li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Contenido principal -->
+    <section class="content">
+        <div class="container-fluid">
+            <div class="row">
+                
+                <!-- Formulario principal -->
+                <div class="col-md-8">
+                    <div class="card card-primary profile-form-card">
+                        <div class="card-header">
+                            <h3 class="card-title">
+                                <i class="fas fa-id-badge"></i>
+                                {% if profile %}Información del Perfil{% else %}Datos del Nuevo Perfil{% endif %}
+                            </h3>
+                        </div>
+                        
+                        <form method="post" id="profileForm">
+                            {% csrf_token %}
+                            <div class="card-body">
+                                {% if form.errors %}
+                                    <div class="alert alert-danger">
+                                        <h5><i class="icon fas fa-exclamation-triangle"></i> Errores encontrados:</h5>
+                                        {% for field, errors in form.errors.items %}
+                                            <ul class="mb-0">
+                                                {% if field == '__all__' %}
+                                                    {% for error in errors %}
+                                                        <li>{{ error }}</li>
+                                                    {% endfor %}
+                                                {% else %}
+                                                    <li><strong>{{ form|yesno:"field,field" }}:</strong> {{ errors|join:", " }}</li>
+                                                {% endif %}
+                                            </ul>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+
+                                <!-- Información básica -->
+                                <div class="form-section">
+                                    <h6><i class="fas fa-info-circle"></i> Información Básica</h6>
+                                    
+                                    <div class="form-group">
+                                        <label for="{{ form.name.id_for_label }}">
+                                            <i class="fas fa-tag"></i> Nombre del Perfil <span class="text-danger">*</span>
+                                        </label>
+                                        {{ form.name }}
+                                        {% if form.name.help_text %}
+                                            <small class="form-text text-muted">{{ form.name.help_text }}</small>
+                                        {% endif %}
+                                        <div class="field-help">
+                                            <small><i class="fas fa-lightbulb"></i> Usa un nombre descriptivo como "Administrador", "Editor", "Visualizador", etc.</small>
+                                        </div>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label for="{{ form.description.id_for_label }}">
+                                            <i class="fas fa-align-left"></i> Descripción
+                                        </label>
+                                        {{ form.description }}
+                                        {% if form.description.help_text %}
+                                            <small class="form-text text-muted">{{ form.description.help_text }}</small>
+                                        {% endif %}
+                                        <div class="field-help">
+                                            <small><i class="fas fa-lightbulb"></i> Describe el propósito y alcance de este perfil para otros administradores.</small>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Configuración avanzada -->
+                                <div class="form-section">
+                                    <h6><i class="fas fa-cogs"></i> Configuración</h6>
+                                    
+                                    {% if form.is_active %}
+                                    <div class="form-group">
+                                        <div class="form-check">
+                                            {{ form.is_active }}
+                                            <label class="form-check-label" for="{{ form.is_active.id_for_label }}">
+                                                <i class="fas fa-toggle-on"></i> Perfil activo
+                                            </label>
+                                        </div>
+                                        <div class="field-help">
+                                            <small><i class="fas fa-info-circle"></i> Solo los perfiles activos pueden ser asignados a usuarios.</small>
+                                        </div>
+                                    </div>
+                                    {% endif %}
+                                    
+                                    {% if form.can_be_assigned %}
+                                    <div class="form-group">
+                                        <div class="form-check">
+                                            {{ form.can_be_assigned }}
+                                            <label class="form-check-label" for="{{ form.can_be_assigned.id_for_label }}">
+                                                <i class="fas fa-user-plus"></i> Puede ser asignado
+                                            </label>
+                                        </div>
+                                        <div class="field-help">
+                                            <small><i class="fas fa-info-circle"></i> Permite que este perfil sea asignado a usuarios.</small>
+                                        </div>
+                                    </div>
+                                    {% endif %}
+                                </div>
+
+                                <!-- Vista previa si estamos editando -->
+                                {% if profile %}
+                                <div class="form-section">
+                                    <h6><i class="fas fa-chart-bar"></i> Estadísticas Actuales</h6>
+                                    <div class="row">
+                                        <div class="col-md-4">
+                                            <div class="info-box">
+                                                <span class="info-box-icon bg-primary"><i class="fas fa-key"></i></span>
+                                                <div class="info-box-content">
+                                                    <span class="info-box-text">Permisos</span>
+                                                    <span class="info-box-number">{{ profile.systempermissionproxy_set.count }}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <div class="info-box">
+                                                <span class="info-box-icon bg-success"><i class="fas fa-users"></i></span>
+                                                <div class="info-box-content">
+                                                    <span class="info-box-text">Usuarios</span>
+                                                    <span class="info-box-number">{{ profile.userprofileassignmentproxy_set.count }}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <div class="info-box">
+                                                <span class="info-box-icon bg-warning"><i class="fas fa-calendar"></i></span>
+                                                <div class="info-box-content">
+                                                    <span class="info-box-text">Creado</span>
+                                                    <span class="info-box-number">
+                                                        {% if profile.created_at %}
+                                                            {{ profile.created_at|date:"d/m/Y" }}
+                                                        {% else %}
+                                                            N/A
+                                                        {% endif %}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="card-footer">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save"></i>
+                                    {% if profile %}Actualizar Perfil{% else %}Crear Perfil{% endif %}
+                                </button>
+                                <a href="{% url 'config_system:new_permissions:profiles_list' %}" class="btn btn-secondary">
+                                    <i class="fas fa-arrow-left"></i> Volver a Lista
+                                </a>
+                                {% if profile %}
+                                <a href="{% url 'config_system:new_permissions:profile_permission_assignment' profile.id %}" class="btn btn-success">
+                                    <i class="fas fa-key"></i> Gestionar Permisos
+                                </a>
+                                <button type="button" class="btn btn-danger" onclick="confirmDelete()">
+                                    <i class="fas fa-trash"></i> Eliminar Perfil
+                                </button>
+                                {% endif %}
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Panel lateral -->
+                <div class="col-md-4">
+                    <!-- Información y consejos -->
+                    <div class="card card-outline card-info">
+                        <div class="card-header">
+                            <h3 class="card-title">
+                                <i class="fas fa-info-circle"></i>
+                                Información
+                            </h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="alert alert-info">
+                                <h6><i class="fas fa-lightbulb"></i> Consejos:</h6>
+                                <ul class="mb-0">
+                                    <li>Usa nombres descriptivos y únicos</li>
+                                    <li>Agrupa permisos relacionados en un perfil</li>
+                                    <li>Describe claramente el propósito del perfil</li>
+                                    <li>Mantén los perfiles simples y específicos</li>
+                                </ul>
+                            </div>
+                            
+                            <div class="alert alert-warning">
+                                <h6><i class="fas fa-exclamation-triangle"></i> Importante:</h6>
+                                <p class="mb-0">
+                                    {% if profile %}
+                                        Modificar este perfil afectará a todos los usuarios que lo tengan asignado.
+                                    {% else %}
+                                        Después de crear el perfil podrás asignarle permisos específicos.
+                                    {% endif %}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Perfiles existentes -->
+                    <div class="card card-outline card-success">
+                        <div class="card-header">
+                            <h3 class="card-title">
+                                <i class="fas fa-list"></i>
+                                Perfiles Existentes
+                            </h3>
+                        </div>
+                        <div class="card-body">
+                            {% for existing_profile in existing_profiles %}
+                            <div class="d-flex justify-content-between align-items-center mb-2 p-2 border rounded">
+                                <div>
+                                    <strong>{{ existing_profile.name }}</strong>
+                                    <br>
+                                    <small class="text-muted">{{ existing_profile.systempermissionproxy_set.count }} permisos</small>
+                                </div>
+                                <a href="{% url 'config_system:new_permissions:profiles_edit' existing_profile.id %}" 
+                                   class="btn btn-sm btn-outline-primary">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                            </div>
+                            {% empty %}
+                            <div class="text-center text-muted">
+                                <i class="fas fa-info-circle"></i>
+                                <p>No hay otros perfiles creados</p>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <!-- Acciones rápidas -->
+                    {% if profile %}
+                    <div class="card card-outline card-warning">
+                        <div class="card-header">
+                            <h3 class="card-title">
+                                <i class="fas fa-bolt"></i>
+                                Acciones Rápidas
+                            </h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="btn-group-vertical w-100">
+                                <a href="{% url 'config_system:new_permissions:profile_permission_assignment' profile.id %}" 
+                                   class="btn btn-outline-success">
+                                    <i class="fas fa-key"></i> Gestionar Permisos
+                                </a>
+                                <button type="button" class="btn btn-outline-info" onclick="viewUsers()">
+                                    <i class="fas fa-users"></i> Ver Usuarios Asignados
+                                </button>
+                                <button type="button" class="btn btn-outline-warning" onclick="duplicateProfile()">
+                                    <i class="fas fa-copy"></i> Duplicar Perfil
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </section>
+</div>
+
+<!-- Modal de confirmación de eliminación -->
+{% if profile %}
+<div class="modal fade" id="deleteModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-exclamation-triangle text-danger"></i>
+                    Confirmar Eliminación
+                </h5>
+                <button type="button" class="close" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p>¿Estás seguro de que deseas eliminar el perfil <strong>"{{ profile.name }}"</strong>?</p>
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <strong>Esta acción:</strong>
+                    <ul>
+                        <li>Eliminará el perfil permanentemente</li>
+                        <li>Removerá todas las asignaciones de usuarios</li>
+                        <li>No se puede deshacer</li>
+                    </ul>
+                </div>
+                <p>Usuarios actualmente asignados: <strong>{{ profile.userprofileassignmentproxy_set.count }}</strong></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+                <a href="{% url 'config_system:new_permissions:profile_delete' profile.id %}" 
+                   class="btn btn-danger">
+                    <i class="fas fa-trash"></i> Eliminar Definitivamente
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock content %}
+
+{% block javascripts %}
+<script>
+function confirmDelete() {
+    $('#deleteModal').modal('show');
+}
+
+function viewUsers() {
+    // Implementar vista de usuarios asignados
+    window.location.href = '{% url "config_system:new_permissions:user_management_list" %}?profile={{ profile.id }}';
+}
+
+function duplicateProfile() {
+    // Implementar duplicación de perfil
+    const profileName = '{{ profile.name }}';
+    const newName = prompt(`Nombre para el perfil duplicado:`, `${profileName} - Copia`);
+    
+    if (newName && newName.trim()) {
+        // Implementar lógica de duplicación
+        alert('Funcionalidad de duplicación no implementada aún');
+    }
+}
+
+// Validación del formulario
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('profileForm');
+    const nameField = document.querySelector('#{{ form.name.id_for_label }}');
+    
+    form.addEventListener('submit', function(e) {
+        if (!nameField.value.trim()) {
+            e.preventDefault();
+            alert('El nombre del perfil es obligatorio');
+            nameField.focus();
+            return;
+        }
+        
+        // Validación adicional si es necesaria
+        if (nameField.value.length < 3) {
+            e.preventDefault();
+            alert('El nombre del perfil debe tener al menos 3 caracteres');
+            nameField.focus();
+            return;
+        }
+    });
+    
+    // Auto-focus en el campo nombre si es un nuevo perfil
+    {% if not profile %}
+    if (nameField) {
+        nameField.focus();
+    }
+    {% endif %}
+});
+</script>
+{% endblock javascripts %}

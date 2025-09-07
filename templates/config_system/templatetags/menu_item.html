@@ -1,0 +1,8 @@
+{% if can_access %}
+<li class="nav-item">
+    <a href="{{ menu_url }}" class="nav-link {{ active_class }}">
+        <i class="{{ icon_class }} nav-icon"></i>
+        <p>{{ menu_name }}</p>
+    </a>
+</li>
+{% endif %}

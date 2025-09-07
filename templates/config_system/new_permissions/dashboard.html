@@ -1,0 +1,311 @@
+{% extends "layouts/base.html" %}
+{% load static %}
+{% load permissions_tags %}
+
+{% block title %}Sistema de Permisos{% endblock %}
+
+{% block stylesheets %}
+{{ block.super }}
+<style>
+.stats-card {
+    transition: transform 0.2s;
+}
+.stats-card:hover {
+    transform: translateY(-5px);
+}
+.permission-type-badge {
+    font-size: 0.875rem;
+    padding: 0.375rem 0.75rem;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="content-wrapper">
+    <!-- Content Header -->
+    <div class="content-header">
+        <div class="container-fluid">
+            <div class="row mb-2">
+                <div class="col-sm-6">
+                    <h1 class="m-0">Sistema de Permisos</h1>
+                </div>
+                <div class="col-sm-6">
+                    <ol class="breadcrumb float-sm-right">
+                        {% for item in breadcrumbs %}
+                            {% if forloop.last %}
+                                <li class="breadcrumb-item active">{{ item.name }}</li>
+                            {% else %}
+                                <li class="breadcrumb-item"><a href="{{ item.url }}">{{ item.name }}</a></li>
+                            {% endif %}
+                        {% endfor %}
+                    </ol>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main content -->
+    <section class="content">
+        <div class="container-fluid">
+            
+            <!-- Estadísticas Generales -->
+            <div class="row">
+                <div class="col-lg-3 col-6">
+                    <div class="small-box bg-info stats-card">
+                        <div class="inner">
+                            <h3>{{ stats.total_permissions }}</h3>
+                            <p>Permisos Totales</p>
+                        </div>
+                        <div class="icon">
+                            <i class="fas fa-key"></i>
+                        </div>
+                        <a href="{% url 'config_system:new_permissions:system_list' %}" class="small-box-footer">
+                            Ver permisos <i class="fas fa-arrow-circle-right"></i>
+                        </a>
+                    </div>
+                </div>
+                
+                <div class="col-lg-3 col-6">
+                    <div class="small-box bg-success stats-card">
+                        <div class="inner">
+                            <h3>{{ stats.total_profiles }}</h3>
+                            <p>Perfiles Activos</p>
+                        </div>
+                        <div class="icon">
+                            <i class="fas fa-users-cog"></i>
+                        </div>
+                        <a href="{% url 'config_system:new_permissions:profiles_list' %}" class="small-box-footer">
+                            Ver perfiles <i class="fas fa-arrow-circle-right"></i>
+                        </a>
+                    </div>
+                </div>
+                
+                <div class="col-lg-3 col-6">
+                    <div class="small-box bg-warning stats-card">
+                        <div class="inner">
+                            <h3>{{ stats.total_assignments }}</h3>
+                            <p>Asignaciones</p>
+                        </div>
+                        <div class="icon">
+                            <i class="fas fa-user-check"></i>
+                        </div>
+                        <a href="{% url 'config_system:new_permissions:assignments_list' %}" class="small-box-footer">
+                            Ver asignaciones <i class="fas fa-arrow-circle-right"></i>
+                        </a>
+                    </div>
+                </div>
+                
+                <div class="col-lg-3 col-6">
+                    <div class="small-box bg-danger stats-card">
+                        <div class="inner">
+                            <h3>{{ stats.total_users_with_profiles }}</h3>
+                            <p>Usuarios con Perfiles</p>
+                        </div>
+                        <div class="icon">
+                            <i class="fas fa-users"></i>
+                        </div>
+                        <a href="{% url 'config_system:new_permissions:assignments_list' %}" class="small-box-footer">
+                            Ver usuarios <i class="fas fa-arrow-circle-right"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <!-- Distribución de Permisos por Tipo -->
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">
+                                <i class="fas fa-chart-pie mr-1"></i>
+                                Permisos por Tipo
+                            </h3>
+                        </div>
+                        <div class="card-body">
+                            {% for type_name, count in permissions_by_type.items %}
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span class="permission-type-badge badge 
+                                    {% if type_name == 'Menú' %}badge-primary{% endif %}
+                                    {% if type_name == 'Vista' %}badge-success{% endif %}
+                                    {% if type_name == 'Widget' %}badge-warning{% endif %}
+                                    {% if type_name == 'Módulo' %}badge-info{% endif %}
+                                ">
+                                    <i class="
+                                        {% if type_name == 'Menú' %}fas fa-bars{% endif %}
+                                        {% if type_name == 'Vista' %}fas fa-eye{% endif %}
+                                        {% if type_name == 'Widget' %}fas fa-puzzle-piece{% endif %}
+                                        {% if type_name == 'Módulo' %}fas fa-cube{% endif %}
+                                    "></i>
+                                    {{ type_name }}
+                                </span>
+                                <strong>{{ count }}</strong>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Perfiles Más Usados -->
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">
+                                <i class="fas fa-trophy mr-1"></i>
+                                Perfiles Más Usados
+                            </h3>
+                        </div>
+                        <div class="card-body">
+                            {% if popular_profiles %}
+                                {% for profile in popular_profiles %}
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <span>
+                                        <i class="fas fa-user-tag text-primary mr-1"></i>
+                                        {{ profile.name }}
+                                    </span>
+                                    <span class="badge badge-secondary">{{ profile.usage_count }} usuario{{ profile.usage_count|pluralize }}</span>
+                                </div>
+                                {% endfor %}
+                            {% else %}
+                                <p class="text-muted">No hay perfiles creados aún.</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Acciones Rápidas -->
+            <div class="row">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">
+                                <i class="fas fa-bolt mr-1"></i>
+                                Acciones Rápidas
+                            </h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <!-- Gestión de Permisos -->
+                                <div class="col-md-3">
+                                    <a href="{% url 'config_system:new_permissions:discover' %}" class="btn btn-primary btn-block">
+                                        <i class="fas fa-search mr-1"></i>
+                                        Descubrir Permisos
+                                    </a>
+                                </div>
+                                <div class="col-md-3">
+                                    <a href="{% url 'config_system:new_permissions:permission_creation' %}" class="btn btn-info btn-block">
+                                        <i class="fas fa-plus mr-1"></i>
+                                        Crear Permiso
+                                    </a>
+                                </div>
+
+                                <!-- Gestión de Perfiles -->
+                                <div class="col-md-3">
+                                    <a href="{% url 'config_system:new_permissions:profiles_create' %}" class="btn btn-success btn-block">
+                                        <i class="fas fa-user-plus mr-1"></i>
+                                        Crear Perfil
+                                    </a>
+                                </div>
+                                <div class="col-md-3">
+                                    <a href="{% url 'config_system:new_permissions:profile_management_advanced' %}" class="btn btn-warning btn-block">
+                                        <i class="fas fa-cogs mr-1"></i>
+                                        Gestión Avanzada
+                                    </a>
+                                </div>
+                            </div>
+                            
+                            <div class="row mt-3">
+                                <!-- Gestión de Usuarios -->
+                                <div class="col-md-3">
+                                    <a href="{% url 'config_system:new_permissions:user_management_list' %}" class="btn btn-secondary btn-block">
+                                        <i class="fas fa-users mr-1"></i>
+                                        Gestionar Usuarios
+                                    </a>
+                                </div>
+                                <div class="col-md-3">
+                                    <a href="{% url 'config_system:new_permissions:assignments_create' %}" class="btn btn-danger btn-block">
+                                        <i class="fas fa-user-tag mr-1"></i>
+                                        Asignar Perfil
+                                    </a>
+                                </div>
+
+                                <!-- Utilidades -->
+                                <div class="col-md-3">
+                                    <a href="{% url 'config_system:new_permissions:discover_routes_permissions' %}" class="btn btn-dark btn-block">
+                                        <i class="fas fa-route mr-1"></i>
+                                        Descubrir Rutas
+                                    </a>
+                                </div>
+                                <div class="col-md-3">
+                                    <a href="{% url 'config_system:new_permissions:bulk_assign' %}" class="btn btn-outline-primary btn-block">
+                                        <i class="fas fa-tasks mr-1"></i>
+                                        Asignación Masiva
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Usuarios Sin Perfiles -->
+            {% if users_without_profiles %}
+            <div class="row">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">
+                                <i class="fas fa-exclamation-triangle text-warning mr-1"></i>
+                                Usuarios Sin Perfiles Asignados
+                            </h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                {% for user in users_without_profiles %}
+                                <div class="col-md-4 col-sm-6 mb-2">
+                                    <div class="d-flex justify-content-between align-items-center p-2 border rounded">
+                                        <span>
+                                            <i class="fas fa-user text-muted mr-1"></i>
+                                            {{ user.get_full_name|default:user.username }}
+                                        </span>
+                                        <a href="{% url 'config_system:new_permissions:assignments_create' %}?user={{ user.id }}" 
+                                           class="btn btn-sm btn-outline-primary">
+                                            <i class="fas fa-plus"></i>
+                                        </a>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                            {% if users_without_profiles|length >= 10 %}
+                            <div class="text-center mt-3">
+                                <a href="{% url 'config_system:new_permissions:assignments_list' %}" class="btn btn-outline-secondary">
+                                    Ver todos los usuarios sin perfiles
+                                </a>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+        </div>
+    </section>
+</div>
+{% endblock %}
+
+{% block javascripts %}
+{{ block.super }}
+<script>
+$(document).ready(function() {
+    // Animación de las cards de estadísticas
+    $('.stats-card').hover(
+        function() { $(this).addClass('shadow-lg'); },
+        function() { $(this).removeClass('shadow-lg'); }
+    );
+    
+    // Tooltips para badges
+    $('[data-toggle="tooltip"]').tooltip();
+});
+</script>
+{% endblock %}

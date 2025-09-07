@@ -1,0 +1,24 @@
+🏗️ ESTRUCTURA DEL SISTEMA NUEVO:
+├── 📊 Base de Datos (SQL directo)
+│   ├── config_system_systempermission
+│   ├── config_system_userprofile  
+│   ├── config_system_userprofileassignment
+│   └── config_system_userprofile_permissions
+│
+├── 🔧 Backend Django
+│   ├── models_proxy.py (Modelos Django)
+│   ├── views_new_permissions.py (Vistas AdminLTE)
+│   ├── forms_new_permissions.py (Formularios)
+│   ├── permissions.py (Decoradores)
+│   └── templatetags/permissions_tags.py
+│
+├── 🎨 Frontend AdminLTE
+│   ├── Dashboard con estadísticas
+│   ├── Lista de permisos con filtros
+│   ├── Formularios responsive
+│   └── Gestión de perfiles
+│
+└── 🚀 Comandos de Gestión
+    ├── setup_new_permissions.py
+    ├── init_permissions_system.py
+    └── discover_permissions.py

@@ -1,0 +1,533 @@
+{% extends "layouts/base.html" %}
+{% load static %}
+{% load permissions_tags %}
+
+{% block title %}
+    {% if assignment %}
+        Editar Asignación de Usuario
+    {% else %}
+        Asignar Perfil a Usuario
+    {% endif %}
+{% endblock %}
+
+{% block stylesheets %}
+<style>
+.assignment-card {
+    border: 1px solid #dee2e6;
+    border-radius: 0.5rem;
+    transition: all 0.3s ease;
+}
+
+.assignment-card:hover {
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.user-info {
+    background: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 0.25rem;
+    padding: 1rem;
+    margin-bottom: 1rem;
+}
+
+.profile-option {
+    border: 1px solid #dee2e6;
+    border-radius: 0.25rem;
+    padding: 0.75rem;
+    margin-bottom: 0.5rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.profile-option:hover {
+    background: #f8f9fa;
+    border-color: #007bff;
+}
+
+.profile-option.selected {
+    background: #e3f2fd;
+    border-color: #2196f3;
+}
+
+.permission-preview {
+    max-height: 200px;
+    overflow-y: auto;
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 0.25rem;
+    padding: 0.5rem;
+}
+
+.current-assignments {
+    background: #fff3cd;
+    border: 1px solid #ffeaa7;
+    border-radius: 0.25rem;
+    padding: 1rem;
+    margin-bottom: 1rem;
+}
+</style>
+{% endblock stylesheets %}
+
+{% block content %}
+<div class="content-wrapper">
+    <!-- Encabezado de contenido -->
+    <div class="content-header">
+        <div class="container-fluid">
+            <div class="row mb-2">
+                <div class="col-sm-6">
+                    <h1>
+                        {% if assignment %}
+                            <i class="fas fa-edit"></i> Editar Asignación
+                        {% else %}
+                            <i class="fas fa-plus"></i> Nueva Asignación
+                        {% endif %}
+                    </h1>
+                    <p class="text-muted">Asigna perfiles a usuarios para otorgar permisos específicos</p>
+                </div>
+                <div class="col-sm-6">
+                    <ol class="breadcrumb float-sm-right">
+                        <li class="breadcrumb-item"><a href="{% url 'config_system:new_permissions:dashboard' %}">Permisos</a></li>
+                        <li class="breadcrumb-item"><a href="{% url 'config_system:new_permissions:user_management_list' %}">Gestión de Usuarios</a></li>
+                        <li class="breadcrumb-item active">
+                            {% if assignment %}Editar{% else %}Nueva{% endif %} Asignación
+                        </li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Contenido principal -->
+    <section class="content">
+        <div class="container-fluid">
+            <div class="row">
+                
+                <!-- Formulario principal -->
+                <div class="col-md-8">
+                    <div class="card card-primary">
+                        <div class="card-header">
+                            <h3 class="card-title">
+                                <i class="fas fa-user-cog"></i>
+                                {% if assignment %}Modificar Asignación{% else %}Crear Nueva Asignación{% endif %}
+                            </h3>
+                        </div>
+                        
+                        <form method="post" id="assignmentForm">
+                            {% csrf_token %}
+                            <div class="card-body">
+                                {% if form.errors %}
+                                    <div class="alert alert-danger">
+                                        <h5><i class="icon fas fa-exclamation-triangle"></i> Errores encontrados:</h5>
+                                        {{ form.errors }}
+                                    </div>
+                                {% endif %}
+
+                                <!-- Información del usuario -->
+                                <div class="user-info">
+                                    <div class="row">
+                                        <div class="col-md-8">
+                                            <h5>
+                                                <i class="fas fa-user"></i>
+                                                {% if selected_user %}
+                                                    {{ selected_user.get_full_name|default:selected_user.username }}
+                                                {% else %}
+                                                    Seleccionar Usuario
+                                                {% endif %}
+                                            </h5>
+                                            {% if selected_user %}
+                                                <p class="mb-1">
+                                                    <i class="fas fa-envelope"></i> {{ selected_user.email|default:"Sin email" }}
+                                                </p>
+                                                <p class="mb-0">
+                                                    <i class="fas fa-calendar"></i> 
+                                                    Último acceso: 
+                                                    {% if selected_user.last_login %}
+                                                        {{ selected_user.last_login|date:"d/m/Y H:i" }}
+                                                    {% else %}
+                                                        Nunca
+                                                    {% endif %}
+                                                </p>
+                                            {% endif %}
+                                        </div>
+                                        <div class="col-md-4 text-right">
+                                            {% if not selected_user %}
+                                                <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#userSelectionModal">
+                                                    <i class="fas fa-search"></i> Seleccionar Usuario
+                                                </button>
+                                            {% else %}
+                                                <button type="button" class="btn btn-outline-secondary" data-toggle="modal" data-target="#userSelectionModal">
+                                                    <i class="fas fa-exchange-alt"></i> Cambiar Usuario
+                                                </button>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Asignaciones actuales del usuario -->
+                                {% if selected_user and current_assignments %}
+                                <div class="current-assignments">
+                                    <h6><i class="fas fa-id-badge"></i> Perfiles Actuales del Usuario</h6>
+                                    <div class="row">
+                                        {% for current_assignment in current_assignments %}
+                                        <div class="col-md-6 mb-2">
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <span class="badge badge-primary p-2">
+                                                    {{ current_assignment.profile.name }}
+                                                </span>
+                                                <small class="text-muted">
+                                                    Asignado: {{ current_assignment.assigned_at|date:"d/m/Y" }}
+                                                </small>
+                                            </div>
+                                        </div>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                                {% endif %}
+
+                                <!-- Selección de usuario (si no está predefinido) -->
+                                {% if not selected_user %}
+                                <div class="form-group">
+                                    <label for="{{ form.user.id_for_label }}">
+                                        <i class="fas fa-user"></i> Usuario <span class="text-danger">*</span>
+                                    </label>
+                                    {{ form.user }}
+                                    {% if form.user.help_text %}
+                                        <small class="form-text text-muted">{{ form.user.help_text }}</small>
+                                    {% endif %}
+                                </div>
+                                {% else %}
+                                <input type="hidden" name="user" value="{{ selected_user.id }}">
+                                {% endif %}
+
+                                <!-- Selección de perfil -->
+                                <div class="form-group">
+                                    <label for="{{ form.profile.id_for_label }}">
+                                        <i class="fas fa-id-badge"></i> Perfil <span class="text-danger">*</span>
+                                    </label>
+                                    
+                                    {% if profiles %}
+                                    <div class="profile-selection">
+                                        {% for profile in profiles %}
+                                        <div class="profile-option" data-profile-id="{{ profile.id }}" onclick="selectProfile({{ profile.id }})">
+                                            <div class="row">
+                                                <div class="col-md-8">
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" type="radio" 
+                                                               name="profile" value="{{ profile.id }}" 
+                                                               id="profile_{{ profile.id }}"
+                                                               {% if assignment and assignment.profile.id == profile.id %}checked{% endif %}>
+                                                        <label class="form-check-label" for="profile_{{ profile.id }}">
+                                                            <strong>{{ profile.name }}</strong>
+                                                            {% if profile.description %}
+                                                                <br><small class="text-muted">{{ profile.description|truncatewords:15 }}</small>
+                                                            {% endif %}
+                                                        </label>
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-4 text-right">
+                                                    <span class="badge badge-info">
+                                                        {{ profile.systempermissionproxy_set.count }} permisos
+                                                    </span>
+                                                    <button type="button" class="btn btn-sm btn-outline-secondary" 
+                                                            onclick="showProfilePermissions({{ profile.id }})">
+                                                        <i class="fas fa-eye"></i>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        {% endfor %}
+                                    </div>
+                                    {% else %}
+                                    <div class="alert alert-warning">
+                                        <i class="fas fa-exclamation-triangle"></i>
+                                        No hay perfiles disponibles. 
+                                        <a href="{% url 'config_system:new_permissions:profile_management_advanced' %}" class="alert-link">
+                                            Crear un perfil primero
+                                        </a>.
+                                    </div>
+                                    {% endif %}
+                                </div>
+
+                                <!-- Fecha de asignación -->
+                                <div class="form-group">
+                                    <label for="{{ form.assigned_at.id_for_label }}">
+                                        <i class="fas fa-calendar"></i> Fecha de Asignación
+                                    </label>
+                                    {{ form.assigned_at }}
+                                    {% if form.assigned_at.help_text %}
+                                        <small class="form-text text-muted">{{ form.assigned_at.help_text }}</small>
+                                    {% endif %}
+                                </div>
+
+                                <!-- Observaciones -->
+                                <div class="form-group">
+                                    <label for="{{ form.notes.id_for_label }}">
+                                        <i class="fas fa-sticky-note"></i> Observaciones
+                                    </label>
+                                    {{ form.notes }}
+                                    {% if form.notes.help_text %}
+                                        <small class="form-text text-muted">{{ form.notes.help_text }}</small>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            
+                            <div class="card-footer">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save"></i>
+                                    {% if assignment %}Actualizar Asignación{% else %}Crear Asignación{% endif %}
+                                </button>
+                                <a href="{% url 'config_system:new_permissions:user_management_list' %}" class="btn btn-secondary">
+                                    <i class="fas fa-arrow-left"></i> Volver
+                                </a>
+                                {% if assignment %}
+                                <button type="button" class="btn btn-danger" onclick="deleteAssignment()">
+                                    <i class="fas fa-trash"></i> Eliminar Asignación
+                                </button>
+                                {% endif %}
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Panel lateral -->
+                <div class="col-md-4">
+                    <!-- Vista previa de permisos -->
+                    <div class="card card-outline card-info">
+                        <div class="card-header">
+                            <h3 class="card-title">
+                                <i class="fas fa-key"></i>
+                                Vista Previa de Permisos
+                            </h3>
+                        </div>
+                        <div class="card-body">
+                            <div id="permissionPreview" class="permission-preview">
+                                <div class="text-center text-muted">
+                                    <i class="fas fa-info-circle"></i>
+                                    <p>Selecciona un perfil para ver sus permisos</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Información adicional -->
+                    <div class="card card-outline card-warning">
+                        <div class="card-header">
+                            <h3 class="card-title">
+                                <i class="fas fa-info-circle"></i>
+                                Información
+                            </h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="alert alert-info">
+                                <h6><i class="fas fa-lightbulb"></i> Consejos:</h6>
+                                <ul class="mb-0">
+                                    <li>Un usuario puede tener múltiples perfiles</li>
+                                    <li>Los permisos se acumulan entre perfiles</li>
+                                    <li>Puedes agregar observaciones para documentar la asignación</li>
+                                    <li>La fecha de asignación se registra automáticamente</li>
+                                </ul>
+                            </div>
+                            
+                            {% if selected_user %}
+                            <div class="info-box">
+                                <span class="info-box-icon bg-primary"><i class="fas fa-key"></i></span>
+                                <div class="info-box-content">
+                                    <span class="info-box-text">Total Permisos Usuario</span>
+                                    <span class="info-box-number">
+                                        {% with selected_user|get_user_permissions_proxy as user_permissions %}
+                                            {{ user_permissions.count }}
+                                        {% endwith %}
+                                    </span>
+                                </div>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+</div>
+
+<!-- Modal de selección de usuario -->
+<div class="modal fade" id="userSelectionModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-search"></i>
+                    Seleccionar Usuario
+                </h5>
+                <button type="button" class="close" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <input type="text" id="userSearch" class="form-control" 
+                           placeholder="Buscar por nombre, email o username...">
+                </div>
+                <div id="userList" style="max-height: 400px; overflow-y: auto;">
+                    {% for user in all_users %}
+                    <div class="user-item p-2 border-bottom" data-user-id="{{ user.id }}" 
+                         data-user-name="{{ user.get_full_name|default:user.username }}"
+                         data-user-email="{{ user.email }}">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <strong>{{ user.get_full_name|default:user.username }}</strong>
+                                <br>
+                                <small class="text-muted">{{ user.email|default:"Sin email" }}</small>
+                            </div>
+                            <button type="button" class="btn btn-sm btn-primary" 
+                                    onclick="selectUser({{ user.id }}, '{{ user.get_full_name|default:user.username }}')">
+                                Seleccionar
+                            </button>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de vista de permisos -->
+<div class="modal fade" id="permissionsModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-key"></i>
+                    Permisos del Perfil
+                </h5>
+                <button type="button" class="close" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div id="profilePermissionsContent">
+                    <!-- Se llena dinámicamente -->
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content %}
+
+{% block javascripts %}
+<script>
+function selectProfile(profileId) {
+    // Marcar el radio button
+    document.getElementById(`profile_${profileId}`).checked = true;
+    
+    // Actualizar estilos visuales
+    document.querySelectorAll('.profile-option').forEach(option => {
+        option.classList.remove('selected');
+    });
+    document.querySelector(`[data-profile-id="${profileId}"]`).classList.add('selected');
+    
+    // Cargar vista previa de permisos
+    loadPermissionPreview(profileId);
+}
+
+function loadPermissionPreview(profileId) {
+    const preview = document.getElementById('permissionPreview');
+    preview.innerHTML = '<div class="text-center"><i class="fas fa-spinner fa-spin"></i> Cargando...</div>';
+    
+    // Simular carga de permisos (implementar con AJAX real)
+    setTimeout(() => {
+        preview.innerHTML = `
+            <div class="text-center text-success">
+                <i class="fas fa-check-circle"></i>
+                <p>Permisos cargados para perfil ${profileId}</p>
+                <small class="text-muted">Implementar carga real con AJAX</small>
+            </div>
+        `;
+    }, 500);
+}
+
+function showProfilePermissions(profileId) {
+    // Implementar modal con lista completa de permisos
+    document.getElementById('profilePermissionsContent').innerHTML = `
+        <div class="text-center">
+            <i class="fas fa-spinner fa-spin fa-2x"></i>
+            <p>Cargando permisos del perfil...</p>
+        </div>
+    `;
+    $('#permissionsModal').modal('show');
+    
+    // Simular carga (implementar con AJAX real)
+    setTimeout(() => {
+        document.getElementById('profilePermissionsContent').innerHTML = `
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle"></i>
+                Permisos del perfil ${profileId} - Implementar carga real
+            </div>
+        `;
+    }, 1000);
+}
+
+function selectUser(userId, userName) {
+    // Actualizar el formulario y recargar página con el usuario seleccionado
+    const currentUrl = new URL(window.location);
+    currentUrl.searchParams.set('user', userId);
+    window.location.href = currentUrl.toString();
+}
+
+function deleteAssignment() {
+    if (confirm('¿Estás seguro de que deseas eliminar esta asignación?')) {
+        // Implementar eliminación
+        console.log('Eliminar asignación');
+    }
+}
+
+// Event listeners
+document.addEventListener('DOMContentLoaded', function() {
+    // Búsqueda de usuarios en modal
+    const userSearch = document.getElementById('userSearch');
+    if (userSearch) {
+        userSearch.addEventListener('input', function() {
+            const searchTerm = this.value.toLowerCase();
+            const userItems = document.querySelectorAll('.user-item');
+            
+            userItems.forEach(item => {
+                const name = item.dataset.userName.toLowerCase();
+                const email = item.dataset.userEmail.toLowerCase();
+                
+                if (name.includes(searchTerm) || email.includes(searchTerm)) {
+                    item.style.display = 'block';
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+        });
+    }
+    
+    // Auto-seleccionar perfil si existe uno en el formulario
+    const selectedProfile = document.querySelector('input[name="profile"]:checked');
+    if (selectedProfile) {
+        const profileId = selectedProfile.value;
+        document.querySelector(`[data-profile-id="${profileId}"]`).classList.add('selected');
+        loadPermissionPreview(profileId);
+    }
+    
+    // Validación del formulario
+    document.getElementById('assignmentForm').addEventListener('submit', function(e) {
+        const user = document.querySelector('input[name="user"]').value;
+        const profile = document.querySelector('input[name="profile"]:checked');
+        
+        if (!user) {
+            e.preventDefault();
+            alert('Por favor selecciona un usuario');
+            return;
+        }
+        
+        if (!profile) {
+            e.preventDefault();
+            alert('Por favor selecciona un perfil');
+            return;
+        }
+    });
+});
+</script>
+{% endblock javascripts %}
