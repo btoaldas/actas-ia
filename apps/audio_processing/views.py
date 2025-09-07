@@ -503,7 +503,7 @@ def api_recent_processes(request):
             'id': proceso.id,
             'titulo': proceso.titulo or "Sin título",
             'estado': proceso.estado,
-            'tipo_reunion': proceso.get_tipo_reunion_display() if proceso.tipo_reunion else None,
+            'tipo_reunion': proceso.tipo_reunion.nombre if proceso.tipo_reunion else None,
             'fecha': proceso.created_at.strftime('%d/%m/%Y'),
             'hora': proceso.created_at.strftime('%H:%M'),
             'progreso': getattr(proceso, 'progreso', 0)
