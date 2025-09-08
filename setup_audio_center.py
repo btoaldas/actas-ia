@@ -77,7 +77,7 @@ def main():
     
     print("\n✅ ¡Centro de Audio configurado correctamente!")
     print("\n🌐 Puedes acceder en: http://localhost/audio/")
-    print("🎯 O desde el menú: Audio & Transcripción > Centro de Audio")
+    print("🎯 O desde el menú: Proceso de Audio  > Centro de Audio")
 
 if __name__ == "__main__":
     main()

@@ -1,0 +1,285 @@
+{% extends "layouts/base.html" %}
+{% load static %}
+
+{% block title %} {{ title }} {% endblock %}
+
+{% block content %}
+
+<div class="content-wrapper">
+    <div class="content-header">
+        <div class="container-fluid">
+            <div class="row mb-2">
+                <div class="col-sm-6">
+                    <h1 class="m-0">
+                        <i class="fas fa-edit text-warning"></i>
+                        Editar Procesamiento
+                    </h1>
+                    <p class="text-muted">Modifica los datos básicos del procesamiento de audio</p>
+                </div>
+                <div class="col-sm-6">
+                    <ol class="breadcrumb float-sm-right">
+                        <li class="breadcrumb-item"><a href="{% url 'index' %}">Inicio</a></li>
+                        <li class="breadcrumb-item"><a href="{% url 'audio_processing:centro_audio' %}">Audio</a></li>
+                        <li class="breadcrumb-item"><a href="{% url 'audio_processing:lista_procesamientos' %}">Lista</a></li>
+                        <li class="breadcrumb-item active">Editar</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <section class="content">
+        <div class="container-fluid">
+            
+            <!-- Información del procesamiento -->
+            <div class="row">
+                <div class="col-md-8">
+                    <!-- Formulario de edición -->
+                    <div class="card card-warning card-outline">
+                        <div class="card-header">
+                            <h3 class="card-title">
+                                <i class="fas fa-edit"></i> Datos del Procesamiento
+                            </h3>
+                        </div>
+                        <form method="post">
+                            {% csrf_token %}
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-8">
+                                        <div class="form-group">
+                                            <label for="{{ form.titulo.id_for_label }}">{{ form.titulo.label }}</label>
+                                            {{ form.titulo }}
+                                            {% if form.titulo.errors %}
+                                                <div class="text-danger small">
+                                                    {{ form.titulo.errors }}
+                                                </div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-group">
+                                            <label for="{{ form.tipo_reunion.id_for_label }}">{{ form.tipo_reunion.label }}</label>
+                                            {{ form.tipo_reunion }}
+                                            {% if form.tipo_reunion.errors %}
+                                                <div class="text-danger small">
+                                                    {{ form.tipo_reunion.errors }}
+                                                </div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label for="{{ form.etiquetas.id_for_label }}">{{ form.etiquetas.label }}</label>
+                                            {{ form.etiquetas }}
+                                            {% if form.etiquetas.errors %}
+                                                <div class="text-danger small">
+                                                    {{ form.etiquetas.errors }}
+                                                </div>
+                                            {% endif %}
+                                            <small class="form-text text-muted">Separadas por comas</small>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label for="{{ form.ubicacion.id_for_label }}">{{ form.ubicacion.label }}</label>
+                                            {{ form.ubicacion }}
+                                            {% if form.ubicacion.errors %}
+                                                <div class="text-danger small">
+                                                    {{ form.ubicacion.errors }}
+                                                </div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="{{ form.descripcion.id_for_label }}">{{ form.descripcion.label }}</label>
+                                    {{ form.descripcion }}
+                                    {% if form.descripcion.errors %}
+                                        <div class="text-danger small">
+                                            {{ form.descripcion.errors }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="{{ form.participantes.id_for_label }}">{{ form.participantes.label }}</label>
+                                    {{ form.participantes }}
+                                    {% if form.participantes.errors %}
+                                        <div class="text-danger small">
+                                            {{ form.participantes.errors }}
+                                        </div>
+                                    {% endif %}
+                                    <small class="form-text text-muted">Lista de participantes en formato libre</small>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="{{ form.participantes_detallados.id_for_label }}">{{ form.participantes_detallados.label }}</label>
+                                    {{ form.participantes_detallados }}
+                                    {% if form.participantes_detallados.errors %}
+                                        <div class="text-danger small">
+                                            {{ form.participantes_detallados.errors }}
+                                        </div>
+                                    {% endif %}
+                                    <small class="form-text text-muted">Información estructurada de los participantes</small>
+                                </div>
+
+                                <div class="form-group">
+                                    <div class="form-check">
+                                        {{ form.confidencial }}
+                                        <label class="form-check-label" for="{{ form.confidencial.id_for_label }}">
+                                            {{ form.confidencial.label }}
+                                        </label>
+                                    </div>
+                                    {% if form.confidencial.errors %}
+                                        <div class="text-danger small">
+                                            {{ form.confidencial.errors }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="card-footer">
+                                <button type="submit" class="btn btn-warning">
+                                    <i class="fas fa-save"></i> Guardar Cambios
+                                </button>
+                                <a href="{% url 'audio_processing:detalle_procesamiento' procesamiento.id %}" class="btn btn-secondary">
+                                    <i class="fas fa-times"></i> Cancelar
+                                </a>
+                                <a href="{% url 'audio_processing:lista_procesamientos' %}" class="btn btn-info">
+                                    <i class="fas fa-list"></i> Volver a Lista
+                                </a>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <div class="col-md-4">
+                    <!-- Información del procesamiento -->
+                    <div class="card card-info card-outline">
+                        <div class="card-header">
+                            <h3 class="card-title">
+                                <i class="fas fa-info-circle"></i> Información del Procesamiento
+                            </h3>
+                        </div>
+                        <div class="card-body">
+                            <table class="table table-sm">
+                                <tbody>
+                                    <tr>
+                                        <th width="40%">ID:</th>
+                                        <td>{{ procesamiento.id }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Estado:</th>
+                                        <td>
+                                            {% if procesamiento.estado == 'pendiente' %}
+                                                <span class="badge badge-warning">
+                                                    <i class="fas fa-clock"></i> Pendiente
+                                                </span>
+                                            {% elif procesamiento.estado == 'procesando' %}
+                                                <span class="badge badge-info">
+                                                    <i class="fas fa-cog fa-spin"></i> Procesando
+                                                </span>
+                                            {% elif procesamiento.estado == 'completado' %}
+                                                <span class="badge badge-success">
+                                                    <i class="fas fa-check"></i> Completado
+                                                </span>
+                                            {% elif procesamiento.estado == 'error' %}
+                                                <span class="badge badge-danger">
+                                                    <i class="fas fa-exclamation-triangle"></i> Error
+                                                </span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <th>Creado:</th>
+                                        <td>{{ procesamiento.created_at|date:"d/m/Y H:i" }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Actualizado:</th>
+                                        <td>{{ procesamiento.updated_at|date:"d/m/Y H:i" }}</td>
+                                    </tr>
+                                    {% if procesamiento.duracion %}
+                                    <tr>
+                                        <th>Duración:</th>
+                                        <td>{{ procesamiento.duracion }}</td>
+                                    </tr>
+                                    {% endif %}
+                                    {% if procesamiento.audio_original %}
+                                    <tr>
+                                        <th>Audio Original:</th>
+                                        <td>
+                                            <button type="button" class="btn btn-sm btn-primary" 
+                                                    onclick="reproducirAudio('{{ procesamiento.audio_original.url }}')">
+                                                <i class="fas fa-play"></i> Reproducir
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    {% endif %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Aviso -->
+                    <div class="card card-warning">
+                        <div class="card-header">
+                            <h3 class="card-title">
+                                <i class="fas fa-exclamation-triangle"></i> Nota Importante
+                            </h3>
+                        </div>
+                        <div class="card-body">
+                            <p class="mb-2">
+                                <strong>Solo puedes editar los datos básicos.</strong>
+                            </p>
+                            <ul class="mb-0">
+                                <li>El archivo de audio no se puede cambiar</li>
+                                <li>Los resultados del procesamiento se mantienen</li>
+                                <li>Si el procesamiento está en curso, algunos campos pueden no ser editables</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </section>
+</div>
+
+{% endblock content %}
+
+{% block javascripts %}
+<script>
+// Función para reproducir audio (reutilizada de lista_procesamientos)
+function reproducirAudio(url) {
+    const modalHtml = `
+        <div class="modal fade" id="audioModal" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-dialog-centered" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">
+                            <i class="fas fa-play"></i> Reproductor de Audio
+                        </h5>
+                        <button type="button" class="close" data-dismiss="modal">
+                            <span>&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body text-center">
+                        <audio controls class="w-100" preload="metadata">
+                            <source src="${url}" type="audio/mpeg">
+                            Tu navegador no soporta la reproducción de audio.
+                        </audio>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    $('#audioModal').remove();
+    $('body').append(modalHtml);
+    $('#audioModal').modal('show');
+}
+</script>
+{% endblock javascripts %}

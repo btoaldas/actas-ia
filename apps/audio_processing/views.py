@@ -8,12 +8,18 @@ from django.views.decorators.http import require_http_methods
 from django.views.decorators.csrf import csrf_exempt
 from django.utils import timezone
 import json
+import os
 import mimetypes
 import os
 import logging
+import traceback
 
 from .models import ProcesamientoAudio, TipoReunion, LogProcesamiento
-from .forms import SubirAudioForm, TipoReunionForm, FiltroProcesamientoForm, ConfiguracionProcesamientoForm
+from .forms import SubirAudioForm, TipoReunionForm, FiltroProcesamientoForm, ConfiguracionProcesamientoForm, EditarProcesamientoForm
+from .logging_helper import (
+    log_sistema, log_navegacion, log_admin_action, log_archivo_operacion,
+    log_procesamiento_audio, log_error_procesamiento
+)
 
 logger = logging.getLogger(__name__)
 
@@ -68,66 +74,122 @@ def centro_audio(request):
 @login_required
 def lista_procesamientos(request):
     """Lista paginada de procesamientos de audio"""
-    form = FiltroProcesamientoForm(request.GET)
-    procesamientos = ProcesamientoAudio.objects.filter(usuario=request.user)
-    
-    # Aplicar filtros
-    if form.is_valid():
-        if form.cleaned_data['titulo']:
-            procesamientos = procesamientos.filter(
-                titulo__icontains=form.cleaned_data['titulo']
-            )
+    try:
+        # Log del acceso a la lista
+        log_navegacion(
+            request=request,
+            accion_realizada='listar_procesamientos',
+            elemento_interactuado='lista_procesamientos'
+        )
         
-        if form.cleaned_data['tipo_reunion']:
-            procesamientos = procesamientos.filter(
-                tipo_reunion=form.cleaned_data['tipo_reunion']
-            )
+        form = FiltroProcesamientoForm(request.GET)
+        procesamientos = ProcesamientoAudio.objects.filter(usuario=request.user)
         
-        if form.cleaned_data['estado']:
-            procesamientos = procesamientos.filter(
-                estado=form.cleaned_data['estado']
-            )
+        # Aplicar filtros
+        filtros_aplicados = {}
+        if form.is_valid():
+            if form.cleaned_data['titulo']:
+                procesamientos = procesamientos.filter(
+                    titulo__icontains=form.cleaned_data['titulo']
+                )
+                filtros_aplicados['titulo'] = form.cleaned_data['titulo']
+            
+            if form.cleaned_data['tipo_reunion']:
+                procesamientos = procesamientos.filter(
+                    tipo_reunion=form.cleaned_data['tipo_reunion']
+                )
+                filtros_aplicados['tipo_reunion'] = str(form.cleaned_data['tipo_reunion'])
+            
+            if form.cleaned_data['estado']:
+                procesamientos = procesamientos.filter(
+                    estado=form.cleaned_data['estado']
+                )
+                filtros_aplicados['estado'] = form.cleaned_data['estado']
+            
+            if form.cleaned_data['fecha_desde']:
+                procesamientos = procesamientos.filter(
+                    fecha_reunion__gte=form.cleaned_data['fecha_desde']
+                )
+                filtros_aplicados['fecha_desde'] = str(form.cleaned_data['fecha_desde'])
+            
+            if form.cleaned_data['fecha_hasta']:
+                procesamientos = procesamientos.filter(
+                    fecha_reunion__lte=form.cleaned_data['fecha_hasta']
+                )
+                filtros_aplicados['fecha_hasta'] = str(form.cleaned_data['fecha_hasta'])
         
-        if form.cleaned_data['fecha_desde']:
-            procesamientos = procesamientos.filter(
-                fecha_reunion__gte=form.cleaned_data['fecha_desde']
-            )
+        procesamientos = procesamientos.order_by('-created_at')
         
-        if form.cleaned_data['fecha_hasta']:
-            procesamientos = procesamientos.filter(
-                fecha_reunion__lte=form.cleaned_data['fecha_hasta']
-            )
+        # Paginación
+        paginator = Paginator(procesamientos, 20)
+        page_number = request.GET.get('page')
+        page_obj = paginator.get_page(page_number)
+        
+        # Log del listado exitoso
+        log_sistema(
+            nivel='INFO',
+            categoria='PROCESAMIENTO_LISTADO',
+            subcategoria='LISTADO_EXITOSO',
+            mensaje=f"Usuario listó {procesamientos.count()} procesamientos",
+            request=request,
+            datos_extra={
+                'total_procesamientos': procesamientos.count(),
+                'filtros_aplicados': filtros_aplicados,
+                'pagina': page_number or 1,
+                'items_por_pagina': 20
+            }
+        )
+        
+        context = {
+            'title': 'Lista de Procesamientos',
+            'page_obj': page_obj,
+            'form': form,
+            'total_procesamientos': procesamientos.count()
+        }
+        return render(request, 'audio_processing/lista_procesamientos.html', context)
     
-    procesamientos = procesamientos.order_by('-created_at')
-    
-    # Paginación
-    paginator = Paginator(procesamientos, 20)
-    page_number = request.GET.get('page')
-    page_obj = paginator.get_page(page_number)
-    
-    context = {
-        'title': 'Lista de Procesamientos',
-        'page_obj': page_obj,
-        'form': form,
-        'total_procesamientos': procesamientos.count()
-    }
-    return render(request, 'audio_processing/lista_procesamientos.html', context)
+    except Exception as e:
+        log_error_procesamiento(
+            error_msg=f"Error al listar procesamientos: {str(e)}",
+            request=request,
+            stack_trace=traceback.format_exc()
+        )
+        messages.error(request, "Error al cargar la lista de procesamientos.")
+        return redirect('audio_processing:centro_audio')
 
 
 @login_required
 def detalle_procesamiento(request, id):
     """Vista de detalle de un procesamiento específico"""
-    procesamiento = get_object_or_404(ProcesamientoAudio, id=id, usuario=request.user)
-    logs = LogProcesamiento.objects.filter(procesamiento=procesamiento).order_by('-timestamp')
+    try:
+        procesamiento = get_object_or_404(ProcesamientoAudio, id=id, usuario=request.user)
+        logs = LogProcesamiento.objects.filter(procesamiento=procesamiento).order_by('-timestamp')
+        
+        # Log del acceso al detalle
+        log_procesamiento_audio(
+            accion='ver',
+            procesamiento=procesamiento,
+            request=request,
+            datos_adicionales={'logs_count': logs.count()}
+        )
+        
+        context = {
+            'title': f'Detalle - {procesamiento.titulo}',
+            'procesamiento': procesamiento,
+            'logs': logs,
+            'puede_cancelar': procesamiento.estado in ['pendiente', 'procesando', 'transcribiendo', 'diarizando'],
+            'puede_reiniciar': procesamiento.estado in ['error', 'cancelado']
+        }
+        return render(request, 'audio_processing/detalle_procesamiento.html', context)
     
-    context = {
-        'title': f'Detalle - {procesamiento.titulo}',
-        'procesamiento': procesamiento,
-        'logs': logs,
-        'puede_cancelar': procesamiento.estado in ['pendiente', 'procesando', 'transcribiendo', 'diarizando'],
-        'puede_reiniciar': procesamiento.estado in ['error', 'cancelado']
-    }
-    return render(request, 'audio_processing/detalle_procesamiento.html', context)
+    except Exception as e:
+        log_error_procesamiento(
+            error_msg=f"Error al mostrar detalle del procesamiento {id}: {str(e)}",
+            request=request,
+            stack_trace=traceback.format_exc()
+        )
+        messages.error(request, "Error al cargar el detalle del procesamiento.")
+        return redirect('audio_processing:lista_procesamientos')
 
 
 @login_required
@@ -251,19 +313,238 @@ def iniciar_procesamiento(request, id):
 
 
 @login_required
+@require_http_methods(["GET"])
+def confirmar_eliminar_procesamiento(request, id):
+    """Mostrar página de confirmación para eliminar un procesamiento"""
+    try:
+        procesamiento = get_object_or_404(ProcesamientoAudio, id=id, usuario=request.user)
+        
+        # Log del acceso a confirmación de eliminación
+        log_procesamiento_audio(
+            accion='confirmar_eliminar',
+            procesamiento=procesamiento,
+            request=request,
+            datos_adicionales={'puede_eliminar': procesamiento.estado not in ['procesando', 'transcribiendo', 'diarizando']}
+        )
+        
+        context = {
+            'procesamiento': procesamiento,
+            'title': f'Confirmar eliminación - {procesamiento.titulo}',
+            'puede_eliminar': procesamiento.estado not in ['procesando', 'transcribiendo', 'diarizando']
+        }
+        
+        return render(request, 'audio_processing/confirmar_eliminar.html', context)
+    
+    except Exception as e:
+        log_error_procesamiento(
+            error_msg=f"Error al mostrar confirmación de eliminación para procesamiento {id}: {str(e)}",
+            request=request,
+            stack_trace=traceback.format_exc()
+        )
+        messages.error(request, "Error al cargar la página de confirmación.")
+        return redirect('audio_processing:lista_procesamientos')
+
+
+@login_required
 @require_http_methods(["POST"])
 def eliminar_procesamiento(request, id):
     """Eliminar un procesamiento (solo si no está en proceso)"""
     procesamiento = get_object_or_404(ProcesamientoAudio, id=id, usuario=request.user)
     
-    if procesamiento.estado not in ['procesando', 'transcribiendo', 'diarizando']:
-        nombre = procesamiento.titulo
-        procesamiento.delete()
-        messages.success(request, f'Procesamiento "{nombre}" eliminado exitosamente.')
-        return redirect('audio_processing:lista_procesamientos')
-    else:
-        messages.error(request, 'No se puede eliminar un procesamiento que está en curso.')
+    try:
+        if procesamiento.estado not in ['procesando', 'transcribiendo', 'diarizando']:
+            # Guardar información antes de eliminar para logging
+            nombre = procesamiento.titulo
+            archivo_path = procesamiento.archivo_audio.path if procesamiento.archivo_audio else None
+            archivo_nombre = procesamiento.archivo_audio.name if procesamiento.archivo_audio else None
+            archivo_size = procesamiento.archivo_audio.size if procesamiento.archivo_audio else 0
+            
+            # Log antes de eliminar
+            log_procesamiento_audio(
+                accion='eliminar',
+                procesamiento=procesamiento,
+                request=request,
+                datos_adicionales={
+                    'archivo_eliminado': archivo_nombre,
+                    'archivo_size': archivo_size,
+                    'archivo_path': archivo_path
+                }
+            )
+            
+            # Log de archivo si existe
+            if archivo_path:
+                log_archivo_operacion(
+                    operacion='DELETE',
+                    archivo_nombre=archivo_nombre or 'archivo_desconocido',
+                    archivo_path=archivo_path,
+                    archivo_size_bytes=archivo_size,
+                    request=request,
+                    resultado='SUCCESS'
+                )
+            
+            # Eliminar el archivo físico si existe
+            if archivo_path and os.path.exists(archivo_path):
+                os.remove(archivo_path)
+                
+            # Log administrativo
+            log_admin_action(
+                request=request,
+                modelo_afectado='ProcesamientoAudio',
+                accion='DELETE',
+                objeto_id=procesamiento.id,
+                valores_anteriores={
+                    'titulo': nombre,
+                    'estado': procesamiento.estado,
+                    'archivo': archivo_nombre
+                }
+            )
+            
+            # Eliminar el registro de la base de datos
+            procesamiento.delete()
+            
+            messages.success(request, f'Procesamiento "{nombre}" eliminado exitosamente.')
+            
+            # Log de eliminación exitosa
+            log_sistema(
+                nivel='INFO',
+                categoria='PROCESAMIENTO_ELIMINADO',
+                subcategoria='ELIMINACION_EXITOSA',
+                mensaje=f'Procesamiento "{nombre}" eliminado exitosamente',
+                request=request,
+                datos_extra={
+                    'procesamiento_id': id,
+                    'titulo': nombre,
+                    'archivo_eliminado': archivo_nombre
+                }
+            )
+            
+            return redirect('audio_processing:lista_procesamientos')
+            
+        else:
+            # Log de intento de eliminación no válido
+            log_sistema(
+                nivel='WARNING',
+                categoria='PROCESAMIENTO_ERROR',
+                subcategoria='ELIMINACION_DENEGADA',
+                mensaje=f'Intento de eliminar procesamiento en estado: {procesamiento.estado}',
+                request=request,
+                datos_extra={
+                    'procesamiento_id': procesamiento.id,
+                    'titulo': procesamiento.titulo,
+                    'estado': procesamiento.estado
+                }
+            )
+            
+            messages.error(request, 'No se puede eliminar un procesamiento que está en curso.')
+            return redirect('audio_processing:detalle_procesamiento', id=id)
+            
+    except Exception as e:
+        # Log del error
+        log_error_procesamiento(
+            error_msg=f'Error al eliminar procesamiento {id}: {str(e)}',
+            procesamiento=procesamiento,
+            request=request,
+            stack_trace=traceback.format_exc()
+        )
+        
+        messages.error(request, f'Error al eliminar el procesamiento: {str(e)}')
         return redirect('audio_processing:detalle_procesamiento', id=id)
+
+
+@login_required
+def editar_procesamiento(request, id):
+    """Editar un procesamiento (solo datos básicos, no el audio)"""
+    try:
+        procesamiento = get_object_or_404(ProcesamientoAudio, id=id, usuario=request.user)
+        
+        if request.method == 'POST':
+            # Guardar valores anteriores para auditoría
+            valores_anteriores = {
+                'titulo': procesamiento.titulo,
+                'descripcion': procesamiento.descripcion,
+                'tipo_reunion': str(procesamiento.tipo_reunion) if procesamiento.tipo_reunion else None,
+                'confidencial': procesamiento.confidencial,
+                'participantes_detallados': procesamiento.participantes_detallados,
+            }
+            
+            form = EditarProcesamientoForm(request.POST, instance=procesamiento)
+            if form.is_valid():
+                # Identificar campos modificados
+                campos_modificados = []
+                valores_nuevos = {}
+                
+                for field in form.changed_data:
+                    campo_valor = getattr(procesamiento, field)
+                    if field == 'tipo_reunion':
+                        campo_valor = str(campo_valor) if campo_valor else None
+                    campos_modificados.append(field)
+                    valores_nuevos[field] = campo_valor
+                
+                form.save()
+                
+                # Log de edición exitosa
+                log_procesamiento_audio(
+                    accion='editar',
+                    procesamiento=procesamiento,
+                    request=request,
+                    datos_adicionales={
+                        'campos_modificados': campos_modificados,
+                        'valores_anteriores': valores_anteriores,
+                        'valores_nuevos': valores_nuevos
+                    }
+                )
+                
+                # Log administrativo
+                log_admin_action(
+                    request=request,
+                    modelo_afectado='ProcesamientoAudio',
+                    accion='UPDATE',
+                    objeto_id=procesamiento.id,
+                    campos_modificados=campos_modificados,
+                    valores_anteriores=valores_anteriores,
+                    valores_nuevos=valores_nuevos
+                )
+                
+                messages.success(request, f'Procesamiento "{procesamiento.titulo}" actualizado exitosamente.')
+                return redirect('audio_processing:detalle_procesamiento', id=id)
+            else:
+                # Log de validación fallida
+                log_sistema(
+                    nivel='WARNING',
+                    categoria='PROCESAMIENTO_ERROR',
+                    subcategoria='EDICION_VALIDACION_FALLIDA',
+                    mensaje=f'Errores de validación al editar procesamiento {procesamiento.titulo}',
+                    request=request,
+                    datos_extra={
+                        'procesamiento_id': procesamiento.id,
+                        'errores_formulario': dict(form.errors)
+                    }
+                )
+        else:
+            # Log del acceso al formulario de edición
+            log_navegacion(
+                request=request,
+                accion_realizada='editar_procesamiento_form',
+                elemento_interactuado=f'procesamiento_{procesamiento.id}'
+            )
+            
+            form = EditarProcesamientoForm(instance=procesamiento)
+        
+        context = {
+            'title': f'Editar Procesamiento: {procesamiento.titulo}',
+            'procesamiento': procesamiento,
+            'form': form,
+        }
+        return render(request, 'audio_processing/editar_procesamiento.html', context)
+    
+    except Exception as e:
+        log_error_procesamiento(
+            error_msg=f'Error al editar procesamiento {id}: {str(e)}',
+            request=request,
+            stack_trace=traceback.format_exc()
+        )
+        messages.error(request, "Error al cargar el formulario de edición.")
+        return redirect('audio_processing:lista_procesamientos')
 
 
 @login_required
@@ -708,6 +989,56 @@ def api_procesar_audio(request):
         
         procesamiento.save()
         
+        # Log de creación exitosa
+        log_procesamiento_audio(
+            accion='crear',
+            procesamiento=procesamiento,
+            request=request,
+            datos_adicionales={
+                'source': source,
+                'archivo_nombre': archivo.name,
+                'archivo_size': archivo.size,
+                'archivo_type': archivo.content_type,
+                'metadatos': {
+                    'tamano_mb': float(procesamiento.tamano_mb) if procesamiento.tamano_mb else None,
+                    'duracion': procesamiento.duracion,
+                    'formato': procesamiento.formato,
+                    'sample_rate': procesamiento.sample_rate,
+                    'canales': procesamiento.canales
+                }
+            }
+        )
+        
+        # Log de archivo subido
+        log_archivo_operacion(
+            operacion='UPLOAD',
+            archivo_nombre=archivo.name,
+            archivo_path=procesamiento.archivo_audio.path if procesamiento.archivo_audio else '',
+            archivo_size_bytes=archivo.size,
+            archivo_tipo_mime=archivo.content_type,
+            request=request,
+            resultado='SUCCESS',
+            metadatos={
+                'source': source,
+                'procesamiento_id': procesamiento.id,
+                'titulo': procesamiento.titulo
+            }
+        )
+        
+        # Log administrativo
+        log_admin_action(
+            request=request,
+            modelo_afectado='ProcesamientoAudio',
+            accion='CREATE',
+            objeto_id=procesamiento.id,
+            valores_nuevos={
+                'titulo': procesamiento.titulo,
+                'estado': procesamiento.estado,
+                'archivo': archivo.name,
+                'usuario': request.user.username
+            }
+        )
+        
         # Intentar iniciar procesamiento en background
         try:
             from .tasks import procesar_audio_task
@@ -745,6 +1076,13 @@ def api_procesar_audio(request):
             })
         
     except Exception as e:
+        # Log del error
+        log_error_procesamiento(
+            error_msg=f"Error en api_procesar_audio: {str(e)}",
+            request=request,
+            stack_trace=traceback.format_exc()
+        )
+        
         logger.error(f"Error en api_procesar_audio: {str(e)}")
         return JsonResponse({
             'status': 'error',

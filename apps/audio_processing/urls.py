@@ -18,6 +18,8 @@ urlpatterns = [
     
     # Vistas de detalle y gestión
     path('detalle/<int:id>/', views.detalle_procesamiento, name='detalle_procesamiento'),
+    path('editar/<int:id>/', views.editar_procesamiento, name='editar_procesamiento'),
+    path('confirmar-eliminar/<int:id>/', views.confirmar_eliminar_procesamiento, name='confirmar_eliminar_procesamiento'),
     path('eliminar/<int:id>/', views.eliminar_procesamiento, name='eliminar_procesamiento'),
     
     # Acciones de control de procesamientos

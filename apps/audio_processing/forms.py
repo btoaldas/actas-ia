@@ -171,6 +171,75 @@ class FiltroProcesamientoForm(forms.Form):
     )
 
 
+class EditarProcesamientoForm(forms.ModelForm):
+    """Formulario para editar datos básicos de un procesamiento"""
+    
+    class Meta:
+        model = ProcesamientoAudio
+        fields = ['titulo', 'tipo_reunion', 'descripcion', 'etiquetas', 'confidencial', 'participantes', 'participantes_detallados', 'ubicacion']
+        widgets = {
+            'titulo': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Ej: Concejo Municipal - Sesión Ordinaria',
+                'required': True,
+                'maxlength': 200
+            }),
+            'tipo_reunion': forms.Select(attrs={
+                'class': 'form-control',
+                'required': True
+            }),
+            'descripcion': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 3,
+                'placeholder': 'Descripción adicional sobre la reunión (opcional)'
+            }),
+            'etiquetas': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Ej: presupuesto, obras públicas, urbanismo',
+                'maxlength': 200
+            }),
+            'confidencial': forms.CheckboxInput(attrs={
+                'class': 'form-check-input'
+            }),
+            'participantes': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 3,
+                'placeholder': 'Lista de participantes (texto libre)'
+            }),
+            'participantes_detallados': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 4,
+                'placeholder': 'Información detallada de los participantes en formato JSON'
+            }),
+            'ubicacion': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Ej: Sala de Concejo Municipal',
+                'maxlength': 200
+            })
+        }
+        labels = {
+            'titulo': 'Título de la Reunión',
+            'tipo_reunion': 'Tipo de Reunión',
+            'descripcion': 'Descripción Adicional',
+            'etiquetas': 'Etiquetas (separadas por comas)',
+            'confidencial': 'Proceso Confidencial',
+            'participantes': 'Participantes (texto libre)',
+            'participantes_detallados': 'Participantes detallados (JSON)',
+            'ubicacion': 'Ubicación de la reunión'
+        }
+    
+    def clean_etiquetas(self):
+        """Validación y limpieza de etiquetas"""
+        etiquetas = self.cleaned_data.get('etiquetas', '')
+        if etiquetas:
+            # Limpiar y validar etiquetas
+            etiquetas_list = [tag.strip() for tag in etiquetas.split(',') if tag.strip()]
+            if len(etiquetas_list) > 10:
+                raise forms.ValidationError('Máximo 10 etiquetas permitidas')
+            return ', '.join(etiquetas_list)
+        return etiquetas
+
+
 class ConfiguracionProcesamientoForm(forms.Form):
     """Formulario para configurar opciones de procesamiento"""
     

@@ -13,7 +13,6 @@
     font-weight: 600;
 }
 </style>
-<meta name="csrf-token" content="{{ csrf_token }}">
 {% endblock stylesheets %}
 
 {% block content %}
@@ -128,7 +127,7 @@
                             <tr>
                                 <th><i class="fas fa-file-audio"></i> Título</th>
                                 <th><i class="fas fa-calendar"></i> Tipo</th>
-                                <th><i class="fas fa-clock"></i> Fecha Creación</th>
+                                <th><i class="fas fa-clock"></i> Fecha Reunión</th>
                                 <th><i class="fas fa-tasks"></i> Estado</th>
                                 <th><i class="fas fa-percentage"></i> Progreso</th>
                                 <th><i class="fas fa-stopwatch"></i> Duración</th>
@@ -146,13 +145,7 @@
                                 <td>
                                     <span class="badge badge-secondary">{{ procesamiento.tipo_reunion.nombre }}</span>
                                 </td>
-                                <td>
-                                    {% if procesamiento.created_at %}
-                                        {{ procesamiento.created_at|date:"d/m/Y H:i" }}
-                                    {% else %}
-                                        <span class="text-muted">-</span>
-                                    {% endif %}
-                                </td>
+                                <td>{{ procesamiento.fecha_reunion|date:"d/m/Y H:i" }}</td>
                                 <td>
                                     {% if procesamiento.estado == 'pendiente' %}
                                         <span class="badge badge-warning status-badge">
@@ -196,12 +189,7 @@
                                 </td>
                                 <td>
                                     {% if procesamiento.duracion %}
-                                        <i class="fas fa-clock text-muted"></i> 
-                                        {% if procesamiento.duracion_seg %}
-                                            {{ procesamiento.duracion_seg|floatformat:0 }}s
-                                        {% else %}
-                                            {{ procesamiento.duracion }}s
-                                        {% endif %}
+                                        <i class="fas fa-clock text-muted"></i> {{ procesamiento.duracion }}
                                     {% else %}
                                         <span class="text-muted">-</span>
                                     {% endif %}
@@ -212,28 +200,24 @@
                                            class="btn btn-sm btn-info" title="Ver detalles">
                                             <i class="fas fa-eye"></i>
                                         </a>
-                                        {% if procesamiento.archivo_audio %}
+                                        {% if procesamiento.audio_original %}
                                             <button type="button" class="btn btn-sm btn-primary" 
-                                                    onclick="reproducirAudio('{{ procesamiento.archivo_audio.url }}')" 
+                                                    onclick="reproducirAudio('{{ procesamiento.audio_original.url }}')" 
                                                     title="Reproducir audio">
                                                 <i class="fas fa-play"></i>
                                             </button>
                                         {% endif %}
-                                        {% if procesamiento.estado == 'completado' and procesamiento.resultado %}
+                                        {% if procesamiento.estado == 'completado' and procesamiento.transcripcion %}
                                             <a href="{% url 'audio_processing:detalle_procesamiento' procesamiento.id %}" 
                                                class="btn btn-sm btn-success" title="Ver transcripción">
                                                 <i class="fas fa-file-alt"></i>
                                             </a>
                                         {% endif %}
-                                        <a href="{% url 'audio_processing:editar_procesamiento' procesamiento.id %}" 
-                                           class="btn btn-sm btn-warning" title="Editar">
-                                            <i class="fas fa-edit"></i>
-                                        </a>
-                                        <a href="{% url 'audio_processing:confirmar_eliminar_procesamiento' procesamiento.id %}" 
-                                           class="btn btn-sm btn-danger" title="Eliminar">
+                                        <button type="button" class="btn btn-sm btn-danger" 
+                                                onclick="confirmarEliminacion({{ procesamiento.id }})" 
+                                                title="Eliminar">
                                             <i class="fas fa-trash"></i>
-                                        </a>
-                                     
+                                        </button>
                                     </div>
                                 </td>
                             </tr>
@@ -242,58 +226,152 @@
                     </table>
                 </div>
             </div>
-            {% else %}
-                <div class="card">
-                    <div class="card-body text-center">
-                        <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
-                        <h5 class="text-muted">No se encontraron procesamientos</h5>
-                        <p class="text-muted">Ajusta los filtros de búsqueda o crea un nuevo procesamiento</p>
-                        <a href="{% url 'audio_processing:centro_audio' %}" class="btn btn-primary">
-                            <i class="fas fa-arrow-left"></i> Volver al Centro de Audio
-                        </a>
+                                        <strong>Duración:</strong> {{ procesamiento.duracion_formateada }}
+                                    </p>
+                                    {% endif %}
+                                    {% if procesamiento.tamano_mb %}
+                                    <p class="mb-1">
+                                        <strong>Tamaño:</strong> {{ procesamiento.tamano_mb }} MB
+                                    </p>
+                                    {% endif %}
+                                    <p class="mb-1">
+                                        <strong>Usuario:</strong> {{ procesamiento.usuario.get_full_name|default:procesamiento.usuario.username }}
+                                    </p>
+                                </div>
+                            </div>
+                            
+                            {% if procesamiento.descripcion %}
+                            <p class="text-muted mt-2">{{ procesamiento.descripcion|truncatewords:20 }}</p>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <!-- Estado -->
+                            <div class="text-center mb-3">
+                                <span class="status-badge status-{{ procesamiento.estado }}">
+                                    {{ procesamiento.get_estado_display|default:procesamiento.estado|capfirst }}
+                                </span>
+                            </div>
+                            
+                            <!-- Progreso -->
+                            <div class="mb-3">
+                                <div class="d-flex justify-content-between">
+                                    <small>Progreso</small>
+                                    <small>{{ procesamiento.progreso|default:0 }}%</small>
+                                </div>
+                                <div class="progress-container">
+                                    <div class="progress-bar-custom" style="width: {{ procesamiento.progreso|default:0 }}%"></div>
+                                </div>
+                            </div>
+                            
+                            <!-- Acciones -->
+                            <div class="text-center">
+                                <a href="{% url 'audio_processing:detalle_procesamiento' procesamiento.id %}" 
+                                   class="btn btn-sm btn-outline-primary mb-1">
+                                    <i class="fas fa-eye"></i> Ver Detalle
+                                </a>
+                                
+                                <!-- Botones según el estado -->
+                                {% if procesamiento.estado == 'pendiente' %}
+                                    <form method="post" action="{% url 'audio_processing:iniciar_procesamiento' procesamiento.id %}" 
+                                          style="display: inline-block;" class="mb-1"
+                                          onsubmit="return confirm('¿Iniciar el procesamiento de este audio?')">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-sm btn-success">
+                                            <i class="fas fa-play"></i> Iniciar
+                                        </button>
+                                    </form>
+                                {% endif %}
+                                
+                                {% if procesamiento.estado == 'procesando' %}
+                                    <form method="post" action="{% url 'audio_processing:detener_procesamiento' procesamiento.id %}" 
+                                          style="display: inline-block;" class="mb-1"
+                                          onsubmit="return confirm('¿Detener este procesamiento?')">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-sm btn-warning">
+                                            <i class="fas fa-stop"></i> Detener
+                                        </button>
+                                    </form>
+                                {% endif %}
+                                
+                                {% if procesamiento.estado in 'error,cancelado,completado' %}
+                                    <form method="post" action="{% url 'audio_processing:reiniciar_procesamiento' procesamiento.id %}" 
+                                          style="display: inline-block;" class="mb-1"
+                                          onsubmit="return confirm('¿Reiniciar este procesamiento? Se perderán los resultados actuales.')">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-sm btn-info">
+                                            <i class="fas fa-redo"></i> Reiniciar
+                                        </button>
+                                    </form>
+                                {% endif %}
+                                
+                                {% if procesamiento.estado == 'completado' %}
+                                    <br>
+                                    {% if procesamiento.archivo_mejorado %}
+                                    <a href="{{ procesamiento.archivo_mejorado.url }}" 
+                                       class="btn btn-sm btn-outline-success mb-1" download>
+                                        <i class="fas fa-download"></i> Audio Procesado
+                                    </a>
+                                    {% endif %}
+                                    
+                                    {% if procesamiento.transcripcion_texto %}
+                                    <span class="btn btn-sm btn-outline-success disabled">
+                                        <i class="fas fa-file-alt"></i> Transcripción (próximamente)
+                                    </span>
+                                    {% endif %}
+                                {% endif %}
+                            </div>
+                        </div>
                     </div>
                 </div>
-            {% endif %}
-
-            <!-- Paginación -->
-            {% if page_obj.has_other_pages %}
-            <div class="card">
-                <div class="card-body">
-                    <nav aria-label="Paginación">
-                        <ul class="pagination justify-content-center mb-0">
-                            {% if page_obj.has_previous %}
-                                <li class="page-item">
-                                    <a class="page-link" href="?page=1">&laquo; Primera</a>
+                {% endfor %}
+                
+                <!-- Paginación -->
+                {% if page_obj.has_other_pages %}
+                <nav aria-label="Paginación">
+                    <ul class="pagination justify-content-center">
+                        {% if page_obj.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page=1">&laquo; Primera</a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.previous_page_number }}">Anterior</a>
+                            </li>
+                        {% endif %}
+                        
+                        {% for num in page_obj.paginator.page_range %}
+                            {% if page_obj.number == num %}
+                                <li class="page-item active">
+                                    <span class="page-link">{{ num }}</span>
                                 </li>
+                            {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
                                 <li class="page-item">
-                                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}">Anterior</a>
-                                </li>
-                            {% endif %}
-                            
-                            {% for num in page_obj.paginator.page_range %}
-                                {% if page_obj.number == num %}
-                                    <li class="page-item active">
-                                        <span class="page-link">{{ num }}</span>
-                                    </li>
-                                {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
-                                    <li class="page-item">
-                                        <a class="page-link" href="?page={{ num }}">{{ num }}</a>
-                                    </li>
-                                {% endif %}
-                            {% endfor %}
-                            
-                            {% if page_obj.has_next %}
-                                <li class="page-item">
-                                    <a class="page-link" href="?page={{ page_obj.next_page_number }}">Siguiente</a>
-                                </li>
-                                <li class="page-item">
-                                    <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}">Última &raquo;</a>
+                                    <a class="page-link" href="?page={{ num }}">{{ num }}</a>
                                 </li>
                             {% endif %}
-                        </ul>
-                    </nav>
+                        {% endfor %}
+                        
+                        {% if page_obj.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.next_page_number }}">Siguiente</a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}">Última &raquo;</a>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                {% endif %}
+                
+            {% else %}
+                <div class="audio-item text-center">
+                    <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                    <h5 class="text-muted">No se encontraron procesamientos</h5>
+                    <p class="text-muted">Ajusta los filtros de búsqueda o crea un nuevo procesamiento</p>
+                    <a href="{% url 'audio_processing:centro_audio' %}" class="btn btn-primary">
+                        <i class="fas fa-arrow-left"></i> Volver al Centro de Audio
+                    </a>
                 </div>
-            </div>
             {% endif %}
 
         </div>
@@ -304,76 +382,6 @@
 
 {% block javascripts %}
 <script>
-// URLs para las acciones (definidas fuera de las funciones)
-const URLS = {
-    editar: '{% url "audio_processing:editar_procesamiento" 0 %}',
-    eliminar: '{% url "audio_processing:eliminar_procesamiento" 0 %}'
-};
-
-// Función para reproducir audio
-function reproducirAudio(url) {
-    // Crear modal para reproductor de audio
-    const modalHtml = `
-        <div class="modal fade" id="audioModal" tabindex="-1" role="dialog">
-            <div class="modal-dialog modal-dialog-centered" role="document">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title">
-                            <i class="fas fa-play"></i> Reproductor de Audio
-                        </h5>
-                        <button type="button" class="close" data-dismiss="modal">
-                            <span>&times;</span>
-                        </button>
-                    </div>
-                    <div class="modal-body text-center">
-                        <audio controls class="w-100" preload="metadata">
-                            <source src="${url}" type="audio/mpeg">
-                            Tu navegador no soporta la reproducción de audio.
-                        </audio>
-                    </div>
-                </div>
-            </div>
-        </div>
-    `;
-    
-    // Eliminar modal anterior si existe
-    $('#audioModal').remove();
-    
-    // Agregar nuevo modal
-    $('body').append(modalHtml);
-    $('#audioModal').modal('show');
-}
-
-// Función para confirmar eliminación
-function confirmarEliminacion(id) {
-    if (confirm('¿Estás seguro de que deseas eliminar este procesamiento? Esta acción no se puede deshacer.')) {
-        // Crear formulario para enviar POST request
-        const form = document.createElement('form');
-        form.method = 'POST';
-        form.action = URLS.eliminar.replace('0', id);
-        
-        // Agregar token CSRF
-        const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
-        
-        const csrfInput = document.createElement('input');
-        csrfInput.type = 'hidden';
-        csrfInput.name = 'csrfmiddlewaretoken';
-        csrfInput.value = csrfToken;
-        form.appendChild(csrfInput);
-        
-        // Agregar al DOM y enviar
-        document.body.appendChild(form);
-        form.submit();
-    }
-}
-
-// Función para editar procesamiento
-function editarProcesamiento(id) {
-    // Redirigir a la página de edición usando Django URL
-    const url = URLS.editar.replace('0', id);
-    window.location.href = url;
-}
-
 $(document).ready(function() {
     // Auto-refresh para procesamientos en curso cada 30 segundos
     {% if page_obj %}

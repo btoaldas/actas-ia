@@ -1,0 +1,188 @@
+{% extends "layouts/base.html" %}
+{% load static %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block stylesheets %}
+<style>
+.danger-zone {
+    border: 2px solid #dc3545;
+    border-radius: 8px;
+    background: #f8f9fa;
+}
+.warning-icon {
+    color: #dc3545;
+    font-size: 4rem;
+}
+</style>
+{% endblock stylesheets %}
+
+{% block content %}
+<div class="content-wrapper">
+    <div class="content-header">
+        <div class="container-fluid">
+            <div class="row mb-2">
+                <div class="col-sm-6">
+                    <h1 class="m-0">
+                        <i class="fas fa-exclamation-triangle text-danger"></i>
+                        Confirmar Eliminación
+                    </h1>
+                </div>
+                <div class="col-sm-6">
+                    <ol class="breadcrumb float-sm-right">
+                        <li class="breadcrumb-item"><a href="{% url 'index' %}">Inicio</a></li>
+                        <li class="breadcrumb-item"><a href="{% url 'audio_processing:centro_audio' %}">Audio</a></li>
+                        <li class="breadcrumb-item"><a href="{% url 'audio_processing:lista_procesamientos' %}">Lista</a></li>
+                        <li class="breadcrumb-item active">Eliminar</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <section class="content">
+        <div class="container-fluid">
+            <div class="row justify-content-center">
+                <div class="col-md-8">
+                    
+                    {% if not puede_eliminar %}
+                    <!-- No se puede eliminar -->
+                    <div class="card card-warning">
+                        <div class="card-header">
+                            <h3 class="card-title">
+                                <i class="fas fa-exclamation-triangle"></i>
+                                No se puede eliminar
+                            </h3>
+                        </div>
+                        <div class="card-body text-center">
+                            <div class="warning-icon">
+                                <i class="fas fa-ban"></i>
+                            </div>
+                            <h4 class="mt-3">Procesamiento en curso</h4>
+                            <p class="text-muted">
+                                No se puede eliminar un procesamiento que está en estado: 
+                                <span class="badge badge-info">{{ procesamiento.get_estado_display }}</span>
+                            </p>
+                            <p>Espera a que termine el procesamiento o detenlo antes de eliminarlo.</p>
+                            
+                            <div class="mt-4">
+                                <a href="{% url 'audio_processing:detalle_procesamiento' procesamiento.id %}" 
+                                   class="btn btn-primary">
+                                    <i class="fas fa-arrow-left"></i> Volver al detalle
+                                </a>
+                                <a href="{% url 'audio_processing:lista_procesamientos' %}" 
+                                   class="btn btn-secondary">
+                                    <i class="fas fa-list"></i> Volver a la lista
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    {% else %}
+                    <!-- Confirmación de eliminación -->
+                    <div class="card danger-zone">
+                        <div class="card-header bg-danger">
+                            <h3 class="card-title text-white">
+                                <i class="fas fa-trash"></i>
+                                Zona de peligro - Eliminación permanente
+                            </h3>
+                        </div>
+                        <div class="card-body text-center">
+                            <div class="warning-icon">
+                                <i class="fas fa-exclamation-triangle"></i>
+                            </div>
+                            
+                            <h4 class="mt-3 text-danger">¿Estás seguro que deseas eliminar este procesamiento?</h4>
+                            
+                            <div class="alert alert-warning mt-4">
+                                <h5><strong>{{ procesamiento.titulo }}</strong></h5>
+                                <p class="mb-1">
+                                    <i class="fas fa-calendar"></i> 
+                                    Creado: {{ procesamiento.created_at|date:"d/m/Y H:i" }}
+                                </p>
+                                <p class="mb-1">
+                                    <i class="fas fa-clock"></i> 
+                                    Estado: <span class="badge badge-{{ procesamiento.estado|yesno:'success,warning,danger' }}">{{ procesamiento.get_estado_display }}</span>
+                                </p>
+                                {% if procesamiento.archivo_audio %}
+                                <p class="mb-1">
+                                    <i class="fas fa-file-audio"></i> 
+                                    Archivo: {{ procesamiento.archivo_audio.name|default:"Sin archivo" }}
+                                </p>
+                                {% endif %}
+                                {% if procesamiento.descripcion %}
+                                <p class="mb-0">
+                                    <i class="fas fa-comment"></i> 
+                                    {{ procesamiento.descripcion|truncatechars:100 }}
+                                </p>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="alert alert-danger">
+                                <h6><i class="fas fa-exclamation-triangle"></i> <strong>¡ADVERTENCIA!</strong></h6>
+                                <p class="mb-0">
+                                    Esta acción <strong>NO SE PUEDE DESHACER</strong>. 
+                                    Se eliminará permanentemente:
+                                </p>
+                                <ul class="text-left mt-2 mb-0">
+                                    <li>El registro del procesamiento</li>
+                                    <li>El archivo de audio asociado</li>
+                                    <li>Todos los resultados y transcripciones</li>
+                                    <li>El historial de procesamiento</li>
+                                </ul>
+                            </div>
+                            
+                            <div class="mt-4">
+                                <form method="post" action="{% url 'audio_processing:eliminar_procesamiento' procesamiento.id %}" style="display: inline;">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-danger btn-lg">
+                                        <i class="fas fa-trash"></i> 
+                                        Sí, eliminar permanentemente
+                                    </button>
+                                </form>
+                                
+                                <a href="{% url 'audio_processing:detalle_procesamiento' procesamiento.id %}" 
+                                   class="btn btn-secondary btn-lg ml-2">
+                                    <i class="fas fa-times"></i> 
+                                    Cancelar
+                                </a>
+                            </div>
+                            
+                            <p class="text-muted mt-3">
+                                <small>
+                                    <i class="fas fa-info-circle"></i>
+                                    Si cambias de opinión, puedes cancelar y volver al detalle del procesamiento.
+                                </small>
+                            </p>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                </div>
+            </div>
+        </div>
+    </section>
+</div>
+{% endblock content %}
+
+{% block javascripts %}
+<script>
+// Confirmación adicional en JavaScript
+document.addEventListener('DOMContentLoaded', function() {
+    const deleteForm = document.querySelector('form[action*="eliminar"]');
+    if (deleteForm) {
+        deleteForm.addEventListener('submit', function(e) {
+            const confirmed = confirm(
+                '⚠️ ÚLTIMA ADVERTENCIA ⚠️\n\n' +
+                'Esta acción eliminará permanentemente el procesamiento y todos sus datos.\n\n' +
+                '¿Estás completamente seguro?'
+            );
+            
+            if (!confirmed) {
+                e.preventDefault();
+            }
+        });
+    }
+});
+</script>
+{% endblock javascripts %}

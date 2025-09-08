@@ -13,6 +13,14 @@ from django.utils import timezone
 # Configurar logger específico para auditoría
 audit_logger = logging.getLogger('audit')
 
+# Importar funciones de logging específicas para audio processing
+try:
+    from .logging_helper import log_navegacion, log_sistema
+except ImportError:
+    # Fallback si hay problemas de importación circular
+    log_navegacion = None
+    log_sistema = None
+
 class AuditMiddleware(MiddlewareMixin):
     """
     Middleware para registrar todas las acciones del usuario en el sistema

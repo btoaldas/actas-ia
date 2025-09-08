@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test de Botones</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <meta name="csrf-token" content="test-token">
+</head>
+<body>
+    <h1>Test de Funciones JavaScript</h1>
+    
+    <button onclick="editarProcesamiento(123)">Editar Procesamiento 123</button>
+    <button onclick="confirmarEliminacion(123)">Eliminar Procesamiento 123</button>
+    
+    <script>
+        // URLs simuladas
+        const URLS = {
+            editar: '/audio/editar/0/',
+            eliminar: '/audio/eliminar/0/'
+        };
+
+        function confirmarEliminacion(id) {
+            console.log('Función confirmarEliminacion llamada con ID:', id);
+            if (confirm('¿Estás seguro de que deseas eliminar este procesamiento? Esta acción no se puede deshacer.')) {
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = URLS.eliminar.replace('0', id);
+                
+                const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+                
+                const csrfInput = document.createElement('input');
+                csrfInput.type = 'hidden';
+                csrfInput.name = 'csrfmiddlewaretoken';
+                csrfInput.value = csrfToken;
+                form.appendChild(csrfInput);
+                
+                console.log('Formulario creado:', form);
+                console.log('Action:', form.action);
+                console.log('CSRF Token:', csrfToken);
+                
+                // Para el test, no enviar realmente
+                // document.body.appendChild(form);
+                // form.submit();
+                alert('Test: Formulario preparado para envío a ' + form.action);
+            }
+        }
+
+        function editarProcesamiento(id) {
+            console.log('Función editarProcesamiento llamada con ID:', id);
+            const url = URLS.editar.replace('0', id);
+            console.log('URL de edición:', url);
+            alert('Test: Redirección a ' + url);
+            // window.location.href = url;
+        }
+    </script>
+</body>
+</html>
