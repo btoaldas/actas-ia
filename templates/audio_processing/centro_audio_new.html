@@ -156,6 +156,19 @@
                     </div>
                   </div>
                 </div>
+
+                <!-- BOTÓN DE PRUEBA - TEMPORAL -->
+                <div class="mt-3">
+                  <button type="button" class="btn btn-warning btn-sm" onclick="testAudioPreview()">
+                    <i class="fas fa-play"></i> Forzar Vista Previa
+                  </button>
+                  <button type="button" class="btn btn-info btn-sm ml-2" onclick="debugFileInput()">
+                    <i class="fas fa-search"></i> Debug File Input
+                  </button>
+                  <button type="button" class="btn btn-secondary btn-sm ml-2" onclick="clearAudioPreview()">
+                    <i class="fas fa-times"></i> Limpiar
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -579,71 +592,142 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     fileInput.addEventListener('change', function(e) {
+        console.log('📁 Evento change del fileInput disparado');
+        console.log('Archivos seleccionados:', e.target.files.length);
+        
         if (e.target.files.length > 0) {
-            handleFileSelection(e.target.files[0]);
+            const file = e.target.files[0];
+            console.log('📄 Archivo seleccionado:', file.name, file.type, file.size);
+            
+            // LIMPIAR cualquier vista previa anterior
+            clearAudioPreview();
+            
+            // Esperar un poco antes de procesar
+            setTimeout(() => {
+                handleFileSelection(file);
+            }, 100);
+        } else {
+            console.log('❌ No hay archivos seleccionados');
         }
     });
 
     function handleFileSelection(file) {
+        console.log('🎯 handleFileSelection llamado con archivo:', file.name);
+        console.log('Archivo seleccionado:', file);
+        
         if (file.type.startsWith('audio/')) {
+            console.log('✅ Es un archivo de audio válido');
             selectedAudioFile = file;
+            
+            // Actualizar información del archivo
             fileName.textContent = file.name;
             document.getElementById('fileSize').textContent = (file.size / 1024 / 1024).toFixed(2) + ' MB';
             document.getElementById('fileType').textContent = file.type;
+            
+            // Mostrar información del archivo
             selectedFileDiv.style.display = 'block';
             processButton.disabled = false;
             
-            // Mostrar reproductor con metadatos
+            console.log('📋 Información del archivo actualizada');
+            
+            // Mostrar reproductor con vista previa
+            console.log('🎵 Llamando a showAudioPreview...');
             showAudioPreview(file);
             
             // Ocultar reproductor de grabación si estaba visible
             audioPlayer.style.display = 'none';
+            
+            console.log('✅ Vista previa configurada para:', file.name);
         } else {
+            console.error('❌ Tipo de archivo no válido:', file.type);
             alert('Por favor selecciona un archivo de audio válido.');
         }
     }
 
     // ===== NUEVA FUNCIÓN: MOSTRAR VISTA PREVIA DE AUDIO =====
     function showAudioPreview(file) {
+        console.log('🎵 Configurando vista previa para:', file.name, 'Tipo:', file.type, 'Tamaño:', file.size);
+        
         const uploadedAudioPlayer = document.getElementById('uploadedAudioPlayer');
         const previewAudio = document.getElementById('previewAudio');
         
+        if (!uploadedAudioPlayer || !previewAudio) {
+            console.error('❌ Elementos de vista previa no encontrados');
+            console.log('uploadedAudioPlayer:', uploadedAudioPlayer);
+            console.log('previewAudio:', previewAudio);
+            return;
+        }
+        
+        // Limpiar event listeners previos
+        const newAudio = previewAudio.cloneNode(true);
+        previewAudio.parentNode.replaceChild(newAudio, previewAudio);
+        const audio = document.getElementById('previewAudio');
+        
         // Crear URL temporal para el archivo
         const audioUrl = URL.createObjectURL(file);
-        previewAudio.src = audioUrl;
+        console.log('🔗 URL creada para vista previa:', audioUrl);
         
-        // Mostrar el reproductor
-        uploadedAudioPlayer.style.display = 'block';
+        // Agregar event listeners ANTES de establecer el src
+        audio.addEventListener('error', function(e) {
+            console.error('❌ Error al cargar archivo de audio:', e);
+            console.error('Error details:', audio.error);
+            if (audio.error) {
+                console.error('Error code:', audio.error.code);
+                console.error('Error message:', audio.error.message);
+            }
+            alert(`Error al cargar el archivo de audio: ${file.name}\nVerifica que el archivo no esté corrupto.`);
+        });
         
-        // Obtener metadatos cuando se cargue
-        previewAudio.addEventListener('loadedmetadata', function() {
-            const duration = Math.round(previewAudio.duration);
-            const minutes = Math.floor(duration / 60);
-            const seconds = duration % 60;
+        audio.addEventListener('loadstart', function() {
+            console.log('📥 Iniciando carga del audio...');
+        });
+        
+        audio.addEventListener('loadeddata', function() {
+            console.log('📊 Datos del audio cargados');
+        });
+        
+        audio.addEventListener('canplay', function() {
+            console.log('▶️ Audio listo para reproducir, duración:', audio.duration);
+        });
+        
+        audio.addEventListener('loadedmetadata', function() {
+            console.log('📋 Metadatos del audio cargados');
+            console.log('Duración:', audio.duration);
+            console.log('Tipo de archivo:', file.type);
+            console.log('Tamaño del archivo:', (file.size / 1024 / 1024).toFixed(2), 'MB');
             
-            document.getElementById('audioDuration').textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+            if (!isNaN(audio.duration) && audio.duration > 0) {
+                const duration = Math.round(audio.duration);
+                const minutes = Math.floor(duration / 60);
+                const seconds = duration % 60;
+                
+                const durationElement = document.getElementById('audioDuration');
+                if (durationElement) {
+                    durationElement.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+                    console.log('✅ Duración mostrada:', durationElement.textContent);
+                }
+            }
             
-            // Intentar obtener más metadatos usando Web Audio API
-            if (window.AudioContext || window.webkitAudioContext) {
-                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-                const reader = new FileReader();
-                
-                reader.onload = function(e) {
-                    audioContext.decodeAudioData(e.target.result)
-                        .then(audioBuffer => {
-                            document.getElementById('audioChannels').textContent = `${audioBuffer.numberOfChannels} canal(es)`;
-                            document.getElementById('audioSampleRate').textContent = `${audioBuffer.sampleRate} Hz`;
-                        })
-                        .catch(error => {
-                            console.log('No se pudieron obtener metadatos adicionales:', error);
-                            document.getElementById('audioChannels').textContent = 'N/A canales';
-                            document.getElementById('audioSampleRate').textContent = 'N/A Hz';
-                        });
-                };
-                
-                reader.readAsArrayBuffer(file);
+            // Mostrar metadatos básicos inmediatamente
+            const channelsElement = document.getElementById('audioChannels');
+            const sampleRateElement = document.getElementById('audioSampleRate');
+            
+            if (channelsElement) {
+                channelsElement.textContent = 'Analizando...';
+            }
+            if (sampleRateElement) {
+                sampleRateElement.textContent = 'Analizando...';
             }
         });
+        
+        // Mostrar el reproductor ANTES de establecer el src
+        uploadedAudioPlayer.style.display = 'block';
+        uploadedAudioPlayer.style.border = '2px solid green'; // Para debug
+        
+        // Establecer el src
+        audio.src = audioUrl;
+        
+        console.log('✅ Vista previa configurada, esperando carga...');
     }
 
     // ===== GESTIÓN DE PARTICIPANTES =====
@@ -1037,6 +1121,130 @@ document.addEventListener('DOMContentLoaded', function() {
                 }, 500);
             });
     });
+
+    // ==== FUNCIÓN DE PRUEBA TEMPORAL ====
+    window.testAudioPreview = function() {
+        console.log('🔧 Probando vista previa de audio...');
+        
+        // Usar el archivo que ya está seleccionado si existe
+        if (selectedAudioFile) {
+            console.log('📁 Usando archivo ya seleccionado:', selectedAudioFile.name);
+            showAudioPreview(selectedAudioFile);
+            return;
+        }
+        
+        // Si no hay archivo seleccionado, mostrar mensaje
+        console.log('❌ No hay archivo seleccionado');
+        alert('Primero selecciona un archivo de audio, luego usa este botón para forzar la vista previa');
+    };
+
+    // Función para crear un archivo de audio de prueba válido
+    function createTestAudio() {
+        return new Promise((resolve) => {
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const sampleRate = audioContext.sampleRate;
+            const duration = 2; // 2 segundos
+            const frameCount = sampleRate * duration;
+            
+            const arrayBuffer = audioContext.createBuffer(1, frameCount, sampleRate);
+            const channelData = arrayBuffer.getChannelData(0);
+            
+            // Generar un tono simple
+            for (let i = 0; i < frameCount; i++) {
+                channelData[i] = Math.sin(2 * Math.PI * 440 * i / sampleRate) * 0.3;
+            }
+            
+            // Convertir a WAV
+            const wavBuffer = audioBufferToWav(arrayBuffer);
+            const audioBlob = new Blob([wavBuffer], { type: 'audio/wav' });
+            resolve(audioBlob);
+        });
+    }
+
+    // Función para convertir AudioBuffer a WAV
+    function audioBufferToWav(buffer) {
+        const length = buffer.length;
+        const arrayBuffer = new ArrayBuffer(44 + length * 2);
+        const view = new DataView(arrayBuffer);
+        
+        // WAV header
+        const writeString = (offset, string) => {
+            for (let i = 0; i < string.length; i++) {
+                view.setUint8(offset + i, string.charCodeAt(i));
+            }
+        };
+        
+        writeString(0, 'RIFF');
+        view.setUint32(4, 36 + length * 2, true);
+        writeString(8, 'WAVE');
+        writeString(12, 'fmt ');
+        view.setUint32(16, 16, true);
+        view.setUint16(20, 1, true);
+        view.setUint16(22, 1, true);
+        view.setUint32(24, buffer.sampleRate, true);
+        view.setUint32(28, buffer.sampleRate * 2, true);
+        view.setUint16(32, 2, true);
+        view.setUint16(34, 16, true);
+        writeString(36, 'data');
+        view.setUint32(40, length * 2, true);
+        
+        // Audio data
+        const channelData = buffer.getChannelData(0);
+        let offset = 44;
+        for (let i = 0; i < length; i++) {
+            const sample = Math.max(-1, Math.min(1, channelData[i]));
+            view.setInt16(offset, sample < 0 ? sample * 0x8000 : sample * 0x7FFF, true);
+            offset += 2;
+        }
+        
+        return arrayBuffer;
+    }
+
+    // Función para debuggear el file input
+    window.debugFileInput = function() {
+        console.log('🔍 Debuggeando file input...');
+        console.log('fileInput:', fileInput);
+        console.log('fileInput.files:', fileInput.files);
+        console.log('selectedAudioFile:', selectedAudioFile);
+        
+        if (fileInput.files.length > 0) {
+            const file = fileInput.files[0];
+            console.log('📁 Archivo en fileInput:', file);
+            console.log('Nombre:', file.name);
+            console.log('Tipo:', file.type);
+            console.log('Tamaño:', file.size);
+            
+            // Forzar el procesamiento del archivo
+            console.log('🔄 Forzando handleFileSelection...');
+            handleFileSelection(file);
+        } else {
+            console.log('❌ No hay archivos en fileInput');
+            alert('Primero selecciona un archivo de audio');
+        }
+    };
+
+    // Función para limpiar la vista previa
+    window.clearAudioPreview = function() {
+        console.log('🧹 Limpiando vista previa...');
+        
+        const uploadedAudioPlayer = document.getElementById('uploadedAudioPlayer');
+        const previewAudio = document.getElementById('previewAudio');
+        
+        if (previewAudio) {
+            // Pausar y limpiar src
+            previewAudio.pause();
+            previewAudio.src = '';
+            previewAudio.load();
+        }
+        
+        if (uploadedAudioPlayer) {
+            uploadedAudioPlayer.style.display = 'none';
+            uploadedAudioPlayer.style.border = '';
+        }
+        
+        // Solo limpiar la información visual, NO el selectedAudioFile ni el fileInput
+        console.log('✅ Vista previa limpia (conservando archivo seleccionado)');
+    };
 });
 </script>
 {% endblock %}
