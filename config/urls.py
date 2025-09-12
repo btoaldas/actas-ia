@@ -45,6 +45,7 @@ urlpatterns = [
     path("", include("apps.react.urls")),
     path("config-system/", include("apps.config_system.urls")),
     path("audio/", include("apps.audio_processing.urls")),
+    path("transcripcion/", include("apps.transcripcion.urls")),
 
     # Archivos estáticos y media
     re_path(r'^media/(?P<path>.*)$', serve,{'document_root': settings.MEDIA_ROOT}), 

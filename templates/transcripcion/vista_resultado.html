@@ -1,0 +1,390 @@
+{% extends "layouts/base.html" %}
+
+{% load static %}
+
+{% block title %}Resultado de Transcripción{% endblock title %}
+
+{% block content %}
+<div class="content-wrapper">
+    <!-- Content Header -->
+    <div class="content-header">
+        <div class="container-fluid">
+            <div class="row mb-2">
+                <div class="col-sm-6">
+                    <h1 class="m-0">
+                        <i class="fas fa-file-audio text-primary"></i>
+                        Resultado de Transcripción
+                    </h1>
+                </div>
+                <div class="col-sm-6">
+                    <ol class="breadcrumb float-sm-right">
+                        <li class="breadcrumb-item"><a href="{% url 'index' %}">Inicio</a></li>
+                        <li class="breadcrumb-item"><a href="{% url 'transcripcion:lista' %}">Transcripciones</a></li>
+                        <li class="breadcrumb-item active">Resultado</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main content -->
+    <section class="content">
+        <div class="container-fluid">
+            
+            <!-- Información de la transcripción -->
+            <div class="row">
+                <div class="col-12">
+                    <div class="card card-primary">
+                        <div class="card-header">
+                            <h3 class="card-title">
+                                <i class="fas fa-info-circle"></i>
+                                Información General
+                            </h3>
+                            <div class="card-tools">
+                                <div class="btn-group">
+                                    <button type="button" class="btn btn-success btn-sm dropdown-toggle" data-toggle="dropdown">
+                                        <i class="fas fa-download"></i> Exportar
+                                    </button>
+                                    <div class="dropdown-menu">
+                                        <a class="dropdown-item" href="{% url 'transcripcion:exportar' transcripcion.id 'txt' %}">
+                                            <i class="fas fa-file-alt"></i> Texto (.txt)
+                                        </a>
+                                        <a class="dropdown-item" href="{% url 'transcripcion:exportar' transcripcion.id 'json' %}">
+                                            <i class="fas fa-code"></i> JSON (.json)
+                                        </a>
+                                        <a class="dropdown-item" href="{% url 'transcripcion:exportar' transcripcion.id 'srt' %}">
+                                            <i class="fas fa-closed-captioning"></i> Subtítulos (.srt)
+                                        </a>
+                                    </div>
+                                </div>
+                                <a href="{% url 'transcripcion:audios_listos' %}" class="btn btn-secondary btn-sm">
+                                    <i class="fas fa-arrow-left"></i> Volver
+                                </a>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <table class="table table-sm table-borderless">
+                                        <tr>
+                                            <td><strong>Archivo:</strong></td>
+                                            <td>{{ transcripcion.procesamiento_audio.titulo|default:transcripcion.procesamiento_audio.nombre_archivo }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Estado:</strong></td>
+                                            <td><span class="badge badge-success">{{ transcripcion.get_estado_display }}</span></td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Fecha procesamiento:</strong></td>
+                                            <td>{{ transcripcion.fecha_completado|date:"d/m/Y H:i:s" }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Usuario:</strong></td>
+                                            <td>{{ transcripcion.usuario_creacion.get_full_name|default:transcripcion.usuario_creacion.username }}</td>
+                                        </tr>
+                                    </table>
+                                </div>
+                                <div class="col-md-6">
+                                    <table class="table table-sm table-borderless">
+                                        <tr>
+                                            <td><strong>Duración:</strong></td>
+                                            <td>{{ estadisticas.duracion_total|floatformat:2 }} segundos</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Hablantes:</strong></td>
+                                            <td>{{ estadisticas.num_hablantes }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Segmentos:</strong></td>
+                                            <td>{{ estadisticas.num_segmentos }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Palabras:</strong></td>
+                                            <td>{{ estadisticas.num_palabras }}</td>
+                                        </tr>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {% if archivo_audio_disponible %}
+            <!-- Reproductor de audio -->
+            <div class="row">
+                <div class="col-12">
+                    <div class="card card-info">
+                        <div class="card-header">
+                            <h3 class="card-title">
+                                <i class="fas fa-play"></i>
+                                Reproductor de Audio
+                            </h3>
+                        </div>
+                        <div class="card-body">
+                            {% if transcripcion.procesamiento_audio.archivo_audio %}
+                                <audio controls class="w-100" style="max-width: 100%;">
+                                    <source src="{{ transcripcion.procesamiento_audio.archivo_audio.url }}" type="audio/wav">
+                                    <source src="{{ transcripcion.procesamiento_audio.archivo_audio.url }}" type="audio/mp3">
+                                    <source src="{{ transcripcion.procesamiento_audio.archivo_audio.url }}" type="audio/ogg">
+                                    Tu navegador no soporta la reproducción de audio.
+                                </audio>
+                            {% elif transcripcion.procesamiento_audio.archivo_mejorado %}
+                                <audio controls class="w-100" style="max-width: 100%;">
+                                    <source src="{{ transcripcion.procesamiento_audio.archivo_mejorado.url }}" type="audio/wav">
+                                    <source src="{{ transcripcion.procesamiento_audio.archivo_mejorado.url }}" type="audio/mp3">
+                                    <source src="{{ transcripcion.procesamiento_audio.archivo_mejorado.url }}" type="audio/ogg">
+                                    Tu navegador no soporta la reproducción de audio.
+                                </audio>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Estadísticas por hablante -->
+            {% if estadisticas_hablantes %}
+            <div class="row">
+                <div class="col-12">
+                    <div class="card card-warning">
+                        <div class="card-header">
+                            <h3 class="card-title">
+                                <i class="fas fa-users"></i>
+                                Estadísticas por Hablante
+                            </h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                {% for hablante_id, stats in estadisticas_hablantes.items %}
+                                <div class="col-md-6 col-lg-4 mb-3">
+                                    <div class="small-box bg-light">
+                                        <div class="inner">
+                                            <h4>{{ stats.nombre }}</h4>
+                                            <p>
+                                                <strong>Tiempo:</strong> {{ stats.tiempo_total|floatformat:1 }}s ({{ stats.porcentaje_tiempo|floatformat:1 }}%)<br>
+                                                <strong>Segmentos:</strong> {{ stats.num_segmentos }}<br>
+                                                <strong>Palabras:</strong> {{ stats.num_palabras }}
+                                            </p>
+                                        </div>
+                                        <div class="icon">
+                                            <i class="fas fa-user"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Timeline de la transcripción -->
+            <div class="row">
+                <div class="col-12">
+                    <div class="card card-success">
+                        <div class="card-header">
+                            <h3 class="card-title">
+                                <i class="fas fa-comments"></i>
+                                Transcripción por Segmentos
+                            </h3>
+                            <div class="card-tools">
+                                <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                                    <i class="fas fa-minus"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            {% if timeline_data %}
+                                <div class="timeline">
+                                    {% for segmento in timeline_data %}
+                                    <div class="time-label">
+                                        <span class="bg-blue">{{ segmento.inicio|floatformat:1 }}s - {{ segmento.fin|floatformat:1 }}s</span>
+                                    </div>
+                                    <div>
+                                        <i class="fas fa-user bg-{{ segmento.hablante|slice:"-1" }}"></i>
+                                        <div class="timeline-item">
+                                            <span class="time">
+                                                <i class="fas fa-clock"></i> 
+                                                {{ segmento.duracion|floatformat:1 }}s
+                                                {% if segmento.confianza %}
+                                                    | Confianza: {{ segmento.confianza|floatformat:2 }}
+                                                {% endif %}
+                                            </span>
+                                            <h3 class="timeline-header">
+                                                <strong>{{ segmento.hablante_nombre }}</strong>
+                                            </h3>
+                                            <div class="timeline-body">
+                                                <p class="lead">{{ segmento.texto }}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                    <div>
+                                        <i class="fas fa-clock bg-gray"></i>
+                                    </div>
+                                </div>
+                            {% else %}
+                                <div class="alert alert-info">
+                                    <h5><i class="icon fas fa-info"></i> Sin segmentos disponibles</h5>
+                                    No se encontraron segmentos de transcripción para mostrar.
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Texto completo -->
+            {% if transcripcion.texto_completo %}
+            <div class="row">
+                <div class="col-12">
+                    <div class="card card-secondary">
+                        <div class="card-header">
+                            <h3 class="card-title">
+                                <i class="fas fa-file-alt"></i>
+                                Texto Completo
+                            </h3>
+                            <div class="card-tools">
+                                <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                                    <i class="fas fa-minus"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div class="text-wrapper" style="max-height: 400px; overflow-y: auto; border: 1px solid #ddd; padding: 15px; background-color: #f8f9fa;">
+                                <p style="line-height: 1.6; white-space: pre-wrap;">{{ transcripcion.texto_completo }}</p>
+                            </div>
+                            <div class="mt-3">
+                                <button type="button" class="btn btn-sm btn-outline-primary" onclick="copyToClipboard()">
+                                    <i class="fas fa-copy"></i> Copiar texto
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Información técnica -->
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="card card-dark">
+                        <div class="card-header">
+                            <h3 class="card-title">
+                                <i class="fas fa-cog"></i>
+                                Configuración Utilizada
+                            </h3>
+                            <div class="card-tools">
+                                <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                                    <i class="fas fa-minus"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            {% if configuracion_usada %}
+                                <table class="table table-sm">
+                                    <tr>
+                                        <td><strong>Configuración:</strong></td>
+                                        <td>{{ configuracion_usada.nombre }}</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Modelo Whisper:</strong></td>
+                                        <td>{{ configuracion_usada.modelo_whisper }}</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Idioma:</strong></td>
+                                        <td>{{ configuracion_usada.idioma_principal }}</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>VAD:</strong></td>
+                                        <td>{{ configuracion_usada.usar_vad|yesno:"Sí,No" }}</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>GPU:</strong></td>
+                                        <td>{{ configuracion_usada.usar_gpu|yesno:"Sí,No" }}</td>
+                                    </tr>
+                                </table>
+                            {% else %}
+                                <p class="text-muted">Configuración personalizada</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-6">
+                    <div class="card card-dark">
+                        <div class="card-header">
+                            <h3 class="card-title">
+                                <i class="fas fa-chart-bar"></i>
+                                Datos Técnicos
+                            </h3>
+                            <div class="card-tools">
+                                <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                                    <i class="fas fa-minus"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <table class="table table-sm">
+                                {% if datos_whisper.modelo_usado %}
+                                <tr>
+                                    <td><strong>Modelo procesado:</strong></td>
+                                    <td>{{ datos_whisper.modelo_usado }}</td>
+                                </tr>
+                                {% endif %}
+                                {% if estadisticas.duracion_procesamiento %}
+                                <tr>
+                                    <td><strong>Tiempo procesamiento:</strong></td>
+                                    <td>{{ estadisticas.duracion_procesamiento|floatformat:1 }}s</td>
+                                </tr>
+                                {% endif %}
+                                {% if datos_whisper.temperatura %}
+                                <tr>
+                                    <td><strong>Temperatura:</strong></td>
+                                    <td>{{ datos_whisper.temperatura }}</td>
+                                </tr>
+                                {% endif %}
+                                {% if datos_pyannote.hablantes_detectados %}
+                                <tr>
+                                    <td><strong>Diarización:</strong></td>
+                                    <td>{{ datos_pyannote.hablantes_detectados }} hablantes detectados</td>
+                                </tr>
+                                {% endif %}
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </section>
+</div>
+
+<script>
+function copyToClipboard() {
+    const textElement = document.querySelector('.text-wrapper p');
+    const text = textElement.textContent;
+    
+    navigator.clipboard.writeText(text).then(function() {
+        // Crear notificación de éxito
+        toastr.success('Texto copiado al portapapeles');
+    }, function(err) {
+        // Error al copiar
+        toastr.error('Error al copiar el texto');
+    });
+}
+
+// Agregar colores dinámicos a los hablantes
+document.addEventListener('DOMContentLoaded', function() {
+    const colors = ['blue', 'green', 'yellow', 'red', 'purple', 'orange', 'pink', 'gray'];
+    const speakers = document.querySelectorAll('.timeline i.fa-user');
+    
+    speakers.forEach((speaker, index) => {
+        const colorIndex = index % colors.length;
+        speaker.className = speaker.className.replace(/bg-\w+/, `bg-${colors[colorIndex]}`);
+    });
+});
+</script>
+{% endblock content %}

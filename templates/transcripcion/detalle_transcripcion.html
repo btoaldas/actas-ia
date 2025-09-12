@@ -1,0 +1,750 @@
+{% extends 'layouts/base.html' %}
+
+{% load static %}
+
+{% block title %}Transcripción: {{ transcripcion.procesamiento_audio.nombre_archivo }}{% endblock %}
+
+{% block extra_css %}
+<style>
+.chat-container {
+    height: 600px;
+    overflow-y: auto;
+    border: 1px solid #dee2e6;
+    border-radius: 10px;
+    padding: 1rem;
+    background: #f8f9fa;
+}
+
+.message-bubble {
+    max-width: 80%;
+    margin-bottom: 1rem;
+    animation: fadeIn 0.3s ease-in;
+}
+
+.message-bubble.current-user {
+    margin-left: auto;
+}
+
+.message-content {
+    background: white;
+    border-radius: 15px;
+    padding: 0.75rem 1rem;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    position: relative;
+}
+
+.message-content.speaker-0 { border-left: 4px solid #007bff; }
+.message-content.speaker-1 { border-left: 4px solid #28a745; }
+.message-content.speaker-2 { border-left: 4px solid #dc3545; }
+.message-content.speaker-3 { border-left: 4px solid #ffc107; }
+.message-content.speaker-4 { border-left: 4px solid #17a2b8; }
+
+.message-header {
+    display: flex;
+    justify-content: between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+    font-size: 0.85rem;
+}
+
+.speaker-name {
+    font-weight: bold;
+    color: #495057;
+}
+
+.message-time {
+    color: #6c757d;
+    font-size: 0.75rem;
+    cursor: pointer;
+}
+
+.message-time:hover {
+    color: #007bff;
+    text-decoration: underline;
+}
+
+.message-text {
+    color: #212529;
+    line-height: 1.4;
+    cursor: pointer;
+}
+
+.message-text:hover {
+    background: #e9ecef;
+    border-radius: 5px;
+    padding: 0.25rem;
+    margin: -0.25rem;
+}
+
+.message-actions {
+    position: absolute;
+    top: -10px;
+    right: 10px;
+    display: none;
+}
+
+.message-bubble:hover .message-actions {
+    display: block;
+}
+
+.audio-player {
+    background: white;
+    border-radius: 10px;
+    padding: 1rem;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    position: sticky;
+    bottom: 0;
+    z-index: 100;
+}
+
+.audio-controls {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 0.5rem;
+}
+
+.time-display {
+    font-family: 'Courier New', monospace;
+    font-size: 0.9rem;
+    background: #f8f9fa;
+    padding: 0.25rem 0.5rem;
+    border-radius: 5px;
+}
+
+.speaker-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+.speaker-badge {
+    display: flex;
+    align-items: center;
+    background: white;
+    border-radius: 20px;
+    padding: 0.25rem 0.75rem;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    font-size: 0.85rem;
+}
+
+.speaker-color {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    margin-right: 0.5rem;
+}
+
+.editable-text {
+    border: none;
+    background: transparent;
+    width: 100%;
+    resize: none;
+    outline: none;
+}
+
+.editable-text:focus {
+    background: #fff3cd;
+    border: 1px solid #ffeaa7;
+    border-radius: 3px;
+}
+
+.edit-mode {
+    background: #fff3cd !important;
+}
+
+.stats-card {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 15px;
+    border: none;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.timeline-marker {
+    background: #007bff;
+    color: white;
+    border-radius: 50%;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    position: absolute;
+    left: -15px;
+    cursor: pointer;
+}
+
+.message-bubble {
+    position: relative;
+    border-left: 3px solid transparent;
+}
+
+.message-bubble.playing {
+    border-left-color: #28a745;
+    background: rgba(40, 167, 69, 0.1);
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="content-wrapper">
+    <section class="content-header">
+        <div class="container-fluid">
+            <div class="row mb-2">
+                <div class="col-sm-8">
+                    <h1>
+                        <i class="fas fa-comments"></i> Transcripción: 
+                        {{ transcripcion.procesamiento_audio.nombre_archivo|truncatechars:40 }}
+                    </h1>
+                    <p class="text-muted">
+                        Estado: <span class="badge badge-{{ transcripcion.estado == 'completado'|yesno:'success,warning' }}">
+                            {{ transcripcion.get_estado_display }}
+                        </span>
+                        {% if transcripcion.editado_manualmente %}
+                        | <span class="badge badge-info">Editado Manualmente</span>
+                        {% endif %}
+                    </p>
+                </div>
+                <div class="col-sm-4 text-right">
+                    <div class="btn-group">
+                        <button class="btn btn-outline-primary" onclick="exportarTranscripcion()">
+                            <i class="fas fa-download"></i> Exportar
+                        </button>
+                        <button class="btn btn-outline-info" onclick="mostrarEstadisticas()">
+                            <i class="fas fa-chart-bar"></i> Estadísticas
+                        </button>
+                        {% if puede_editar %}
+                        <button class="btn btn-outline-success" onclick="toggleModoEdicion()">
+                            <i class="fas fa-edit"></i> <span id="btnEditText">Modo Edición</span>
+                        </button>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="content">
+        <div class="container-fluid">
+            <div class="row">
+                <!-- Información de la Transcripción -->
+                <div class="col-md-4">
+                    <div class="card stats-card">
+                        <div class="card-body">
+                            <h5><i class="fas fa-info-circle"></i> Información General</h5>
+                            <hr style="border-color: rgba(255,255,255,0.3);">
+                            <div class="row text-center">
+                                <div class="col-4">
+                                    <div class="h4">{{ transcripcion.numero_hablantes|default:0 }}</div>
+                                    <small>Hablantes</small>
+                                </div>
+                                <div class="col-4">
+                                    <div class="h4">{{ transcripcion.numero_segmentos|default:0 }}</div>
+                                    <small>Segmentos</small>
+                                </div>
+                                <div class="col-4">
+                                    <div class="h4">{{ transcripcion.palabras_totales|default:0 }}</div>
+                                    <small>Palabras</small>
+                                </div>
+                            </div>
+                            <hr style="border-color: rgba(255,255,255,0.3);">
+                            <div class="mb-2">
+                                <strong>Duración:</strong> 
+                                <span id="duracionTotal">{{ transcripcion.duracion_total|default:0|floatformat:1 }}s</span>
+                            </div>
+                            <div class="mb-2">
+                                <strong>Confianza:</strong> 
+                                <span>{{ transcripcion.confianza_promedio|default:0|floatformat:2 }}</span>
+                            </div>
+                            <div class="mb-2">
+                                <strong>Versión:</strong> 
+                                <span>v{{ transcripcion.version_actual }}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Leyenda de Hablantes -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h6><i class="fas fa-users"></i> Hablantes</h6>
+                        </div>
+                        <div class="card-body">
+                            <div id="speakerLegend" class="speaker-legend">
+                                <!-- Se llena dinámicamente -->
+                            </div>
+                            <button class="btn btn-sm btn-outline-primary btn-block" onclick="gestionarHablantes()">
+                                <i class="fas fa-edit"></i> Gestionar Hablantes
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Historial de Ediciones -->
+                    {% if historial_ediciones %}
+                    <div class="card">
+                        <div class="card-header">
+                            <h6><i class="fas fa-history"></i> Últimas Ediciones</h6>
+                        </div>
+                        <div class="card-body" style="max-height: 200px; overflow-y: auto;">
+                            {% for edicion in historial_ediciones %}
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <div>
+                                    <small class="text-muted">{{ edicion.get_tipo_edicion_display }}</small>
+                                    <div class="text-sm">{{ edicion.usuario.username }}</div>
+                                </div>
+                                <small class="text-muted">{{ edicion.fecha_edicion|date:"d/m H:i" }}</small>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- Chat de Conversación -->
+                <div class="col-md-8">
+                    <div class="card">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h6><i class="fas fa-comments"></i> Conversación</h6>
+                            <div>
+                                <small class="text-muted" id="currentTime">00:00:00</small>
+                                <button class="btn btn-sm btn-outline-secondary ml-2" onclick="scrollToTime()">
+                                    <i class="fas fa-search"></i> Ir a Tiempo
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card-body p-0">
+                            <!-- Chat Container -->
+                            <div id="chatContainer" class="chat-container">
+                                <div id="chatMessages">
+                                    <!-- Los mensajes se cargan dinámicamente -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Reproductor de Audio -->
+                    <div class="audio-player">
+                        <div class="audio-controls">
+                            <button id="playPauseBtn" class="btn btn-primary">
+                                <i class="fas fa-play"></i>
+                            </button>
+                            <button id="skipBackBtn" class="btn btn-outline-secondary">
+                                <i class="fas fa-step-backward"></i> 10s
+                            </button>
+                            <button id="skipForwardBtn" class="btn btn-outline-secondary">
+                                10s <i class="fas fa-step-forward"></i>
+                            </button>
+                            <div class="flex-grow-1 mx-3">
+                                <input type="range" id="audioProgress" class="custom-range" min="0" max="100" value="0">
+                            </div>
+                            <div class="time-display">
+                                <span id="currentTimeDisplay">00:00:00</span> / <span id="totalTimeDisplay">00:00:00</span>
+                            </div>
+                        </div>
+                        <audio id="audioPlayer" controls style="width: 100%;" preload="metadata">
+                            <source src="{{ archivo_audio_url }}" type="audio/mpeg">
+                            <source src="{{ archivo_audio_url }}" type="audio/wav">
+                            Tu navegador no soporta el elemento de audio.
+                        </audio>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+</div>
+
+<!-- Modal de Gestión de Hablantes -->
+<div class="modal fade" id="habladtesModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Gestionar Hablantes</h5>
+                <button type="button" class="close" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div id="habladtesGestion">
+                    <!-- Se llena dinámicamente -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cerrar</button>
+                <button type="button" class="btn btn-primary" onclick="guardarHablantes()">Guardar Cambios</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Estadísticas -->
+<div class="modal fade" id="estadisticasModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-xl" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Estadísticas de Transcripción</h5>
+                <button type="button" class="close" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div id="estadisticasContainer">
+                    <!-- Se llena dinámicamente -->
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Variables globales
+let conversacionData = {{ conversacion|safe }};
+let habladtesConfig = {{ hablantes_config|safe }};
+let modoEdicion = false;
+let audioPlayer = null;
+let currentSegment = null;
+
+// Colores para hablantes
+const speakerColors = [
+    '#007bff', '#28a745', '#dc3545', '#ffc107', '#17a2b8', 
+    '#6f42c1', '#e83e8c', '#fd7e14', '#20c997', '#6c757d'
+];
+
+$(document).ready(function() {
+    initializeAudioPlayer();
+    initializeSpeakerLegend();
+    loadChatMessages();
+    setupEventListeners();
+});
+
+function initializeAudioPlayer() {
+    audioPlayer = document.getElementById('audioPlayer');
+    const playPauseBtn = document.getElementById('playPauseBtn');
+    const progressBar = document.getElementById('audioProgress');
+    
+    audioPlayer.addEventListener('loadedmetadata', function() {
+        const duration = formatTime(audioPlayer.duration);
+        document.getElementById('totalTimeDisplay').textContent = duration;
+        progressBar.max = audioPlayer.duration;
+    });
+    
+    audioPlayer.addEventListener('timeupdate', function() {
+        const currentTime = audioPlayer.currentTime;
+        document.getElementById('currentTimeDisplay').textContent = formatTime(currentTime);
+        document.getElementById('currentTime').textContent = formatTime(currentTime);
+        progressBar.value = currentTime;
+        
+        // Destacar segmento actual
+        highlightCurrentSegment(currentTime);
+    });
+    
+    playPauseBtn.addEventListener('click', function() {
+        if (audioPlayer.paused) {
+            audioPlayer.play();
+            playPauseBtn.innerHTML = '<i class="fas fa-pause"></i>';
+        } else {
+            audioPlayer.pause();
+            playPauseBtn.innerHTML = '<i class="fas fa-play"></i>';
+        }
+    });
+    
+    progressBar.addEventListener('input', function() {
+        audioPlayer.currentTime = progressBar.value;
+    });
+    
+    // Botones de skip
+    document.getElementById('skipBackBtn').addEventListener('click', function() {
+        audioPlayer.currentTime = Math.max(0, audioPlayer.currentTime - 10);
+    });
+    
+    document.getElementById('skipForwardBtn').addEventListener('click', function() {
+        audioPlayer.currentTime = Math.min(audioPlayer.duration, audioPlayer.currentTime + 10);
+    });
+}
+
+function initializeSpeakerLegend() {
+    const legendContainer = document.getElementById('speakerLegend');
+    const hablantes = [...new Set(conversacionData.map(seg => seg.hablante))];
+    
+    legendContainer.innerHTML = '';
+    hablantes.forEach((speaker, index) => {
+        const color = speakerColors[index % speakerColors.length];
+        const nombre = getSpeakerName(speaker);
+        
+        const badge = document.createElement('div');
+        badge.className = 'speaker-badge';
+        badge.innerHTML = `
+            <div class="speaker-color" style="background-color: ${color}"></div>
+            <span>${nombre}</span>
+        `;
+        legendContainer.appendChild(badge);
+    });
+}
+
+function loadChatMessages() {
+    const chatMessages = document.getElementById('chatMessages');
+    chatMessages.innerHTML = '';
+    
+    conversacionData.forEach((segment, index) => {
+        const messageDiv = createMessageBubble(segment, index);
+        chatMessages.appendChild(messageDiv);
+    });
+    
+    // Scroll al final
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+
+function createMessageBubble(segment, index) {
+    const color = getSpeakerColor(segment.hablante);
+    const nombre = getSpeakerName(segment.hablante);
+    
+    const messageDiv = document.createElement('div');
+    messageDiv.className = 'message-bubble';
+    messageDiv.setAttribute('data-segment-id', segment.id);
+    messageDiv.setAttribute('data-start-time', segment.inicio);
+    messageDiv.setAttribute('data-end-time', segment.fin);
+    
+    messageDiv.innerHTML = `
+        <div class="message-content" style="border-left-color: ${color}">
+            <div class="message-actions">
+                <div class="btn-group btn-group-sm">
+                    <button class="btn btn-outline-primary btn-sm" onclick="editSegment('${segment.id}')">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <button class="btn btn-outline-danger btn-sm" onclick="deleteSegment('${segment.id}')">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="message-header">
+                <span class="speaker-name" style="color: ${color}">${nombre}</span>
+                <span class="message-time" onclick="jumpToTime(${segment.inicio})">
+                    ${formatTime(segment.inicio)} - ${formatTime(segment.fin)}
+                </span>
+            </div>
+            <div class="message-text" onclick="jumpToTime(${segment.inicio})">
+                ${modoEdicion ? 
+                    `<textarea class="editable-text" data-segment-id="${segment.id}">${segment.texto}</textarea>` :
+                    segment.texto
+                }
+            </div>
+            ${segment.editado ? '<small class="text-muted"><i class="fas fa-edit"></i> Editado</small>' : ''}
+        </div>
+    `;
+    
+    return messageDiv;
+}
+
+function getSpeakerColor(speakerId) {
+    const hablantes = [...new Set(conversacionData.map(seg => seg.hablante))];
+    const index = hablantes.indexOf(speakerId);
+    return speakerColors[index % speakerColors.length];
+}
+
+function getSpeakerName(speakerId) {
+    // Buscar en configuración de hablantes o usar nombre por defecto
+    for (const [id, config] of Object.entries(habladtesConfig)) {
+        if (id === speakerId) {
+            return config.nombre_real;
+        }
+    }
+    
+    // Usar mapeo de transcripción o nombre por defecto
+    const nombres = {{ transcripcion.hablantes_identificados|safe }};
+    return nombres[speakerId] || speakerId;
+}
+
+function jumpToTime(seconds) {
+    audioPlayer.currentTime = seconds;
+    if (audioPlayer.paused) {
+        audioPlayer.play();
+        document.getElementById('playPauseBtn').innerHTML = '<i class="fas fa-pause"></i>';
+    }
+}
+
+function highlightCurrentSegment(currentTime) {
+    // Remover destacado anterior
+    document.querySelectorAll('.message-bubble.playing').forEach(el => {
+        el.classList.remove('playing');
+    });
+    
+    // Encontrar y destacar segmento actual
+    document.querySelectorAll('.message-bubble').forEach(bubble => {
+        const startTime = parseFloat(bubble.getAttribute('data-start-time'));
+        const endTime = parseFloat(bubble.getAttribute('data-end-time'));
+        
+        if (currentTime >= startTime && currentTime <= endTime) {
+            bubble.classList.add('playing');
+            currentSegment = bubble.getAttribute('data-segment-id');
+            
+            // Scroll automático para mantener visible
+            bubble.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+    });
+}
+
+function toggleModoEdicion() {
+    modoEdicion = !modoEdicion;
+    const btnText = document.getElementById('btnEditText');
+    
+    if (modoEdicion) {
+        btnText.textContent = 'Guardar Cambios';
+        toastr.info('Modo edición activado. Haga clic en los textos para editarlos.');
+    } else {
+        btnText.textContent = 'Modo Edición';
+        guardarCambios();
+    }
+    
+    loadChatMessages(); // Recargar con/sin elementos editables
+}
+
+function editSegment(segmentId) {
+    if (!modoEdicion) {
+        toggleModoEdicion();
+    }
+    
+    const textarea = document.querySelector(`textarea[data-segment-id="${segmentId}"]`);
+    if (textarea) {
+        textarea.focus();
+        textarea.classList.add('edit-mode');
+    }
+}
+
+function guardarCambios() {
+    const cambios = [];
+    
+    document.querySelectorAll('.editable-text').forEach(textarea => {
+        const segmentId = textarea.getAttribute('data-segment-id');
+        const nuevoTexto = textarea.value.trim();
+        
+        // Encontrar segmento original
+        const segmentoOriginal = conversacionData.find(s => s.id === segmentId);
+        if (segmentoOriginal && segmentoOriginal.texto !== nuevoTexto) {
+            cambios.push({
+                segmento_id: segmentId,
+                tipo_edicion: 'texto',
+                nuevo_valor: nuevoTexto,
+                valor_anterior: segmentoOriginal.texto
+            });
+            
+            // Actualizar datos locales
+            segmentoOriginal.texto = nuevoTexto;
+            segmentoOriginal.editado = true;
+        }
+    });
+    
+    if (cambios.length > 0) {
+        enviarCambiosAlServidor(cambios);
+    } else {
+        toastr.info('No hay cambios para guardar');
+    }
+}
+
+function enviarCambiosAlServidor(cambios) {
+    const promises = cambios.map(cambio => {
+        return $.ajax({
+            url: `/transcripcion/api/editar/{{ transcripcion.id }}/`,
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': $('[name=csrfmiddlewaretoken]').val(),
+                'Content-Type': 'application/json'
+            },
+            data: JSON.stringify(cambio),
+        });
+    });
+    
+    Promise.all(promises)
+        .then(responses => {
+            toastr.success(`${cambios.length} cambios guardados correctamente`);
+            // Incrementar versión
+            const versionActual = parseInt($('span:contains("v")').text().replace('v', ''));
+            $('span:contains("v")').text(`v${versionActual + 1}`);
+        })
+        .catch(error => {
+            toastr.error('Error al guardar cambios');
+            console.error('Error:', error);
+        });
+}
+
+function gestionarHablantes() {
+    // Implementar gestión de hablantes
+    $('#habladtesModal').modal('show');
+    // TODO: Cargar interfaz de gestión de hablantes
+}
+
+function mostrarEstadisticas() {
+    // Implementar visualización de estadísticas
+    $('#estadisticasModal').modal('show');
+    // TODO: Cargar gráficos y estadísticas
+}
+
+function exportarTranscripcion() {
+    // Implementar exportación
+    toastr.info('Funcionalidad de exportación pendiente');
+}
+
+function scrollToTime() {
+    const tiempo = prompt('Ingrese el tiempo en formato MM:SS o HH:MM:SS');
+    if (tiempo) {
+        const seconds = parseTimeToSeconds(tiempo);
+        if (seconds !== null) {
+            jumpToTime(seconds);
+        } else {
+            toastr.error('Formato de tiempo inválido');
+        }
+    }
+}
+
+function formatTime(seconds) {
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const secs = Math.floor(seconds % 60);
+    
+    if (hours > 0) {
+        return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    } else {
+        return `${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    }
+}
+
+function parseTimeToSeconds(timeStr) {
+    const parts = timeStr.split(':').reverse();
+    let seconds = 0;
+    
+    if (parts.length >= 1) seconds += parseInt(parts[0]) || 0;
+    if (parts.length >= 2) seconds += (parseInt(parts[1]) || 0) * 60;
+    if (parts.length >= 3) seconds += (parseInt(parts[2]) || 0) * 3600;
+    
+    return seconds;
+}
+
+function setupEventListeners() {
+    // Escuchar cambios en los textareas
+    $(document).on('blur', '.editable-text', function() {
+        $(this).removeClass('edit-mode');
+    });
+    
+    // Atajos de teclado
+    $(document).keydown(function(e) {
+        if (e.ctrlKey && e.key === 's') {
+            e.preventDefault();
+            if (modoEdicion) {
+                toggleModoEdicion();
+            }
+        }
+        
+        if (e.key === ' ' && !$(e.target).is('textarea, input')) {
+            e.preventDefault();
+            document.getElementById('playPauseBtn').click();
+        }
+    });
+}
+</script>
+{% endblock %}

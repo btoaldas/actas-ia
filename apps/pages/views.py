@@ -1084,153 +1084,184 @@ def actas_configuracion(request):
 
 # Portal Ciudadano Views
 def portal_ciudadano(request):
-    """Vista principal del portal ciudadano para consultar actas"""
-    
-    # Parámetros de búsqueda y filtrado
-    search_query = request.GET.get('search', '').strip()
-    tipo_sesion = request.GET.get('tipo_sesion', '')
-    estado = request.GET.get('estado', '')
-    acceso = request.GET.get('acceso', '')
-    fecha_desde = request.GET.get('fecha_desde', '')
-    fecha_hasta = request.GET.get('fecha_hasta', '')
-    orden = request.GET.get('orden', '-fecha_sesion')
-    page = request.GET.get('page', 1)
-    
-    # Base queryset - solo actas que el usuario puede ver
-    actas = ActaMunicipal.objects.filter(activo=True)
-    
-    # Filtrar por permisos de usuario
-    if not request.user.is_authenticated:
-        actas = actas.filter(acceso='publico')
-    elif not (request.user.is_superuser or request.user.is_staff):
-        actas = actas.filter(
-            Q(acceso='publico') | 
-            Q(acceso='restringido')  # Los usuarios autenticados pueden ver restringidas
-        )
-    
-    # Aplicar filtros de búsqueda
-    if search_query:
-        actas = actas.filter(
-            Q(titulo__icontains=search_query) |
-            Q(numero_acta__icontains=search_query) |
-            Q(resumen__icontains=search_query) |
-            Q(contenido__icontains=search_query) |
-            Q(palabras_clave__icontains=search_query) |
-            Q(presidente__icontains=search_query)
-        )
-    
-    if tipo_sesion:
-        actas = actas.filter(tipo_sesion__nombre=tipo_sesion)
-    
-    if estado:
-        actas = actas.filter(estado__nombre=estado)
-    
-    if acceso:
-        actas = actas.filter(acceso=acceso)
-    
-    if fecha_desde:
-        try:
-            fecha_desde_dt = datetime.strptime(fecha_desde, '%Y-%m-%d')
-            actas = actas.filter(fecha_sesion__gte=fecha_desde_dt)
-        except ValueError:
-            pass
-    
-    if fecha_hasta:
-        try:
-            fecha_hasta_dt = datetime.strptime(fecha_hasta, '%Y-%m-%d')
-            actas = actas.filter(fecha_sesion__lte=fecha_hasta_dt)
-        except ValueError:
-            pass
-    
-    # Ordenar resultados
-    valid_orders = [
-        'fecha_sesion', '-fecha_sesion',
-        'titulo', '-titulo',
-        'numero_acta', '-numero_acta',
-        'fecha_creacion', '-fecha_creacion'
-    ]
-    if orden in valid_orders:
-        actas = actas.order_by(orden)
-    else:
-        actas = actas.order_by('-fecha_sesion')
-    
-    # Paginación
-    paginator = Paginator(actas, 10)  # 10 actas por página
-    actas_page = paginator.get_page(page)
-    
-    # Obtener datos para filtros
-    tipos_sesion = TipoSesion.objects.filter(activo=True)
-    estados = EstadoActa.objects.filter(activo=True)
-    
-    # Estadísticas para mostrar
-    total_actas = actas.count()
-    actas_publicas = actas.filter(acceso='publico').count()
-    actas_este_mes = actas.filter(
-        fecha_sesion__gte=datetime.now().replace(day=1)
-    ).count()
-    
-    # Calcular estadísticas adicionales para la cuarta métrica
-    from django.db.models import Avg, Count
-    from datetime import timedelta
-    
-    # Días desde la última actualización
-    ultima_acta = ActaMunicipal.objects.filter(activo=True).order_by('-fecha_creacion').first()
-    dias_ultima_actualizacion = 0
-    if ultima_acta:
-        dias_ultima_actualizacion = (datetime.now().date() - ultima_acta.fecha_creacion.date()).days
-    
-    # Total de visualizaciones este mes
-    visualizaciones_mes = VisualizacionActa.objects.filter(
-        fecha_visualizacion__gte=datetime.now().replace(day=1)
-    ).count()
-    
-    # Total de descargas este mes
-    descargas_mes = DescargaActa.objects.filter(
-        fecha_descarga__gte=datetime.now().replace(day=1)
-    ).count()
-    
-    # Porcentaje de actas con IA procesada
-    actas_con_ia = actas.filter(transcripcion_ia__isnull=False).count()
-    porcentaje_ia = round((actas_con_ia / total_actas * 100) if total_actas > 0 else 0, 1)
-    
-    # Promedio de precisión IA
-    precision_promedio = actas.filter(
-        precision_ia__isnull=False
-    ).aggregate(Avg('precision_ia'))['precision_ia__avg']
-    precision_promedio = round(precision_promedio if precision_promedio else 0, 1)
-    
-    context = {
-        'actas': actas_page,
-        'total_actas': total_actas,
-        'actas_publicas': actas_publicas,
-        'actas_este_mes': actas_este_mes,
-        'visualizaciones_mes': visualizaciones_mes,
-        'descargas_mes': descargas_mes,
-        'porcentaje_ia': porcentaje_ia,
-        'precision_promedio': precision_promedio,
-        'dias_ultima_actualizacion': dias_ultima_actualizacion,
-        'tipos_sesion': tipos_sesion,
-        'estados': estados,
-        'search_query': search_query,
-        'filters': {
-            'tipo_sesion': tipo_sesion,
-            'estado': estado,
-            'acceso': acceso,
-            'fecha_desde': fecha_desde,
-            'fecha_hasta': fecha_hasta,
-            'orden': orden,
-        },
-        'acceso_choices': ActaMunicipal.ACCESO_CHOICES,
-        'orden_choices': [
-            ('-fecha_sesion', 'Más recientes'),
-            ('fecha_sesion', 'Más antiguos'),
-            ('titulo', 'Título A-Z'),
-            ('-titulo', 'Título Z-A'),
-            ('numero_acta', 'Número de acta'),
-        ]
-    }
-    
-    return render(request, 'pages/portal_ciudadano/index.html', context)
+  """Vista principal del portal ciudadano para consultar actas"""
+
+  # Parámetros de búsqueda y filtrado
+  search_query = request.GET.get('search', '').strip()
+  tipo_sesion = request.GET.get('tipo_sesion', '')
+  estado = request.GET.get('estado', '')
+  acceso = request.GET.get('acceso', '')
+  fecha_desde = request.GET.get('fecha_desde', '')
+  fecha_hasta = request.GET.get('fecha_hasta', '')
+  orden = request.GET.get('orden', '-fecha_sesion')
+  page = request.GET.get('page', 1)
+
+  # Base queryset - solo actas que el usuario puede ver
+  actas = ActaMunicipal.objects.filter(activo=True)
+
+  # Filtrar por permisos de usuario
+  if not request.user.is_authenticated:
+    actas = actas.filter(acceso='publico')
+  elif not (request.user.is_superuser or request.user.is_staff):
+    actas = actas.filter(
+      Q(acceso='publico') |
+      Q(acceso='restringido')  # Los usuarios autenticados pueden ver restringidas
+    )
+
+  # Aplicar filtros de búsqueda
+  if search_query:
+    actas = actas.filter(
+      Q(titulo__icontains=search_query) |
+      Q(numero_acta__icontains=search_query) |
+      Q(resumen__icontains=search_query) |
+      Q(contenido__icontains=search_query) |
+      Q(palabras_clave__icontains=search_query) |
+      Q(presidente__icontains=search_query)
+    )
+
+  if tipo_sesion:
+    actas = actas.filter(tipo_sesion__nombre=tipo_sesion)
+
+  if estado:
+    actas = actas.filter(estado__nombre=estado)
+
+  if acceso:
+    actas = actas.filter(acceso=acceso)
+
+  if fecha_desde:
+    try:
+      fecha_desde_dt = datetime.strptime(fecha_desde, '%Y-%m-%d')
+      actas = actas.filter(fecha_sesion__gte=fecha_desde_dt)
+    except ValueError:
+      pass
+
+  if fecha_hasta:
+    try:
+      fecha_hasta_dt = datetime.strptime(fecha_hasta, '%Y-%m-%d')
+      actas = actas.filter(fecha_sesion__lte=fecha_hasta_dt)
+    except ValueError:
+      pass
+
+  # Ordenar resultados (extensión de opciones)
+  valid_orders = [
+    'fecha_sesion', '-fecha_sesion',
+    'fecha_publicacion', '-fecha_publicacion',
+    'fecha_creacion', '-fecha_creacion',
+    'titulo', '-titulo',
+    'numero_acta', '-numero_acta',
+    'tipo_sesion__nombre', '-tipo_sesion__nombre',
+    'prioridad', '-prioridad',
+    'acceso', '-acceso'
+  ]
+  if orden not in valid_orders:
+    orden = '-fecha_sesion'
+  actas = actas.order_by(orden)
+
+  # Paginación
+  paginator = Paginator(actas, 10)  # 10 actas por página
+  actas_page = paginator.get_page(page)
+
+  # Obtener datos para filtros
+  tipos_sesion = TipoSesion.objects.filter(activo=True)
+  estados = EstadoActa.objects.filter(activo=True)
+
+  # Estadísticas para mostrar
+  total_actas = actas.count()
+  actas_publicas = actas.filter(acceso='publico').count()
+  actas_este_mes = actas.filter(
+    fecha_sesion__gte=datetime.now().replace(day=1)
+  ).count()
+
+  # Calcular estadísticas adicionales para la cuarta métrica
+  from django.db.models import Avg, Count  # noqa: F401 (Count posible uso futuro)
+  from datetime import timedelta  # noqa: F401 (posible uso futuro)
+
+  # Días desde la última actualización
+  ultima_acta = ActaMunicipal.objects.filter(activo=True).order_by('-fecha_creacion').first()
+  dias_ultima_actualizacion = 0
+  if ultima_acta:
+    dias_ultima_actualizacion = (datetime.now().date() - ultima_acta.fecha_creacion.date()).days
+
+  # Total de visualizaciones este mes
+  visualizaciones_mes = VisualizacionActa.objects.filter(
+    fecha_visualizacion__gte=datetime.now().replace(day=1)
+  ).count()
+
+  # Total de descargas este mes
+  descargas_mes = DescargaActa.objects.filter(
+    fecha_descarga__gte=datetime.now().replace(day=1)
+  ).count()
+
+  # Porcentaje de actas con IA procesada
+  actas_con_ia = actas.filter(transcripcion_ia__isnull=False).count()
+  porcentaje_ia = round((actas_con_ia / total_actas * 100) if total_actas > 0 else 0, 1)
+
+  # Promedio de precisión IA
+  precision_promedio = actas.filter(
+    precision_ia__isnull=False
+  ).aggregate(Avg('precision_ia'))['precision_ia__avg']
+  precision_promedio = round(precision_promedio if precision_promedio else 0, 1)
+
+  context = {
+    'actas': actas_page,
+    'total_actas': total_actas,
+    'actas_publicas': actas_publicas,
+    'actas_este_mes': actas_este_mes,
+    'visualizaciones_mes': visualizaciones_mes,
+    'descargas_mes': descargas_mes,
+    'porcentaje_ia': porcentaje_ia,
+    'precision_promedio': precision_promedio,
+    'dias_ultima_actualizacion': dias_ultima_actualizacion,
+    'tipos_sesion': tipos_sesion,
+    'estados': estados,
+    'search_query': search_query,
+    'filters': {
+      'tipo_sesion': tipo_sesion,
+      'estado': estado,
+      'acceso': acceso,
+      'fecha_desde': fecha_desde,
+      'fecha_hasta': fecha_hasta,
+      'orden': orden,
+    },
+    'acceso_choices': ActaMunicipal.ACCESO_CHOICES,
+    # Opciones para select existente (subset principal)
+    'orden_choices': [
+      ('-fecha_sesion', 'Sesión más recientes'),
+      ('fecha_sesion', 'Sesión más antiguos'),
+      ('-fecha_publicacion', 'Publicación más recientes'),
+      ('fecha_publicacion', 'Publicación más antiguos'),
+      ('-fecha_creacion', 'Creación más recientes'),
+      ('fecha_creacion', 'Creación más antiguos'),
+      ('titulo', 'Título A-Z'),
+      ('-titulo', 'Título Z-A'),
+      ('numero_acta', 'Número de acta'),
+      ('tipo_sesion__nombre', 'Tipo de sesión A-Z'),
+      ('-tipo_sesion__nombre', 'Tipo de sesión Z-A'),
+      ('prioridad', 'Prioridad (Baja→Alta)'),
+      ('-prioridad', 'Prioridad (Alta→Baja)'),
+    ],
+    # Opciones para toolbar rápida (puede ser subset o igual al completo)
+    'orden_toolbar': [
+      ('-fecha_sesion', 'Sesión recientes'),
+      ('fecha_sesion', 'Sesión antiguos'),
+      ('-fecha_publicacion', 'Publicación recientes'),
+      ('-fecha_creacion', 'Creación recientes'),
+      ('titulo', 'Título A-Z'),
+      ('-titulo', 'Título Z-A'),
+      ('numero_acta', 'Nº Acta'),
+      ('tipo_sesion__nombre', 'Tipo A-Z'),
+      ('prioridad', 'Prioridad Baja→Alta'),
+      ('-prioridad', 'Prioridad Alta→Baja'),
+    ],
+  }
+
+  # Etiqueta legible para orden actual
+  orden_lookup = dict(context['orden_choices'])
+  orden_label = orden_lookup.get(orden, 'Sesión más recientes')
+  context['orden_actual_label'] = orden_label
+  context['orden_actual'] = orden
+
+  return render(request, 'pages/portal_ciudadano/index.html', context)
 
 def acta_detail(request, pk):
     """Vista detallada de un acta específica"""

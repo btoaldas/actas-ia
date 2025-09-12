@@ -1,0 +1,455 @@
+{% extends 'layouts/base.html' %}
+{% load static %}
+
+{% block title %}Configurar Transcripción - {{ audio.titulo|default:"Audio" }}{% endblock %}
+
+{% block content %}
+<div class="content-wrapper">
+    <!-- Content Header -->
+    <div class="content-header">
+        <div class="container-fluid">
+            <div class="row mb-2">
+                <div class="col-sm-6">
+                    <h1 class="m-0">Configurar Transcripción</h1>
+                </div>
+                <div class="col-sm-6">
+                    <ol class="breadcrumb float-sm-right">
+                        <li class="breadcrumb-item"><a href="{% url 'index' %}">Inicio</a></li>
+                        <li class="breadcrumb-item"><a href="{% url 'transcripcion:lista' %}">Transcripción</a></li>
+                        <li class="breadcrumb-item"><a href="{% url 'transcripcion:audios_listos' %}">Audios Listos</a></li>
+                        <li class="breadcrumb-item active">Configurar</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main content -->
+    <section class="content">
+        <div class="container-fluid">
+            
+            <!-- Información del Audio -->
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="card bg-light">
+                        <div class="card-header bg-primary text-white">
+                            <h3 class="card-title">
+                                <i class="fas fa-file-audio"></i> Información del Audio
+                            </h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <table class="table table-sm table-borderless">
+                                        <tr>
+                                            <td><strong>Archivo:</strong></td>
+                                            <td>
+                                                {% if audio.archivo_audio %}
+                                                    {{ audio.archivo_audio.name }}
+                                                {% else %}
+                                                    Audio de prueba (sin archivo físico)
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Título:</strong></td>
+                                            <td>{{ audio.titulo|default:"Sin título" }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Tipo de Reunión:</strong></td>
+                                            <td><span class="badge bg-info">{{ audio.tipo_reunion.nombre }}</span></td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Duración:</strong></td>
+                                            <td>{{ audio.duracion_seg|default:audio.duracion|floatformat:1 }}s</td>
+                                        </tr>
+                                    </table>
+                                </div>
+                                <div class="col-md-6">
+                                    <table class="table table-sm table-borderless">
+                                        <tr>
+                                            <td><strong>Calidad:</strong></td>
+                                            <td>{{ audio.sample_rate|floatformat:0 }} Hz, {{ audio.bit_rate }} kbps</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Procesado:</strong></td>
+                                            <td>{{ audio.fecha_procesamiento|date:"d/m/Y H:i" }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Ubicación:</strong></td>
+                                            <td>{{ audio.ubicacion|default:"No especificada" }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Participantes:</strong></td>
+                                            <td>{{ audio.participantes_detallados|length|default:"0" }} registrados</td>
+                                        </tr>
+                                    </table>
+                                </div>
+                            </div>
+                            
+                            <!-- Reproductor de audio -->
+                            <div class="mt-3">
+                                {% if audio.archivo_audio %}
+                                <audio controls class="w-100">
+                                    <source src="{{ audio.archivo_audio.url }}" type="audio/mpeg">
+                                    Su navegador no soporta el elemento de audio.
+                                </audio>
+                                {% else %}
+                                <div class="alert alert-info">
+                                    <i class="fas fa-info-circle"></i>
+                                    Este es un audio de prueba sin archivo físico asociado.
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Formulario de Configuración -->
+            <form method="post" id="configuracionForm">
+                {% csrf_token %}
+                
+                <div class="row">
+                    <!-- Configuración General -->
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header bg-success text-white">
+                                <h3 class="card-title">
+                                    <i class="fas fa-cogs"></i> Configuración General
+                                </h3>
+                            </div>
+                            <div class="card-body">
+                                <div class="form-group mb-3">
+                                    <label for="configuracion_base">Configuración Base</label>
+                                    <select class="form-select" id="configuracion_base" name="configuracion_base">
+                                        {% for config in configuraciones %}
+                                        <option value="{{ config.id }}" 
+                                                {% if config.id == configuracion_seleccionada.id %}selected{% endif %}
+                                                data-config="{{ config.to_json }}">
+                                            {{ config.nombre }} - {{ config.descripcion }}
+                                        </option>
+                                        {% endfor %}
+                                    </select>
+                                    <small class="form-text text-muted">
+                                        Selecciona una configuración base y personalízala según tus necesidades.
+                                    </small>
+                                </div>
+
+                                <div class="form-group mb-3">
+                                    <label for="titulo_transcripcion">Título de la Transcripción</label>
+                                    <input type="text" class="form-control" id="titulo_transcripcion" 
+                                           name="titulo_transcripcion" 
+                                           value="{{ audio.titulo|default:'Transcripción' }}"
+                                           placeholder="Título para identificar esta transcripción">
+                                </div>
+
+                                <div class="form-group mb-3">
+                                    <label for="descripcion_transcripcion">Descripción</label>
+                                    <textarea class="form-control" id="descripcion_transcripcion" 
+                                              name="descripcion_transcripcion" rows="3"
+                                              placeholder="Descripción opcional de la transcripción">{{ audio.descripcion }}</textarea>
+                                </div>
+
+                                <div class="form-check mb-3">
+                                    <input class="form-check-input" type="checkbox" id="usar_gpu" 
+                                           name="usar_gpu" {% if configuracion_seleccionada.usar_gpu %}checked{% endif %}>
+                                    <label class="form-check-label" for="usar_gpu">
+                                        Usar GPU (si está disponible)
+                                    </label>
+                                    <small class="form-text text-muted d-block">
+                                        Acelera el procesamiento significativamente.
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Configuración de Whisper -->
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header bg-info text-white">
+                                <h3 class="card-title">
+                                    <i class="fas fa-microphone"></i> Configuración Whisper
+                                </h3>
+                            </div>
+                            <div class="card-body">
+                                <div class="form-group mb-3">
+                                    <label for="modelo_whisper">Modelo Whisper</label>
+                                    <select class="form-select" id="modelo_whisper" name="modelo_whisper">
+                                        <option value="tiny" {% if configuracion_seleccionada.modelo_whisper == 'tiny' %}selected{% endif %}>
+                                            Tiny (39 MB) - Muy rápido, menor precisión
+                                        </option>
+                                        <option value="base" {% if configuracion_seleccionada.modelo_whisper == 'base' %}selected{% endif %}>
+                                            Base (74 MB) - Equilibrado
+                                        </option>
+                                        <option value="small" {% if configuracion_seleccionada.modelo_whisper == 'small' %}selected{% endif %}>
+                                            Small (244 MB) - Buena precisión
+                                        </option>
+                                        <option value="medium" {% if configuracion_seleccionada.modelo_whisper == 'medium' %}selected{% endif %}>
+                                            Medium (769 MB) - Muy buena precisión
+                                        </option>
+                                        <option value="large" {% if configuracion_seleccionada.modelo_whisper == 'large' %}selected{% endif %}>
+                                            Large (1550 MB) - Excelente precisión
+                                        </option>
+                                        <option value="large-v2" {% if configuracion_seleccionada.modelo_whisper == 'large-v2' %}selected{% endif %}>
+                                            Large-v2 (1550 MB) - Mejor para múltiples idiomas
+                                        </option>
+                                        <option value="large-v3" {% if configuracion_seleccionada.modelo_whisper == 'large-v3' %}selected{% endif %}>
+                                            Large-v3 (1550 MB) - Estado del arte
+                                        </option>
+                                    </select>
+                                </div>
+
+                                <div class="form-group mb-3">
+                                    <label for="temperatura">Temperatura</label>
+                                    <input type="range" class="form-range" id="temperatura" name="temperatura" 
+                                           min="0" max="1" step="0.1" 
+                                           value="{{ configuracion_seleccionada.temperatura }}"
+                                           oninput="updateTemperaturaValue(this.value)">
+                                    <div class="d-flex justify-content-between">
+                                        <small>0.0 (Conservativo)</small>
+                                        <strong id="temperaturaValue">{{ configuracion_seleccionada.temperatura }}</strong>
+                                        <small>1.0 (Creativo)</small>
+                                    </div>
+                                </div>
+
+                                <div class="form-check mb-3">
+                                    <input class="form-check-input" type="checkbox" id="usar_vad" 
+                                           name="usar_vad" {% if configuracion_seleccionada.usar_vad %}checked{% endif %}>
+                                    <label class="form-check-label" for="usar_vad">
+                                        Usar VAD (Voice Activity Detection)
+                                    </label>
+                                    <small class="form-text text-muted d-block">
+                                        Detecta automáticamente cuando hay voz en el audio.
+                                    </small>
+                                </div>
+
+                                <div class="form-group mb-3" id="vad_filtro_group">
+                                    <label for="vad_filtro">Filtro VAD</label>
+                                    <select class="form-select" id="vad_filtro" name="vad_filtro">
+                                        <option value="silero" {% if configuracion_seleccionada.vad_filtro == 'silero' %}selected{% endif %}>
+                                            Silero (Recomendado)
+                                        </option>
+                                        <option value="auditok" {% if configuracion_seleccionada.vad_filtro == 'auditok' %}selected{% endif %}>
+                                            Auditok
+                                        </option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row mt-4">
+                    <!-- Configuración de Diarización -->
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header bg-warning text-dark">
+                                <h3 class="card-title">
+                                    <i class="fas fa-users"></i> Configuración de Diarización
+                                </h3>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="form-group mb-3">
+                                            <label for="min_hablantes">Mínimo de Hablantes</label>
+                                            <input type="number" class="form-control" id="min_hablantes" 
+                                                   name="min_hablantes" min="1" max="10" 
+                                                   value="{{ configuracion_seleccionada.min_hablantes }}">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-group mb-3">
+                                            <label for="max_hablantes">Máximo de Hablantes</label>
+                                            <input type="number" class="form-control" id="max_hablantes" 
+                                                   name="max_hablantes" min="1" max="20" 
+                                                   value="{{ configuracion_seleccionada.max_hablantes }}">
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="form-group mb-3">
+                                    <label for="umbral_clustering">Umbral de Clustering</label>
+                                    <input type="range" class="form-range" id="umbral_clustering" 
+                                           name="umbral_clustering" min="0.1" max="1.0" step="0.05" 
+                                           value="{{ configuracion_seleccionada.umbral_clustering }}"
+                                           oninput="updateUmbralValue(this.value)">
+                                    <div class="d-flex justify-content-between">
+                                        <small>0.1 (Más sensible)</small>
+                                        <strong id="umbralValue">{{ configuracion_seleccionada.umbral_clustering }}</strong>
+                                        <small>1.0 (Menos sensible)</small>
+                                    </div>
+                                </div>
+
+                                <div class="form-check mb-3">
+                                    <input class="form-check-input" type="checkbox" id="usar_enhanced_diarization" 
+                                           name="usar_enhanced_diarization" 
+                                           {% if configuracion_seleccionada.usar_enhanced_diarization %}checked{% endif %}>
+                                    <label class="form-check-label" for="usar_enhanced_diarization">
+                                        Diarización Mejorada
+                                    </label>
+                                    <small class="form-text text-muted d-block">
+                                        Usa algoritmos avanzados para mejor separación de hablantes.
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Configuración de Procesamiento -->
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header bg-secondary text-white">
+                                <h3 class="card-title">
+                                    <i class="fas fa-sliders-h"></i> Configuración de Procesamiento
+                                </h3>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="form-group mb-3">
+                                            <label for="chunk_duracion">Duración del Chunk (seg)</label>
+                                            <input type="number" class="form-control" id="chunk_duracion" 
+                                                   name="chunk_duracion" min="5" max="60" 
+                                                   value="{{ configuracion_seleccionada.chunk_duracion }}">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-group mb-3">
+                                            <label for="overlap_duracion">Overlap (seg)</label>
+                                            <input type="number" class="form-control" id="overlap_duracion" 
+                                                   name="overlap_duracion" min="0" max="10" 
+                                                   value="{{ configuracion_seleccionada.overlap_duracion }}">
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="form-check mb-3">
+                                    <input class="form-check-input" type="checkbox" id="filtro_ruido" 
+                                           name="filtro_ruido" 
+                                           {% if configuracion_seleccionada.filtro_ruido %}checked{% endif %}>
+                                    <label class="form-check-label" for="filtro_ruido">
+                                        Filtro de Ruido
+                                    </label>
+                                    <small class="form-text text-muted d-block">
+                                        Reduce el ruido de fondo antes del procesamiento.
+                                    </small>
+                                </div>
+
+                                <div class="form-check mb-3">
+                                    <input class="form-check-input" type="checkbox" id="normalizar_audio" 
+                                           name="normalizar_audio" 
+                                           {% if configuracion_seleccionada.normalizar_audio %}checked{% endif %}>
+                                    <label class="form-check-label" for="normalizar_audio">
+                                        Normalizar Audio
+                                    </label>
+                                    <small class="form-text text-muted d-block">
+                                        Ajusta el volumen para optimizar la transcripción.
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Botones de Acción -->
+                <div class="row mt-4">
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-body text-center">
+                                <button type="submit" class="btn btn-success btn-lg me-3" id="transcribirBtn">
+                                    <i class="fas fa-microphone"></i> Transcribir Audio
+                                </button>
+                                <a href="{% url 'transcripcion:audios_listos' %}" class="btn btn-secondary btn-lg">
+                                    <i class="fas fa-arrow-left"></i> Volver
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </form>
+
+        </div>
+    </section>
+</div>
+
+<script>
+// Actualizar valor de temperatura
+function updateTemperaturaValue(value) {
+    document.getElementById('temperaturaValue').textContent = value;
+}
+
+// Actualizar valor de umbral
+function updateUmbralValue(value) {
+    document.getElementById('umbralValue').textContent = value;
+}
+
+// Manejar cambio de configuración base
+document.getElementById('configuracion_base').addEventListener('change', function() {
+    const selectedOption = this.options[this.selectedIndex];
+    const configData = JSON.parse(selectedOption.dataset.config);
+    
+    // Actualizar todos los campos con la nueva configuración
+    document.getElementById('modelo_whisper').value = configData.modelo_whisper;
+    document.getElementById('temperatura').value = configData.temperatura;
+    updateTemperaturaValue(configData.temperatura);
+    
+    document.getElementById('usar_vad').checked = configData.usar_vad;
+    document.getElementById('vad_filtro').value = configData.vad_filtro;
+    
+    document.getElementById('min_hablantes').value = configData.min_hablantes;
+    document.getElementById('max_hablantes').value = configData.max_hablantes;
+    document.getElementById('umbral_clustering').value = configData.umbral_clustering;
+    updateUmbralValue(configData.umbral_clustering);
+    
+    document.getElementById('usar_enhanced_diarization').checked = configData.usar_enhanced_diarization;
+    document.getElementById('chunk_duracion').value = configData.chunk_duracion;
+    document.getElementById('overlap_duracion').value = configData.overlap_duracion;
+    
+    document.getElementById('filtro_ruido').checked = configData.filtro_ruido;
+    document.getElementById('normalizar_audio').checked = configData.normalizar_audio;
+    document.getElementById('usar_gpu').checked = configData.usar_gpu;
+    
+    toggleVadOptions();
+});
+
+// Mostrar/ocultar opciones VAD
+function toggleVadOptions() {
+    const usarVad = document.getElementById('usar_vad').checked;
+    const vadFiltroGroup = document.getElementById('vad_filtro_group');
+    vadFiltroGroup.style.display = usarVad ? 'block' : 'none';
+}
+
+// Inicializar estado VAD
+document.getElementById('usar_vad').addEventListener('change', toggleVadOptions);
+toggleVadOptions();
+
+// Manejar envío del formulario
+document.getElementById('configuracionForm').addEventListener('submit', function(e) {
+    const btn = document.getElementById('transcribirBtn');
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Procesando...';
+    btn.disabled = true;
+});
+
+// Validaciones
+document.getElementById('min_hablantes').addEventListener('change', function() {
+    const min = parseInt(this.value);
+    const max = parseInt(document.getElementById('max_hablantes').value);
+    if (min > max) {
+        document.getElementById('max_hablantes').value = min;
+    }
+});
+
+document.getElementById('max_hablantes').addEventListener('change', function() {
+    const max = parseInt(this.value);
+    const min = parseInt(document.getElementById('min_hablantes').value);
+    if (max < min) {
+        document.getElementById('min_hablantes').value = max;
+    }
+});
+</script>
+
+{% endblock %}

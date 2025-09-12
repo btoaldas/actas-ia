@@ -1,0 +1,25 @@
+# Dependencias opcionales para IA en transcripción
+# Estas librerías son opcionales - el sistema funciona sin ellas usando simulaciones
+
+# Whisper para transcripción automática
+openai-whisper>=20230314
+
+# pyannote.audio para diarización de hablantes
+pyannote.audio>=3.1.0
+
+# Dependencias adicionales para procesamiento de audio avanzado
+librosa>=0.10.0
+soundfile>=0.12.0
+
+# Modelos de lenguaje para análisis de texto
+nltk>=3.8.0
+spacy>=3.7.0
+
+# Para análisis estadístico avanzado
+scikit-learn>=1.3.0
+numpy>=1.24.0
+pandas>=2.0.0
+
+# Visualización de estadísticas (opcional)
+matplotlib>=3.7.0
+seaborn>=0.12.0

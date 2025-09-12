@@ -1,0 +1,571 @@
+{% extends 'layouts/base.html' %}
+
+{% load static %}
+
+{% block title %}Transcripción y Diarización{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'plugins/datatables-bs4/css/dataTables.bootstrap4.min.css' %}">
+<link rel="stylesheet" href="{% static 'plugins/datatables-responsive/css/responsive.bootstrap4.min.css' %}">
+<style>
+.card-stats {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 15px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+.audio-card {
+    border: 1px solid #e3e6f0;
+    border-radius: 10px;
+    transition: all 0.3s;
+}
+
+.audio-card:hover {
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    transform: translateY(-2px);
+}
+
+.estado-badge {
+    font-size: 0.85em;
+    padding: 0.5em 0.8em;
+    border-radius: 15px;
+}
+
+.progress-sm {
+    height: 0.5rem;
+}
+
+.btn-audio {
+    border-radius: 20px;
+    padding: 0.5rem 1rem;
+    font-size: 0.9rem;
+}
+
+.transcripcion-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+    gap: 1rem;
+}
+
+@media (max-width: 768px) {
+    .transcripcion-grid {
+        grid-template-columns: 1fr;
+    }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="content-wrapper">
+    <section class="content-header">
+        <div class="container-fluid">
+            <div class="row mb-2">
+                <div class="col-sm-6">
+                    <h1><i class="fas fa-microphone-alt"></i> Transcripción y Diarización</h1>
+                    <p class="text-muted">Gestión de transcripciones automáticas y análisis de hablantes</p>
+                </div>
+                <div class="col-sm-6">
+                    <ol class="breadcrumb float-sm-right">
+                        <li class="breadcrumb-item"><a href="{% url 'index' %}">Inicio</a></li>
+                        <li class="breadcrumb-item active">Transcripción</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="content">
+        <div class="container-fluid">
+            
+            <!-- Estadísticas Rápidas -->
+            <div class="row mb-4">
+                <div class="col-lg-3 col-6">
+                    <div class="small-box bg-info">
+                        <div class="inner">
+                            <h3>{{ estadisticas.audios_pendientes }}</h3>
+                            <p>Audios Listos para Transcribir</p>
+                        </div>
+                        <div class="icon">
+                            <i class="fas fa-file-audio"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-6">
+                    <div class="small-box bg-warning">
+                        <div class="inner">
+                            <h3>{{ estadisticas.transcripciones_activas }}</h3>
+                            <p>En Procesamiento</p>
+                        </div>
+                        <div class="icon">
+                            <i class="fas fa-spinner"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-6">
+                    <div class="small-box bg-success">
+                        <div class="inner">
+                            <h3>{{ estadisticas.completadas_hoy }}</h3>
+                            <p>Completadas Hoy</p>
+                        </div>
+                        <div class="icon">
+                            <i class="fas fa-check-circle"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-6">
+                    <div class="small-box bg-danger">
+                        <div class="inner">
+                            <h3>{{ estadisticas.con_errores }}</h3>
+                            <p>Con Errores</p>
+                        </div>
+                        <div class="icon">
+                            <i class="fas fa-exclamation-triangle"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Audios Listos para Transcribir -->
+            {% if audios_listos %}
+            <div class="card card-primary">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <i class="fas fa-play-circle"></i> Audios Listos para Transcribir
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        {% for audio in audios_listos %}
+                        <div class="col-md-6 col-lg-4 mb-3">
+                            <div class="card audio-card h-100">
+                                <div class="card-body">
+                                    <h6 class="card-title">
+                                        <i class="fas fa-file-audio text-primary"></i>
+                                        {{ audio.nombre_archivo|truncatechars:30 }}
+                                    </h6>
+                                    <div class="mb-2">
+                                        <small class="text-muted">
+                                            <i class="fas fa-calendar"></i> {{ audio.fecha_creacion|date:"d/m/Y H:i" }}
+                                        </small>
+                                    </div>
+                                    <div class="mb-2">
+                                        {% if audio.tipo_reunion %}
+                                        <span class="badge badge-info">{{ audio.tipo_reunion.nombre }}</span>
+                                        {% endif %}
+                                        {% if audio.duracion_segundos %}
+                                        <span class="badge badge-secondary">{{ audio.duracion_segundos|floatformat:0 }}s</span>
+                                        {% endif %}
+                                    </div>
+                                    <div class="d-flex justify-content-between">
+                                        <a href="{% url 'transcripcion:configurar' audio.id %}" 
+                                           class="btn btn-primary btn-sm btn-audio">
+                                            <i class="fas fa-cogs"></i> Configurar y Transcribir
+                                        </a>
+                                        <a href="{% url 'audio_processing:detalle' audio.id %}" 
+                                           class="btn btn-outline-secondary btn-sm btn-audio">
+                                            <i class="fas fa-eye"></i> Ver Audio
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% if audios_listos|length >= 5 %}
+                    <div class="text-center mt-3">
+                        <a href="{% url 'audio_processing:lista' %}?estado=completado" class="btn btn-outline-primary">
+                            <i class="fas fa-list"></i> Ver Todos los Audios Procesados
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Filtros y Búsqueda -->
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <i class="fas fa-list"></i> Transcripciones Existentes
+                    </h3>
+                    <div class="card-tools">
+                        <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                            <i class="fas fa-minus"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <!-- Filtros -->
+                    <form method="GET" class="mb-3">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label for="estado">Estado:</label>
+                                    <select name="estado" id="estado" class="form-control">
+                                        <option value="">Todos los estados</option>
+                                        {% for value, display in estados_transcripcion %}
+                                        <option value="{{ value }}" {% if estado_filtro == value %}selected{% endif %}>
+                                            {{ display }}
+                                        </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="q">Búsqueda:</label>
+                                    <input type="text" name="q" id="q" class="form-control" 
+                                           value="{{ busqueda }}" placeholder="Buscar por nombre, contenido o tipo de reunión...">
+                                </div>
+                            </div>
+                            <div class="col-md-2">
+                                <div class="form-group">
+                                    <label>&nbsp;</label>
+                                    <div>
+                                        <button type="submit" class="btn btn-primary">
+                                            <i class="fas fa-search"></i> Filtrar
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+
+                    <!-- Lista de Transcripciones -->
+                    <div class="transcripcion-grid">
+                        {% for transcripcion in transcripciones %}
+                        <div class="card">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <h6 class="mb-0">
+                                    <i class="fas fa-file-alt"></i>
+                                    {{ transcripcion.procesamiento_audio.nombre_archivo|truncatechars:25 }}
+                                </h6>
+                                {% if transcripcion.estado == 'pendiente' %}
+                                    <span class="badge badge-secondary estado-badge">{{ transcripcion.get_estado_display }}</span>
+                                {% elif transcripcion.estado == 'en_proceso' or transcripcion.estado == 'transcribiendo' or transcripcion.estado == 'diarizando' or transcripcion.estado == 'procesando' %}
+                                    <span class="badge badge-warning estado-badge">{{ transcripcion.get_estado_display }}</span>
+                                {% elif transcripcion.estado == 'completado' %}
+                                    <span class="badge badge-success estado-badge">{{ transcripcion.get_estado_display }}</span>
+                                {% elif transcripcion.estado == 'error' %}
+                                    <span class="badge badge-danger estado-badge">{{ transcripcion.get_estado_display }}</span>
+                                {% else %}
+                                    <span class="badge badge-secondary estado-badge">{{ transcripcion.get_estado_display }}</span>
+                                {% endif %}
+                            </div>
+                            <div class="card-body">
+                                <!-- Información básica -->
+                                <div class="mb-2">
+                                    <small class="text-muted">
+                                        <i class="fas fa-calendar"></i> {{ transcripcion.fecha_creacion|date:"d/m/Y H:i" }}
+                                    </small>
+                                </div>
+                                
+                                <!-- Progreso -->
+                                {% if transcripcion.estado != 'completado' and transcripcion.estado != 'error' %}
+                                <div class="mb-2">
+                                    <div class="progress progress-sm">
+                                        <div class="progress-bar" role="progressbar" 
+                                             style="width: {{ transcripcion.progreso_porcentaje }}%"
+                                             aria-valuenow="{{ transcripcion.progreso_porcentaje }}" 
+                                             aria-valuemin="0" aria-valuemax="100">
+                                        </div>
+                                    </div>
+                                    <small class="text-muted">{{ transcripcion.progreso_porcentaje }}% completado</small>
+                                </div>
+                                {% endif %}
+
+                                <!-- Estadísticas -->
+                                {% if transcripcion.esta_completado %}
+                                <div class="row text-center mb-2">
+                                    <div class="col-4">
+                                        <div class="text-muted">Hablantes</div>
+                                        <div class="font-weight-bold">{{ transcripcion.numero_hablantes|default:0 }}</div>
+                                    </div>
+                                    <div class="col-4">
+                                        <div class="text-muted">Segmentos</div>
+                                        <div class="font-weight-bold">{{ transcripcion.numero_segmentos|default:0 }}</div>
+                                    </div>
+                                    <div class="col-4">
+                                        <div class="text-muted">Palabras</div>
+                                        <div class="font-weight-bold">{{ transcripcion.palabras_totales|default:0 }}</div>
+                                    </div>
+                                </div>
+                                {% endif %}
+
+                                <!-- Error -->
+                                {% if transcripcion.tiene_error %}
+                                <div class="alert alert-danger alert-sm mb-2">
+                                    <small><i class="fas fa-exclamation-triangle"></i> {{ transcripcion.mensaje_error|truncatechars:50 }}</small>
+                                </div>
+                                {% endif %}
+
+                                <!-- Acciones -->
+                                <div class="d-flex justify-content-between">
+                                    {% if transcripcion.esta_completado %}
+                                    <a href="{% url 'transcripcion:detalle' transcripcion.id %}" 
+                                       class="btn btn-primary btn-sm btn-audio">
+                                        <i class="fas fa-comments"></i> Ver Chat
+                                    </a>
+                                    {% elif transcripcion.tiene_error %}
+                                    <button class="btn btn-warning btn-sm btn-audio"
+                                            onclick="reiniciarTranscripcion({{ transcripcion.id }})">
+                                        <i class="fas fa-redo"></i> Reiniciar
+                                    </button>
+                                    {% else %}
+                                    <button class="btn btn-info btn-sm btn-audio"
+                                            onclick="verificarEstado({{ transcripcion.id }})">
+                                        <i class="fas fa-sync"></i> Actualizar
+                                    </button>
+                                    {% endif %}
+                                    
+                                    <div class="dropdown">
+                                        <button class="btn btn-outline-secondary btn-sm dropdown-toggle" 
+                                                type="button" data-toggle="dropdown">
+                                            <i class="fas fa-ellipsis-v"></i>
+                                        </button>
+                                        <div class="dropdown-menu">
+                                            <a class="dropdown-item" href="{% url 'audio_processing:detalle' transcripcion.procesamiento_audio.id %}">
+                                                <i class="fas fa-file-audio"></i> Ver Audio Original
+                                            </a>
+                                            {% if transcripcion.esta_completado %}
+                                            <a class="dropdown-item" href="#">
+                                                <i class="fas fa-download"></i> Exportar Transcripción
+                                            </a>
+                                            {% endif %}
+                                            <div class="dropdown-divider"></div>
+                                            <a class="dropdown-item text-danger" href="#" 
+                                               onclick="eliminarTranscripcion({{ transcripcion.id }})">
+                                                <i class="fas fa-trash"></i> Eliminar
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% empty %}
+                        <div class="col-12">
+                            <div class="text-center py-4">
+                                <i class="fas fa-microphone-slash fa-3x text-muted mb-3"></i>
+                                <h5 class="text-muted">No hay transcripciones disponibles</h5>
+                                <p class="text-muted">
+                                    {% if audios_listos %}
+                                    Comience transcribiendo uno de los audios listos mostrados arriba.
+                                    {% else %}
+                                    Primero debe procesar algunos archivos de audio en el 
+                                    <a href="{% url 'audio_processing:lista_procesamientos' %}">módulo de procesamiento de audio</a>.
+                                    {% endif %}
+                                </p>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+
+                    <!-- Paginación -->
+                    {% if transcripciones.has_other_pages %}
+                    <div class="d-flex justify-content-center mt-4">
+                        <nav aria-label="Paginación">
+                            <ul class="pagination">
+                                {% if transcripciones.has_previous %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ transcripciones.previous_page_number }}{% if estado_filtro %}&estado={{ estado_filtro }}{% endif %}{% if busqueda %}&q={{ busqueda }}{% endif %}">
+                                        <i class="fas fa-chevron-left"></i>
+                                    </a>
+                                </li>
+                                {% endif %}
+
+                                {% for num in transcripciones.paginator.page_range %}
+                                {% if transcripciones.number == num %}
+                                <li class="page-item active">
+                                    <span class="page-link">{{ num }}</span>
+                                </li>
+                                {% elif num > transcripciones.number|add:'-3' and num < transcripciones.number|add:'3' %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ num }}{% if estado_filtro %}&estado={{ estado_filtro }}{% endif %}{% if busqueda %}&q={{ busqueda }}{% endif %}">{{ num }}</a>
+                                </li>
+                                {% endif %}
+                                {% endfor %}
+
+                                {% if transcripciones.has_next %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ transcripciones.next_page_number }}{% if estado_filtro %}&estado={{ estado_filtro }}{% endif %}{% if busqueda %}&q={{ busqueda }}{% endif %}">
+                                        <i class="fas fa-chevron-right"></i>
+                                    </a>
+                                </li>
+                                {% endif %}
+                            </ul>
+                        </nav>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </section>
+</div>
+
+<!-- Modal de Confirmación -->
+<div class="modal fade" id="confirmarModal" tabindex="-1" role="dialog" aria-labelledby="confirmarModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="confirmarModalLabel">Confirmar Acción</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body" id="confirmarModalBody">
+                <!-- Contenido dinámico -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" id="confirmarBtn">Confirmar</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'plugins/datatables/jquery.dataTables.min.js' %}"></script>
+<script src="{% static 'plugins/datatables-bs4/js/dataTables.bootstrap4.min.js' %}"></script>
+<script src="{% static 'plugins/datatables-responsive/js/dataTables.responsive.min.js' %}"></script>
+<script src="{% static 'plugins/datatables-responsive/js/responsive.bootstrap4.min.js' %}"></script>
+
+<script>
+function iniciarTranscripcion(procesamientoId, nombreArchivo) {
+    $('#confirmarModalLabel').text('Iniciar Transcripción');
+    $('#confirmarModalBody').html(`
+        <p>¿Está seguro de que desea iniciar la transcripción para el archivo:</p>
+        <p><strong>${nombreArchivo}</strong></p>
+        <div class="alert alert-info">
+            <i class="fas fa-info-circle"></i>
+            Este proceso puede tomar varios minutos dependiendo de la duración del audio.
+        </div>
+    `);
+    
+    $('#confirmarBtn').off('click').on('click', function() {
+        const $btn = $(this);
+        $btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Iniciando...');
+        
+        $.ajax({
+            url: `/transcripcion/iniciar/${procesamientoId}/`,
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': $('[name=csrfmiddlewaretoken]').val()
+            },
+            success: function(response) {
+                if (response.success) {
+                    $('#confirmarModal').modal('hide');
+                    toastr.success('Transcripción iniciada correctamente');
+                    setTimeout(() => location.reload(), 2000);
+                } else {
+                    toastr.error(response.error || 'Error al iniciar transcripción');
+                }
+            },
+            error: function() {
+                toastr.error('Error de conexión al servidor');
+            },
+            complete: function() {
+                $btn.prop('disabled', false).html('Confirmar');
+            }
+        });
+    });
+    
+    $('#confirmarModal').modal('show');
+}
+
+function reiniciarTranscripcion(transcripcionId) {
+    $('#confirmarModalLabel').text('Reiniciar Transcripción');
+    $('#confirmarModalBody').html(`
+        <p>¿Está seguro de que desea reiniciar esta transcripción?</p>
+        <div class="alert alert-warning">
+            <i class="fas fa-exclamation-triangle"></i>
+            Se perderán todos los datos de la transcripción anterior.
+        </div>
+    `);
+    
+    $('#confirmarBtn').off('click').on('click', function() {
+        const $btn = $(this);
+        $btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Reiniciando...');
+        
+        $.ajax({
+            url: `/transcripcion/reiniciar/${transcripcionId}/`,
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': $('[name=csrfmiddlewaretoken]').val()
+            },
+            success: function(response) {
+                if (response.success) {
+                    $('#confirmarModal').modal('hide');
+                    toastr.success('Transcripción reiniciada correctamente');
+                    setTimeout(() => location.reload(), 2000);
+                } else {
+                    toastr.error(response.error || 'Error al reiniciar transcripción');
+                }
+            },
+            error: function() {
+                toastr.error('Error de conexión al servidor');
+            },
+            complete: function() {
+                $btn.prop('disabled', false).html('Confirmar');
+            }
+        });
+    });
+    
+    $('#confirmarModal').modal('show');
+}
+
+function verificarEstado(transcripcionId) {
+    $.ajax({
+        url: `/transcripcion/api/estado/${transcripcionId}/`,
+        method: 'GET',
+        success: function(response) {
+            if (response.success) {
+                toastr.info(`Estado: ${response.estado_display} (${response.progreso}%)`);
+                if (response.completado) {
+                    setTimeout(() => location.reload(), 1000);
+                }
+            } else {
+                toastr.error('Error al verificar estado');
+            }
+        },
+        error: function() {
+            toastr.error('Error de conexión al servidor');
+        }
+    });
+}
+
+function eliminarTranscripcion(transcripcionId) {
+    $('#confirmarModalLabel').text('Eliminar Transcripción');
+    $('#confirmarModalBody').html(`
+        <p>¿Está seguro de que desea eliminar esta transcripción?</p>
+        <div class="alert alert-danger">
+            <i class="fas fa-exclamation-triangle"></i>
+            Esta acción no se puede deshacer.
+        </div>
+    `);
+    
+    $('#confirmarBtn').removeClass('btn-primary').addClass('btn-danger').text('Eliminar');
+    
+    $('#confirmarBtn').off('click').on('click', function() {
+        // Implementar eliminación cuando se requiera
+        toastr.info('Funcionalidad de eliminación pendiente de implementar');
+        $('#confirmarModal').modal('hide');
+    });
+    
+    $('#confirmarModal').modal('show');
+}
+
+// Auto-refresh para transcripciones en proceso
+$(document).ready(function() {
+    const transcripcionesEnProceso = $('.estado-badge.badge-warning').length;
+    
+    if (transcripcionesEnProceso > 0) {
+        setInterval(function() {
+            // Actualizar solo si hay transcripciones en proceso
+            location.reload();
+        }, 30000); // Cada 30 segundos
+    }
+});
+</script>
+{% endblock %}

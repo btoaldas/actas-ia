@@ -40,6 +40,43 @@
         </ul>
     </li>
 
+    <!-- Transcripción y Diarización -->
+    <li class="nav-item {% if 'transcripcion' in parent %} menu-open {% endif %}">
+        <a href="#" class="nav-link {% if 'transcripcion' in parent %} active {% endif %}">
+            <i class="nav-icon fas fa-comments"></i>
+            <p>
+                🗣️ Transcripción
+                <i class="right fas fa-angle-left"></i>
+            </p>
+        </a>
+        <ul class="nav nav-treeview">
+            <li class="nav-item">
+                <a href="{% url 'transcripcion:audios_listos' %}" class="nav-link {% if 'audios-listos' in segment %} active {% endif %}">
+                    <i class="far fa-circle nav-icon"></i>
+                    <p>🎵 Audios Listos para Transcribir</p>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="{% url 'transcripcion:lista' %}" class="nav-link {% if 'lista' in segment or 'lista-transcripciones' in segment %} active {% endif %}">
+                    <i class="far fa-circle nav-icon"></i>
+                    <p>📋 Lista de Transcripciones</p>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="#" class="nav-link {% if 'configuracion' in segment %} active {% endif %}">
+                    <i class="far fa-circle nav-icon"></i>
+                    <p>⚙️ Configuración</p>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="#" class="nav-link {% if 'estadisticas' in segment %} active {% endif %}">
+                    <i class="far fa-circle nav-icon"></i>
+                    <p>📊 Estadísticas</p>
+                </a>
+            </li>
+        </ul>
+    </li>
+
     <!-- Gestión de Actas (simplificado) -->
     <li class="nav-item {% if 'actas' in parent %} menu-open {% endif %}">
         <a href="#" class="nav-link {% if 'actas' in parent %} active {% endif %}">

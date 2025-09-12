@@ -79,6 +79,7 @@ INSTALLED_APPS = [
     'apps.charts',
     'apps.file_manager',
     'apps.audio_processing',
+    'apps.transcripcion',
     'apps.tasks',
     'apps.users',
     'apps.react',
