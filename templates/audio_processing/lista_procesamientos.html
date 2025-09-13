@@ -4,6 +4,9 @@
 {% block title %} {{ title }} {% endblock %}
 
 {% block stylesheets %}
+<!-- Estilos específicos para el widget de audio -->
+<link rel="stylesheet" href="{% static 'css/audio_widget.css' %}">
+
 <!-- Solo estilos mínimos necesarios, usando AdminLTE -->
 <style>
 .status-badge {
@@ -145,6 +148,35 @@
                 </div>
             </div>
 
+            <!-- Widget Reproductor de Audio -->
+            <div class="card card-outline card-primary" id="audioPlayerWidget" style="display: none;">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <i class="fas fa-play text-primary"></i> Reproductor de Audio
+                    </h3>
+                    <div class="card-tools">
+                        <button type="button" class="btn btn-tool" onclick="cerrarReproductor()" title="Cerrar reproductor">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-8">
+                            <audio id="audioPlayer" controls class="w-100" preload="metadata">
+                                Tu navegador no soporta la reproducción de audio.
+                            </audio>
+                        </div>
+                        <div class="col-md-4">
+                            <div id="audioInfo">
+                                <h6 id="audioTitle" class="text-primary">Ningún audio seleccionado</h6>
+                                <small id="audioDetails" class="text-muted">Haz clic en el botón Play de cualquier procesamiento para reproducir</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- Grid de procesamientos -->
             {% if page_obj %}
             <div class="card">
@@ -250,7 +282,7 @@
                                         </a>
                                         {% if procesamiento.archivo_audio %}
                                             <button type="button" class="btn btn-sm btn-primary flex-fill" 
-                                                    onclick="reproducirAudio('{{ procesamiento.archivo_audio.url }}')" 
+                                                    onclick="cargarAudio('{{ procesamiento.archivo_audio.url }}', '{{ procesamiento.titulo|escapejs }}', '{{ procesamiento.tipo_reunion.nombre|escapejs }}', '{{ procesamiento.created_at|date:"d/m/Y H:i"|escapejs }}')" 
                                                     title="Reproducir audio">
                                                 <i class="fas fa-play"></i>
                                             </button>
@@ -342,110 +374,87 @@
 {% endblock content %}
 
 {% block javascripts %}
-<script>
-// URLs para las acciones (definidas fuera de las funciones)
-const URLS = {
-    editar: '{% url "audio_processing:editar_procesamiento" 0 %}',
-    eliminar: '{% url "audio_processing:eliminar_procesamiento" 0 %}'
-};
+{% endblock content %}
 
-// Función para reproducir audio
-function reproducirAudio(url) {
-    // Crear modal para reproductor de audio
-    const modalHtml = `
-        <div class="modal fade" id="audioModal" tabindex="-1" role="dialog">
-            <div class="modal-dialog modal-dialog-centered" role="document">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title">
-                            <i class="fas fa-play"></i> Reproductor de Audio
-                        </h5>
-                        <button type="button" class="close" data-dismiss="modal">
-                            <span>&times;</span>
-                        </button>
-                    </div>
-                    <div class="modal-body text-center">
-                        <audio controls class="w-100" preload="metadata">
-                            <source src="${url}" type="audio/mpeg">
-                            Tu navegador no soporta la reproducción de audio.
-                        </audio>
-                    </div>
-                </div>
-            </div>
-        </div>
-    `;
+{% block javascripts %}
+    <!-- Archivo JavaScript para el widget de audio -->
+    <script src="{% static 'js/audio_widget.js' %}"></script>
     
-    // Eliminar modal anterior si existe
-    $('#audioModal').remove();
-    
-    // Agregar nuevo modal
-    $('body').append(modalHtml);
-    $('#audioModal').modal('show');
-}
+    <script>
+    // URLs para las acciones
+    const URLS = {
+        editar: '{% url "audio_processing:editar_procesamiento" 0 %}',
+        eliminar: '{% url "audio_processing:eliminar_procesamiento" 0 %}'
+    };
 
-// Función para confirmar eliminación
-function confirmarEliminacion(id) {
-    if (confirm('¿Estás seguro de que deseas eliminar este procesamiento? Esta acción no se puede deshacer.')) {
-        // Crear formulario para enviar POST request
-        const form = document.createElement('form');
-        form.method = 'POST';
-        form.action = URLS.eliminar.replace('0', id);
-        
-        // Agregar token CSRF
-        const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
-        
-        const csrfInput = document.createElement('input');
-        csrfInput.type = 'hidden';
-        csrfInput.name = 'csrfmiddlewaretoken';
-        csrfInput.value = csrfToken;
-        form.appendChild(csrfInput);
-        
-        // Agregar al DOM y enviar
-        document.body.appendChild(form);
-        form.submit();
+    // Función para editar procesamiento
+    function editarProcesamiento(id) {
+        const url = URLS.editar.replace('0', id);
+        window.location.href = url;
     }
-}
 
-// Función para editar procesamiento
-function editarProcesamiento(id) {
-    // Redirigir a la página de edición usando Django URL
-    const url = URLS.editar.replace('0', id);
-    window.location.href = url;
-}
-
-$(document).ready(function() {
-    // Auto-refresh para procesamientos en curso cada 30 segundos
-    {% if page_obj %}
-        let hasActiveProcessing = false;
-        {% for procesamiento in page_obj %}
-            {% if procesamiento.estado in 'pendiente,procesando,transcribiendo,diarizando' %}
-                hasActiveProcessing = true;
-            {% endif %}
-        {% endfor %}
-        
-        if (hasActiveProcessing) {
-            setInterval(function() {
-                location.reload();
-            }, 30000);
+    // Función para confirmar eliminación
+    function confirmarEliminacion(id) {
+        if (confirm('¿Estás seguro de que deseas eliminar este procesamiento? Esta acción no se puede deshacer.')) {
+            // Crear formulario para enviar POST request
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = URLS.eliminar.replace('0', id);
+            
+            // Agregar token CSRF
+            const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+            
+            const csrfInput = document.createElement('input');
+            csrfInput.type = 'hidden';
+            csrfInput.name = 'csrfmiddlewaretoken';
+            csrfInput.value = csrfToken;
+            form.appendChild(csrfInput);
+            
+            // Agregar al DOM y enviar
+            document.body.appendChild(form);
+            form.submit();
         }
-    {% endif %}
-});
+    }
 
-function aplicarOrdenacion() {
-    const ordenSelect = document.getElementById('orden');
-    const ordenSeleccionado = ordenSelect.value;
-    
-    // Obtener parámetros actuales de la URL
-    const urlParams = new URLSearchParams(window.location.search);
-    
-    // Actualizar el parámetro de orden
-    urlParams.set('orden', ordenSeleccionado);
-    
-    // Mantener la página 1 al cambiar ordenación
-    urlParams.delete('page');
-    
-    // Redirigir con los nuevos parámetros
-    window.location.search = urlParams.toString();
-}
-</script>
+    // Función para aplicar ordenación
+    function aplicarOrdenacion() {
+        const ordenSelect = document.getElementById('orden');
+        const ordenSeleccionado = ordenSelect.value;
+        
+        // Obtener parámetros actuales de la URL
+        const urlParams = new URLSearchParams(window.location.search);
+        
+        // Actualizar el parámetro de orden
+        urlParams.set('orden', ordenSeleccionado);
+        
+        // Mantener la página 1 al cambiar ordenación
+        urlParams.delete('page');
+        
+        // Redirigir con los nuevos parámetros
+        window.location.search = urlParams.toString();
+    }
+
+    // Auto-refresh para procesamientos en curso
+    $(document).ready(function() {
+        {% if page_obj %}
+            let hasActiveProcessing = false;
+            {% for procesamiento in page_obj %}
+                {% if procesamiento.estado in 'pendiente,procesando,transcribiendo,diarizando' %}
+                    hasActiveProcessing = true;
+                {% endif %}
+            {% endfor %}
+            
+            if (hasActiveProcessing) {
+                setInterval(function() {
+                    location.reload();
+                }, 30000);
+            }
+        {% endif %}
+        
+        // Auto-submit del formulario de filtros
+        $('#filtroFormulario select, #filtroFormulario input[type="date"]').change(function() {
+            $('#filtroFormulario').submit();
+        });
+    });
+    </script>
 {% endblock javascripts %}
