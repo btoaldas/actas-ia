@@ -118,10 +118,30 @@ def lista_procesamientos(request):
                 )
                 filtros_aplicados['fecha_hasta'] = str(form.cleaned_data['fecha_hasta'])
         
-        procesamientos = procesamientos.order_by('-created_at')
+        # Ordenación
+        orden = request.GET.get('orden', '-created_at')
+        orden_mapping = {
+            '-created_at': '-created_at',
+            'created_at': 'created_at',
+            '-fecha_reunion': '-fecha_reunion',
+            'fecha_reunion': 'fecha_reunion',
+            'titulo': 'titulo',
+            '-titulo': '-titulo',
+            'tipo_reunion': 'tipo_reunion__nombre',
+            '-tipo_reunion': '-tipo_reunion__nombre',
+            'duracion': 'duracion_seg',
+            '-duracion': '-duracion_seg',
+            'estado': 'estado',
+            '-estado': '-estado',
+        }
+        orden_final = orden_mapping.get(orden, '-created_at')
+        procesamientos = procesamientos.order_by(orden_final)
+        
+        # Agregar select_related para mejorar rendimiento
+        procesamientos = procesamientos.select_related('tipo_reunion')
         
         # Paginación
-        paginator = Paginator(procesamientos, 20)
+        paginator = Paginator(procesamientos, 12)  # Cambiar a 12 para grid 3x4
         page_number = request.GET.get('page')
         page_obj = paginator.get_page(page_number)
         
@@ -141,10 +161,12 @@ def lista_procesamientos(request):
         )
         
         context = {
-            'title': 'Lista de Procesamientos',
+            'title': 'Lista de Procesamientos de Audio - Dashboard',
             'page_obj': page_obj,
             'form': form,
-            'total_procesamientos': procesamientos.count()
+            'total_procesamientos': procesamientos.count(),
+            'orden_actual': orden,
+            'filtros_aplicados': filtros_aplicados
         }
         return render(request, 'audio_processing/lista_procesamientos.html', context)
     
