@@ -50,7 +50,7 @@ def dashboard_audios_transcribir(request):
             estado='completado'
         ).exclude(
             id__in=transcripciones_existentes
-        ).select_related('tipo_reunion', 'usuario').order_by('-created_at')
+        ).select_related('tipo_reunion', 'usuario')
         
         # Filtros
         tipo_reunion = request.GET.get('tipo')
@@ -65,7 +65,8 @@ def dashboard_audios_transcribir(request):
             audios_query = audios_query.filter(
                 Q(titulo__icontains=busqueda) |
                 Q(descripcion__icontains=busqueda) |
-                Q(participantes__icontains=busqueda)
+                Q(participantes__icontains=busqueda) |
+                Q(archivo_audio__icontains=busqueda)
             )
             
         if fecha_desde:
@@ -73,6 +74,23 @@ def dashboard_audios_transcribir(request):
             
         if fecha_hasta:
             audios_query = audios_query.filter(created_at__lte=fecha_hasta)
+        
+        # Ordenación - similar a audios_listos
+        orden = request.GET.get('orden', '-created_at')
+        orden_mapping = {
+            '-created_at': '-created_at',
+            'created_at': 'created_at',
+            '-fecha_procesamiento': '-fecha_procesamiento',
+            'fecha_procesamiento': 'fecha_procesamiento',
+            'titulo': 'titulo',
+            '-titulo': '-titulo',
+            'tipo_reunion': 'tipo_reunion__nombre',
+            '-tipo_reunion': '-tipo_reunion__nombre',
+            'duracion': 'duracion_seg',
+            '-duracion': '-duracion_seg',
+        }
+        orden_final = orden_mapping.get(orden, '-created_at')
+        audios_query = audios_query.order_by(orden_final)
         
         # Paginación
         paginator = Paginator(audios_query, 12)  # 12 audios por página
@@ -105,6 +123,7 @@ def dashboard_audios_transcribir(request):
             'filtro_busqueda': busqueda,
             'filtro_fecha_desde': fecha_desde,
             'filtro_fecha_hasta': fecha_hasta,
+            'orden_actual': orden,
             'titulo_pagina': 'Audios por Transcribir - Dashboard V2',
             'subtitulo': f'{estadisticas["total_audios_listos"]} audios procesados disponibles (Nueva arquitectura)'
         }
