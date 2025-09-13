@@ -69,7 +69,7 @@ services:
       - ./static/dist/img:/app/static/dist/img:rw
     networks:
       - actas_network
-    command: celery -A config worker -l info
+    command: celery -A config worker -l info --concurrency=1
 
   # Beat de Celery para tareas programadas
   celery_beat:

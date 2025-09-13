@@ -140,10 +140,10 @@ def dashboard_transcripciones_hechas(request):
     try:
         log_transcripcion_navegacion(request, None, 'dashboard_transcripciones_hechas')
         
-        # Transcripciones existentes
+        # Transcripciones existentes (base)
         transcripciones_query = Transcripcion.objects.select_related(
             'procesamiento_audio', 'configuracion_utilizada', 'usuario_creacion'
-        ).order_by('-fecha_creacion')
+        )
         
         # Filtros
         estado_filtro = request.GET.get('estado')
@@ -167,6 +167,26 @@ def dashboard_transcripciones_hechas(request):
         if fecha_hasta:
             transcripciones_query = transcripciones_query.filter(fecha_creacion__lte=fecha_hasta)
         
+        # Ordenación
+        orden = request.GET.get('orden')  # ejemplos: -fecha_creacion, fecha_creacion, titulo, -titulo, tipo_reunion, -tipo_reunion, estado, -estado
+        if orden:
+            # Mapear campos amigables a campos reales
+            mapping = {
+                'fecha_creacion': 'fecha_creacion',
+                '-fecha_creacion': '-fecha_creacion',
+                'fecha_publicacion': 'fecha_creacion',  # no existe explicitamente; usar fecha_creacion como proxy
+                '-fecha_publicacion': '-fecha_creacion',
+                'titulo': 'procesamiento_audio__titulo',
+                '-titulo': '-procesamiento_audio__titulo',
+                'tipo_reunion': 'procesamiento_audio__tipo_reunion__nombre',
+                '-tipo_reunion': '-procesamiento_audio__tipo_reunion__nombre',
+                'estado': 'estado',
+                '-estado': '-estado',
+            }
+            transcripciones_query = transcripciones_query.order_by(mapping.get(orden, '-fecha_creacion'))
+        else:
+            transcripciones_query = transcripciones_query.order_by('-fecha_creacion')
+
         # Paginación
         paginator = Paginator(transcripciones_query, 10)  # 10 transcripciones por página
         page_number = request.GET.get('page')
@@ -188,10 +208,17 @@ def dashboard_transcripciones_hechas(request):
             ).order_by('-count')
         }
         
+        # Tipos de reunión para filtro
+        from apps.audio_processing.models import TipoReunion
+        tipos_reunion = TipoReunion.objects.all()
+        filtro_tipo = request.GET.get('tipo')
+
         context = {
             'transcripciones': transcripciones_page,
             'estadisticas': estadisticas,
             'estados_transcripcion': EstadoTranscripcion.choices,
+            'tipos_reunion': tipos_reunion,
+            'filtro_tipo': filtro_tipo,
             'filtro_estado': estado_filtro,
             'filtro_busqueda': busqueda,
             'filtro_fecha_desde': fecha_desde,
@@ -355,8 +382,8 @@ def proceso_transcripcion(request, audio_id):
                         args=[transcripcion.id]
                     )
                     
-                    # Guardar ID de tarea
-                    transcripcion.task_id = task_result.id
+                    # Guardar ID de tarea en el campo correcto
+                    transcripcion.task_id_celery = task_result.id
                     transcripcion.estado = EstadoTranscripcion.EN_PROCESO
                     transcripcion.save()
                     
@@ -783,10 +810,10 @@ def api_estado_transcripcion(request, transcripcion_id):
         
         # Obtener información del estado de Celery si existe task_id
         task_info = None
-        if hasattr(transcripcion, 'task_id') and transcripcion.task_id:
+        if getattr(transcripcion, 'task_id_celery', None):
             try:
                 from celery.result import AsyncResult
-                result = AsyncResult(transcripcion.task_id)
+                result = AsyncResult(transcripcion.task_id_celery)
                 task_info = {
                     'state': result.state,
                     'info': result.info if result.info else {},

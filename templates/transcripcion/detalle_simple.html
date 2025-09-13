@@ -55,6 +55,40 @@
                 </div>
             </div>
 
+            <!-- Estado de proceso y Reproductor de audio -->
+            <div class="row mb-3">
+                <div class="col-md-4">
+                    <div class="card h-100">
+                        <div class="card-header">
+                            <h3 class="card-title">Estado de procesamiento</h3>
+                        </div>
+                        <div class="card-body d-flex align-items-center justify-content-center">
+                            {% transcripcion_badge transcripcion %}
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-8">
+                    <div class="card h-100">
+                        <div class="card-header">
+                            <h3 class="card-title">🎧 Reproductor de audio</h3>
+                        </div>
+                        <div class="card-body">
+                            {% if archivo_audio_url %}
+                                <audio id="playerPrincipal" controls preload="metadata" style="width: 100%;">
+                                    <source src="{{ archivo_audio_url }}" type="audio/mpeg">
+                                    Tu navegador no soporta el elemento de audio.
+                                </audio>
+                                <small class="text-muted d-block mt-2">Usa el botón Play de cada segmento para saltar al minuto exacto.</small>
+                            {% else %}
+                                <div class="alert alert-warning mb-0">
+                                    <i class="fas fa-exclamation-triangle"></i> No hay archivo de audio asociado a esta transcripción.
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- Estadísticas -->
             <div class="row mb-3">
                 <div class="col-md-3">
@@ -129,7 +163,7 @@
                                             <button onclick="editarSegmento({{ forloop.counter0 }})" class="btn btn-outline-primary">
                                                 <i class="fas fa-edit"></i> Editar
                                             </button>
-                                            <button onclick="reproducirSegmento({{ segmento.inicio }}, {{ segmento.fin }})" class="btn btn-outline-info">
+                                            <button onclick="reproducirSegmento({{ segmento.inicio }}, {{ segmento.fin }}, {{ forloop.counter0 }})" class="btn btn-outline-info">
                                                 <i class="fas fa-play"></i> Play
                                             </button>
                                             <button onclick="eliminarSegmento({{ forloop.counter0 }})" class="btn btn-outline-danger">
@@ -207,6 +241,16 @@
                 </button>
             </div>
             <div class="modal-body">
+                {% if archivo_audio_url %}
+                <div class="mb-3">
+                    <label class="d-block">🎧 Previsualización de audio del segmento</label>
+                    <audio id="playerModal" controls preload="metadata" style="width: 100%;">
+                        <source src="{{ archivo_audio_url }}" type="audio/mpeg">
+                        Tu navegador no soporta el elemento de audio.
+                    </audio>
+                    <small class="text-muted">Se posicionará al inicio del segmento al abrir el modal (no auto-reproduce).</small>
+                </div>
+                {% endif %}
                 <form id="formEditarSegmento">
                     <input type="hidden" id="segmentoIndex" value="">
                     
@@ -352,6 +396,9 @@ console.log('✅ JavaScript cargado correctamente');
 var datosEstructura = {{ estructura_json|safe }};
 var transcripcionId = {{ transcripcion.id }};
 var segmentoActual = null;
+var playerPrincipal = null;
+var playbackEndSec = null;
+var timeupdateHandlerRegistrado = false;
 
 // Función real para mostrar datos
 window.mostrarDatos = function() {
@@ -477,12 +524,100 @@ window.guardarEdicionSegmento = function() {
 }
 
 // Función real para reproducir segmento
-window.reproducirSegmento = function(inicio, fin) {
-    {% if archivo_audio_url %}
-    alert(`🎵 Función de reproducción implementada:\n⏰ Desde: ${inicio}s hasta ${fin}s\n🎧 Archivo: {{ archivo_audio_url }}\n\nNOTA: Se requiere implementar reproductor HTML5 audio.`);
-    {% else %}
-    alert('❌ No hay archivo de audio disponible para esta transcripción');
-    {% endif %}
+window.reproducirSegmento = function(inicio, fin, idx) {
+    var player = document.getElementById('playerPrincipal');
+    if (!player) {
+        alert('❌ No hay reproductor disponible para esta transcripción');
+        return;
+    }
+    // Normalizar a números
+    inicio = Number(inicio);
+    fin = Number(fin);
+    // Intentar recuperar de la estructura si vienen inválidos
+    if (!isFinite(inicio) || inicio < 0) {
+        if (Number.isInteger(idx) && datosEstructura.conversacion && datosEstructura.conversacion[idx]) {
+            var seg = datosEstructura.conversacion[idx];
+            if (typeof seg.inicio === 'number') inicio = seg.inicio;
+        }
+    }
+    // Derivar fin si no es válido o no es mayor a inicio
+    if (!isFinite(fin) || fin <= inicio) {
+        if (Number.isInteger(idx) && datosEstructura.conversacion && datosEstructura.conversacion[idx]) {
+            var esUltimo = (idx + 1) >= datosEstructura.conversacion.length;
+            if (!esUltimo) {
+                var siguiente = datosEstructura.conversacion[idx + 1];
+                if (siguiente && typeof siguiente.inicio === 'number') {
+                    fin = siguiente.inicio;
+                }
+            }
+            if (!isFinite(fin) || fin <= inicio) {
+                // Usar duración del audio si está disponible
+                var dur = Number(player.duration);
+                if (isFinite(dur) && dur > inicio) {
+                    fin = dur;
+                } else if (typeof datosEstructura.conversacion[datosEstructura.conversacion.length - 1]?.fin === 'number') {
+                    fin = datosEstructura.conversacion[datosEstructura.conversacion.length - 1].fin;
+                }
+            }
+        }
+    }
+    // Último resguardo: ventana mínima fija
+    if (!isFinite(fin) || fin <= inicio) {
+        fin = inicio + 3; // 3s por defecto
+    }
+    // Asegurar una duración mínima perceptible
+    if ((fin - inicio) < 0.2) {
+        fin = inicio + 0.8; // 800ms mínimo
+    }
+
+    // Ajustar un pequeño margen para detener antes del fin
+    playbackEndSec = Math.max(0, fin - 0.05);
+
+    var startAt = Math.max(0, inicio);
+    var doSeek = function() {
+        try {
+            if (typeof player.fastSeek === 'function') {
+                player.fastSeek(startAt);
+            } else {
+                player.currentTime = startAt;
+            }
+        } catch (e) {
+            // Fallback silencioso
+        }
+    };
+
+    var tryPlay = function() {
+        try {
+            var pp = player.play();
+            if (pp && typeof pp.then === 'function') {
+                pp.catch(function(err){ console.warn('No se pudo auto-reproducir:', err); });
+            }
+        } catch (e) {
+            console.warn('No se pudo iniciar la reproducción:', e);
+        }
+        // Re-seek de respaldo por si el navegador arrancó en 0
+        setTimeout(function(){
+            if (Math.abs(player.currentTime - startAt) > 0.25) {
+                doSeek();
+            }
+        }, 80);
+    };
+
+    // Pausar y preparar
+    try { player.pause(); } catch (e) {}
+
+    if (player.readyState < 1) { // No hay metadata aún
+        var onLoaded = function() {
+            player.removeEventListener('loadedmetadata', onLoaded);
+            doSeek();
+            tryPlay();
+        };
+        player.addEventListener('loadedmetadata', onLoaded);
+        try { player.load(); } catch (e) {}
+    } else {
+        doSeek();
+        tryPlay();
+    }
 }
 
 // Función real para eliminar segmento
@@ -758,6 +893,78 @@ $(document).ready(function() {
         segmentos: datosEstructura.conversacion ? datosEstructura.conversacion.length : 0,
         hablantes: Object.keys(datosEstructura.cabecera.mapeo_hablantes || {}).length
     });
+
+    // Configurar reproductor principal si existe
+    playerPrincipal = document.getElementById('playerPrincipal');
+    if (playerPrincipal && !timeupdateHandlerRegistrado) {
+        playerPrincipal.addEventListener('timeupdate', function() {
+            if (typeof playbackEndSec === 'number' && !isNaN(playbackEndSec)) {
+                if (playerPrincipal.currentTime >= playbackEndSec) {
+                    try { playerPrincipal.pause(); } catch (e) {}
+                }
+            }
+        });
+        timeupdateHandlerRegistrado = true;
+    }
+
+    // Pausar reproductor del modal al cerrar
+    $('#modalEditarSegmento').on('hidden.bs.modal', function () {
+        var pm = document.getElementById('playerModal');
+        if (pm) {
+            try { pm.pause(); } catch (e) {}
+        }
+    });
+
+    // Polling de estado cada 5s para actualizar el badge de estado
+    try {
+        var badgeContainer = $(".card-title:contains('Estado de procesamiento')").closest('.card').find('.card-body');
+        function renderBadgeHtml(data) {
+            // Render simple según estado de negocio y progreso (sin recompilar plantilla)
+            var estado = (data.estado || '').toLowerCase();
+            var progreso = data.progreso || data.progreso_porcentaje || 0;
+            var map = {
+                'pendiente': ['secondary', 'far fa-clock', 'Pendiente'],
+                'en_proceso': ['info', 'fas fa-spinner fa-spin', 'En proceso'],
+                'transcribiendo': ['primary', 'fas fa-keyboard', 'Transcribiendo'],
+                'diarizando': ['secondary', 'fas fa-user-friends', 'Diarizando'],
+                'procesando': ['warning', 'fas fa-cogs', 'Procesando'],
+                'completado': ['success', 'fas fa-check', 'Completado'],
+                'error': ['danger', 'fas fa-times', 'Error'],
+                'cancelado': ['dark', 'fas fa-ban', 'Cancelado']
+            };
+            var cfg = map[estado] || ['light', 'fas fa-question', 'Desconocido'];
+            var html = '<span class="badge badge-' + cfg[0] + '"><i class="' + cfg[1] + '"></i> ' + cfg[2] + '</span>';
+            if (progreso > 0 && progreso < 100) {
+                html += ' <span class="badge badge-light ml-1">' + parseInt(progreso) + '%</span>';
+            }
+            return html;
+        }
+        function tickEstado() {
+            fetch('/transcripcion/api/estado/' + transcripcionId + '/')
+                .then(r => r.json())
+                .then(data => {
+                    if (badgeContainer && badgeContainer.length) {
+                        badgeContainer.html(renderBadgeHtml(data));
+                    }
+                })
+                .catch(() => {});
+        }
+        setInterval(tickEstado, 5000);
+    } catch (e) { /* noop */ }
 });
+
+// Sobrescribir/Extender editarSegmento para posicionar el reproductor del modal
+var _editarSegmentoOriginal = window.editarSegmento;
+window.editarSegmento = function(index) {
+    // Llamar a la implementación actual para llenar el formulario
+    _editarSegmentoOriginal(index);
+    // Posicionar el reproductor del modal (si existe)
+    setTimeout(function(){
+        var pm = document.getElementById('playerModal');
+        if (pm && segmentoActual && typeof segmentoActual.inicio === 'number') {
+            try { pm.currentTime = Math.max(0, segmentoActual.inicio); } catch (e) {}
+        }
+    }, 200);
+}
 </script>
 {% endblock %}

@@ -35,11 +35,21 @@ def procesar_transcripcion_completa(self, transcripcion_id: int):
         transcripcion = Transcripcion.objects.get(id=transcripcion_id)
         logger.info(f"Iniciando procesamiento de transcripción {transcripcion_id}")
         
-        # Actualizar estado
+        # Actualizar estado inicial
+        try:
+            transcripcion.task_id_celery = getattr(self.request, 'id', '') or getattr(transcripcion, 'task_id_celery', '')
+        except Exception:
+            pass
         transcripcion.estado = EstadoTranscripcion.EN_PROCESO
-        transcripcion.fecha_inicio_procesamiento = timezone.now()
-        transcripcion.progreso = 10
+        transcripcion.tiempo_inicio_proceso = timezone.now()
+        if hasattr(transcripcion, 'progreso_porcentaje'):
+            transcripcion.progreso_porcentaje = 10
         transcripcion.save()
+        # Publicar meta en Celery
+        try:
+            self.update_state(state='PROGRESS', meta={'fase': 'inicio', 'msg': 'Preparando procesamiento', 'pct': 10})
+        except Exception:
+            pass
         
         # Obtener configuración
         configuracion = transcripcion.get_configuracion_completa()
@@ -81,9 +91,14 @@ def procesar_transcripcion_completa(self, transcripcion_id: int):
         
         # Paso 1: Transcripción con Whisper
         transcripcion.estado = EstadoTranscripcion.TRANSCRIBIENDO
-        transcripcion.progreso = 20
+        if hasattr(transcripcion, 'progreso_porcentaje'):
+            transcripcion.progreso_porcentaje = 20
         transcripcion.mensaje_estado = "Transcribiendo audio con Whisper..."
         transcripcion.save()
+        try:
+            self.update_state(state='PROGRESS', meta={'fase': 'whisper', 'msg': 'Transcribiendo con Whisper', 'pct': 20})
+        except Exception:
+            pass
         
         resultado_whisper = procesar_con_whisper(archivo_audio_path, configuracion)
         
@@ -91,8 +106,13 @@ def procesar_transcripcion_completa(self, transcripcion_id: int):
             raise Exception(f"Error en Whisper: {resultado_whisper.get('error')}")
         
         logger.info("Transcripción con Whisper completada")
-        transcripcion.progreso = 50
+        if hasattr(transcripcion, 'progreso_porcentaje'):
+            transcripcion.progreso_porcentaje = 50
         transcripcion.save()
+        try:
+            self.update_state(state='PROGRESS', meta={'fase': 'whisper', 'msg': 'Whisper completado', 'pct': 50})
+        except Exception:
+            pass
         
         # Obtener hablantes predefinidos de la configuración
         hablantes_predefinidos = []
@@ -113,9 +133,14 @@ def procesar_transcripcion_completa(self, transcripcion_id: int):
         
         # Paso 2: Diarización con pyannote
         transcripcion.estado = EstadoTranscripcion.DIARIZANDO
-        transcripcion.progreso = 60
+        if hasattr(transcripcion, 'progreso_porcentaje'):
+            transcripcion.progreso_porcentaje = 60
         transcripcion.mensaje_estado = "Identificando hablantes con pyannote..."
         transcripcion.save()
+        try:
+            self.update_state(state='PROGRESS', meta={'fase': 'pyannote', 'msg': 'Diarizando con pyannote', 'pct': 60})
+        except Exception:
+            pass
         
         resultado_pyannote = procesar_con_pyannote(archivo_audio_path, configuracion, hablantes_predefinidos)
         
