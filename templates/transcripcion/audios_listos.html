@@ -1,7 +1,7 @@
 {% extends 'layouts/base.html' %}
 {% load static %}
 
-{% block title %}Audios Listos para Transcribir{% endblock %}
+{% block title %}{{ titulo_pagina|default:"Audios Listos para Transcribir" }}{% endblock %}
 
 {% block content %}
 <div class="content-wrapper">
@@ -10,7 +10,8 @@
         <div class="container-fluid">
             <div class="row mb-2">
                 <div class="col-sm-6">
-                    <h1 class="m-0">Audios Listos para Transcribir</h1>
+                    <h1 class="m-0">{{ titulo_pagina|default:"Audios Listos para Transcribir" }}</h1>
+                    <p class="text-muted">{{ subtitulo|default:"Audios procesados disponibles" }}</p>
                 </div>
                 <div class="col-sm-6">
                     <ol class="breadcrumb float-sm-right">
@@ -27,12 +28,12 @@
     <section class="content">
         <div class="container-fluid">
             
-            <!-- Estadísticas -->
+            <!-- Estadísticas mejoradas -->
             <div class="row mb-3">
                 <div class="col-lg-3 col-6">
                     <div class="small-box bg-info">
                         <div class="inner">
-                            <h3>{{ total_audios }}</h3>
+                            <h3>{{ estadisticas.total_audios_listos|default:total_audios }}</h3>
                             <p>Audios Listos</p>
                         </div>
                         <div class="icon">
@@ -42,6 +43,28 @@
                 </div>
                 <div class="col-lg-3 col-6">
                     <div class="small-box bg-success">
+                        <div class="inner">
+                            <h3>{{ estadisticas.total_audios_hoy|default:0 }}</h3>
+                            <p>Procesados Hoy</p>
+                        </div>
+                        <div class="icon">
+                            <i class="fas fa-calendar-day"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-6">
+                    <div class="small-box bg-warning">
+                        <div class="inner">
+                            <h3>{{ estadisticas.total_duracion_pendiente|default:0 }}</h3>
+                            <p>Segundos Totales</p>
+                        </div>
+                        <div class="icon">
+                            <i class="fas fa-clock"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-6">
+                    <div class="small-box bg-secondary">
                         <div class="inner">
                             <h3>{{ config_defecto.nombre|default:"Sin Config" }}</h3>
                             <p>Configuración Activa</p>
@@ -53,51 +76,86 @@
                 </div>
             </div>
 
-            <!-- Filtros -->
+            <!-- Filtros y Ordenación -->
             <div class="card">
                 <div class="card-header">
-                    <h3 class="card-title"><i class="fas fa-filter"></i> Filtros</h3>
+                    <h3 class="card-title"><i class="fas fa-filter"></i> Filtros y Ordenación</h3>
                     <div class="card-tools">
-                        <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                        <button type="button" class="btn btn-tool" data-card-widget="collapse" title="Minimizar">
                             <i class="fas fa-minus"></i>
                         </button>
                     </div>
                 </div>
                 <div class="card-body">
                     <form method="get" class="row g-3">
+                        <!-- Búsqueda -->
                         <div class="col-md-3">
                             <label for="q" class="form-label">Buscar</label>
-                            <input type="text" class="form-control" name="q" value="{{ busqueda }}" 
-                                   placeholder="Nombre archivo, título...">
+                            <input type="text" class="form-control" name="q" value="{{ filtro_busqueda }}" 
+                                   placeholder="Título, descripción, archivo..." id="q">
                         </div>
+                        
+                        <!-- Tipo de Reunión -->
                         <div class="col-md-3">
-                            <label for="tipo_reunion" class="form-label">Tipo de Reunión</label>
-                            <select class="form-select" name="tipo_reunion">
+                            <label for="tipo" class="form-label">Tipo de Reunión</label>
+                            <select class="form-select" name="tipo" id="tipo">
                                 <option value="">Todos los tipos</option>
                                 {% for tipo in tipos_reunion %}
-                                <option value="{{ tipo.id }}" {% if tipo_reunion_filtro == tipo.id|stringformat:"s" %}selected{% endif %}>
+                                <option value="{{ tipo.id }}" {% if filtro_tipo == tipo.id|stringformat:"s" %}selected{% endif %}>
                                     {{ tipo.nombre }}
                                 </option>
                                 {% endfor %}
                             </select>
                         </div>
+                        
+                        <!-- Fecha Desde -->
                         <div class="col-md-2">
                             <label for="fecha_desde" class="form-label">Desde</label>
-                            <input type="date" class="form-control" name="fecha_desde" value="{{ fecha_desde }}">
+                            <input type="date" class="form-control" name="fecha_desde" value="{{ filtro_fecha_desde }}" 
+                                   id="fecha_desde" title="Fecha desde">
                         </div>
+                        
+                        <!-- Fecha Hasta -->
                         <div class="col-md-2">
                             <label for="fecha_hasta" class="form-label">Hasta</label>
-                            <input type="date" class="form-control" name="fecha_hasta" value="{{ fecha_hasta }}">
+                            <input type="date" class="form-control" name="fecha_hasta" value="{{ filtro_fecha_hasta }}" 
+                                   id="fecha_hasta" title="Fecha hasta">
                         </div>
+                        
+                        <!-- Botones -->
                         <div class="col-md-2 d-flex align-items-end">
-                            <button type="submit" class="btn btn-primary me-2">
+                            <button type="submit" class="btn btn-primary me-2" title="Aplicar filtros">
                                 <i class="fas fa-search"></i> Filtrar
                             </button>
-                            <a href="{% url 'transcripcion:audios_listos' %}" class="btn btn-secondary">
+                            <a href="{% url 'transcripcion:audios_listos' %}" class="btn btn-secondary" title="Limpiar filtros">
                                 <i class="fas fa-times"></i>
                             </a>
                         </div>
+                        
+                        <!-- Ocultar página actual para mantener filtros -->
+                        {% if request.GET.page %}
+                        <input type="hidden" name="page" value="{{ request.GET.page }}">
+                        {% endif %}
                     </form>
+                    
+                    <!-- Ordenación -->
+                    <div class="row mt-3">
+                        <div class="col-md-3">
+                            <label for="orden" class="form-label">Ordenar por:</label>
+                            <select class="form-select" name="orden" id="orden" onchange="aplicarOrdenacion()">
+                                <option value="-fecha_procesamiento" {% if orden_actual == "-fecha_procesamiento" %}selected{% endif %}>Fecha procesamiento (reciente)</option>
+                                <option value="fecha_procesamiento" {% if orden_actual == "fecha_procesamiento" %}selected{% endif %}>Fecha procesamiento (antiguo)</option>
+                                <option value="-created_at" {% if orden_actual == "-created_at" %}selected{% endif %}>Fecha creación (reciente)</option>
+                                <option value="created_at" {% if orden_actual == "created_at" %}selected{% endif %}>Fecha creación (antiguo)</option>
+                                <option value="titulo" {% if orden_actual == "titulo" %}selected{% endif %}>Título (A-Z)</option>
+                                <option value="-titulo" {% if orden_actual == "-titulo" %}selected{% endif %}>Título (Z-A)</option>
+                                <option value="tipo_reunion" {% if orden_actual == "tipo_reunion" %}selected{% endif %}>Tipo reunión (A-Z)</option>
+                                <option value="-tipo_reunion" {% if orden_actual == "-tipo_reunion" %}selected{% endif %}>Tipo reunión (Z-A)</option>
+                                <option value="-duracion" {% if orden_actual == "-duracion" %}selected{% endif %}>Duración (mayor)</option>
+                                <option value="duracion" {% if orden_actual == "duracion" %}selected{% endif %}>Duración (menor)</option>
+                            </select>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -204,7 +262,7 @@
                         <ul class="pagination justify-content-center">
                             {% if audios_listos.has_previous %}
                             <li class="page-item">
-                                <a class="page-link" href="?page={{ audios_listos.previous_page_number }}{% if busqueda %}&q={{ busqueda }}{% endif %}{% if tipo_reunion_filtro %}&tipo_reunion={{ tipo_reunion_filtro }}{% endif %}">
+                                <a class="page-link" href="?page={{ audios_listos.previous_page_number }}{% if filtro_busqueda %}&q={{ filtro_busqueda }}{% endif %}{% if filtro_tipo %}&tipo={{ filtro_tipo }}{% endif %}{% if filtro_fecha_desde %}&fecha_desde={{ filtro_fecha_desde }}{% endif %}{% if filtro_fecha_hasta %}&fecha_hasta={{ filtro_fecha_hasta }}{% endif %}{% if orden_actual %}&orden={{ orden_actual }}{% endif %}">
                                     <i class="fas fa-chevron-left"></i> Anterior
                                 </a>
                             </li>
@@ -217,7 +275,7 @@
                             </li>
                             {% else %}
                             <li class="page-item">
-                                <a class="page-link" href="?page={{ page_num }}{% if busqueda %}&q={{ busqueda }}{% endif %}{% if tipo_reunion_filtro %}&tipo_reunion={{ tipo_reunion_filtro }}{% endif %}">
+                                <a class="page-link" href="?page={{ page_num }}{% if filtro_busqueda %}&q={{ filtro_busqueda }}{% endif %}{% if filtro_tipo %}&tipo={{ filtro_tipo }}{% endif %}{% if filtro_fecha_desde %}&fecha_desde={{ filtro_fecha_desde }}{% endif %}{% if filtro_fecha_hasta %}&fecha_hasta={{ filtro_fecha_hasta }}{% endif %}{% if orden_actual %}&orden={{ orden_actual }}{% endif %}">
                                     {{ page_num }}
                                 </a>
                             </li>
@@ -226,7 +284,7 @@
                             
                             {% if audios_listos.has_next %}
                             <li class="page-item">
-                                <a class="page-link" href="?page={{ audios_listos.next_page_number }}{% if busqueda %}&q={{ busqueda }}{% endif %}{% if tipo_reunion_filtro %}&tipo_reunion={{ tipo_reunion_filtro }}{% endif %}">
+                                <a class="page-link" href="?page={{ audios_listos.next_page_number }}{% if filtro_busqueda %}&q={{ filtro_busqueda }}{% endif %}{% if filtro_tipo %}&tipo={{ filtro_tipo }}{% endif %}{% if filtro_fecha_desde %}&fecha_desde={{ filtro_fecha_desde }}{% endif %}{% if filtro_fecha_hasta %}&fecha_hasta={{ filtro_fecha_hasta }}{% endif %}{% if orden_actual %}&orden={{ orden_actual }}{% endif %}">
                                     Siguiente <i class="fas fa-chevron-right"></i>
                                 </a>
                             </li>
@@ -268,6 +326,23 @@ function reproducirAudio(url, fileName) {
     audioPlayer.src = url;
     audioFileName.textContent = fileName;
     modal.show();
+}
+
+function aplicarOrdenacion() {
+    const ordenSelect = document.getElementById('orden');
+    const ordenSeleccionado = ordenSelect.value;
+    
+    // Obtener parámetros actuales de la URL
+    const urlParams = new URLSearchParams(window.location.search);
+    
+    // Actualizar el parámetro de orden
+    urlParams.set('orden', ordenSeleccionado);
+    
+    // Mantener la página 1 al cambiar ordenación
+    urlParams.delete('page');
+    
+    // Redirigir con los nuevos parámetros
+    window.location.search = urlParams.toString();
 }
 </script>
 

@@ -100,6 +100,7 @@ def lista_transcripciones(request):
 def audios_listos_transcribir(request):
     """
     Vista que muestra todos los audios procesados listos para transcribir
+    con filtros, búsqueda y ordenación mejorada
     """
     try:
         # Audios procesados sin transcripción
@@ -110,7 +111,7 @@ def audios_listos_transcribir(request):
         ).select_related('tipo_reunion', 'usuario')
         
         # Filtros
-        tipo_reunion_filtro = request.GET.get('tipo_reunion')
+        tipo_reunion_filtro = request.GET.get('tipo')  # Cambiar a 'tipo' para consistencia
         fecha_desde = request.GET.get('fecha_desde')
         fecha_hasta = request.GET.get('fecha_hasta')
         busqueda = request.GET.get('q')
@@ -127,16 +128,45 @@ def audios_listos_transcribir(request):
         if busqueda:
             audios_query = audios_query.filter(
                 Q(titulo__icontains=busqueda) |
-                Q(descripcion__icontains=busqueda)
+                Q(descripcion__icontains=busqueda) |
+                Q(archivo_audio__icontains=busqueda)
             )
         
-        # Ordenar por fecha de procesamiento
-        audios_listos = audios_query.order_by('-fecha_procesamiento')
+        # Ordenación - similar al dashboard de transcripciones
+        orden = request.GET.get('orden', '-fecha_procesamiento')
+        orden_mapping = {
+            '-fecha_procesamiento': '-fecha_procesamiento',
+            'fecha_procesamiento': 'fecha_procesamiento',
+            '-created_at': '-created_at',
+            'created_at': 'created_at',
+            'titulo': 'titulo',
+            '-titulo': '-titulo',
+            'tipo_reunion': 'tipo_reunion__nombre',
+            '-tipo_reunion': '-tipo_reunion__nombre',
+            'duracion': 'duracion_seg',
+            '-duracion': '-duracion_seg',
+        }
+        orden_final = orden_mapping.get(orden, '-fecha_procesamiento')
+        audios_query = audios_query.order_by(orden_final)
         
         # Paginación
-        paginator = Paginator(audios_listos, 12)
+        paginator = Paginator(audios_query, 12)
         page_number = request.GET.get('page')
         audios_page = paginator.get_page(page_number)
+        
+        # Estadísticas del dashboard
+        estadisticas = {
+            'total_audios_listos': audios_query.count(),
+            'total_audios_hoy': audios_query.filter(
+                created_at__date=timezone.now().date()
+            ).count(),
+            'total_duracion_pendiente': sum([
+                audio.duracion_seg or 0 for audio in audios_query
+            ]),
+            'tipos_reunion': audios_query.values('tipo_reunion__nombre').annotate(
+                count=Count('id')
+            ).order_by('-count')
+        }
         
         # Obtener tipos de reunión para filtro
         from apps.audio_processing.models import TipoReunion
@@ -149,13 +179,18 @@ def audios_listos_transcribir(request):
             config_defecto = None
         
         context = {
-            'audios_listos': audios_page,
+            'audios': audios_page,  # Cambiar nombre para consistencia
+            'audios_listos': audios_page,  # Mantener compatibilidad
             'tipos_reunion': tipos_reunion,
             'config_defecto': config_defecto,
-            'tipo_reunion_filtro': tipo_reunion_filtro,
-            'fecha_desde': fecha_desde,
-            'fecha_hasta': fecha_hasta,
-            'busqueda': busqueda,
+            'estadisticas': estadisticas,
+            'filtro_tipo': tipo_reunion_filtro,
+            'filtro_busqueda': busqueda,
+            'filtro_fecha_desde': fecha_desde,
+            'filtro_fecha_hasta': fecha_hasta,
+            'orden_actual': orden,
+            'titulo_pagina': 'Audios por Transcribir - Dashboard V2',
+            'subtitulo': f'{estadisticas["total_audios_listos"]} audios procesados disponibles (Nueva arquitectura)',
             'total_audios': audios_query.count(),
         }
         
@@ -164,7 +199,12 @@ def audios_listos_transcribir(request):
     except Exception as e:
         logger.error(f"Error en audios_listos_transcribir: {str(e)}")
         messages.error(request, f"Error al cargar audios: {str(e)}")
-        return render(request, 'transcripcion/audios_listos.html', {'audios_listos': []})
+        return render(request, 'transcripcion/audios_listos.html', {
+            'audios_listos': [],
+            'error': True,
+            'titulo_pagina': 'Error',
+            'subtitulo': 'No se pudieron cargar los audios'
+        })
 
 
 @login_required

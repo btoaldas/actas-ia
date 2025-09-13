@@ -688,11 +688,17 @@ def detalle_transcripcion_dashboard(request, transcripcion_id):
             metadata = {}
         estructura['metadata'] = metadata
 
-        # URL del archivo de audio
+        # URL del archivo de audio (preferir archivo_mejorado si existe)
         archivo_audio_url = None
         try:
-            if hasattr(transcripcion.procesamiento_audio, 'archivo_audio') and transcripcion.procesamiento_audio.archivo_audio:
+            # Intentar primero con el archivo mejorado
+            if hasattr(transcripcion.procesamiento_audio, 'archivo_mejorado') and transcripcion.procesamiento_audio.archivo_mejorado:
+                archivo_audio_url = transcripcion.procesamiento_audio.archivo_mejorado.url
+                logger.info(f"Usando archivo mejorado para transcripción {transcripcion_id}")
+            # Fallback al archivo original
+            elif hasattr(transcripcion.procesamiento_audio, 'archivo_audio') and transcripcion.procesamiento_audio.archivo_audio:
                 archivo_audio_url = transcripcion.procesamiento_audio.archivo_audio.url
+                logger.info(f"Usando archivo original para transcripción {transcripcion_id}")
         except Exception as e:
             logger.warning(f"No se pudo obtener URL de audio: {e}")
 
