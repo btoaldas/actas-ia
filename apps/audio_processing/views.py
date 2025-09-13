@@ -73,111 +73,118 @@ def centro_audio(request):
 # Vista de lista de procesamientos
 @login_required
 def lista_procesamientos(request):
-    """Lista paginada de procesamientos de audio"""
-    try:
-        # Log del acceso a la lista
-        log_navegacion(
-            request=request,
-            accion_realizada='listar_procesamientos',
-            elemento_interactuado='lista_procesamientos'
-        )
-        
-        form = FiltroProcesamientoForm(request.GET)
-        procesamientos = ProcesamientoAudio.objects.filter(usuario=request.user)
-        
-        # Aplicar filtros
-        filtros_aplicados = {}
-        if form.is_valid():
-            if form.cleaned_data['titulo']:
-                procesamientos = procesamientos.filter(
-                    titulo__icontains=form.cleaned_data['titulo']
-                )
-                filtros_aplicados['titulo'] = form.cleaned_data['titulo']
-            
-            if form.cleaned_data['tipo_reunion']:
-                procesamientos = procesamientos.filter(
-                    tipo_reunion=form.cleaned_data['tipo_reunion']
-                )
-                filtros_aplicados['tipo_reunion'] = str(form.cleaned_data['tipo_reunion'])
-            
-            if form.cleaned_data['estado']:
-                procesamientos = procesamientos.filter(
-                    estado=form.cleaned_data['estado']
-                )
-                filtros_aplicados['estado'] = form.cleaned_data['estado']
-            
-            if form.cleaned_data['fecha_desde']:
-                procesamientos = procesamientos.filter(
-                    fecha_reunion__gte=form.cleaned_data['fecha_desde']
-                )
-                filtros_aplicados['fecha_desde'] = str(form.cleaned_data['fecha_desde'])
-            
-            if form.cleaned_data['fecha_hasta']:
-                procesamientos = procesamientos.filter(
-                    fecha_reunion__lte=form.cleaned_data['fecha_hasta']
-                )
-                filtros_aplicados['fecha_hasta'] = str(form.cleaned_data['fecha_hasta'])
-        
-        # Ordenación
-        orden = request.GET.get('orden', '-created_at')
-        orden_mapping = {
-            '-created_at': '-created_at',
-            'created_at': 'created_at',
-            '-fecha_reunion': '-fecha_reunion',
-            'fecha_reunion': 'fecha_reunion',
-            'titulo': 'titulo',
-            '-titulo': '-titulo',
-            'tipo_reunion': 'tipo_reunion__nombre',
-            '-tipo_reunion': '-tipo_reunion__nombre',
-            'duracion': 'duracion_seg',
-            '-duracion': '-duracion_seg',
-            'estado': 'estado',
-            '-estado': '-estado',
-        }
-        orden_final = orden_mapping.get(orden, '-created_at')
-        procesamientos = procesamientos.order_by(orden_final)
-        
-        # Agregar select_related para mejorar rendimiento
-        procesamientos = procesamientos.select_related('tipo_reunion')
-        
-        # Paginación
-        paginator = Paginator(procesamientos, 12)  # Cambiar a 12 para grid 3x4
-        page_number = request.GET.get('page')
-        page_obj = paginator.get_page(page_number)
-        
-        # Log del listado exitoso
-        log_sistema(
-            nivel='INFO',
-            categoria='PROCESAMIENTO_LISTADO',
-            subcategoria='LISTADO_EXITOSO',
-            mensaje=f"Usuario listó {procesamientos.count()} procesamientos",
-            request=request,
-            datos_extra={
-                'total_procesamientos': procesamientos.count(),
-                'filtros_aplicados': filtros_aplicados,
-                'pagina': page_number or 1,
-                'items_por_pagina': 20
-            }
-        )
-        
-        context = {
-            'title': 'Lista de Procesamientos de Audio - Dashboard',
-            'page_obj': page_obj,
-            'form': form,
-            'total_procesamientos': procesamientos.count(),
-            'orden_actual': orden,
-            'filtros_aplicados': filtros_aplicados
-        }
-        return render(request, 'audio_processing/lista_procesamientos.html', context)
+    """Lista paginada de procesamientos de audio con filtros completos"""
+    # Debug: información del usuario actual
+    logger.info(f"Lista procesamientos - Usuario: {request.user}, Autenticado: {request.user.is_authenticated}")
     
-    except Exception as e:
-        log_error_procesamiento(
-            error_msg=f"Error al listar procesamientos: {str(e)}",
-            request=request,
-            stack_trace=traceback.format_exc()
-        )
-        messages.error(request, "Error al cargar la lista de procesamientos.")
-        return redirect('audio_processing:centro_audio')
+    # Log del acceso a la lista
+    log_navegacion(
+        request=request,
+        accion_realizada='listar_procesamientos',
+        elemento_interactuado='lista_procesamientos'
+    )
+    
+    
+    form = FiltroProcesamientoForm(request.GET)
+    procesamientos = ProcesamientoAudio.objects.filter(usuario=request.user)    # Aplicar filtros de búsqueda
+    titulo = request.GET.get('titulo', '').strip()
+    tipo_reunion = request.GET.get('tipo_reunion', '')
+    estado = request.GET.get('estado', '')
+    fecha_desde = request.GET.get('fecha_desde', '')
+    fecha_hasta = request.GET.get('fecha_hasta', '')
+    orden = request.GET.get('orden', '-created_at')
+    
+    if titulo:
+        procesamientos = procesamientos.filter(titulo__icontains=titulo)
+    
+    if tipo_reunion:
+        procesamientos = procesamientos.filter(tipo_reunion_id=tipo_reunion)
+    
+    if estado:
+        procesamientos = procesamientos.filter(estado=estado)
+    
+    if fecha_desde:
+        from datetime import datetime
+        try:
+            fecha_obj = datetime.strptime(fecha_desde, '%Y-%m-%d').date()
+            procesamientos = procesamientos.filter(created_at__date__gte=fecha_obj)
+        except ValueError:
+            pass
+    
+    if fecha_hasta:
+        from datetime import datetime
+        try:
+            fecha_obj = datetime.strptime(fecha_hasta, '%Y-%m-%d').date()
+            procesamientos = procesamientos.filter(created_at__date__lte=fecha_obj)
+        except ValueError:
+            pass
+    
+    # Aplicar ordenación
+    orden_valido = [
+        '-created_at', 'created_at', '-fecha_reunion', 'fecha_reunion',
+        'titulo', '-titulo', 'tipo_reunion', '-tipo_reunion',
+        'estado', '-estado', '-duracion', 'duracion'
+    ]
+    if orden in orden_valido:
+        procesamientos = procesamientos.order_by(orden)
+    else:
+        procesamientos = procesamientos.order_by('-created_at')
+    
+    # Agregar select_related para mejorar rendimiento
+    procesamientos = procesamientos.select_related('tipo_reunion')
+    
+    # Contar total antes de paginar
+    total_procesamientos = procesamientos.count()
+    
+    # Debug: cantidad de procesamientos encontrados
+    logger.info(f"Procesamientos encontrados para {request.user}: {total_procesamientos}")
+    
+    # Paginación
+    paginator = Paginator(procesamientos, 12)  # Grid 3x4
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    # Obtener tipos de reunión para el formulario
+    tipos_reunion = TipoReunion.objects.filter(activo=True)
+    
+    # Log del listado exitoso
+    log_sistema(
+        nivel='INFO',
+        categoria='PROCESAMIENTO_LISTADO',
+        subcategoria='LISTADO_EXITOSO',
+        mensaje=f"Usuario listó {total_procesamientos} procesamientos",
+        request=request,
+        datos_extra={
+            'total_procesamientos': total_procesamientos,
+            'filtros_aplicados': {
+                'titulo': titulo,
+                'tipo_reunion': tipo_reunion,
+                'estado': estado,
+                'fecha_desde': fecha_desde,
+                'fecha_hasta': fecha_hasta,
+                'orden': orden
+            },
+            'pagina': page_number or 1,
+            'items_por_pagina': 12
+        }
+    )
+    
+    context = {
+        'title': 'Lista de Procesamientos de Audio',
+        'page_obj': page_obj,
+        'form': form,
+        'total_procesamientos': total_procesamientos,
+        'tipos_reunion': tipos_reunion,
+        'orden_actual': orden,
+        # Pasar valores actuales para mantener en formulario
+        'titulo_actual': titulo,
+        'tipo_reunion_actual': tipo_reunion,
+        'estado_actual': estado,
+        'fecha_desde_actual': fecha_desde,
+        'fecha_hasta_actual': fecha_hasta,
+    }
+    
+    return render(request, 'audio_processing/lista_procesamientos.html', context)
 
 
 @login_required
