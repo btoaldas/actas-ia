@@ -372,11 +372,206 @@
 
             </form>
 
+            <!-- Sección de Monitoreo de Transcripción -->
+            <div class="row mt-4" id="monitoreoSection" style="display: none;">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header bg-primary text-white">
+                            <h3 class="card-title">
+                                <i class="fas fa-tasks"></i> Estado de Transcripción
+                            </h3>
+                            <div class="card-tools">
+                                <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                                    <i class="fas fa-minus"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <!-- Estado y Progreso -->
+                            <div class="row mb-4">
+                                <div class="col-md-6">
+                                    <div class="info-box bg-info">
+                                        <span class="info-box-icon"><i class="fas fa-cog fa-spin" id="estadoIcon"></i></span>
+                                        <div class="info-box-content">
+                                            <span class="info-box-text">Estado Actual</span>
+                                            <span class="info-box-number" id="estadoTexto">Iniciando...</span>
+                                            <div class="progress">
+                                                <div class="progress-bar" id="progressBar" style="width: 0%"></div>
+                                            </div>
+                                            <span class="progress-description" id="progressTexto">0% Completado</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="info-box bg-success">
+                                        <span class="info-box-icon"><i class="fas fa-clock"></i></span>
+                                        <div class="info-box-content">
+                                            <span class="info-box-text">Tiempo Transcurrido</span>
+                                            <span class="info-box-number" id="tiempoTranscurrido">00:00</span>
+                                            <span class="progress-description">Task ID: <code id="taskId">-</code></span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Logs de Celery -->
+                            <div class="row mb-4">
+                                <div class="col-12">
+                                    <div class="card">
+                                        <div class="card-header">
+                                            <h3 class="card-title">
+                                                <i class="fas fa-terminal"></i> Logs de Procesamiento
+                                            </h3>
+                                        </div>
+                                        <div class="card-body p-0">
+                                            <div id="logsContainer" style="height: 200px; overflow-y: auto; background: #1e1e1e; color: #00ff00; font-family: 'Courier New', monospace; padding: 10px;">
+                                                <div id="logsContent">
+                                                    <div class="log-entry">[INFO] Iniciando sistema de monitoreo...</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sección de Resultados -->
+            <div class="row mt-4" id="resultadosSection" style="display: none;">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header bg-success text-white">
+                            <h3 class="card-title">
+                                <i class="fas fa-check-circle"></i> Resultados de Transcripción
+                            </h3>
+                            <div class="card-tools">
+                                <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                                    <i class="fas fa-minus"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <!-- Estadísticas Generales -->
+                            <div class="row mb-4">
+                                <div class="col-md-3">
+                                    <div class="small-box bg-info">
+                                        <div class="inner">
+                                            <h3 id="duracionTotal">0s</h3>
+                                            <p>Duración Total</p>
+                                        </div>
+                                        <div class="icon">
+                                            <i class="fas fa-clock"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="small-box bg-success">
+                                        <div class="inner">
+                                            <h3 id="numHablantes">0</h3>
+                                            <p>Hablantes Detectados</p>
+                                        </div>
+                                        <div class="icon">
+                                            <i class="fas fa-users"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="small-box bg-warning">
+                                        <div class="inner">
+                                            <h3 id="numPalabras">0</h3>
+                                            <p>Palabras Totales</p>
+                                        </div>
+                                        <div class="icon">
+                                            <i class="fas fa-comment"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="small-box bg-danger">
+                                        <div class="inner">
+                                            <h3 id="confianzaPromedio">0%</h3>
+                                            <p>Confianza Promedio</p>
+                                        </div>
+                                        <div class="icon">
+                                            <i class="fas fa-chart-line"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Texto Transcrito -->
+                            <div class="row mb-4">
+                                <div class="col-12">
+                                    <div class="card">
+                                        <div class="card-header">
+                                            <h3 class="card-title">
+                                                <i class="fas fa-file-alt"></i> Texto Transcrito
+                                            </h3>
+                                        </div>
+                                        <div class="card-body">
+                                            <div id="textoTranscrito" style="max-height: 300px; overflow-y: auto; background: #f8f9fa; padding: 15px; border-radius: 5px;">
+                                                <p class="text-muted">El texto aparecerá aquí una vez completada la transcripción...</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- JSON Estructurado -->
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="card">
+                                        <div class="card-header">
+                                            <h3 class="card-title">
+                                                <i class="fas fa-code"></i> JSON de Transcripción
+                                            </h3>
+                                            <div class="card-tools">
+                                                <button type="button" class="btn btn-sm btn-primary" onclick="copyToClipboard('transcripcionJson')">
+                                                    <i class="fas fa-copy"></i> Copiar
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <div class="card-body p-0">
+                                            <pre id="transcripcionJson" style="height: 400px; overflow-y: auto; margin: 0; padding: 15px; background: #2d3748; color: #e2e8f0; font-size: 12px;"></pre>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="card">
+                                        <div class="card-header">
+                                            <h3 class="card-title">
+                                                <i class="fas fa-chart-bar"></i> Estadísticas Detalladas
+                                            </h3>
+                                            <div class="card-tools">
+                                                <button type="button" class="btn btn-sm btn-primary" onclick="copyToClipboard('estadisticasJson')">
+                                                    <i class="fas fa-copy"></i> Copiar
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <div class="card-body p-0">
+                                            <pre id="estadisticasJson" style="height: 400px; overflow-y: auto; margin: 0; padding: 15px; background: #2d3748; color: #e2e8f0; font-size: 12px;"></pre>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
         </div>
     </section>
 </div>
 
 <script>
+// Variables globales para monitoreo
+let transcripcionId = null;
+let taskId = null;
+let monitoringInterval = null;
+let startTime = null;
+
 // Actualizar valor de temperatura
 function updateTemperaturaValue(value) {
     document.getElementById('temperaturaValue').textContent = value;
@@ -429,10 +624,221 @@ toggleVadOptions();
 
 // Manejar envío del formulario
 document.getElementById('configuracionForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
     const btn = document.getElementById('transcribirBtn');
     btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Procesando...';
     btn.disabled = true;
+    
+    // Mostrar sección de monitoreo
+    document.getElementById('monitoreoSection').style.display = 'block';
+    document.getElementById('resultadosSection').style.display = 'none';
+    
+    // Scroll to monitoring section
+    document.getElementById('monitoreoSection').scrollIntoView({behavior: 'smooth'});
+    
+    // Enviar formulario
+    const formData = new FormData(this);
+    
+    fetch(window.location.href, {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+            'X-Requested-With': 'XMLHttpRequest',
+            'Accept': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            transcripcionId = data.transcripcion_id;
+            taskId = data.task_id;
+            startTime = new Date();
+            
+            document.getElementById('taskId').textContent = taskId;
+            addLog(`[INFO] Transcripción iniciada - ID: ${transcripcionId}`);
+            addLog(`[INFO] Task Celery - ID: ${taskId}`);
+            
+            // Iniciar monitoreo
+            startMonitoring();
+        } else {
+            addLog(`[ERROR] ${data.error || 'Error desconocido'}`);
+            resetForm();
+        }
+    })
+    .catch(error => {
+        addLog(`[ERROR] Error de red: ${error.message}`);
+        resetForm();
+    });
 });
+
+// Iniciar monitoreo en tiempo real
+function startMonitoring() {
+    monitoringInterval = setInterval(checkTranscripcionStatus, 3000); // Cada 3 segundos
+    updateTimer();
+}
+
+// Detener monitoreo
+function stopMonitoring() {
+    if (monitoringInterval) {
+        clearInterval(monitoringInterval);
+        monitoringInterval = null;
+    }
+}
+
+// Verificar estado de transcripción
+function checkTranscripcionStatus() {
+    if (!transcripcionId) return;
+    
+    fetch(`/transcripcion/api/estado/${transcripcionId}/`)
+    .then(response => response.json())
+    .then(data => {
+        updateProgress(data);
+        
+        if (data.estado === 'completado') {
+            stopMonitoring();
+            showResults(data);
+        } else if (data.estado === 'error') {
+            stopMonitoring();
+            addLog(`[ERROR] ${data.mensaje_error || 'Error en procesamiento'}`);
+            resetForm();
+        }
+    })
+    .catch(error => {
+        addLog(`[WARN] Error verificando estado: ${error.message}`);
+    });
+}
+
+// Actualizar progreso
+function updateProgress(data) {
+    const estados = {
+        'pendiente': { icon: 'fas fa-clock', text: 'Pendiente', progress: 0 },
+        'en_proceso': { icon: 'fas fa-cog fa-spin', text: 'En Proceso', progress: 20 },
+        'transcribiendo': { icon: 'fas fa-microphone', text: 'Transcribiendo', progress: 40 },
+        'diarizando': { icon: 'fas fa-users', text: 'Identificando Hablantes', progress: 70 },
+        'procesando': { icon: 'fas fa-magic', text: 'Procesando Resultados', progress: 90 },
+        'completado': { icon: 'fas fa-check', text: 'Completado', progress: 100 },
+        'error': { icon: 'fas fa-times', text: 'Error', progress: 0 }
+    };
+    
+    const estadoInfo = estados[data.estado] || estados['pendiente'];
+    const progreso = data.progreso_porcentaje || estadoInfo.progress;
+    
+    document.getElementById('estadoIcon').className = estadoInfo.icon;
+    document.getElementById('estadoTexto').textContent = estadoInfo.text;
+    document.getElementById('progressBar').style.width = `${progreso}%`;
+    document.getElementById('progressTexto').textContent = `${progreso}% Completado`;
+    
+    if (data.mensaje_estado) {
+        addLog(`[INFO] ${data.mensaje_estado}`);
+    }
+}
+
+// Mostrar resultados finales
+function showResults(data) {
+    addLog('[SUCCESS] ¡Transcripción completada exitosamente!');
+    
+    // Actualizar estadísticas
+    document.getElementById('duracionTotal').textContent = `${data.duracion_total || 0}s`;
+    document.getElementById('numHablantes').textContent = data.numero_hablantes || 0;
+    document.getElementById('numPalabras').textContent = data.palabras_totales || 0;
+    document.getElementById('confianzaPromedio').textContent = `${Math.round((data.confianza_promedio || 0) * 100)}%`;
+    
+    // Mostrar texto transcrito
+    if (data.texto_completo) {
+        document.getElementById('textoTranscrito').innerHTML = `<p>${data.texto_completo}</p>`;
+    }
+    
+    // Mostrar JSON de transcripción
+    if (data.transcripcion_json) {
+        document.getElementById('transcripcionJson').textContent = JSON.stringify(data.transcripcion_json, null, 2);
+    }
+    
+    // Mostrar estadísticas JSON
+    if (data.estadisticas_json) {
+        document.getElementById('estadisticasJson').textContent = JSON.stringify(data.estadisticas_json, null, 2);
+    }
+    
+    // Mostrar conversación estructurada si existe
+    if (data.conversacion_json && data.conversacion_json.length > 0) {
+        let conversacionHtml = '<div class="conversation">';
+        data.conversacion_json.forEach(segmento => {
+            conversacionHtml += `
+                <div class="mb-3 p-3 border-left-primary">
+                    <strong>${segmento.hablante || 'Desconocido'}</strong> 
+                    <small class="text-muted">(${segmento.inicio}s - ${segmento.fin}s)</small>
+                    <p class="mb-0 mt-1">${segmento.texto}</p>
+                </div>
+            `;
+        });
+        conversacionHtml += '</div>';
+        document.getElementById('textoTranscrito').innerHTML = conversacionHtml;
+    }
+    
+    // Mostrar sección de resultados
+    document.getElementById('resultadosSection').style.display = 'block';
+    document.getElementById('resultadosSection').scrollIntoView({behavior: 'smooth'});
+    
+    resetForm();
+}
+
+// Agregar entrada al log
+function addLog(message) {
+    const logsContent = document.getElementById('logsContent');
+    const timestamp = new Date().toLocaleTimeString();
+    const logEntry = document.createElement('div');
+    logEntry.className = 'log-entry';
+    logEntry.innerHTML = `<span style="color: #888;">[${timestamp}]</span> ${message}`;
+    
+    logsContent.appendChild(logEntry);
+    
+    // Scroll to bottom
+    const logsContainer = document.getElementById('logsContainer');
+    logsContainer.scrollTop = logsContainer.scrollHeight;
+}
+
+// Actualizar timer
+function updateTimer() {
+    if (!startTime) return;
+    
+    const elapsed = Math.floor((new Date() - startTime) / 1000);
+    const minutes = Math.floor(elapsed / 60);
+    const seconds = elapsed % 60;
+    
+    document.getElementById('tiempoTranscurrido').textContent = 
+        `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+    
+    if (monitoringInterval) {
+        setTimeout(updateTimer, 1000);
+    }
+}
+
+// Resetear formulario
+function resetForm() {
+    const btn = document.getElementById('transcribirBtn');
+    btn.innerHTML = '<i class="fas fa-microphone"></i> Transcribir Audio';
+    btn.disabled = false;
+}
+
+// Copiar al portapapeles
+function copyToClipboard(elementId) {
+    const element = document.getElementById(elementId);
+    const text = element.textContent;
+    
+    navigator.clipboard.writeText(text).then(() => {
+        // Mostrar feedback visual
+        const originalIcon = event.target.querySelector('i');
+        const originalClass = originalIcon.className;
+        originalIcon.className = 'fas fa-check';
+        
+        setTimeout(() => {
+            originalIcon.className = originalClass;
+        }, 2000);
+    }).catch(err => {
+        addLog('[ERROR] No se pudo copiar al portapapeles');
+    });
+}
 
 // Validaciones
 document.getElementById('min_hablantes').addEventListener('change', function() {
@@ -449,6 +855,35 @@ document.getElementById('max_hablantes').addEventListener('change', function() {
     if (max < min) {
         document.getElementById('min_hablantes').value = max;
     }
+});
+
+// Verificar si hay transcripción en progreso al cargar la página
+document.addEventListener('DOMContentLoaded', function() {
+    // Verificar si hay transcripción en progreso para este audio
+    const audioId = {{ audio.id }};
+    
+    fetch(`/transcripcion/api/audio-estado/${audioId}/`)
+    .then(response => response.json())
+    .then(data => {
+        if (data.transcripcion_activa) {
+            transcripcionId = data.transcripcion_id;
+            taskId = data.task_id;
+            startTime = new Date(data.fecha_inicio);
+            
+            document.getElementById('monitoreoSection').style.display = 'block';
+            document.getElementById('taskId').textContent = taskId;
+            addLog(`[INFO] Recuperando transcripción en progreso - ID: ${transcripcionId}`);
+            
+            if (data.estado !== 'completado' && data.estado !== 'error') {
+                startMonitoring();
+            } else if (data.estado === 'completado') {
+                showResults(data);
+            }
+        }
+    })
+    .catch(error => {
+        console.log('No hay transcripción en progreso');
+    });
 });
 </script>
 

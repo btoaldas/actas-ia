@@ -1,0 +1,763 @@
+{% extends 'layouts/base.html' %}
+{% load static %}
+{% load transcripcion_extras %}
+
+{% block title %}Editor Simple{% endblock %}
+
+{% block content %}
+<meta name="csrf-token" content="{{ csrf_token }}">
+<div class="content-wrapper">
+    <section class="content-header">
+        <h1>📝 Editor de Transcripción - Simple</h1>
+    </section>
+
+    <section class="content">
+        <div class="container-fluid">
+            
+            <!-- Debug info -->
+            <div class="row mb-3">
+                <div class="col-12">
+                    <div class="alert alert-info">
+                        <strong>Debug Info:</strong><br>
+                        ID Transcripción: {{ transcripcion.id }}<br>
+                        Tiene estructura: {{ estructura|yesno:"Sí,No" }}<br>
+                        {% if estructura.conversacion %}
+                        Segmentos encontrados: {{ estructura.conversacion|length }}
+                        {% else %}
+                        No hay segmentos
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Controles -->
+            <div class="row mb-3">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">Controles</h3>
+                        </div>
+                        <div class="card-body">
+                            <button onclick="regenerarTranscripcion()" class="btn btn-warning">
+                                🔄 Regenerar Transcripción
+                            </button>
+                            <button onclick="mostrarDatos()" class="btn btn-info ml-2">
+                                📊 Mostrar Datos
+                            </button>
+                            <button onclick="cargarConversacion()" class="btn btn-success ml-2">
+                                🔄 Cargar Conversación
+                            </button>
+                            <button onclick="agregarHablante()" class="btn btn-primary ml-2">
+                                👥 Agregar Hablante
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Estadísticas -->
+            <div class="row mb-3">
+                <div class="col-md-3">
+                    <div class="card text-center">
+                        <div class="card-body">
+                            <h4 id="total-segmentos">{{ estructura.conversacion|length|default:0 }}</h4>
+                            <p>Total Segmentos</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card text-center">
+                        <div class="card-body">
+                            <h4 id="total-hablantes">
+                                {% if estructura.cabecera.mapeo_hablantes %}
+                                    {{ estructura.cabecera.mapeo_hablantes|length }}
+                                {% else %}
+                                    0
+                                {% endif %}
+                            </h4>
+                            <p>Hablantes</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card text-center">
+                        <div class="card-body">
+                            <h4>{{ transcripcion.id }}</h4>
+                            <p>ID Transcripción</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card text-center">
+                        <div class="card-body">
+                            <h4 class="text-success">FUNCIONAL</h4>
+                            <p>Estado</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Conversación directa desde Django -->
+            <div class="row">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">💬 Conversación</h3>
+                        </div>
+                        <div class="card-body">
+                            {% if estructura.conversacion %}
+                                <!-- Botón para agregar al inicio -->
+                                <div class="text-center mb-3">
+                                    <button onclick="agregarSegmento(0)" class="btn btn-outline-success btn-sm">
+                                        ➕ Agregar segmento al inicio
+                                    </button>
+                                </div>
+                                
+                                {% for segmento in estructura.conversacion %}
+                                <div class="card mb-3" style="border-left: 4px solid #007bff;">
+                                    <div class="card-body">
+                                        <div class="d-flex justify-content-between align-items-center mb-2">
+                                            <strong class="text-primary">
+                                                🗣️ {{ segmento.hablante|default:"Desconocido" }}
+                                            </strong>
+                                            <small class="text-muted">
+                                                ⏱️ {{ segmento.inicio|floatformat:1 }}s - {{ segmento.fin|floatformat:1 }}s
+                                            </small>
+                                        </div>
+                                        <p class="mb-2">{{ segmento.texto }}</p>
+                                        <div class="btn-group btn-group-sm">
+                                            <button onclick="editarSegmento({{ forloop.counter0 }})" class="btn btn-outline-primary">
+                                                <i class="fas fa-edit"></i> Editar
+                                            </button>
+                                            <button onclick="reproducirSegmento({{ segmento.inicio }}, {{ segmento.fin }})" class="btn btn-outline-info">
+                                                <i class="fas fa-play"></i> Play
+                                            </button>
+                                            <button onclick="eliminarSegmento({{ forloop.counter0 }})" class="btn btn-outline-danger">
+                                                <i class="fas fa-trash"></i> Eliminar
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Botón para agregar después de este segmento -->
+                                <div class="text-center mb-2">
+                                    <button onclick="agregarSegmento({{ forloop.counter }})" class="btn btn-outline-success btn-sm">
+                                        ➕ Agregar segmento aquí
+                                    </button>
+                                </div>
+                                {% endfor %}
+                            {% else %}
+                                <div class="alert alert-warning">
+                                    <i class="fas fa-exclamation-triangle"></i>
+                                    No hay segmentos de conversación disponibles.
+                                </div>
+                                <!-- Botón para agregar el primer segmento -->
+                                <div class="text-center">
+                                    <button onclick="agregarSegmento(0)" class="btn btn-success">
+                                        ➕ Agregar primer segmento
+                                    </button>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- JSON Raw -->
+            <div class="row mt-3">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">📄 Datos JSON</h3>
+                        </div>
+                        <div class="card-body">
+                            <ul class="nav nav-tabs">
+                                <li class="nav-item">
+                                    <a class="nav-link active" data-toggle="tab" href="#conversacion-json">Conversación</a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link" data-toggle="tab" href="#hablantes-json">Hablantes</a>
+                                </li>
+                            </ul>
+                            <div class="tab-content mt-3">
+                                <div class="tab-pane fade show active" id="conversacion-json">
+                                    <pre style="background: #f8f9fa; padding: 15px; border-radius: 5px; max-height: 400px; overflow-y: auto;">{{ estructura.conversacion|pprint }}</pre>
+                                </div>
+                                <div class="tab-pane fade" id="hablantes-json">
+                                    <pre style="background: #f8f9fa; padding: 15px; border-radius: 5px;">{{ estructura.cabecera.mapeo_hablantes|pprint }}</pre>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </section>
+</div>
+
+<!-- Modal para editar segmento -->
+<div class="modal fade" id="modalEditarSegmento" tabindex="-1" role="dialog" aria-labelledby="modalEditarSegmentoLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalEditarSegmentoLabel">✏️ Editar Segmento</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="formEditarSegmento">
+                    <input type="hidden" id="segmentoIndex" value="">
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="segmentoHablante">🗣️ Hablante:</label>
+                                <select class="form-control" id="segmentoHablante" required>
+                                    {% for hablante_id, info in estructura.cabecera.mapeo_hablantes.items %}
+                                    <option value="{{ info|speaker_label }}">{{ info|speaker_label }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-group">
+                                <label for="segmentoInicio">⏰ Inicio (s):</label>
+                                <input type="number" class="form-control" id="segmentoInicio" step="0.1" min="0" required>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-group">
+                                <label for="segmentoFin">⏰ Fin (s):</label>
+                                <input type="number" class="form-control" id="segmentoFin" step="0.1" min="0" required>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="segmentoTexto">💬 Texto:</label>
+                        <textarea class="form-control" id="segmentoTexto" rows="4" required></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">❌ Cancelar</button>
+                <button type="button" class="btn btn-primary" onclick="guardarEdicionSegmento()">💾 Guardar Cambios</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para agregar hablante -->
+<div class="modal fade" id="modalAgregarHablante" tabindex="-1" role="dialog" aria-labelledby="modalAgregarHablanteLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalAgregarHablanteLabel">👥 Agregar Nuevo Hablante</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="formAgregarHablante">
+                    <div class="form-group">
+                        <label for="nuevoHablanteName">🗣️ Nombre del Hablante:</label>
+                        <input type="text" class="form-control" id="nuevoHablanteName" placeholder="Ej: María García" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="nuevoHablanteCargo">💼 Cargo (opcional):</label>
+                        <input type="text" class="form-control" id="nuevoHablanteCargo" placeholder="Ej: Secretaria">
+                    </div>
+                    <div class="form-group">
+                        <label for="nuevoHablanteColor">🎨 Color (opcional):</label>
+                        <input type="color" class="form-control" id="nuevoHablanteColor" value="#007bff">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">❌ Cancelar</button>
+                <button type="button" class="btn btn-primary" onclick="guardarNuevoHablante()">👥 Agregar Hablante</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para agregar segmento -->
+<div class="modal fade" id="modalAgregarSegmento" tabindex="-1" role="dialog" aria-labelledby="modalAgregarSegmentoLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalAgregarSegmentoLabel">➕ Agregar Nuevo Segmento</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="formAgregarSegmento">
+                    <input type="hidden" id="nuevaPosicion" value="">
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="nuevoSegmentoHablante">🗣️ Hablante:</label>
+                                <select class="form-control" id="nuevoSegmentoHablante" required>
+                                    {% for hablante_id, info in estructura.cabecera.mapeo_hablantes.items %}
+                                    <option value="{{ hablante_id }}">{{ info|speaker_label }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-group">
+                                <label for="nuevoSegmentoInicio">⏰ Inicio (s):</label>
+                                <input type="number" class="form-control" id="nuevoSegmentoInicio" step="0.1" min="0" required>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-group">
+                                <label for="nuevoSegmentoFin">⏰ Fin (s):</label>
+                                <input type="number" class="form-control" id="nuevoSegmentoFin" step="0.1" min="0" required>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="nuevoSegmentoTexto">💬 Texto:</label>
+                        <textarea class="form-control" id="nuevoSegmentoTexto" rows="4" placeholder="Escribe aquí el texto del segmento..." required></textarea>
+                    </div>
+                    
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i>
+                        <span id="infoNuevaPosicion">Se agregará al final de la conversación</span>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">❌ Cancelar</button>
+                <button type="button" class="btn btn-success" onclick="guardarNuevoSegmento()">➕ Agregar Segmento</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+// JavaScript súper simple - sin errores
+console.log('✅ JavaScript cargado correctamente');
+
+// Variables globales
+var datosEstructura = {{ estructura_json|safe }};
+var transcripcionId = {{ transcripcion.id }};
+var segmentoActual = null;
+
+// Función real para mostrar datos
+window.mostrarDatos = function() {
+    var info = `
+🆔 ID Transcripción: ${transcripcionId}
+📊 Total Segmentos: ${datosEstructura.conversacion ? datosEstructura.conversacion.length : 0}
+🗣️ Hablantes: ${Object.keys(datosEstructura.cabecera.mapeo_hablantes || {}).length}
+📝 Estado: {{ transcripcion.estado }}
+📅 Fecha: {{ transcripcion.fecha_creacion|date:"d/m/Y H:i" }}
+⏱️ Duración Total: ${calcularDuracionTotal()}s
+    `;
+    alert(info);
+}
+
+// Función para calcular duración total
+function calcularDuracionTotal() {
+    if (!datosEstructura.conversacion || datosEstructura.conversacion.length === 0) return 0;
+    var ultimoSegmento = datosEstructura.conversacion[datosEstructura.conversacion.length - 1];
+    return ultimoSegmento.fin || 0;
+}
+
+// Función real para cargar conversación
+window.cargarConversacion = function() {
+    console.log('🔄 Recargando datos desde el servidor...');
+    
+    // Usar API básica en lugar de v2
+    fetch(`/transcripcion/api/estado/${transcripcionId}/`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success || data.estado) {
+                alert('✅ Conversación verificada en el servidor');
+                location.reload(); // Recargar página para mostrar datos actualizados
+            } else {
+                alert('❌ Error al cargar: ' + (data.error || 'Error desconocido'));
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('❌ Error de conexión al servidor');
+        });
+}
+
+// Función real para editar segmento
+window.editarSegmento = function(index) {
+    if (!datosEstructura.conversacion || index >= datosEstructura.conversacion.length) {
+        alert('❌ Segmento no encontrado');
+        return;
+    }
+    
+    segmentoActual = datosEstructura.conversacion[index];
+    
+    // Llenar el modal con los datos del segmento
+    document.getElementById('segmentoIndex').value = index;
+    document.getElementById('segmentoHablante').value = segmentoActual.hablante;
+    document.getElementById('segmentoInicio').value = segmentoActual.inicio;
+    document.getElementById('segmentoFin').value = segmentoActual.fin;
+    document.getElementById('segmentoTexto').value = segmentoActual.texto;
+    
+    // Mostrar el modal
+    $('#modalEditarSegmento').modal('show');
+}
+
+// Función para guardar edición
+window.guardarEdicionSegmento = function() {
+    var index = parseInt(document.getElementById('segmentoIndex').value);
+    var hablante = document.getElementById('segmentoHablante').value;
+    var inicio = parseFloat(document.getElementById('segmentoInicio').value);
+    var fin = parseFloat(document.getElementById('segmentoFin').value);
+    var texto = document.getElementById('segmentoTexto').value;
+    
+    // Validaciones básicas
+    if (!texto.trim()) {
+        alert('❌ El texto no puede estar vacío');
+        return;
+    }
+    
+    if (inicio >= fin) {
+        alert('❌ El tiempo de inicio debe ser menor que el tiempo de fin');
+        return;
+    }
+    
+    // Preparar datos para enviar
+    var datosEdicion = {
+        indice: index,
+        hablante: hablante,
+        inicio: inicio,
+        fin: fin,
+        texto: texto.trim()
+    };
+    
+    console.log('💾 Guardando edición:', datosEdicion);
+    
+    // Preparar FormData para la API básica
+    var formData = new FormData();
+    formData.append('segmento_id', index);
+    formData.append('hablante', hablante);
+    formData.append('texto', texto);
+    formData.append('inicio', inicio);
+    formData.append('fin', fin);
+    
+    // Enviar a la API básica (no v2)
+    fetch(`/transcripcion/api/editar-segmento/${transcripcionId}/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': getCsrfToken()
+        },
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success || data.exito) {
+            alert('✅ Segmento editado correctamente');
+            $('#modalEditarSegmento').modal('hide');
+            location.reload(); // Recargar para mostrar cambios
+        } else {
+            alert('❌ Error al editar: ' + (data.error || data.mensaje || 'Error desconocido'));
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('❌ Error de conexión al servidor');
+    });
+}
+
+// Función real para reproducir segmento
+window.reproducirSegmento = function(inicio, fin) {
+    {% if archivo_audio_url %}
+    alert(`🎵 Función de reproducción implementada:\n⏰ Desde: ${inicio}s hasta ${fin}s\n🎧 Archivo: {{ archivo_audio_url }}\n\nNOTA: Se requiere implementar reproductor HTML5 audio.`);
+    {% else %}
+    alert('❌ No hay archivo de audio disponible para esta transcripción');
+    {% endif %}
+}
+
+// Función real para eliminar segmento
+window.eliminarSegmento = function(index) {
+    if (!datosEstructura.conversacion || index >= datosEstructura.conversacion.length) {
+        alert('❌ Segmento no encontrado');
+        return;
+    }
+    
+    var segmento = datosEstructura.conversacion[index];
+    var mensaje = `¿Estás seguro de eliminar este segmento?\n\n🗣️ ${segmento.hablante}: "${segmento.texto.substring(0, 50)}..."`;
+    
+    if (!confirm(mensaje)) return;
+    
+    // Preparar FormData para la API básica
+    var formData = new FormData();
+    formData.append('segmento_id', index);
+    
+    // Enviar a la API básica (no v2)
+    fetch(`/transcripcion/api/eliminar-segmento/${transcripcionId}/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': getCsrfToken()
+        },
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success || data.exito) {
+            alert('✅ Segmento eliminado correctamente');
+            location.reload(); // Recargar para mostrar cambios
+        } else {
+            alert('❌ Error al eliminar: ' + (data.error || data.mensaje || 'Error desconocido'));
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('❌ Error de conexión al servidor');
+    });
+}
+
+// ========================================
+// NUEVAS FUNCIONES PARA FUNCIONALIDADES AVANZADAS
+// ========================================
+
+// Función para regenerar transcripción completa
+window.regenerarTranscripcion = function() {
+    var confirmacion = confirm(`🔄 ¿Estás seguro de regenerar la transcripción completa?\n\n⚠️ Se perderán todos los cambios manuales realizados.\n✨ El audio se procesará nuevamente desde cero.`);
+    
+    if (!confirmacion) return;
+    
+    console.log('� Iniciando regeneración de transcripción...');
+    
+    // Preparar FormData para la API
+    var formData = new FormData();
+    formData.append('csrfmiddlewaretoken', getCsrfToken());
+    
+    fetch(`/transcripcion/api/regenerar-transcripcion/${transcripcionId}/`, {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(`✅ ${data.mensaje}\n\n� La página se recargará para mostrar el estado actualizado.`);
+            location.reload();
+        } else {
+            alert(`❌ Error al regenerar: ${data.error || 'Error desconocido'}`);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('❌ Error de conexión al servidor');
+    });
+}
+
+// Función para mostrar modal de agregar hablante
+window.agregarHablante = function() {
+    $('#modalAgregarHablante').modal('show');
+}
+
+// Función para guardar nuevo hablante
+window.guardarNuevoHablante = function() {
+    var nombreHablante = document.getElementById('nuevoHablanteName').value.trim();
+    var cargoHablante = document.getElementById('nuevoHablanteCargo').value.trim();
+    
+    if (!nombreHablante) {
+        alert('❌ El nombre del hablante es obligatorio');
+        return;
+    }
+    
+    // Verificar si ya existe
+    var mapeoHablantes = datosEstructura.cabecera.mapeo_hablantes || {};
+    var existe = Object.values(mapeoHablantes).some(h => 
+        h.nombre && h.nombre.toLowerCase() === nombreHablante.toLowerCase()
+    );
+    
+    if (existe) {
+        alert('❌ Ya existe un hablante con ese nombre');
+        return;
+    }
+    
+    console.log('👥 Agregando nuevo hablante...');
+    
+    // Preparar FormData para la API
+    var formData = new FormData();
+    formData.append('csrfmiddlewaretoken', getCsrfToken());
+    formData.append('nombre', nombreHablante);
+    formData.append('cargo', cargoHablante);
+    
+    fetch(`/transcripcion/api/agregar-hablante/${transcripcionId}/`, {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(`✅ ${data.mensaje}`);
+            
+            // Limpiar formulario
+            document.getElementById('nuevoHablanteName').value = '';
+            document.getElementById('nuevoHablanteCargo').value = '';
+            $('#modalAgregarHablante').modal('hide');
+            
+            // Recargar para mostrar cambios
+            location.reload();
+        } else {
+            alert(`❌ Error al agregar hablante: ${data.error || 'Error desconocido'}`);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('❌ Error de conexión al servidor');
+    });
+}
+
+// Función para mostrar modal de agregar segmento
+window.agregarSegmento = function(posicion) {
+    // Guardar la posición donde insertar
+    window.posicionNuevoSegmento = posicion;
+    var posInput = document.getElementById('nuevaPosicion');
+    if (posInput) posInput.value = posicion;
+    
+    // Calcular tiempo sugerido basado en segmentos adyacentes
+    var tiempoInicio = 0, tiempoFin = 30;
+    
+    if (datosEstructura.conversacion && datosEstructura.conversacion.length > 0) {
+        if (posicion === 0) {
+            // Al inicio
+            tiempoFin = Math.max(1, datosEstructura.conversacion[0].inicio - 1);
+        } else if (posicion >= datosEstructura.conversacion.length) {
+            // Al final
+            var ultimoSegmento = datosEstructura.conversacion[datosEstructura.conversacion.length - 1];
+            tiempoInicio = ultimoSegmento.fin + 1;
+            tiempoFin = tiempoInicio + 30;
+        } else {
+            // Entre segmentos
+            var segmentoAnterior = datosEstructura.conversacion[posicion - 1];
+            var segmentoSiguiente = datosEstructura.conversacion[posicion];
+            tiempoInicio = segmentoAnterior.fin + 0.5;
+            tiempoFin = Math.max(tiempoInicio + 1, segmentoSiguiente.inicio - 0.5);
+        }
+    }
+    
+    // Prellenar formulario
+    document.getElementById('nuevoSegmentoInicio').value = tiempoInicio.toFixed(1);
+    document.getElementById('nuevoSegmentoFin').value = tiempoFin.toFixed(1);
+    document.getElementById('nuevoSegmentoTexto').value = '';
+    var infoPos = document.getElementById('infoNuevaPosicion');
+    if (infoPos) {
+        if (posicion === 0) infoPos.textContent = 'Se agregará al inicio de la conversación';
+        else if (posicion >= (datosEstructura.conversacion?.length || 0)) infoPos.textContent = 'Se agregará al final de la conversación';
+        else infoPos.textContent = `Se agregará en la posición ${posicion}`;
+    }
+    
+    // Llenar select de hablantes
+    var selectHablante = document.getElementById('nuevoSegmentoHablante');
+    selectHablante.innerHTML = '<option value="">Seleccionar hablante...</option>';
+    
+    var mapeoHablantes = datosEstructura.cabecera.mapeo_hablantes || {};
+    Object.entries(mapeoHablantes).forEach(([id, info]) => {
+        var option = document.createElement('option');
+        option.value = id; // backend acepta ID
+        var label;
+        if (typeof info === 'string') {
+            label = info;
+        } else {
+            label = info.nombre || info.nombre_completo || info.nombre_real || (info.nombre && info.apellidos ? (info.nombre + ' ' + info.apellidos) : null) || `Hablante ${id}`;
+        }
+        option.textContent = `${id}: ${label}`;
+        selectHablante.appendChild(option);
+    });
+    
+    $('#modalAgregarSegmento').modal('show');
+}
+
+// Función para guardar nuevo segmento
+window.guardarNuevoSegmento = function() {
+    var inicio = parseFloat(document.getElementById('nuevoSegmentoInicio').value);
+    var fin = parseFloat(document.getElementById('nuevoSegmentoFin').value);
+    var texto = document.getElementById('nuevoSegmentoTexto').value.trim();
+    var hablanteId = document.getElementById('nuevoSegmentoHablante').value;
+    
+    // Validaciones
+    if (isNaN(inicio) || isNaN(fin)) {
+        alert('❌ Los tiempos de inicio y fin deben ser números válidos');
+        return;
+    }
+    
+    if (inicio >= fin) {
+        alert('❌ El tiempo de inicio debe ser menor que el tiempo de fin');
+        return;
+    }
+    
+    if (!texto) {
+        alert('❌ El texto del segmento es obligatorio');
+        return;
+    }
+    
+    if (!hablanteId) {
+        alert('❌ Debe seleccionar un hablante');
+        return;
+    }
+    
+    var posInput = document.getElementById('nuevaPosicion');
+    var posicion = (posInput && posInput.value !== '') ? parseInt(posInput.value) : (window.posicionNuevoSegmento || 0);
+    
+    console.log('➕ Insertando nuevo segmento en posición:', posicion);
+    
+    // Preparar FormData para la API
+    var formData = new FormData();
+    formData.append('csrfmiddlewaretoken', getCsrfToken());
+    formData.append('posicion', posicion);
+    formData.append('inicio', inicio);
+    formData.append('fin', fin);
+    formData.append('texto', texto);
+    formData.append('hablante_id', hablanteId);
+    
+    fetch(`/transcripcion/api/insertar-segmento/${transcripcionId}/`, {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(`✅ ${data.mensaje}`);
+            $('#modalAgregarSegmento').modal('hide');
+            
+            // Recargar para mostrar cambios
+            location.reload();
+        } else {
+            alert(`❌ Error al insertar segmento: ${data.error || 'Error desconocido'}`);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('❌ Error de conexión al servidor');
+    });
+}
+
+// Función auxiliar para obtener CSRF token
+function getCsrfToken() {
+    return document.querySelector('[name=csrfmiddlewaretoken]')?.value || 
+           document.querySelector('meta[name=csrf-token]')?.getAttribute('content') || '';
+}
+
+// Inicialización cuando el DOM esté listo
+$(document).ready(function() {
+    console.log('📝 Editor avanzado inicializado');
+    console.log('🎯 Funciones disponibles:', ['mostrarDatos', 'cargarConversacion', 'editarSegmento', 'reproducirSegmento', 'eliminarSegmento', 'regenerarTranscripcion', 'agregarHablante', 'agregarSegmento']);
+    console.log('📊 Datos cargados:', {
+        transcripcionId: transcripcionId,
+        segmentos: datosEstructura.conversacion ? datosEstructura.conversacion.length : 0,
+        hablantes: Object.keys(datosEstructura.cabecera.mapeo_hablantes || {}).length
+    });
+});
+</script>
+{% endblock %}

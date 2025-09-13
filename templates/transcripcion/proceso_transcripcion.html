@@ -1,0 +1,557 @@
+{% extends "layouts/base.html" %}
+{% load static %}
+
+{% block title %}{{ titulo_pagina }}{% endblock %}
+
+{% block extrastyle %}
+<!-- CSS específico para transcripción -->
+<style>
+.participante-row .card-header {
+    background-color: #f8f9fa;
+}
+.participante-row .form-group {
+    margin-bottom: 0.5rem;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="content-wrapper">
+    <!-- Content Header -->
+    <div class="content-header">
+        <div class="container-fluid">
+            <div class="row mb-2">
+                <div class="col-sm-6">
+                    <h1 class="m-0">{{ titulo_pagina }}</h1>
+                    <p class="text-muted">{{ subtitulo }}</p>
+                </div>
+                <div class="col-sm-6">
+                    <ol class="breadcrumb float-sm-right">
+                        <li class="breadcrumb-item"><a href="{% url 'index' %}">Inicio</a></li>
+                        <li class="breadcrumb-item"><a href="{% url 'transcripcion:audios_dashboard' %}">Transcripción</a></li>
+                        <li class="breadcrumb-item active">Configurar Proceso</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main content -->
+    <section class="content">
+        <div class="container-fluid">
+            
+            <!-- Información del Audio -->
+            <div class="card card-outline card-primary">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <i class="fas fa-file-audio"></i> Información del Audio
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-8">
+                            <h4>{{ audio.titulo }}</h4>
+                            {% if audio.descripcion %}
+                                <p class="text-muted">{{ audio.descripcion }}</p>
+                            {% endif %}
+                            
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <p><strong>Tipo de Reunión:</strong> {{ audio.tipo_reunion.nombre }}</p>
+                                    <p><strong>Usuario:</strong> {{ audio.usuario.username }}</p>
+                                    <p><strong>Fecha:</strong> {{ audio.created_at|date:"d/m/Y H:i" }}</p>
+                                </div>
+                                <div class="col-md-6">
+                                    {% if audio.duracion_seg %}
+                                        <p><strong>Duración:</strong> {{ audio.duracion_seg|floatformat:0 }} segundos</p>
+                                    {% endif %}
+                                    {% if audio.participantes %}
+                                        <p><strong>Participantes:</strong> {{ audio.participantes }}</p>
+                                    {% endif %}
+                                    {% if audio.ubicacion %}
+                                        <p><strong>Ubicación:</strong> {{ audio.ubicacion }}</p>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            
+                            {% if audio.archivo_mejorado %}
+                                <div class="mt-3">
+                                    <audio controls class="w-100">
+                                        <source src="{{ audio.archivo_mejorado.url }}" type="audio/wav">
+                                        Tu navegador no soporta el elemento audio.
+                                    </audio>
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <div class="info-box">
+                                <span class="info-box-icon bg-info">
+                                    <i class="fas fa-info"></i>
+                                </span>
+                                <div class="info-box-content">
+                                    <span class="info-box-text">Estado</span>
+                                    <span class="info-box-number">
+                                        <span class="badge badge-primary">Listo para Transcribir</span>
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Panel de Progreso (solo visible cuando se está procesando) -->
+            <div id="panel-progreso" class="card card-outline card-warning" style="display: {% if mostrar_progreso %}block{% else %}none{% endif %};">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <i class="fas fa-cogs"></i> Estado del Procesamiento
+                    </h3>
+                    <div class="card-tools">
+                        <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                            <i class="fas fa-minus"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <!-- Barra de progreso -->
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between mb-1">
+                            <span class="text-sm font-weight-bold">Progreso de Transcripción</span>
+                            <span class="text-sm"><span id="progreso-porcentaje">0</span>%</span>
+                        </div>
+                        <div class="progress">
+                            <div id="barra-progreso" class="progress-bar progress-bar-striped progress-bar-animated" 
+                                 role="progressbar" style="width: 0%" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Estado actual -->
+                    <div class="alert alert-info" id="estado-actual">
+                        <h5><i class="icon fas fa-info"></i> Estado:</h5>
+                        <span id="mensaje-estado">Iniciando procesamiento...</span>
+                    </div>
+                    
+                    <!-- Logs en tiempo real -->
+                    <div class="card card-outline card-secondary">
+                        <div class="card-header">
+                            <h5 class="card-title">
+                                <i class="fas fa-terminal"></i> Logs de Procesamiento
+                            </h5>
+                            <div class="card-tools">
+                                <button id="btn-limpiar-logs" class="btn btn-sm btn-secondary">
+                                    <i class="fas fa-trash"></i> Limpiar
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div id="logs-container" style="height: 200px; overflow-y: auto; background: #1e1e1e; color: #d4d4d4; padding: 10px; font-family: 'Courier New', monospace; font-size: 12px;">
+                                <div id="logs-content">
+                                    <span class="text-info">[{{ "now"|date:"H:i:s" }}]</span> Transcripción iniciada. Monitoreando progreso...<br>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Botones de control -->
+                    <div class="mt-3">
+                        <button id="btn-ver-detalle" class="btn btn-primary" style="display: none;">
+                            <i class="fas fa-eye"></i> Ver Resultado
+                        </button>
+                        <button id="btn-cancelar" class="btn btn-danger">
+                            <i class="fas fa-stop"></i> Cancelar Procesamiento
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Participantes Detectados -->
+            {% if participantes_detectados %}
+            <div class="card card-outline card-info">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <i class="fas fa-users"></i> Participantes Registrados ({{ participantes_detectados|length }})
+                    </h3>
+                    <div class="card-tools">
+                        <span class="badge badge-info">{{ info_audio_extendida.total_participantes_detectados }} detectados</span>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted mb-3">
+                        <i class="fas fa-info-circle"></i> Los siguientes participantes fueron registrados durante la creación del audio. 
+                        Puedes modificar sus datos para mejorar la identificación durante la diarización.
+                    </p>
+                    
+                    <div id="participantes-container">
+                        {% for participante in participantes_detectados %}
+                        <div class="card card-outline card-secondary mb-3 participante-row">
+                            <div class="card-header">
+                                <h5 class="card-title mb-0">
+                                    <i class="fas fa-user"></i> Hablante {{ participante.orden }}
+                                </h5>
+                                <div class="card-tools">
+                                    <button type="button" class="btn btn-danger btn-sm eliminar-participante" title="Eliminar participante">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-3">
+                                        <div class="form-group">
+                                            <label>Nombres:</label>
+                                            <input type="text" class="form-control" name="participante_nombres_{{ forloop.counter }}" 
+                                                   value="{{ participante.nombres }}" placeholder="Nombres">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="form-group">
+                                            <label>Apellidos:</label>
+                                            <input type="text" class="form-control" name="participante_apellidos_{{ forloop.counter }}" 
+                                                   value="{{ participante.apellidos }}" placeholder="Apellidos">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="form-group">
+                                            <label>Cargo/Función:</label>
+                                            <input type="text" class="form-control" name="participante_cargo_{{ forloop.counter }}" 
+                                                   value="{{ participante.cargo }}" placeholder="Ej: Alcalde, Secretario">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="form-group">
+                                            <label>Institución:</label>
+                                            <input type="text" class="form-control" name="participante_institucion_{{ forloop.counter }}" 
+                                                   value="{{ participante.institucion }}" placeholder="Ej: Municipio">
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label>ID de Hablante para Diarización:</label>
+                                            <input type="text" class="form-control" name="participante_id_{{ forloop.counter }}" 
+                                                   value="{{ participante.id }}" readonly>
+                                            <small class="form-text text-muted">Este ID se usará para identificar al hablante en la transcripción</small>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label>Estado:</label>
+                                            <div class="form-check pt-2">
+                                                <input type="checkbox" class="form-check-input" name="participante_activo_{{ forloop.counter }}" 
+                                                       {% if participante.activo %}checked{% endif %}>
+                                                <label class="form-check-label">Incluir en transcripción</label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    
+                    <div class="mt-3">
+                        <button type="button" class="btn btn-success btn-sm" id="agregar-participante">
+                            <i class="fas fa-plus"></i> Agregar Nuevo Participante
+                        </button>
+                        <small class="form-text text-muted ml-2">
+                            Sugerencia: {{ num_hablantes_sugerido }} hablantes para este audio
+                        </small>
+                    </div>
+                </div>
+            </div>
+            {% else %}
+            <!-- Si no hay participantes, mostrar opción para agregar -->
+            <div class="card card-outline card-warning">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <i class="fas fa-users"></i> Participantes de la Reunión
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted mb-3">
+                        <i class="fas fa-exclamation-triangle"></i> No se encontraron participantes registrados para este audio. 
+                        Puedes agregar participantes para mejorar la identificación durante la diarización.
+                    </p>
+                    
+                    <div id="participantes-container">
+                        <!-- Los participantes se agregarán aquí dinámicamente -->
+                    </div>
+                    
+                    <button type="button" class="btn btn-primary" id="agregar-participante">
+                        <i class="fas fa-plus"></i> Agregar Primer Participante
+                    </button>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Configuración de Transcripción -->
+            <div id="formulario-configuracion" class="card card-outline card-success" {% if mostrar_progreso %}style="display: none;"{% endif %}>
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <i class="fas fa-cogs"></i> Configuración de Transcripción
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <form method="POST" id="form-configuracion">
+                        {% csrf_token %}
+                        
+                        <div class="row">
+                            <!-- Configuración Whisper -->
+                            <div class="col-md-6">
+                                <h5><i class="fas fa-microphone"></i> Configuración Whisper (Transcripción)</h5>
+                                
+                                <div class="form-group">
+                                    <label for="modelo_whisper">Modelo Whisper:</label>
+                                    <select class="form-control" id="modelo_whisper" name="modelo_whisper">
+                                        {% for modelo in configuracion.modelos_whisper %}
+                                            <option value="{{ modelo.value }}" 
+                                                    {% if modelo.value == configuracion_seleccionada.modelo_whisper %}selected{% endif %}
+                                                    data-descripcion="{{ modelo.descripcion }}">
+                                                {{ modelo.label }}
+                                            </option>
+                                        {% endfor %}
+                                    </select>
+                                    <small class="form-text text-muted" id="descripcion-modelo">
+                                        {{ configuracion_seleccionada.get_descripcion_modelo }}
+                                    </small>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="idioma">Idioma de Transcripción:</label>
+                                    <select class="form-control" id="idioma" name="idioma">
+                                        {% for idioma in configuracion.idiomas_disponibles %}
+                                            <option value="{{ idioma.value }}" 
+                                                    {% if idioma.value == configuracion_seleccionada.idioma %}selected{% endif %}>
+                                                {{ idioma.label }}
+                                            </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <div class="form-check">
+                                        <input type="checkbox" class="form-check-input" id="transcripcion_palabra_por_palabra" 
+                                               name="transcripcion_palabra_por_palabra" 
+                                               {% if configuracion_seleccionada.transcripcion_palabra_por_palabra %}checked{% endif %}>
+                                        <label class="form-check-label" for="transcripcion_palabra_por_palabra">
+                                            Transcripción palabra por palabra
+                                        </label>
+                                        <small class="form-text text-muted">
+                                            Incluye timestamps por palabra (más lento pero más preciso)
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Configuración Diarización -->
+                            <div class="col-md-6">
+                                <h5><i class="fas fa-users"></i> Configuración de Diarización (Hablantes)</h5>
+                                
+                                <div class="form-group">
+                                    <div class="form-check">
+                                        <input type="checkbox" class="form-check-input" id="diarizacion_activa" 
+                                               name="diarizacion_activa" 
+                                               {% if configuracion_seleccionada.diarizacion_activa %}checked{% endif %}>
+                                        <label class="form-check-label" for="diarizacion_activa">
+                                            Activar diarización de hablantes
+                                        </label>
+                                        <small class="form-text text-muted">
+                                            Identifica diferentes hablantes en el audio
+                                        </small>
+                                    </div>
+                                </div>
+                                
+                                <div id="opciones-diarizacion" {% if not configuracion_seleccionada.diarizacion_activa %}class="d-none"{% endif %}>
+                                    <div class="form-group">
+                                        <label for="numero_max_hablantes">Número máximo de hablantes:</label>
+                                        <input type="number" class="form-control" id="numero_max_hablantes" 
+                                               name="numero_max_hablantes" min="2" max="10" 
+                                               value="{{ configuracion_seleccionada.numero_max_hablantes|default:5 }}">
+                                        <small class="form-text text-muted">
+                                            Si no se especifica, se detectará automáticamente
+                                        </small>
+                                    </div>
+                                    
+                                    <div class="form-group">
+                                        <label for="modelo_diarizacion">Modelo de Diarización:</label>
+                                        <select class="form-control" id="modelo_diarizacion" name="modelo_diarizacion">
+                                            {% for modelo in configuracion.modelos_diarizacion %}
+                                                <option value="{{ modelo.value }}" 
+                                                        {% if modelo.value == configuracion_seleccionada.modelo_diarizacion %}selected{% endif %}>
+                                                    {{ modelo.label }}
+                                                </option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Configuración Adicional -->
+                        <div class="row mt-4">
+                            <div class="col-12">
+                                <h5><i class="fas fa-sliders-h"></i> Configuración Adicional</h5>
+                                
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <div class="form-check">
+                                                <input type="checkbox" class="form-check-input" id="mejorar_audio" 
+                                                       name="mejorar_audio" 
+                                                       {% if configuracion_seleccionada.mejorar_audio %}checked{% endif %}>
+                                                <label class="form-check-label" for="mejorar_audio">
+                                                    Aplicar mejoras adicionales al audio
+                                                </label>
+                                                <small class="form-text text-muted">
+                                                    Reducción de ruido y normalización
+                                                </small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label for="prioridad">Prioridad del procesamiento:</label>
+                                            <select class="form-control" id="prioridad" name="prioridad">
+                                                <option value="baja" {% if configuracion_seleccionada.prioridad == 'baja' %}selected{% endif %}>
+                                                    Baja (procesamiento en background)
+                                                </option>
+                                                <option value="normal" {% if configuracion_seleccionada.prioridad == 'normal' %}selected{% endif %}>
+                                                    Normal (procesamiento estándar)
+                                                </option>
+                                                <option value="alta" {% if configuracion_seleccionada.prioridad == 'alta' %}selected{% endif %}>
+                                                    Alta (procesamiento prioritario)
+                                                </option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Botones de Acción -->
+                        <div class="row mt-4">
+                            <div class="col-12">
+                                <hr>
+                                <div class="text-center">
+                                    <button type="submit" class="btn btn-success btn-lg mr-3" id="btn-iniciar">
+                                        <i class="fas fa-play"></i> Iniciar Transcripción
+                                    </button>
+                                    
+                                    <a href="{% url 'transcripcion:audios_dashboard' %}" class="btn btn-secondary">
+                                        <i class="fas fa-arrow-left"></i> Volver a Audios
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                        
+                    </form>
+                </div>
+            </div>
+            
+            <!-- Estado del Procesamiento -->
+            <div class="card card-outline card-warning d-none" id="card-estado">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <i class="fas fa-spinner fa-spin"></i> Estado del Procesamiento
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <div class="progress mb-3">
+                        <div class="progress-bar progress-bar-striped progress-bar-animated" 
+                             role="progressbar" style="width: 0%" id="progress-bar">
+                        </div>
+                    </div>
+                    <p id="estado-texto">Iniciando procesamiento...</p>
+                    <div id="resultados-tiempo" class="mt-3 d-none">
+                        <p><strong>Tiempo estimado:</strong> <span id="tiempo-estimado">Calculando...</span></p>
+                        <p><strong>Estado actual:</strong> <span id="estado-actual">Iniciando...</span></p>
+                    </div>
+                </div>
+            </div>
+            
+        </div>
+    </section>
+</div>
+
+<script>
+// Variables globales para el monitoreo
+{% if mostrar_progreso and transcripcion_id %}
+    window.transcripcionId = {{ transcripcion_id }};
+    window.taskId = "{{ task_id|default:'' }}";
+    console.log('Variables de transcripción cargadas:', {
+        transcripcionId: window.transcripcionId,
+        taskId: window.taskId
+    });
+{% endif %}
+</script>
+
+<script>
+$(document).ready(function() {
+    // Manejo de la activación/desactivación de diarización
+    $('#diarizacion_activa').on('change', function() {
+        if ($(this).is(':checked')) {
+            $('#opciones-diarizacion').removeClass('d-none');
+        } else {
+            $('#opciones-diarizacion').addClass('d-none');
+        }
+    });
+    
+    // Actualizar descripción del modelo
+    $('#modelo_whisper').on('change', function() {
+        var descripcion = $(this).find('option:selected').data('descripcion');
+        $('#descripcion-modelo').text(descripcion);
+    });
+    
+    // Manejo del formulario
+    $('#form-configuracion').on('submit', function(e) {
+        e.preventDefault();
+        
+        // Deshabilitar botón y mostrar estado
+        $('#btn-iniciar').prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Iniciando...');
+        $('#card-estado').removeClass('d-none');
+        
+        // Enviar datos
+        var formData = new FormData(this);
+        
+        $.ajax({
+            url: '{% url "transcripcion:proceso_transcripcion" audio_id=audio.id %}',
+            type: 'POST',
+            data: formData,
+            processData: false,
+            contentType: false,
+            headers: {
+                'X-CSRFToken': $('[name=csrfmiddlewaretoken]').val()
+            },
+            success: function(response) {
+                if (response.success) {
+                    $('#estado-texto').text('Transcripción iniciada correctamente');
+                    $('#progress-bar').css('width', '25%');
+                    
+                    // Redirigir después de un momento
+                    setTimeout(function() {
+                        window.location.href = '{% url "transcripcion:transcripciones_dashboard" %}';
+                    }, 2000);
+                } else {
+                    alert('Error: ' + response.error);
+                    $('#btn-iniciar').prop('disabled', false).html('<i class="fas fa-play"></i> Iniciar Transcripción');
+                    $('#card-estado').addClass('d-none');
+                }
+            },
+            error: function(xhr, status, error) {
+                alert('Error al iniciar la transcripción: ' + error);
+                $('#btn-iniciar').prop('disabled', false).html('<i class="fas fa-play"></i> Iniciar Transcripción');
+                $('#card-estado').addClass('d-none');
+            }
+        });
+    });
+});
+</script>
+
+<!-- Script específico para manejo de transcripción -->
+<script src="{% load static %}{% static 'js/transcripcion_proceso.js' %}"></script>
+
+{% endblock %}

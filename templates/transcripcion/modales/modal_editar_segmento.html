@@ -1,0 +1,134 @@
+<!-- Modal para editar segmento individual -->
+<div class="modal fade" id="modal-editar-segmento" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-warning">
+                <h4 class="modal-title">
+                    <i class="fas fa-edit"></i> Editar Segmento
+                </h4>
+                <button type="button" class="close" data-dismiss="modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="form-editar-segmento">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="edit-hablante">
+                                    <i class="fas fa-user"></i> Hablante:
+                                </label>
+                                <select class="form-control select2" id="edit-hablante" style="width: 100%;">
+                                    <!-- Se cargará dinámicamente -->
+                                </select>
+                                <small class="form-text text-muted">Selecciona el hablante de este segmento</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-group">
+                                <label for="edit-inicio">
+                                    <i class="fas fa-play"></i> Inicio (s):
+                                </label>
+                                <input type="number" class="form-control" id="edit-inicio" step="0.1" min="0">
+                                <small class="form-text text-muted">Tiempo de inicio en segundos</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-group">
+                                <label for="edit-fin">
+                                    <i class="fas fa-stop"></i> Fin (s):
+                                </label>
+                                <input type="number" class="form-control" id="edit-fin" step="0.1" min="0">
+                                <small class="form-text text-muted">Tiempo de fin en segundos</small>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="edit-texto">
+                            <i class="fas fa-comment"></i> Texto del segmento:
+                        </label>
+                        <textarea class="form-control" id="edit-texto" rows="4" placeholder="Ingrese el texto que dice el hablante..."></textarea>
+                        <small class="form-text text-muted">Contenido completo de lo que dice el hablante en este segmento</small>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>
+                                    <i class="fas fa-clock"></i> Duración calculada:
+                                </label>
+                                <div class="input-group">
+                                    <div class="input-group-prepend">
+                                        <span class="input-group-text">
+                                            <i class="fas fa-stopwatch"></i>
+                                        </span>
+                                    </div>
+                                    <input type="text" class="form-control" id="edit-duracion" readonly>
+                                    <div class="input-group-append">
+                                        <span class="input-group-text">segundos</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>
+                                    <i class="fas fa-info-circle"></i> Posición en conversación:
+                                </label>
+                                <div class="input-group">
+                                    <div class="input-group-prepend">
+                                        <span class="input-group-text">
+                                            <i class="fas fa-hashtag"></i>
+                                        </span>
+                                    </div>
+                                    <input type="text" class="form-control" id="edit-posicion" readonly>
+                                    <div class="input-group-append">
+                                        <span class="input-group-text">de <span id="total-segmentos-edit">0</span></span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Controles de audio (si está disponible) -->
+                    <div class="card card-outline card-info" id="audio-controls-edit" style="display: none;">
+                        <div class="card-header">
+                            <h6 class="card-title">
+                                <i class="fas fa-volume-up"></i> Controles de Audio
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <button type="button" class="btn btn-outline-primary btn-block" id="btn-play-segment">
+                                        <i class="fas fa-play"></i> Reproducir Segmento
+                                    </button>
+                                </div>
+                                <div class="col-md-4">
+                                    <button type="button" class="btn btn-outline-secondary btn-block" id="btn-set-current-time">
+                                        <i class="fas fa-crosshairs"></i> Usar Tiempo Actual
+                                    </button>
+                                </div>
+                                <div class="col-md-4">
+                                    <button type="button" class="btn btn-outline-info btn-block" id="btn-auto-adjust">
+                                        <i class="fas fa-magic"></i> Ajuste Automático
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                    <i class="fas fa-times"></i> Cancelar
+                </button>
+                <button type="button" class="btn btn-danger" id="btn-eliminar-segmento">
+                    <i class="fas fa-trash"></i> Eliminar Segmento
+                </button>
+                <button type="button" class="btn btn-success" id="btn-guardar-segmento">
+                    <i class="fas fa-save"></i> Guardar Cambios
+                </button>
+            </div>
+        </div>
+    </div>
+</div>

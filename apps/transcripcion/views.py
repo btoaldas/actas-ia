@@ -220,11 +220,37 @@ def configurar_transcripcion(request, audio_id):
         if request.method == 'POST':
             logger.info("Procesando formulario POST")
             # Procesar formulario de configuración
-            config_id = request.POST.get('configuracion_id')
+            config_id = request.POST.get('configuracion_base')  # Corregido: coincide con el nombre del campo HTML
             parametros_custom = {}
             
-            # Si se eligió configuración personalizada
-            if config_id == 'custom':
+            # Obtener datos del formulario para parámetros personalizados
+            titulo_transcripcion = request.POST.get('titulo_transcripcion', audio.titulo)
+            descripcion_transcripcion = request.POST.get('descripcion_transcripcion', '')
+            
+            # Obtener configuración seleccionada
+            if config_id and config_id != 'custom':
+                config_seleccionada = get_object_or_404(ConfiguracionTranscripcion, 
+                                                       id=config_id, activa=True)
+                # Para configuraciones predefinidas, tomar parámetros del template pero permitir modificaciones
+                parametros_custom = {
+                    'modelo_whisper': request.POST.get('modelo_whisper', config_seleccionada.modelo_whisper),
+                    'idioma_principal': request.POST.get('idioma_principal', config_seleccionada.idioma_principal),
+                    'temperatura': float(request.POST.get('temperatura', config_seleccionada.temperatura)),
+                    'usar_vad': request.POST.get('usar_vad') == 'on',
+                    'vad_filtro': request.POST.get('vad_filtro', config_seleccionada.vad_filtro),
+                    'min_hablantes': int(request.POST.get('min_hablantes', config_seleccionada.min_hablantes)),
+                    'max_hablantes': int(request.POST.get('max_hablantes', config_seleccionada.max_hablantes)),
+                    'umbral_clustering': float(request.POST.get('umbral_clustering', config_seleccionada.umbral_clustering)),
+                    'chunk_duracion': int(request.POST.get('chunk_duracion', config_seleccionada.chunk_duracion)),
+                    'overlap_duracion': int(request.POST.get('overlap_duracion', config_seleccionada.overlap_duracion)),
+                    'usar_gpu': request.POST.get('usar_gpu') == 'on',
+                    'filtro_ruido': request.POST.get('filtro_ruido') == 'on',
+                    'normalizar_audio': request.POST.get('normalizar_audio') == 'on',
+                    'usar_enhanced_diarization': request.POST.get('usar_enhanced_diarization') == 'on',
+                }
+            else:
+                # Configuración completamente personalizada
+                config_seleccionada = None
                 parametros_custom = {
                     'modelo_whisper': request.POST.get('modelo_whisper', 'base'),
                     'idioma_principal': request.POST.get('idioma_principal', 'es'),
@@ -235,14 +261,12 @@ def configurar_transcripcion(request, audio_id):
                     'max_hablantes': int(request.POST.get('max_hablantes', 8)),
                     'umbral_clustering': float(request.POST.get('umbral_clustering', 0.7)),
                     'chunk_duracion': int(request.POST.get('chunk_duracion', 30)),
+                    'overlap_duracion': int(request.POST.get('overlap_duracion', 2)),
                     'usar_gpu': request.POST.get('usar_gpu') == 'on',
                     'filtro_ruido': request.POST.get('filtro_ruido') == 'on',
                     'normalizar_audio': request.POST.get('normalizar_audio') == 'on',
+                    'usar_enhanced_diarization': request.POST.get('usar_enhanced_diarization') == 'on',
                 }
-                config_seleccionada = None
-            else:
-                config_seleccionada = get_object_or_404(ConfiguracionTranscripcion, 
-                                                       id=config_id, activa=True)
             
             # Crear la transcripción
             transcripcion = Transcripcion.objects.create(
@@ -250,7 +274,7 @@ def configurar_transcripcion(request, audio_id):
                 configuracion_utilizada=config_seleccionada,
                 usuario_creacion=request.user,
                 estado=EstadoTranscripcion.PENDIENTE,
-                parametros_personalizados=parametros_custom if config_id == 'custom' else {}
+                parametros_personalizados=parametros_custom
             )
             
             # Iniciar procesamiento asíncrono
@@ -263,6 +287,15 @@ def configurar_transcripcion(request, audio_id):
                                        {'configuracion': config_seleccionada.nombre if config_seleccionada else 'Personalizada'},
                                        request.user)
                 
+                # Si es petición AJAX, devolver JSON
+                if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or 'application/json' in request.headers.get('Accept', ''):
+                    return JsonResponse({
+                        'success': True,
+                        'transcripcion_id': transcripcion.id,
+                        'task_id': task.id,
+                        'mensaje': f'Transcripción iniciada correctamente. ID: {transcripcion.id}'
+                    })
+                
                 messages.success(request, f'Transcripción iniciada correctamente. ID: {transcripcion.id}')
                 return redirect('transcripcion:detalle', transcripcion_id=transcripcion.id)
                 
@@ -271,6 +304,14 @@ def configurar_transcripcion(request, audio_id):
                 transcripcion.estado = EstadoTranscripcion.ERROR
                 transcripcion.mensaje_error = f"Error al iniciar procesamiento: {str(e)}"
                 transcripcion.save()
+                
+                # Si es petición AJAX, devolver error en JSON
+                if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or 'application/json' in request.headers.get('Accept', ''):
+                    return JsonResponse({
+                        'success': False,
+                        'error': f"Error al iniciar transcripción: {str(e)}"
+                    })
+                
                 messages.error(request, f"Error al iniciar transcripción: {str(e)}")
         
         context = {
@@ -507,6 +548,23 @@ def detalle_transcripcion(request, transcripcion_id):
         # Historial de ediciones
         historial = transcripcion.historial_ediciones.select_related('usuario').order_by('-fecha_edicion')[:10]
         
+        # Formatear JSON para visualización
+        import json
+        try:
+            transcripcion_json_formatted = json.dumps(transcripcion.transcripcion_json or {}, indent=2, ensure_ascii=False)
+        except:
+            transcripcion_json_formatted = "{}"
+            
+        try:
+            diarizacion_json_formatted = json.dumps(transcripcion.diarizacion_json or {}, indent=2, ensure_ascii=False)
+        except:
+            diarizacion_json_formatted = "{}"
+            
+        try:
+            conversacion_json_formatted = json.dumps(transcripcion.conversacion_json or {}, indent=2, ensure_ascii=False)
+        except:
+            conversacion_json_formatted = "{}"
+        
         context = {
             'transcripcion': transcripcion,
             'conversacion': transcripcion.conversacion_json,
@@ -515,6 +573,10 @@ def detalle_transcripcion(request, transcripcion_id):
             'estados_transcripcion': EstadoTranscripcion.choices,
             'puede_editar': transcripcion.esta_completado,
             'archivo_audio_url': transcripcion.procesamiento_audio.get_archivo_url(),
+            # JSON formateados para visualización
+            'transcripcion_json_formatted': transcripcion_json_formatted,
+            'diarizacion_json_formatted': diarizacion_json_formatted,
+            'conversacion_json_formatted': conversacion_json_formatted,
         }
         
         return render(request, 'transcripcion/detalle_transcripcion.html', context)
@@ -743,30 +805,111 @@ def gestionar_hablantes(request, transcripcion_id):
 @require_http_methods(["GET"])
 def estado_transcripcion(request, transcripcion_id):
     """
-    API para obtener el estado actual de una transcripción
+    API para obtener el estado actual de una transcripción con todos los detalles
     """
     try:
         transcripcion = get_object_or_404(Transcripcion, id=transcripcion_id)
         
-        return JsonResponse({
+        # Datos básicos de estado
+        response_data = {
             'success': True,
+            'transcripcion_id': transcripcion.id,
             'estado': transcripcion.estado,
             'estado_display': transcripcion.get_estado_display(),
-            'progreso': transcripcion.progreso_porcentaje,
+            'progreso_porcentaje': transcripcion.progreso_porcentaje,
+            'mensaje_estado': getattr(transcripcion, 'mensaje_estado', ''),
             'mensaje_error': transcripcion.mensaje_error,
             'completado': transcripcion.esta_completado,
-            'fecha_actualizacion': transcripcion.fecha_actualizacion.isoformat(),
-            'estadisticas': {
-                'numero_hablantes': transcripcion.numero_hablantes,
-                'numero_segmentos': transcripcion.numero_segmentos,
-                'palabras_totales': transcripcion.palabras_totales,
-                'duracion_total': transcripcion.duracion_total,
-                'confianza_promedio': transcripcion.confianza_promedio
-            }
-        })
+            'tiene_error': transcripcion.tiene_error,
+            'task_id': transcripcion.task_id_celery,
+            'fecha_creacion': transcripcion.fecha_creacion.isoformat() if transcripcion.fecha_creacion else None,
+            'fecha_actualizacion': transcripcion.fecha_actualizacion.isoformat() if transcripcion.fecha_actualizacion else None,
+            'fecha_inicio': transcripcion.tiempo_inicio_proceso.isoformat() if transcripcion.tiempo_inicio_proceso else None,
+            'fecha_fin': transcripcion.tiempo_fin_proceso.isoformat() if transcripcion.tiempo_fin_proceso else None,
+        }
+        
+        # Estadísticas
+        response_data['estadisticas'] = {
+            'numero_hablantes': transcripcion.numero_hablantes,
+            'numero_segmentos': transcripcion.numero_segmentos,
+            'palabras_totales': transcripcion.palabras_totales,
+            'duracion_total': transcripcion.duracion_total,
+            'confianza_promedio': transcripcion.confianza_promedio
+        }
+        
+        # Si está completado, incluir todos los resultados
+        if transcripcion.estado == EstadoTranscripcion.COMPLETADO:
+            response_data.update({
+                'texto_completo': transcripcion.texto_completo,
+                'transcripcion_json': transcripcion.transcripcion_json,
+                'conversacion_json': transcripcion.conversacion_json,
+                'diarizacion_json': transcripcion.diarizacion_json,
+                'estadisticas_json': transcripcion.estadisticas_json,
+                'hablantes_detectados': transcripcion.hablantes_detectados,
+                'hablantes_identificados': transcripcion.hablantes_identificados,
+                'palabras_clave': transcripcion.palabras_clave,
+                'temas_detectados': transcripcion.temas_detectados,
+                'parametros_personalizados': transcripcion.parametros_personalizados
+            })
+        
+        return JsonResponse(response_data)
         
     except Exception as e:
         logger.error(f"Error al obtener estado: {str(e)}")
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        })
+
+
+@login_required
+def audio_estado_transcripcion(request, audio_id):
+    """
+    API para verificar si un audio tiene transcripción activa o completada
+    """
+    try:
+        audio = get_object_or_404(ProcesamientoAudio, id=audio_id)
+        
+        # Buscar transcripción existente para este audio
+        transcripcion = Transcripcion.objects.filter(
+            procesamiento_audio=audio
+        ).order_by('-fecha_creacion').first()
+        
+        if not transcripcion:
+            return JsonResponse({
+                'success': True,
+                'transcripcion_activa': False,
+                'mensaje': 'No hay transcripción para este audio'
+            })
+        
+        # Si hay transcripción, devolver su estado
+        response_data = {
+            'success': True,
+            'transcripcion_activa': True,
+            'transcripcion_id': transcripcion.id,
+            'estado': transcripcion.estado,
+            'progreso_porcentaje': transcripcion.progreso_porcentaje,
+            'task_id': transcripcion.task_id_celery,
+            'fecha_inicio': transcripcion.tiempo_inicio_proceso.isoformat() if transcripcion.tiempo_inicio_proceso else None,
+        }
+        
+        # Si está completado, incluir resultados básicos
+        if transcripcion.estado == EstadoTranscripcion.COMPLETADO:
+            response_data.update({
+                'numero_hablantes': transcripcion.numero_hablantes,
+                'palabras_totales': transcripcion.palabras_totales,
+                'duracion_total': transcripcion.duracion_total,
+                'confianza_promedio': transcripcion.confianza_promedio,
+                'texto_completo': transcripcion.texto_completo,
+                'transcripcion_json': transcripcion.transcripcion_json,
+                'conversacion_json': transcripcion.conversacion_json,
+                'estadisticas_json': transcripcion.estadisticas_json
+            })
+        
+        return JsonResponse(response_data)
+        
+    except Exception as e:
+        logger.error(f"Error al verificar estado de audio: {str(e)}")
         return JsonResponse({
             'success': False,
             'error': str(e)

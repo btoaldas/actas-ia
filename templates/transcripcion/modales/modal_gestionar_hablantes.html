@@ -1,0 +1,179 @@
+<!-- Modal para gestionar hablantes -->
+<div class="modal fade" id="modal-gestionar-hablantes" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-xl" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-warning">
+                <h4 class="modal-title">
+                    <i class="fas fa-users-cog"></i> Gestionar Hablantes
+                </h4>
+                <button type="button" class="close" data-dismiss="modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <!-- Lista de hablantes existentes -->
+                    <div class="col-md-8">
+                        <div class="card card-outline card-primary">
+                            <div class="card-header">
+                                <h5 class="card-title">
+                                    <i class="fas fa-users"></i> Hablantes Existentes
+                                </h5>
+                                <div class="card-tools">
+                                    <span class="badge badge-primary" id="contador-hablantes">0 hablantes</span>
+                                </div>
+                            </div>
+                            <div class="card-body p-0">
+                                <div class="table-responsive" style="max-height: 400px;">
+                                    <table class="table table-hover" id="tabla-hablantes">
+                                        <thead class="bg-light">
+                                            <tr>
+                                                <th width="60">Color</th>
+                                                <th>ID Hablante</th>
+                                                <th>Nombre</th>
+                                                <th width="80">Segmentos</th>
+                                                <th width="120">Acciones</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="lista-hablantes">
+                                            <!-- Se llenará dinámicamente -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <div id="no-hablantes" class="text-center p-4" style="display: none;">
+                                    <i class="fas fa-user-slash text-muted" style="font-size: 3em;"></i>
+                                    <p class="text-muted mt-2">No hay hablantes configurados</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Panel para agregar/editar hablante -->
+                    <div class="col-md-4">
+                        <div class="card card-outline card-success">
+                            <div class="card-header">
+                                <h5 class="card-title">
+                                    <i class="fas fa-user-plus"></i> <span id="titulo-formulario">Agregar Hablante</span>
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <form id="form-hablante">
+                                    <input type="hidden" id="hablante-id-edit" value="">
+                                    <input type="hidden" id="modo-formulario" value="agregar">
+                                    
+                                    <div class="form-group">
+                                        <label for="hablante-nombre">
+                                            <i class="fas fa-user"></i> Nombre del Hablante: <span class="text-danger">*</span>
+                                        </label>
+                                        <input type="text" class="form-control" id="hablante-nombre" required placeholder="Ej: María González">
+                                        <small class="form-text text-muted">Nombre real o identificador del hablante</small>
+                                    </div>
+                                    
+                                    <div class="form-group">
+                                        <label for="hablante-id-custom">
+                                            <i class="fas fa-tag"></i> ID Personalizado (opcional):
+                                        </label>
+                                        <input type="text" class="form-control" id="hablante-id-custom" placeholder="Ej: SPEAKER_MARIA">
+                                        <small class="form-text text-muted">Deja vacío para generar automáticamente</small>
+                                    </div>
+                                    
+                                    <div class="form-group">
+                                        <label for="hablante-color">
+                                            <i class="fas fa-palette"></i> Color Identificativo:
+                                        </label>
+                                        <div class="input-group">
+                                            <input type="color" class="form-control" id="hablante-color" value="#007bff">
+                                            <div class="input-group-append">
+                                                <button type="button" class="btn btn-outline-secondary" id="btn-color-random">
+                                                    <i class="fas fa-random"></i> Aleatorio
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <small class="form-text text-muted">Color para identificar visualmente al hablante</small>
+                                    </div>
+                                    
+                                    <div class="form-group">
+                                        <label for="hablante-descripcion">
+                                            <i class="fas fa-info-circle"></i> Descripción (opcional):
+                                        </label>
+                                        <textarea class="form-control" id="hablante-descripcion" rows="2" placeholder="Ej: Alcalde Municipal"></textarea>
+                                        <small class="form-text text-muted">Cargo, función o descripción adicional</small>
+                                    </div>
+                                    
+                                    <!-- Vista previa -->
+                                    <div class="card card-outline card-secondary">
+                                        <div class="card-header">
+                                            <h6 class="card-title">
+                                                <i class="fas fa-eye"></i> Vista Previa
+                                            </h6>
+                                        </div>
+                                        <div class="card-body">
+                                            <div class="media">
+                                                <div class="hablante-color mr-3" id="preview-color" style="width: 40px; height: 40px; background-color: #007bff; border-radius: 50%;"></div>
+                                                <div class="media-body">
+                                                    <h6 class="mt-0" id="preview-nombre">Nombre del hablante</h6>
+                                                    <small class="text-muted" id="preview-id">ID: SPEAKER_XX</small><br>
+                                                    <small class="text-muted" id="preview-descripcion">Sin descripción</small>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </form>
+                            </div>
+                            <div class="card-footer">
+                                <button type="button" class="btn btn-secondary btn-sm" id="btn-cancelar-edicion" style="display: none;">
+                                    <i class="fas fa-times"></i> Cancelar
+                                </button>
+                                <button type="button" class="btn btn-success btn-sm" id="btn-guardar-hablante">
+                                    <i class="fas fa-save"></i> <span id="texto-guardar">Agregar Hablante</span>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- Herramientas rápidas -->
+                        <div class="card card-outline card-info">
+                            <div class="card-header">
+                                <h6 class="card-title">
+                                    <i class="fas fa-tools"></i> Herramientas Rápidas
+                                </h6>
+                            </div>
+                            <div class="card-body">
+                                <button type="button" class="btn btn-outline-primary btn-sm btn-block" id="btn-importar-de-estructura">
+                                    <i class="fas fa-download"></i> Detectar de Conversación
+                                </button>
+                                <button type="button" class="btn btn-outline-warning btn-sm btn-block" id="btn-colores-automaticos">
+                                    <i class="fas fa-magic"></i> Asignar Colores Auto
+                                </button>
+                                <button type="button" class="btn btn-outline-info btn-sm btn-block" id="btn-ordenar-alfabetico">
+                                    <i class="fas fa-sort-alpha-down"></i> Ordenar A-Z
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Resumen de cambios -->
+                <div class="row mt-3" id="resumen-cambios" style="display: none;">
+                    <div class="col-12">
+                        <div class="alert alert-warning">
+                            <h6><i class="fas fa-exclamation-triangle"></i> Cambios Pendientes:</h6>
+                            <ul id="lista-cambios-pendientes">
+                                <!-- Se llenará dinámicamente -->
+                            </ul>
+                            <small class="text-muted">Los cambios se aplicarán cuando guardes los hablantes.</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                    <i class="fas fa-times"></i> Cerrar
+                </button>
+                <button type="button" class="btn btn-danger" id="btn-reset-hablantes" title="Restablecer a estado original">
+                    <i class="fas fa-undo"></i> Deshacer Cambios
+                </button>
+                <button type="button" class="btn btn-primary" id="btn-aplicar-cambios-hablantes">
+                    <i class="fas fa-check"></i> Aplicar Cambios
+                </button>
+            </div>
+        </div>
+    </div>
+</div>

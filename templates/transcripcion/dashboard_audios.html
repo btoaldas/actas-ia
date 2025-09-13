@@ -1,0 +1,272 @@
+{% extends "layouts/base.html" %}
+
+{% block title %}{{ titulo_pagina }}{% endblock %}
+
+{% block content %}
+<div class="content-wrapper">
+    <!-- Content Header -->
+    <div class="content-header">
+        <div class="container-fluid">
+            <div class="row mb-2">
+                <div class="col-sm-6">
+                    <h1 class="m-0">{{ titulo_pagina }}</h1>
+                    <p class="text-muted">{{ subtitulo }}</p>
+                </div>
+                <div class="col-sm-6">
+                    <ol class="breadcrumb float-sm-right">
+                        <li class="breadcrumb-item"><a href="{% url 'index' %}">Inicio</a></li>
+                        <li class="breadcrumb-item"><a href="{% url 'transcripcion:audios_dashboard' %}">Transcripción</a></li>
+                        <li class="breadcrumb-item active">Audios por Transcribir</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main content -->
+    <section class="content">
+        <div class="container-fluid">
+            
+            <!-- Estadísticas Cards -->
+            <div class="row">
+                <div class="col-lg-3 col-6">
+                    <div class="small-box bg-info">
+                        <div class="inner">
+                            <h3>{{ estadisticas.total_audios_listos }}</h3>
+                            <p>Audios Listos</p>
+                        </div>
+                        <div class="icon">
+                            <i class="fas fa-music"></i>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-lg-3 col-6">
+                    <div class="small-box bg-success">
+                        <div class="inner">
+                            <h3>{{ estadisticas.total_audios_hoy }}</h3>
+                            <p>Procesados Hoy</p>
+                        </div>
+                        <div class="icon">
+                            <i class="fas fa-calendar-day"></i>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-lg-3 col-6">
+                    <div class="small-box bg-warning">
+                        <div class="inner">
+                            <h3>{{ estadisticas.total_duracion_pendiente|floatformat:0 }}</h3>
+                            <p>Segundos de Audio</p>
+                        </div>
+                        <div class="icon">
+                            <i class="fas fa-clock"></i>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-lg-3 col-6">
+                    <div class="small-box bg-secondary">
+                        <div class="inner">
+                            <h3><a href="{% url 'transcripcion:transcripciones_dashboard' %}" class="text-white">Ver Hechas</a></h3>
+                            <p>Transcripciones</p>
+                        </div>
+                        <div class="icon">
+                            <i class="fas fa-file-alt"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Filtros -->
+            <div class="card card-outline card-primary collapsed-card">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <i class="fas fa-filter"></i> Filtros de Búsqueda
+                    </h3>
+                    <div class="card-tools">
+                        <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                            <i class="fas fa-plus"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body" style="display: none;">
+                    <form method="GET" class="row">
+                        <div class="col-md-3">
+                            <label for="q">Búsqueda:</label>
+                            <input type="text" class="form-control" id="q" name="q" value="{{ filtro_busqueda }}" 
+                                   placeholder="Título, descripción...">
+                        </div>
+                        
+                        <div class="col-md-2">
+                            <label for="tipo">Tipo de Reunión:</label>
+                            <select class="form-control" id="tipo" name="tipo">
+                                <option value="todos">Todos</option>
+                                {% for tipo in tipos_reunion %}
+                                    <option value="{{ tipo.id }}" {% if filtro_tipo == tipo.id|stringformat:"s" %}selected{% endif %}>
+                                        {{ tipo.nombre }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="col-md-2">
+                            <label for="fecha_desde">Desde:</label>
+                            <input type="date" class="form-control" id="fecha_desde" name="fecha_desde" value="{{ filtro_fecha_desde }}">
+                        </div>
+                        
+                        <div class="col-md-2">
+                            <label for="fecha_hasta">Hasta:</label>
+                            <input type="date" class="form-control" id="fecha_hasta" name="fecha_hasta" value="{{ filtro_fecha_hasta }}">
+                        </div>
+                        
+                        <div class="col-md-3 d-flex align-items-end">
+                            <button type="submit" class="btn btn-primary mr-2">
+                                <i class="fas fa-search"></i> Filtrar
+                            </button>
+                            <a href="{% url 'transcripcion:audios_dashboard' %}" class="btn btn-secondary">
+                                <i class="fas fa-times"></i> Limpiar
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Lista de Audios -->
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <i class="fas fa-list"></i> Audios Disponibles para Transcripción
+                    </h3>
+                </div>
+                <div class="card-body">
+                    {% if audios %}
+                        <div class="row">
+                            {% for audio in audios %}
+                                <div class="col-lg-4 col-md-6 mb-4">
+                                    <div class="card card-outline card-info">
+                                        <div class="card-header">
+                                            <h5 class="card-title">
+                                                <i class="fas fa-file-audio text-info"></i>
+                                                {{ audio.titulo|truncatechars:30 }}
+                                            </h5>
+                                            <div class="card-tools">
+                                                <span class="badge badge-info">{{ audio.tipo_reunion.nombre }}</span>
+                                            </div>
+                                        </div>
+                                        <div class="card-body">
+                                            <p class="text-muted small">{{ audio.descripcion|truncatechars:80 }}</p>
+                                            
+                                            <div class="row small text-muted mb-2">
+                                                <div class="col-6">
+                                                    <i class="fas fa-clock"></i> 
+                                                    {% if audio.duracion_seg %}
+                                                        {{ audio.duracion_seg|floatformat:0 }}s
+                                                    {% else %}
+                                                        N/A
+                                                    {% endif %}
+                                                </div>
+                                                <div class="col-6">
+                                                    <i class="fas fa-user"></i> {{ audio.usuario.username }}
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="small text-muted mb-3">
+                                                <i class="fas fa-calendar"></i> {{ audio.created_at|date:"d/m/Y H:i" }}
+                                            </div>
+                                            
+                                            {% if audio.participantes %}
+                                                <div class="small mb-2">
+                                                    <strong>Participantes:</strong> {{ audio.participantes|truncatechars:50 }}
+                                                </div>
+                                            {% endif %}
+                                        </div>
+                                        <div class="card-footer">
+                                            <a href="{% url 'transcripcion:proceso_transcripcion' audio_id=audio.id %}" 
+                                               class="btn btn-primary btn-sm">
+                                                <i class="fas fa-play"></i> Iniciar Transcripción
+                                            </a>
+                                            
+                                            {% if audio.archivo_mejorado %}
+                                                <a href="{{ audio.archivo_mejorado.url }}" target="_blank" 
+                                                   class="btn btn-outline-secondary btn-sm">
+                                                    <i class="fas fa-headphones"></i> Escuchar
+                                                </a>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                        
+                        <!-- Paginación -->
+                        {% if audios.has_other_pages %}
+                            <div class="row">
+                                <div class="col-12">
+                                    <nav aria-label="Paginación de audios">
+                                        <ul class="pagination justify-content-center">
+                                            {% if audios.has_previous %}
+                                                <li class="page-item">
+                                                    <a class="page-link" href="?page=1{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}{% if request.GET.tipo %}&tipo={{ request.GET.tipo }}{% endif %}">
+                                                        <i class="fas fa-angle-double-left"></i>
+                                                    </a>
+                                                </li>
+                                                <li class="page-item">
+                                                    <a class="page-link" href="?page={{ audios.previous_page_number }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}{% if request.GET.tipo %}&tipo={{ request.GET.tipo }}{% endif %}">
+                                                        <i class="fas fa-angle-left"></i>
+                                                    </a>
+                                                </li>
+                                            {% endif %}
+                                            
+                                            <li class="page-item active">
+                                                <span class="page-link">
+                                                    Página {{ audios.number }} de {{ audios.paginator.num_pages }}
+                                                </span>
+                                            </li>
+                                            
+                                            {% if audios.has_next %}
+                                                <li class="page-item">
+                                                    <a class="page-link" href="?page={{ audios.next_page_number }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}{% if request.GET.tipo %}&tipo={{ request.GET.tipo }}{% endif %}">
+                                                        <i class="fas fa-angle-right"></i>
+                                                    </a>
+                                                </li>
+                                                <li class="page-item">
+                                                    <a class="page-link" href="?page={{ audios.paginator.num_pages }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}{% if request.GET.tipo %}&tipo={{ request.GET.tipo }}{% endif %}">
+                                                        <i class="fas fa-angle-double-right"></i>
+                                                    </a>
+                                                </li>
+                                            {% endif %}
+                                        </ul>
+                                    </nav>
+                                </div>
+                            </div>
+                        {% endif %}
+                        
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="fas fa-file-audio fa-3x text-muted mb-3"></i>
+                            <h5 class="text-muted">No hay audios listos para transcribir</h5>
+                            <p class="text-muted">
+                                Todos los audios procesados ya tienen transcripciones asociadas o no hay audios procesados aún.
+                            </p>
+                            <a href="{% url 'audio_processing:lista_procesamientos' %}" class="btn btn-primary">
+                                <i class="fas fa-upload"></i> Ir a Procesamiento de Audio
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+        </div>
+    </section>
+</div>
+
+<script>
+$(document).ready(function() {
+    // Auto-submit form on filter change
+    $('#tipo').on('change', function() {
+        $(this).closest('form').submit();
+    });
+});
+</script>
+{% endblock %}

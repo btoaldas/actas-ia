@@ -1,0 +1,190 @@
+<!-- Modal para editar JSON completo -->
+<div class="modal fade" id="modal-editar-json" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-xl" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-dark text-white">
+                <h4 class="modal-title">
+                    <i class="fas fa-code"></i> Editor JSON Avanzado
+                </h4>
+                <button type="button" class="close text-white" data-dismiss="modal">&times;</button>
+            </div>
+            <div class="modal-body p-0">
+                <div class="row no-gutters">
+                    <!-- Panel de edición -->
+                    <div class="col-md-8">
+                        <div class="p-3">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h6><i class="fas fa-edit"></i> Editor de Estructura JSON</h6>
+                                <div class="btn-group btn-group-sm" role="group">
+                                    <button type="button" class="btn btn-outline-secondary" id="btn-format-json">
+                                        <i class="fas fa-indent"></i> Formatear
+                                    </button>
+                                    <button type="button" class="btn btn-outline-secondary" id="btn-validate-json">
+                                        <i class="fas fa-check-circle"></i> Validar
+                                    </button>
+                                    <button type="button" class="btn btn-outline-secondary" id="btn-minify-json">
+                                        <i class="fas fa-compress-alt"></i> Minificar
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <!-- Editor de código -->
+                            <div class="editor-container">
+                                <textarea id="json-editor" class="form-control" rows="20" style="font-family: 'Courier New', monospace; font-size: 0.9em;" placeholder="Cargando estructura JSON..."></textarea>
+                            </div>
+                            
+                            <!-- Indicadores de estado -->
+                            <div class="mt-3">
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        <div class="info-box bg-info">
+                                            <span class="info-box-icon"><i class="fas fa-file-code"></i></span>
+                                            <div class="info-box-content">
+                                                <span class="info-box-text">Líneas</span>
+                                                <span class="info-box-number" id="json-lines">0</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="info-box bg-success" id="json-valid">
+                                            <span class="info-box-icon"><i class="fas fa-check"></i></span>
+                                            <div class="info-box-content">
+                                                <span class="info-box-text">Estado</span>
+                                                <span class="info-box-number">Válido</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="info-box bg-warning">
+                                            <span class="info-box-icon"><i class="fas fa-comments"></i></span>
+                                            <div class="info-box-content">
+                                                <span class="info-box-text">Segmentos</span>
+                                                <span class="info-box-number" id="json-segments">0</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Panel de ayuda y herramientas -->
+                    <div class="col-md-4 bg-light border-left">
+                        <div class="p-3">
+                            <h6><i class="fas fa-info-circle"></i> Ayuda y Herramientas</h6>
+                            
+                            <!-- Estructura esperada -->
+                            <div class="card card-outline card-success mb-3">
+                                <div class="card-header">
+                                    <h6 class="card-title">Estructura Esperada</h6>
+                                    <div class="card-tools">
+                                        <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                                            <i class="fas fa-minus"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="card-body p-2">
+                                    <pre class="mb-0" style="font-size: 0.75em; background: none; border: none;">
+{
+  "cabecera": {
+    "audio": { ... },
+    "transcripcion": { ... },
+    "hablantes": 2,
+    "mapeo_hablantes": {
+      "SPEAKER_00": "Nombre1",
+      "SPEAKER_01": "Nombre2"
+    }
+  },
+  "conversacion": [
+    {
+      "inicio": 0.0,
+      "fin": 3.5,
+      "hablante": "Nombre1",
+      "texto": "...",
+      "duracion": 3.5
+    }
+  ],
+  "texto_estructurado": "00:00,Nombre1,Texto...",
+  "metadata": { ... }
+}</pre>
+                                </div>
+                            </div>
+                            
+                            <!-- Validaciones automáticas -->
+                            <div class="card card-outline card-warning mb-3">
+                                <div class="card-header">
+                                    <h6 class="card-title">Validaciones</h6>
+                                </div>
+                                <div class="card-body p-2">
+                                    <ul class="list-unstyled mb-0" style="font-size: 0.85em;">
+                                        <li><i class="fas fa-check-circle text-success"></i> Campos requeridos</li>
+                                        <li><i class="fas fa-check-circle text-success"></i> Formato de tiempos</li>
+                                        <li><i class="fas fa-check-circle text-success"></i> Coherencia de hablantes</li>
+                                        <li><i class="fas fa-check-circle text-success"></i> Orden cronológico</li>
+                                    </ul>
+                                </div>
+                            </div>
+                            
+                            <!-- Herramientas rápidas -->
+                            <div class="card card-outline card-info mb-3">
+                                <div class="card-header">
+                                    <h6 class="card-title">Herramientas</h6>
+                                </div>
+                                <div class="card-body p-2">
+                                    <button type="button" class="btn btn-outline-primary btn-sm btn-block" id="btn-regenerar-texto">
+                                        <i class="fas fa-sync"></i> Regenerar Texto Estructurado
+                                    </button>
+                                    <button type="button" class="btn btn-outline-secondary btn-sm btn-block" id="btn-reordenar-cronologico">
+                                        <i class="fas fa-sort-amount-down"></i> Ordenar por Tiempo
+                                    </button>
+                                    <button type="button" class="btn btn-outline-warning btn-sm btn-block" id="btn-validar-hablantes">
+                                        <i class="fas fa-user-check"></i> Validar Hablantes
+                                    </button>
+                                    <button type="button" class="btn btn-outline-info btn-sm btn-block" id="btn-calcular-duraciones">
+                                        <i class="fas fa-calculator"></i> Recalcular Duraciones
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <!-- Errores de validación -->
+                            <div id="json-errors" class="alert alert-danger" style="display: none;">
+                                <h6><i class="fas fa-exclamation-triangle"></i> Errores de Validación:</h6>
+                                <ul id="error-list" class="mb-0">
+                                    <!-- Se llenarán dinámicamente -->
+                                </ul>
+                            </div>
+                            
+                            <!-- Advertencias -->
+                            <div id="json-warnings" class="alert alert-warning" style="display: none;">
+                                <h6><i class="fas fa-exclamation-circle"></i> Advertencias:</h6>
+                                <ul id="warning-list" class="mb-0">
+                                    <!-- Se llenarán dinámicamente -->
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <div class="d-flex justify-content-between w-100">
+                    <div>
+                        <button type="button" class="btn btn-outline-danger" id="btn-revertir-cambios">
+                            <i class="fas fa-undo"></i> Revertir Cambios
+                        </button>
+                        <button type="button" class="btn btn-outline-secondary" id="btn-cargar-original">
+                            <i class="fas fa-download"></i> Cargar Original
+                        </button>
+                    </div>
+                    <div>
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                            <i class="fas fa-times"></i> Cerrar
+                        </button>
+                        <button type="button" class="btn btn-success" id="btn-guardar-json">
+                            <i class="fas fa-save"></i> Guardar JSON
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

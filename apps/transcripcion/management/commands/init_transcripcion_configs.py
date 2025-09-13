@@ -2,13 +2,28 @@
 Comando para inicializar configuraciones de transcripción
 """
 from django.core.management.base import BaseCommand
+from django.contrib.auth import get_user_model
 from apps.transcripcion.models import ConfiguracionTranscripcion
+
+User = get_user_model()
 
 
 class Command(BaseCommand):
     help = 'Inicializa configuraciones de transcripción por defecto'
 
     def handle(self, *args, **options):
+        # Obtener un superusuario para asignar como creador
+        superuser = User.objects.filter(is_superuser=True).first()
+        if not superuser:
+            self.stdout.write(
+                self.style.ERROR('No se encontró ningún superusuario. Creando configuraciones sin usuario.')
+            )
+            usuario_creacion = None
+        else:
+            usuario_creacion = superuser
+            self.stdout.write(
+                self.style.SUCCESS(f'Usando superusuario "{superuser.username}" como creador')
+            )
         configuraciones = [
             {
                 'nombre': 'Rápida',
@@ -26,6 +41,7 @@ class Command(BaseCommand):
                 'filtro_ruido': True,
                 'normalizar_audio': True,
                 'activa': True,
+                'usuario_creacion': usuario_creacion,  # Asignar usuario
             },
             {
                 'nombre': 'Balanceada',
@@ -43,6 +59,7 @@ class Command(BaseCommand):
                 'filtro_ruido': True,
                 'normalizar_audio': True,
                 'activa': True,
+                'usuario_creacion': usuario_creacion,  # Asignar usuario
             },
             {
                 'nombre': 'Precisa',
@@ -60,6 +77,7 @@ class Command(BaseCommand):
                 'filtro_ruido': True,
                 'normalizar_audio': True,
                 'activa': True,
+                'usuario_creacion': usuario_creacion,  # Asignar usuario
             }
         ]
 

@@ -1,0 +1,147 @@
+<!-- Modal para agregar nuevo segmento -->
+<div class="modal fade" id="modal-agregar-segmento" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-info">
+                <h4 class="modal-title">
+                    <i class="fas fa-plus"></i> Agregar Nuevo Segmento
+                </h4>
+                <button type="button" class="close" data-dismiss="modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="form-agregar-segmento">
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i>
+                        <strong>Nuevo Segmento:</strong> Puedes agregar un nuevo fragmento de conversación en cualquier momento de la grabación.
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="nuevo-hablante">
+                                    <i class="fas fa-user"></i> Hablante: <span class="text-danger">*</span>
+                                </label>
+                                <select class="form-control select2" id="nuevo-hablante" required>
+                                    <option value="">Seleccionar hablante...</option>
+                                    <!-- Se cargará dinámicamente -->
+                                </select>
+                                <small class="form-text text-muted">¿Quién habla en este segmento?</small>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="nuevo-posicion">
+                                    <i class="fas fa-sort-numeric-up"></i> Insertar en posición:
+                                </label>
+                                <select class="form-control" id="nuevo-posicion">
+                                    <option value="">Al final de la conversación</option>
+                                    <!-- Se cargará dinámicamente -->
+                                </select>
+                                <small class="form-text text-muted">Dónde insertar el nuevo segmento</small>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="nuevo-inicio">
+                                    <i class="fas fa-play"></i> Tiempo Inicio (s): <span class="text-danger">*</span>
+                                </label>
+                                <input type="number" class="form-control" id="nuevo-inicio" step="0.1" min="0" required placeholder="0.0">
+                                <small class="form-text text-muted">Cuándo empieza a hablar (en segundos)</small>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="nuevo-fin">
+                                    <i class="fas fa-stop"></i> Tiempo Fin (s): <span class="text-danger">*</span>
+                                </label>
+                                <input type="number" class="form-control" id="nuevo-fin" step="0.1" min="0" required placeholder="0.0">
+                                <small class="form-text text-muted">Cuándo termina de hablar (en segundos)</small>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="nuevo-texto">
+                            <i class="fas fa-comment"></i> Texto del segmento: <span class="text-danger">*</span>
+                        </label>
+                        <textarea class="form-control" id="nuevo-texto" rows="4" required placeholder="Escribe aquí lo que dice el hablante..."></textarea>
+                        <small class="form-text text-muted">Contenido completo de lo que dice el hablante</small>
+                    </div>
+                    
+                    <!-- Vista previa de duración -->
+                    <div class="card card-outline card-secondary">
+                        <div class="card-header">
+                            <h6 class="card-title">
+                                <i class="fas fa-eye"></i> Vista Previa
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <strong>Duración:</strong>
+                                    <span id="preview-duracion" class="text-info">0.0 segundos</span>
+                                </div>
+                                <div class="col-md-4">
+                                    <strong>Formato tiempo:</strong>
+                                    <span id="preview-tiempo" class="text-info">00:00 - 00:00</span>
+                                </div>
+                                <div class="col-md-4">
+                                    <strong>Posición:</strong>
+                                    <span id="preview-posicion" class="text-info">Al final</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Controles de audio para ayudar -->
+                    <div class="card card-outline card-success" id="audio-controls-nuevo">
+                        <div class="card-header">
+                            <h6 class="card-title">
+                                <i class="fas fa-headphones"></i> Herramientas de Audio
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-3">
+                                    <button type="button" class="btn btn-outline-primary btn-block" id="btn-get-current-time">
+                                        <i class="fas fa-crosshairs"></i> Tiempo Actual
+                                    </button>
+                                    <small class="text-muted">Del reproductor</small>
+                                </div>
+                                <div class="col-md-3">
+                                    <button type="button" class="btn btn-outline-secondary btn-block" id="btn-mark-start">
+                                        <i class="fas fa-flag"></i> Marcar Inicio
+                                    </button>
+                                    <small class="text-muted">Establece inicio</small>
+                                </div>
+                                <div class="col-md-3">
+                                    <button type="button" class="btn btn-outline-warning btn-block" id="btn-mark-end">
+                                        <i class="fas fa-flag-checkered"></i> Marcar Fin
+                                    </button>
+                                    <small class="text-muted">Establece fin</small>
+                                </div>
+                                <div class="col-md-3">
+                                    <button type="button" class="btn btn-outline-info btn-block" id="btn-play-preview">
+                                        <i class="fas fa-play"></i> Reproducir
+                                    </button>
+                                    <small class="text-muted">Escuchar rango</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                    <i class="fas fa-times"></i> Cancelar
+                </button>
+                <button type="button" class="btn btn-primary" id="btn-crear-segmento">
+                    <i class="fas fa-plus"></i> Crear Segmento
+                </button>
+            </div>
+        </div>
+    </div>
+</div>

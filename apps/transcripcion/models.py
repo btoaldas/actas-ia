@@ -167,6 +167,7 @@ class ConfiguracionTranscripcion(models.Model):
         return json.dumps({
             'modelo_whisper': self.modelo_whisper,
             'temperatura': float(self.temperatura),
+            'idioma_principal': self.idioma_principal,
             'usar_vad': self.usar_vad,
             'vad_filtro': self.vad_filtro,
             'min_hablantes': self.min_hablantes,
@@ -368,7 +369,24 @@ class Transcripcion(models.Model):
         ]
 
     def __str__(self):
-        return f"Transcripción {self.procesamiento_audio.nombre_archivo} - {self.get_estado_display()}"
+        """Representación segura del objeto para evitar AttributeError.
+        Usa campos existentes en ProcesamientoAudio.
+        """
+        try:
+            titulo_audio = getattr(self.procesamiento_audio, 'titulo', None) or ''
+        except Exception:
+            titulo_audio = ''
+        estado_display = ''
+        try:
+            estado_display = self.get_estado_display()
+        except Exception:
+            estado_display = str(getattr(self, 'estado', ''))
+        base = "Transcripción"
+        if titulo_audio:
+            base += f" {titulo_audio}"
+        if estado_display:
+            base += f" - {estado_display}"
+        return base
 
     @property
     def duracion_proceso(self):
@@ -390,6 +408,61 @@ class Transcripcion(models.Model):
     def get_nombre_hablante(self, speaker_id):
         """Obtiene el nombre real de un hablante por su ID"""
         return self.hablantes_identificados.get(speaker_id, f"Hablante {speaker_id}")
+
+    def get_configuracion_completa(self):
+        """
+        Combina la configuración base con los parámetros personalizados
+        Retorna un diccionario con toda la configuración necesaria para el procesamiento
+        """
+        # Configuración base del modelo relacionado
+        config_base = {}
+        if self.configuracion_utilizada:
+            config_base = {
+                'modelo_whisper': self.configuracion_utilizada.modelo_whisper,
+                'temperatura': self.configuracion_utilizada.temperatura,
+                'idioma_principal': self.configuracion_utilizada.idioma_principal,
+                'usar_vad': self.configuracion_utilizada.usar_vad,
+                'vad_filtro': self.configuracion_utilizada.vad_filtro,
+                'min_hablantes': self.configuracion_utilizada.min_hablantes,
+                'max_hablantes': self.configuracion_utilizada.max_hablantes,
+                'umbral_clustering': self.configuracion_utilizada.umbral_clustering,
+                'chunk_duracion': self.configuracion_utilizada.chunk_duracion,
+                'overlap_duracion': getattr(self.configuracion_utilizada, 'overlap_duracion', 5),
+                'usar_gpu': self.configuracion_utilizada.usar_gpu,
+                'filtro_ruido': self.configuracion_utilizada.filtro_ruido,
+                'normalizar_audio': self.configuracion_utilizada.normalizar_audio,
+                'usar_enhanced_diarization': getattr(self.configuracion_utilizada, 'usar_enhanced_diarization', False),
+            }
+        
+        # Aplicar parámetros personalizados PRIMERO
+        if self.parametros_personalizados:
+            config_base.update(self.parametros_personalizados)
+        
+        # ✅ AGREGAR PARTICIPANTES DESDE EL PROCESAMIENTO DE AUDIO (DESPUÉS de parámetros personalizados)
+        # Si hay participantes configurados, incluirlos directamente en la configuración
+        # Esto sobrescribe cualquier valor vacío que pudiera haber en parámetros personalizados
+        if (hasattr(self, 'procesamiento_audio') and 
+            self.procesamiento_audio and 
+            hasattr(self.procesamiento_audio, 'participantes_detallados') and 
+            self.procesamiento_audio.participantes_detallados):
+            
+            participantes = self.procesamiento_audio.participantes_detallados
+            config_base['participantes_esperados'] = participantes
+            config_base['hablantes_predefinidos'] = participantes
+            
+            # También agregar metadatos útiles
+            config_base['audio_id'] = self.procesamiento_audio.id
+            config_base['usuario_id'] = self.usuario_creacion.id if self.usuario_creacion else None
+            config_base['audio_titulo'] = getattr(self.procesamiento_audio, 'titulo', f'Audio {self.procesamiento_audio.id}')
+        else:
+            # Si no hay participantes, dejar arrays vacíos para que el sistema use detección automática
+            # Solo si no están ya definidos en parámetros personalizados
+            if 'participantes_esperados' not in config_base:
+                config_base['participantes_esperados'] = []
+            if 'hablantes_predefinidos' not in config_base:
+                config_base['hablantes_predefinidos'] = []
+        
+        return config_base
 
 
 class HistorialEdicion(models.Model):
