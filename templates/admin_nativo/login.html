@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{{ site_title }} | Log in</title>
+    <style>
+        /* Estilos básicos del admin nativo de Django */
+        body {
+            margin: 0;
+            padding: 0;
+            font-size: 14px;
+            font-family: "Roboto","Lucida Grande","DejaVu Sans","Bitstream Vera Sans",Verdana,Arial,sans-serif;
+            color: #333;
+            background: #fff;
+        }
+        
+        .login {
+            background: #f8f8f8;
+            height: 100%;
+        }
+        
+        .login #header {
+            background: #417690;
+            color: #ffc;
+            overflow: hidden;
+        }
+        
+        .login #header h1 {
+            padding: 20px 40px;
+            margin: 0;
+            font-weight: 300;
+            font-size: 24px;
+            color: #f4f379;
+        }
+        
+        .login #header h1 a:link, 
+        .login #header h1 a:visited {
+            color: #f4f379;
+        }
+        
+        .login #content {
+            padding: 20px 20px 0;
+        }
+        
+        .login form {
+            background: #fff;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            overflow: hidden;
+            padding: 6px;
+            margin: 15px 0;
+        }
+        
+        .login .form-row {
+            padding: 4px 0;
+        }
+        
+        .login .form-row label {
+            display: block;
+            line-height: 2em;
+        }
+        
+        .login .form-row #id_username, 
+        .login .form-row #id_password {
+            padding: 8px;
+            width: 300px;
+            display: block;
+        }
+        
+        .login .submit-row {
+            padding: 1em 0 0 0;
+            margin: 0;
+            text-align: center;
+        }
+        
+        .login .submit-row input {
+            margin: 0;
+        }
+        
+        .submit-row input[type="submit"] {
+            background: #417690;
+            border: none;
+            border-radius: 4px;
+            color: #fff;
+            cursor: pointer;
+            padding: 10px 15px;
+            text-transform: uppercase;
+        }
+        
+        .submit-row input[type="submit"]:hover {
+            background: #205067;
+        }
+        
+        .errornote {
+            background: #ba2121;
+            border-radius: 4px;
+            color: #fff;
+            font-weight: 700;
+            margin: 0 0 16px;
+            padding: 10px 12px;
+        }
+    </style>
+</head>
+
+<body class="login">
+
+<div id="header">
+    <h1><a href="{{ site_url }}">{{ site_header|default:"Django Administration" }}</a></h1>
+</div>
+
+<div id="content">
+    <div id="content-main">
+        <form method="post" id="login-form">
+            {% csrf_token %}
+            <div class="form-row">
+                <label for="id_username" class="required">Usuario:</label>
+                <input type="text" name="username" id="id_username" class="vTextField" required autofocus>
+            </div>
+            <div class="form-row">
+                <label for="id_password" class="required">Contraseña:</label>
+                <input type="password" name="password" id="id_password" class="vTextField" required>
+            </div>
+            
+            {% if form.errors %}
+                <div class="errornote">
+                    Error de autenticación. Verifique sus credenciales.
+                </div>
+            {% endif %}
+            
+            <div class="submit-row">
+                <input type="submit" value="Iniciar sesión">
+            </div>
+        </form>
+    </div>
+</div>
+
+</body>
+</html>

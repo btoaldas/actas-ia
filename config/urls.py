@@ -20,6 +20,7 @@ from django.conf.urls.static import static
 from django.views.static import serve
 from apps.pages import views
 from django.conf.urls.i18n import i18n_patterns
+from .native_admin import native_admin_site
 
 
 handler404 = 'apps.pages.views.handler404'
@@ -29,7 +30,8 @@ handler500 = 'apps.pages.views.handler500'
 
 urlpatterns = [
     path('', include('apps.pages.urls')),
-    path("admin/", admin.site.urls),
+    path("admin/", admin.site.urls),  # Admin personalizado con AdminLTE
+    path("administracion/", native_admin_site.urls),  # Admin NATIVO de Django
     
     # Rutas de autenticación y OAuth
     path('accounts/', include('allauth.urls')),

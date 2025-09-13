@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{{ site_title }} | Administración</title>
+    <style>
+        /* Estilos básicos del admin nativo de Django */
+        body {
+            margin: 0;
+            padding: 0;
+            font-size: 14px;
+            font-family: "Roboto","Lucida Grande","DejaVu Sans","Bitstream Vera Sans",Verdana,Arial,sans-serif;
+            color: #333;
+            background: #fff;
+        }
+        
+        #header {
+            background: #417690;
+            color: #ffc;
+            overflow: hidden;
+        }
+        
+        #header h1 {
+            padding: 20px 40px;
+            margin: 0;
+            font-weight: 300;
+            font-size: 24px;
+            color: #f4f379;
+            float: left;
+        }
+        
+        #header h1 a:link, 
+        #header h1 a:visited {
+            color: #f4f379;
+            text-decoration: none;
+        }
+        
+        #user-tools {
+            float: right;
+            padding: 20px 40px;
+            font-size: 11px;
+            text-align: right;
+        }
+        
+        #user-tools a {
+            color: #ffc;
+        }
+        
+        #content {
+            padding: 20px 40px;
+            max-width: none;
+        }
+        
+        #content h1 {
+            font-weight: 300;
+            margin: 0 0 20px;
+            font-size: 24px;
+        }
+        
+        .module {
+            border: 1px solid #ddd;
+            margin-bottom: 5px;
+            background: #fff;
+        }
+        
+        .module h2 {
+            background: #f1f1f1;
+            padding: 8px 16px;
+            margin: 0;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .module h3 {
+            margin: 0;
+            padding: 8px 16px;
+            font-size: 12px;
+        }
+        
+        .module h3 a {
+            color: #5b80b2;
+            text-decoration: none;
+        }
+        
+        .addlink {
+            padding-left: 16px;
+            background: url(data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTMiIGhlaWdodD0iMTMiIHZpZXdCb3g9IjAgMCAxMyAxMyIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTYuMzM4ODQgMC4yNVY2LjEyODE2SDEyLjQxOTdWNi44NzE4NEg2LjMzODg0VjEyLjc1SDUuNjYxMTZWNi44NzE4NEgtMC41VjYuMTI4MTZINS42NjExNlYwLjI1SDYuMzM4ODRaIiBmaWxsPSIjNzBiZjJlIi8+Cjwvc3ZnPgo=) no-repeat left center;
+        }
+        
+        .changelink {
+            padding-left: 16px;
+            background: url(data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTMiIGhlaWdodD0iMTMiIHZpZXdCb3g9IjAgMCAxMyAxMyIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTkuMTY1IDIuNUw5LjE2NSAxLjgzMzMzSDEwLjgzMzNWMy41SDkuMTY1VjIuNVpNNy41IDEuODMzMzNWMi41SDE5LjY2NjdWMS44MzMzM0g3LjVaTTkuMTY1IDcuNVY2LjgzMzMzSDEwLjgzMzNWOC41SDkuMTY1VjcuNVpNNy41IDYuODMzMzNWNy41SDE5LjY2NjdWNi44MzMzM0g3LjVaIiBmaWxsPSIjZmZjYjA1Ii8+Cjwvc3ZnPgo=) no-repeat left center;
+        }
+        
+        .model-list {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+        }
+        
+        .model-list li {
+            border-bottom: 1px solid #eee;
+        }
+        
+        .model-list li:last-child {
+            border-bottom: none;
+        }
+        
+        .model-list a {
+            display: block;
+            padding: 8px 16px;
+            color: #5b80b2;
+            text-decoration: none;
+        }
+        
+        .model-list a:hover {
+            background: #f8f8f8;
+        }
+    </style>
+</head>
+
+<body>
+
+<div id="header">
+    <div id="branding">
+        <h1 id="site-name"><a href="{% url 'native_admin:index' %}">{{ site_header|default:"Django Administration" }}</a></h1>
+    </div>
+    <div id="user-tools">
+        Bienvenido, <strong>{{ user.get_full_name|default:user.username }}</strong>.
+        <a href="{% url 'native_admin:logout' %}">Cerrar sesión</a>
+    </div>
+</div>
+
+<div id="content" class="colMS">
+    <h1>{{ title }}</h1>
+    
+    {% for app in available_apps %}
+        <div class="module">
+            <h2>{{ app.name }}</h2>
+            {% if app.models %}
+                <ul class="model-list">
+                    {% for model in app.models %}
+                        <li>
+                            {% if model.admin_url %}
+                                <a href="{{ model.admin_url }}" class="changelink">{{ model.name }}</a>
+                            {% endif %}
+                            {% if model.add_url %}
+                                <a href="{{ model.add_url }}" class="addlink">Agregar {{ model.name|lower }}</a>
+                            {% endif %}
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
+        </div>
+    {% endfor %}
+    
+    {% if not available_apps %}
+        <div class="module">
+            <h2>Administración Django Nativa</h2>
+            <p>No hay modelos registrados en este admin nativo.</p>
+            <p>Los modelos disponibles incluyen:</p>
+            <ul class="model-list">
+                <li><a href="{% url 'native_admin:auth_user_changelist' %}" class="changelink">Usuarios</a></li>
+                <li><a href="{% url 'native_admin:auth_user_add' %}" class="addlink">Agregar usuario</a></li>
+                <li><a href="{% url 'native_admin:auth_group_changelist' %}" class="changelink">Grupos</a></li>
+                <li><a href="{% url 'native_admin:auth_group_add' %}" class="addlink">Agregar grupo</a></li>
+            </ul>
+        </div>
+    {% endif %}
+</div>
+
+</body>
+</html>
