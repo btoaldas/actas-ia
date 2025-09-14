@@ -1,0 +1,844 @@
+{% extends "layouts/base.html" %}
+{% load static %}
+
+{% block title %}{{ page_title }}{% endblock title %}
+
+{% block stylesheets %}
+    <link rel="stylesheet" href="{% static 'generador_actas/css/proveedores-ia.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="content-wrapper">
+    <!-- Content Header -->
+    <div class="content-header">
+        <div class="container-fluid">
+            <div class="row mb-2">
+                <div class="col-sm-6">
+                    <h1>🧪 {{ page_title }}</h1>
+                </div>
+                <div class="col-sm-6">
+                    <ol class="breadcrumb float-sm-right">
+                        {% for item in breadcrumbs %}
+                            {% if item.url %}
+                                <li class="breadcrumb-item">
+                                    <a href="{{ item.url }}">{{ item.title }}</a>
+                                </li>
+                            {% else %}
+                                <li class="breadcrumb-item active">{{ item.title }}</li>
+                            {% endif %}
+                        {% endfor %}
+                    </ol>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main content -->
+    <section class="content">
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-md-8">
+                    <div class="card card-primary">
+                        <div class="card-header">
+                            <h3 class="card-title">🔧 Probar Proveedores de IA</h3>
+                        </div>
+                        
+                        <form method="post" id="testForm">
+                            {% csrf_token %}
+                            <div class="card-body">
+                                
+                                <!-- Selección de Proveedor -->
+                                <div class="form-group">
+                                    <label for="{{ form.proveedor.id_for_label }}">
+                                        Proveedor a Probar <span class="text-danger">*</span>
+                                    </label>
+                                    {{ form.proveedor }}
+                                    {% if form.proveedor.errors %}
+                                        <div class="text-danger small">{{ form.proveedor.errors }}</div>
+                                    {% endif %}
+                                    <small class="form-text text-muted">Solo se muestran proveedores activos</small>
+                                </div>
+
+                                <!-- Prompt de Prueba -->
+                                <div class="form-group">
+                                    <label for="{{ form.prompt_prueba.id_for_label }}">
+                                        Prompt de Prueba
+                                    </label>
+                                    {{ form.prompt_prueba }}
+                                    {% if form.prompt_prueba.errors %}
+                                        <div class="text-danger small">{{ form.prompt_prueba.errors }}</div>
+                                    {% endif %}
+                                    <small class="form-text text-muted">
+                                        Este prompt se enviará al proveedor para verificar su funcionamiento
+                                    </small>
+                                </div>
+
+                                <!-- Incluir Contexto -->
+                                <div class="form-group">
+                                    <div class="custom-control custom-checkbox">
+                                        {{ form.incluir_contexto }}
+                                        <label class="custom-control-label" for="{{ form.incluir_contexto.id_for_label }}">
+                                            Incluir contexto de prueba adicional
+                                        </label>
+                                    </div>
+                                    <small class="form-text text-muted">
+                                        Agrega información contextual simulada para una prueba más realista
+                                    </small>
+                                </div>
+
+                            </div>
+                            
+                            <div class="card-footer">
+                                <button type="button" class="btn btn-primary" onclick="ejecutarPrueba()">
+                                    <i class="fas fa-play"></i> Ejecutar Prueba (Directo)
+                                </button>
+                                <button type="button" class="btn btn-success" onclick="ejecutarPruebaCelery()">
+                                    <i class="fas fa-tasks"></i> Ejecutar Prueba (Celery)
+                                </button>
+                                <button type="button" class="btn btn-info" onclick="probarTodos()">
+                                    <i class="fas fa-list-check"></i> Probar Todos los Proveedores
+                                </button>
+                                <a href="{% url 'generador_actas:proveedores_lista' %}" class="btn btn-secondary">
+                                    <i class="fas fa-arrow-left"></i> Volver a Lista
+                                </a>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+                
+                <div class="col-md-4">
+                    <!-- Información de la Prueba -->
+                    <div class="card card-info">
+                        <div class="card-header">
+                            <h3 class="card-title">ℹ️ Información</h3>
+                        </div>
+                        <div class="card-body">
+                            <h6><strong>¿Qué se prueba?</strong></h6>
+                            <ul class="list-unstyled">
+                                <li><i class="fas fa-check text-success"></i> Conectividad con la API</li>
+                                <li><i class="fas fa-check text-success"></i> Autenticación correcta</li>
+                                <li><i class="fas fa-check text-success"></i> Respuesta del modelo</li>
+                                <li><i class="fas fa-check text-success"></i> Tiempo de respuesta</li>
+                                <li><i class="fas fa-check text-success"></i> Formato de respuesta JSON</li>
+                            </ul>
+                            
+                            <h6><strong>Prompts Sugeridos:</strong></h6>
+                            <div class="btn-group-vertical btn-block">
+                                <button type="button" class="btn btn-outline-primary btn-sm" onclick="cargarPrompt('json')">
+                                    JSON Simple
+                                </button>
+                                <button type="button" class="btn btn-outline-primary btn-sm" onclick="cargarPrompt('acta')">
+                                    Prueba de Acta
+                                </button>
+                                <button type="button" class="btn btn-outline-primary btn-sm" onclick="cargarPrompt('resumen')">
+                                    Prueba de Resumen
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Resultados de Pruebas -->
+            <div class="row mt-4">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">📊 Resultados de Pruebas</h3>
+                            <div class="card-tools">
+                                <button type="button" class="btn btn-tool" onclick="limpiarResultados()">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div id="resultados">
+                                <div class="text-center text-muted">
+                                    <i class="fas fa-vial fa-2x mb-3"></i>
+                                    <p>Los resultados de las pruebas aparecerán aquí</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+</div>
+
+<script>
+// Prompts predefinidos
+const promptsPredefinidos = {
+    'json': 'Responde únicamente con el siguiente JSON exacto: {"status": "ok", "test": "exitoso", "timestamp": "' + new Date().toISOString() + '"}',
+    'acta': 'Genera un breve resumen de una reunión municipal ficticia en formato JSON con los campos: {"tipo_reunion": "string", "fecha": "string", "participantes": ["array"], "resumen": "string"}',
+    'resumen': 'Resume el siguiente texto en formato JSON: "El concejo municipal se reunió para discutir el presupuesto 2025." Responde con: {"resumen": "string", "puntos_clave": ["array"], "conclusion": "string"}'
+};
+
+function cargarPrompt(tipo) {
+    const textarea = document.getElementById('{{ form.prompt_prueba.id_for_label }}');
+    if (textarea && promptsPredefinidos[tipo]) {
+        textarea.value = promptsPredefinidos[tipo];
+    }
+}
+
+function ejecutarPrueba() {
+    const proveedorSelect = document.getElementById('{{ form.proveedor.id_for_label }}');
+    const promptTextarea = document.getElementById('{{ form.prompt_prueba.id_for_label }}');
+    
+    if (!proveedorSelect.value) {
+        alert('Selecciona un proveedor para probar');
+        return;
+    }
+    
+    if (!promptTextarea.value.trim()) {
+        alert('Ingresa un prompt de prueba');
+        return;
+    }
+    
+    const proveedorId = proveedorSelect.value;
+    const prompt = promptTextarea.value;
+    
+    // Mostrar indicador de carga con terminal para prueba directa
+    mostrarResultadoInicioDirecto(proveedorId);
+    
+    // Actualizar terminal en tiempo real para prueba directa
+    const logDiv = document.getElementById(`log-${proveedorId}`);
+    if (logDiv) {
+        logDiv.innerHTML += '<div class="text-info">[DIRECTO] Iniciando prueba directa...</div>';
+        logDiv.innerHTML += '<div class="text-primary">[DIRECTO] Enviando a servidor...</div>';
+    }
+    
+    // Ejecutar prueba
+    fetch('{% url "generador_actas:api_probar_conexion_proveedor" %}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token }}'
+        },
+        body: JSON.stringify({
+            'proveedor_id': proveedorId,
+            'prompt_prueba': prompt
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        // Actualizar terminal final
+        if (logDiv) {
+            logDiv.innerHTML += `<div class="text-success">[DIRECTO] Respuesta recibida en ${data.tiempo_respuesta || 'N/A'}s</div>`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+        mostrarResultado(data, proveedorId);
+    })
+    .catch(error => {
+        // Actualizar terminal con error
+        if (logDiv) {
+            logDiv.innerHTML += `<div class="text-danger">[DIRECTO] Error: ${error.message || error}</div>`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+        mostrarError(error, proveedorId);
+    });
+}
+
+function mostrarResultadoInicioDirecto(proveedorId) {
+    const resultadosDiv = document.getElementById('resultados');
+    
+    const cardHtml = `
+        <div class="card mb-3 card-primary" id="resultado-${proveedorId}">
+            <div class="card-header">
+                <h6 class="card-title">
+                    <i class="fas fa-bolt"></i> 
+                    Ejecutando prueba directa para proveedor ID: ${proveedorId}...
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="progress mb-3">
+                    <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" 
+                         style="width: 25%" aria-valuenow="25" aria-valuemin="0" aria-valuemax="100">Procesando...</div>
+                </div>
+                <div class="text-center">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="sr-only">Procesando directamente...</span>
+                    </div>
+                    <p class="mt-2" id="status-${proveedorId}">Procesando prueba directa en servidor...</p>
+                </div>
+                <div class="mt-3">
+                    <h6>📋 Log de Proceso:</h6>
+                    <div class="bg-dark text-light p-2 rounded" style="font-family: monospace; font-size: 12px; height: 150px; overflow-y: auto;" id="log-${proveedorId}">
+                        <div class="text-success">[INFO] Iniciando prueba directa...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Si es la primera prueba, limpiar el mensaje vacío
+    if (resultadosDiv.innerHTML.includes('Los resultados de las pruebas aparecerán aquí')) {
+        resultadosDiv.innerHTML = '';
+    }
+    
+    resultadosDiv.insertAdjacentHTML('beforeend', cardHtml);
+}
+
+function ejecutarPruebaCelery() {
+    const proveedorSelect = document.getElementById('{{ form.proveedor.id_for_label }}');
+    const promptTextarea = document.getElementById('{{ form.prompt_prueba.id_for_label }}');
+    const incluirContextoCheckbox = document.getElementById('{{ form.incluir_contexto.id_for_label }}');
+    
+    if (!proveedorSelect.value) {
+        alert('Selecciona un proveedor para probar');
+        return;
+    }
+    
+    if (!promptTextarea.value.trim()) {
+        alert('Ingresa un prompt de prueba');
+        return;
+    }
+    
+    const proveedorId = proveedorSelect.value;
+    const prompt = promptTextarea.value;
+    const incluirContexto = incluirContextoCheckbox.checked;
+    
+    // Mostrar indicador de inicio de tarea
+    mostrarResultadoInicioCelery(proveedorId);
+    
+    // Ejecutar prueba con Celery
+    fetch('{% url "generador_actas:api_probar_conexion_proveedor_celery" %}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token }}'
+        },
+        body: JSON.stringify({
+            'proveedor_id': proveedorId,
+            'prompt_prueba': prompt,
+            'incluir_contexto': incluirContexto
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Iniciar polling del progreso
+            iniciarMonitoreoProgreso(data.task_id, data.task_uuid, proveedorId);
+        } else {
+            mostrarError(data.error, proveedorId);
+        }
+    })
+    .catch(error => {
+        mostrarError(error, proveedorId);
+    });
+}
+
+function mostrarResultadoInicioCelery(proveedorId) {
+    const resultadosDiv = document.getElementById('resultados');
+    
+    const cardHtml = `
+        <div class="card mb-3 card-info" id="resultado-${proveedorId}">
+            <div class="card-header">
+                <h6 class="card-title">
+                    <i class="fas fa-rocket"></i> 
+                    Iniciando tarea Celery para proveedor ID: ${proveedorId}...
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="progress mb-3">
+                    <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" 
+                         style="width: 5%" aria-valuenow="5" aria-valuemin="0" aria-valuemax="100">5%</div>
+                </div>
+                <div class="text-center">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="sr-only">Enviando a cola Celery...</span>
+                    </div>
+                    <p class="mt-2" id="status-${proveedorId}">Enviando tarea a cola de procesamiento...</p>
+                </div>
+                <div class="mt-3">
+                    <h6>📋 Log de Proceso:</h6>
+                    <div class="bg-dark text-light p-2 rounded" style="font-family: monospace; font-size: 12px; height: 150px; overflow-y: auto;" id="log-${proveedorId}">
+                        <div class="text-success">[INFO] Iniciando procesamiento Celery...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Si es la primera prueba, limpiar el mensaje vacío
+    if (resultadosDiv.innerHTML.includes('Los resultados de las pruebas aparecerán aquí')) {
+        resultadosDiv.innerHTML = '';
+    }
+    
+    resultadosDiv.insertAdjacentHTML('beforeend', cardHtml);
+}
+
+function iniciarMonitoreoProgreso(taskId, taskUuid, proveedorId) {
+    const interval = setInterval(() => {
+        fetch(`{% url "generador_actas:api_progreso_prueba" "TASK_ID" %}`.replace('TASK_ID', taskId))
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                if (data.completado) {
+                    // Tarea completada
+                    clearInterval(interval);
+                    mostrarResultadoCompleto(data.resultado, proveedorId);
+                } else if (data.progreso) {
+                    // Actualizar progreso
+                    actualizarProgreso(data.progreso, proveedorId);
+                }
+            } else {
+                // Error en la tarea
+                clearInterval(interval);
+                mostrarError(data.error, proveedorId);
+            }
+        })
+        .catch(error => {
+            clearInterval(interval);
+            mostrarError(error, proveedorId);
+        });
+    }, 2000); // Polling cada 2 segundos
+    
+    // Timeout después de 5 minutos
+    setTimeout(() => {
+        clearInterval(interval);
+        const logDiv = document.getElementById(`log-${proveedorId}`);
+        if (logDiv) {
+            logDiv.innerHTML += '<div class="text-warning">[TIMEOUT] Tiempo de espera agotado (5 min)</div>';
+        }
+    }, 300000);
+}
+
+function actualizarProgreso(progreso, proveedorId) {
+    const progressBar = document.querySelector(`#resultado-${proveedorId} .progress-bar`);
+    const statusP = document.getElementById(`status-${proveedorId}`);
+    const logDiv = document.getElementById(`log-${proveedorId}`);
+    
+    if (progressBar) {
+        progressBar.style.width = `${progreso.porcentaje}%`;
+        progressBar.setAttribute('aria-valuenow', progreso.porcentaje);
+        progressBar.textContent = `${progreso.porcentaje}%`;
+    }
+    
+    if (statusP) {
+        statusP.textContent = `${progreso.paso}: ${progreso.detalle}`;
+    }
+    
+    if (logDiv) {
+        const timestamp = new Date().toLocaleTimeString();
+        const colorClass = getLogColorClass(progreso.paso);
+        logDiv.innerHTML += `<div class="${colorClass}">[${timestamp}] ${progreso.paso}: ${progreso.detalle}</div>`;
+        logDiv.scrollTop = logDiv.scrollHeight;
+    }
+}
+
+function mostrarResultadoCompleto(resultado, proveedorId) {
+    const resultadoCard = document.getElementById(`resultado-${proveedorId}`);
+    
+    if (!resultadoCard) return;
+    
+    const timestamp = new Date().toLocaleString();
+    let cardClass = resultado.success ? 'card-success' : 'card-danger';
+    let icon = resultado.success ? 'fas fa-check-circle' : 'fas fa-times-circle';
+    let estado = resultado.success ? 'success' : 'danger';
+    
+    // Preservar el contenido del terminal existente
+    const logDiv = document.getElementById(`log-${proveedorId}`);
+    let logContent = '';
+    if (logDiv) {
+        logContent = logDiv.innerHTML;
+        // Agregar línea final al log
+        logContent += `<div class="text-success">[COMPLETADO] Procesamiento finalizado en ${resultado.tiempo_respuesta || 'N/A'}s</div>`;
+    }
+    
+    let bodyHtml = `
+        <div class="row">
+            <div class="col-md-6">
+                <strong>Proveedor:</strong> ${resultado.proveedor ? resultado.proveedor.nombre : 'Desconocido'}<br>
+                <strong>Tipo:</strong> ${resultado.proveedor ? resultado.proveedor.tipo : 'N/A'}<br>
+                <strong>Modelo:</strong> ${resultado.proveedor ? resultado.proveedor.modelo : 'N/A'}<br>
+                <strong>Tiempo:</strong> ${resultado.tiempo_respuesta || 'N/A'}s<br>
+                <strong>Task ID:</strong> ${resultado.task_id}<br>
+                <strong>Timestamp:</strong> ${timestamp}
+            </div>
+            <div class="col-md-6">
+                <strong>Estado:</strong> 
+                <span class="badge badge-${estado}">
+                    ${resultado.success ? 'ÉXITO' : 'ERROR'}
+                </span><br>
+                <strong>Mensaje:</strong> ${resultado.mensaje || resultado.error || 'N/A'}
+            </div>
+        </div>
+        
+        <!-- Mantener el terminal visible -->
+        <div class="mt-3">
+            <h6>📋 Log de Proceso:</h6>
+            <div class="bg-dark text-light p-2 rounded" style="font-family: monospace; font-size: 12px; height: 150px; overflow-y: auto;" id="log-${proveedorId}">
+                ${logContent}
+            </div>
+        </div>
+    `;
+    
+    // Mostrar métricas detalladas
+    if (resultado.metricas) {
+        bodyHtml += `
+            <hr>
+            <h6><i class="fas fa-chart-line"></i> Métricas de Procesamiento:</h6>
+            <div class="row">
+                <div class="col-md-6">
+                    <ul class="list-unstyled">
+                        <li><strong>Caracteres del prompt:</strong> ${resultado.metricas.caracteres_prompt}</li>
+                        <li><strong>Tokens estimados:</strong> ${resultado.metricas.tokens_estimados || 'N/A'}</li>
+                    </ul>
+                </div>
+                <div class="col-md-6">
+                    <ul class="list-unstyled">
+                        <li><strong>Modelo usado:</strong> ${resultado.metricas.modelo_usado || 'N/A'}</li>
+                        <li><strong>Conexión exitosa:</strong> ${resultado.metricas.exito_conexion ? 'Sí' : 'No'}</li>
+                    </ul>
+                </div>
+            </div>
+        `;
+    }
+    
+    // Mostrar parámetros enviados
+    if (resultado.parametros_envio) {
+        bodyHtml += `
+            <hr>
+            <h6><i class="fas fa-cogs"></i> Parámetros Enviados:</h6>
+            <pre class="bg-light p-2" style="font-size: 11px; max-height: 150px; overflow-y: auto;">${JSON.stringify(resultado.parametros_envio, null, 2)}</pre>
+        `;
+    }
+    
+    if (resultado.prueba_prompt) {
+        bodyHtml += `
+            <hr>
+            <h6><i class="fas fa-comment"></i> Prueba de Prompt:</h6>
+        `;
+        
+        if (resultado.prueba_prompt.exito) {
+            // Mostrar la respuesta real formateada correctamente
+            let respuestaFormateada;
+            if (typeof resultado.prueba_prompt.respuesta === 'object') {
+                respuestaFormateada = JSON.stringify(resultado.prueba_prompt.respuesta, null, 2);
+            } else {
+                respuestaFormateada = resultado.prueba_prompt.respuesta;
+            }
+            
+            bodyHtml += `
+                <div class="alert alert-info">
+                    <strong>Respuesta de la IA:</strong>
+                    <pre class="bg-light p-2 mt-2" style="max-height: 300px; overflow-y: auto;">${respuestaFormateada}</pre>
+                    <small class="text-muted">
+                        <strong>Tokens:</strong> ${resultado.prueba_prompt.tokens || 'N/A'} | 
+                        <strong>Modelo usado:</strong> ${resultado.prueba_prompt.modelo_usado || 'N/A'}
+                    </small>
+                </div>
+            `;
+        } else {
+            bodyHtml += `
+                <div class="alert alert-warning">
+                    <strong>Error en la prueba:</strong> ${resultado.prueba_prompt.error}
+                </div>
+            `;
+        }
+    }
+    
+    resultadoCard.className = `card mb-3 ${cardClass}`;
+    resultadoCard.innerHTML = `
+        <div class="card-header">
+            <h6 class="card-title">
+                <i class="${icon}"></i> 
+                ${resultado.proveedor ? resultado.proveedor.nombre : 'Proveedor ' + proveedorId} (Celery)
+            </h6>
+        </div>
+        <div class="card-body">
+            ${bodyHtml}
+        </div>
+    `;
+    
+    // Asegurar que el terminal se desplace hacia abajo
+    const newLogDiv = document.getElementById(`log-${proveedorId}`);
+    if (newLogDiv) {
+        newLogDiv.scrollTop = newLogDiv.scrollHeight;
+    }
+}
+
+function getLogColorClass(paso) {
+    const colors = {
+        'INICIANDO': 'text-info',
+        'VALIDANDO': 'text-primary',
+        'CONFIGURANDO': 'text-primary',
+        'PREPARANDO': 'text-info',
+        'CONECTANDO': 'text-warning',
+        'ENVIANDO': 'text-warning',
+        'PROCESANDO': 'text-info',
+        'COMPLETADO': 'text-success',
+        'ERROR': 'text-danger'
+    };
+    return colors[paso] || 'text-secondary';
+}
+
+function probarTodos() {
+    const proveedorSelect = document.getElementById('{{ form.proveedor.id_for_label }}');
+    const opciones = Array.from(proveedorSelect.options).filter(opt => opt.value);
+    
+    if (opciones.length === 0) {
+        alert('No hay proveedores disponibles para probar');
+        return;
+    }
+    
+    if (!confirm(`¿Probar todos los ${opciones.length} proveedores disponibles?`)) {
+        return;
+    }
+    
+    limpiarResultados();
+    
+    // Probar cada proveedor secuencialmente
+    opciones.forEach((option, index) => {
+        setTimeout(() => {
+            const proveedorId = option.value;
+            mostrarResultadoCarga(proveedorId);
+            
+            fetch('{% url "generador_actas:api_probar_conexion_proveedor" %}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: JSON.stringify({
+                    'proveedor_id': proveedorId,
+                    'prompt_prueba': promptsPredefinidos.json
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                mostrarResultado(data, proveedorId);
+            })
+            .catch(error => {
+                mostrarError(error, proveedorId);
+            });
+        }, index * 2000); // Espaciar las pruebas 2 segundos
+    });
+}
+
+function mostrarResultadoCarga(proveedorId) {
+    const resultadosDiv = document.getElementById('resultados');
+    
+    const cardHtml = `
+        <div class="card mb-3" id="resultado-${proveedorId}">
+            <div class="card-header">
+                <h6 class="card-title">
+                    <i class="fas fa-spinner fa-spin"></i> 
+                    Probando proveedor ID: ${proveedorId}...
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="text-center">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="sr-only">Cargando...</span>
+                    </div>
+                    <p class="mt-2">Ejecutando prueba de conexión...</p>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Si es la primera prueba, limpiar el mensaje vacío
+    if (resultadosDiv.innerHTML.includes('Los resultados de las pruebas aparecerán aquí')) {
+        resultadosDiv.innerHTML = '';
+    }
+    
+    resultadosDiv.insertAdjacentHTML('beforeend', cardHtml);
+}
+
+function mostrarResultado(data, proveedorId) {
+    const resultadoCard = document.getElementById(`resultado-${proveedorId}`);
+    
+    if (!resultadoCard) return;
+    
+    const timestamp = new Date().toLocaleString();
+    let cardClass = data.success ? 'card-success' : 'card-danger';
+    let icon = data.success ? 'fas fa-check-circle' : 'fas fa-times-circle';
+    let estado = data.success ? 'success' : 'danger';
+    
+    // Preservar el contenido del terminal existente
+    const logDiv = document.getElementById(`log-${proveedorId}`);
+    let logContent = '';
+    if (logDiv) {
+        logContent = logDiv.innerHTML;
+        // Agregar línea final al log
+        logContent += `<div class="text-success">[DIRECTO COMPLETADO] Respuesta procesada en ${data.tiempo_respuesta || 'N/A'}s</div>`;
+    }
+    
+    let bodyHtml = `
+        <div class="row">
+            <div class="col-md-6">
+                <strong>Proveedor:</strong> ${data.proveedor ? data.proveedor.nombre : 'Desconocido'}<br>
+                <strong>Tipo:</strong> ${data.proveedor ? data.proveedor.tipo : 'N/A'}<br>
+                <strong>Modelo:</strong> ${data.proveedor ? data.proveedor.modelo : 'N/A'}<br>
+                <strong>Tiempo:</strong> ${data.tiempo_respuesta || 'N/A'}s<br>
+                <strong>Timestamp:</strong> ${timestamp}
+            </div>
+            <div class="col-md-6">
+                <strong>Estado:</strong> 
+                <span class="badge badge-${estado}">
+                    ${data.success ? 'ÉXITO' : 'ERROR'}
+                </span><br>
+                <strong>Mensaje:</strong> ${data.mensaje || data.error || 'N/A'}
+            </div>
+        </div>
+        
+        <!-- Mantener el terminal visible -->
+        <div class="mt-3">
+            <h6>📋 Log de Proceso:</h6>
+            <div class="bg-dark text-light p-2 rounded" style="font-family: monospace; font-size: 12px; height: 150px; overflow-y: auto;" id="log-${proveedorId}">
+                ${logContent}
+            </div>
+        </div>
+    `;
+    
+    // Mostrar métricas detalladas si están disponibles
+    if (data.metricas) {
+        bodyHtml += `
+            <hr>
+            <h6><i class="fas fa-chart-line"></i> Métricas de Procesamiento:</h6>
+            <div class="row">
+                <div class="col-md-6">
+                    <ul class="list-unstyled">
+                        <li><strong>Caracteres del prompt:</strong> ${data.metricas.caracteres_prompt || 'N/A'}</li>
+                        <li><strong>Tokens estimados:</strong> ${data.metricas.tokens_estimados || 'N/A'}</li>
+                        <li><strong>Tiempo conexión:</strong> ${data.metricas.tiempo_conexion || 'N/A'}s</li>
+                    </ul>
+                </div>
+                <div class="col-md-6">
+                    <ul class="list-unstyled">
+                        <li><strong>Modelo usado:</strong> ${data.metricas.modelo_usado || 'N/A'}</li>
+                        <li><strong>Conexión exitosa:</strong> ${data.metricas.exito_conexion ? 'Sí' : 'No'}</li>
+                        <li><strong>Prompt ejecutado:</strong> ${data.metricas.prompt_ejecutado ? 'Sí' : 'No'}</li>
+                    </ul>
+                </div>
+            </div>
+        `;
+    }
+    
+    // Mostrar parámetros enviados si están disponibles
+    if (data.parametros_envio) {
+        bodyHtml += `
+            <hr>
+            <h6><i class="fas fa-cogs"></i> Parámetros Enviados:</h6>
+            <pre class="bg-light p-2" style="font-size: 11px; max-height: 150px; overflow-y: auto;">${JSON.stringify(data.parametros_envio, null, 2)}</pre>
+        `;
+    }
+    
+    if (data.prueba_prompt) {
+        bodyHtml += `
+            <hr>
+            <h6><i class="fas fa-comment"></i> Prueba de Prompt:</h6>
+        `;
+        
+        if (data.prueba_prompt.exito) {
+            // Mostrar la respuesta real formateada correctamente
+            let respuestaFormateada;
+            if (typeof data.prueba_prompt.respuesta === 'object') {
+                respuestaFormateada = JSON.stringify(data.prueba_prompt.respuesta, null, 2);
+            } else {
+                respuestaFormateada = data.prueba_prompt.respuesta;
+            }
+            
+            bodyHtml += `
+                <div class="alert alert-info">
+                    <strong>✅ Respuesta de la IA:</strong>
+                    <pre class="bg-light p-2 mt-2" style="max-height: 300px; overflow-y: auto; white-space: pre-wrap;">${respuestaFormateada}</pre>
+                    <small class="text-muted">
+                        <strong>Tokens:</strong> ${data.prueba_prompt.tokens || 'N/A'} | 
+                        <strong>Modelo usado:</strong> ${data.prueba_prompt.modelo_usado || 'N/A'} |
+                        <strong>Tiempo respuesta:</strong> ${data.prueba_prompt.tiempo_respuesta || 'N/A'}s
+                    </small>
+                </div>
+            `;
+        } else {
+            bodyHtml += `
+                <div class="alert alert-warning">
+                    <strong>❌ Error en la prueba:</strong> ${data.prueba_prompt.error || 'Error desconocido'}
+                </div>
+            `;
+        }
+    } else {
+        bodyHtml += `
+            <hr>
+            <h6><i class="fas fa-comment"></i> Prueba de Prompt:</h6>
+            <div class="alert alert-secondary">
+                <strong>ℹ️ No se ejecutó prompt personalizado</strong>
+            </div>
+        `;
+    }
+    
+    resultadoCard.className = `card mb-3 ${cardClass}`;
+    resultadoCard.innerHTML = `
+        <div class="card-header">
+            <h6 class="card-title">
+                <i class="${icon}"></i> 
+                ${data.proveedor ? data.proveedor.nombre : 'Proveedor ' + proveedorId} (Directo)
+            </h6>
+        </div>
+        <div class="card-body">
+            ${bodyHtml}
+        </div>
+    `;
+    
+    // Asegurar que el terminal se desplace hacia abajo
+    const newLogDiv = document.getElementById(`log-${proveedorId}`);
+    if (newLogDiv) {
+        newLogDiv.scrollTop = newLogDiv.scrollHeight;
+    }
+}
+
+function mostrarError(error, proveedorId) {
+    const resultadoCard = document.getElementById(`resultado-${proveedorId}`);
+    
+    if (!resultadoCard) return;
+    
+    const timestamp = new Date().toLocaleString();
+    
+    resultadoCard.className = 'card mb-3 card-danger';
+    resultadoCard.innerHTML = `
+        <div class="card-header">
+            <h6 class="card-title">
+                <i class="fas fa-times-circle"></i> 
+                Error en Proveedor ID: ${proveedorId}
+            </h6>
+        </div>
+        <div class="card-body">
+            <div class="alert alert-danger">
+                <strong>Error de conexión:</strong> ${error.message || error}
+            </div>
+            <small class="text-muted">Timestamp: ${timestamp}</small>
+        </div>
+    `;
+}
+
+function limpiarResultados() {
+    const resultadosDiv = document.getElementById('resultados');
+    resultadosDiv.innerHTML = `
+        <div class="text-center text-muted">
+            <i class="fas fa-vial fa-2x mb-3"></i>
+            <p>Los resultados de las pruebas aparecerán aquí</p>
+        </div>
+    `;
+}
+</script>
+
+{% endblock content %}
+
+{% block javascripts %}
+    <script src="{% static 'generador_actas/js/proveedores-ia.js' %}"></script>
+    <script>
+        // Configurar ProveedoresIA con datos del template
+        document.addEventListener('DOMContentLoaded', function() {
+            ProveedoresIA.init({
+                urls: {
+                    probar_conexion: '{% url "generador_actas:api_probar_conexion_proveedor" %}',
+                    modelos_proveedor: '{% url "generador_actas:api_modelos_proveedor" "TIPO" %}'.replace('TIPO', ''),
+                    configuracion_defecto: '{% url "generador_actas:api_configuracion_defecto" "TIPO" %}'.replace('TIPO', '')
+                },
+                csrfToken: '{{ csrf_token }}'
+            });
+        });
+    </script>
+{% endblock %}

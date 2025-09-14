@@ -10,6 +10,10 @@ Cuando hagas cualquier modificación en el código por favor revisa los logs de 
 No intentes verificar por web ni por comando si una funcion esta activa en vista de que no tienes la posibilidad de interactuar con la web y no vas a saber, en cambio preguntame a mi que yo si veo y si funciona o no funciona la funcionalidad que asumes que deberia valer o no.
 En lo psoible en la visata html y demas siempre seccioanr los javascript y css en otros archvios aparte conetados a eso para poder ser mas efectivo en el codigo y los cambios, es decir crear archvios. css y .js recuerda siempre copupar el modelo de css del template del sistema que es AdminLTE
 Si vas a eliminar cualquier codigo o archvio completo o reemplazar con otro porfavor muy importante saca un backup de lo que vas a eliminar o reemplazar por si hay algun problema despues y guardalo en la carpeta de scripts con un nombre que indique que es un back up y la fecha y hora, por ejemplo scripts/backup/2024-09-06_backup_nombrearchivo.ext
+No reinicies el docker a menos que sea estrictamente necesario, por ejemplo si hay cambios en la infraestructura o en la base de datos, si solo son cambios de codigo no es necesario reiniciar el docker.
+Nunca expongas credenciales en el codigo, si necesitas usarlas siempre usa las variables de entorno que estan en el archivo .env
+Al reiniciar un contenedor docker espera al menos 60 segundos antes de verificar los logs o intentar acceder a la web o api, no lo reinicies y de inmediato intentes acceder, espera el tiempo prudente no reinicies a menos que sea estrictamente necesario.
+Cuando debas ejecutar comandos de manage.py como migrate, createsuperuser, etc, siempre hazlo dentro del contenedor docker, nunca lo hagas fuera del contenedor.
 
 # Copilot Instructions – Actas IA (Django + Docker + AdminLTE)
 

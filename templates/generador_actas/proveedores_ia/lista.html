@@ -1,0 +1,393 @@
+{% extends "layouts/base.html" %}
+{% load static %}
+
+{% block title %}{{ page_title }}{% endblock title %}
+
+{% block stylesheets %}
+    <link rel="stylesheet" href="{% static 'generador_actas/css/proveedores-ia.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="content-wrapper">
+    <!-- Content Header -->
+    <div class="content-header">
+        <div class="container-fluid">
+            <div class="row mb-2">
+                <div class="col-sm-6">
+                    <h1>🧠 {{ page_title }}</h1>
+                </div>
+                <div class="col-sm-6">
+                    <ol class="breadcrumb float-sm-right">
+                        {% for item in breadcrumbs %}
+                            {% if item.url %}
+                                <li class="breadcrumb-item">
+                                    <a href="{{ item.url }}">{{ item.title }}</a>
+                                </li>
+                            {% else %}
+                                <li class="breadcrumb-item active">{{ item.title }}</li>
+                            {% endif %}
+                        {% endfor %}
+                    </ol>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main content -->
+    <section class="content">
+        <div class="container-fluid">
+            
+            <!-- Estadísticas -->
+            <div class="row mb-3">
+                <div class="col-lg-3 col-6">
+                    <div class="small-box bg-info">
+                        <div class="inner">
+                            <h3>{{ proveedores|length }}</h3>
+                            <p>Total Proveedores</p>
+                        </div>
+                        <div class="icon">
+                            <i class="fas fa-brain"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-6">
+                    <div class="small-box bg-success">
+                        <div class="inner">
+                            <h3>{{ proveedores|length }}</h3>
+                            <p>Proveedores Activos</p>
+                        </div>
+                        <div class="icon">
+                            <i class="fas fa-check-circle"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-6">
+                    <div class="small-box bg-warning">
+                        <div class="inner">
+                            <h3>0</h3>
+                            <p>Proveedores Inactivos</p>
+                        </div>
+                        <div class="icon">
+                            <i class="fas fa-pause-circle"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-6">
+                    <div class="small-box bg-primary">
+                        <div class="inner">
+                            <h3><i class="fas fa-plus"></i></h3>
+                            <p>Nuevo Proveedor</p>
+                        </div>
+                        <a href="{% url 'generador_actas:crear_proveedor_ia' %}" class="small-box-footer">
+                            Crear <i class="fas fa-arrow-circle-right"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Filtros -->
+            <div class="card card-primary card-outline">
+                <div class="card-header">
+                    <h3 class="card-title">🔍 Filtros y Búsqueda</h3>
+                    <div class="card-tools">
+                        <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                            <i class="fas fa-minus"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <form method="get" class="row">
+                        <div class="col-md-4">
+                            <input type="text" name="q" value="{{ filtro_busqueda }}" 
+                                   class="form-control" placeholder="Buscar por nombre o modelo...">
+                        </div>
+                        <div class="col-md-3">
+                            <select name="tipo" class="form-control">
+                                <option value="">Todos los tipos</option>
+                                {% for value, label in tipos_disponibles %}
+                                    <option value="{{ value }}" {% if value == filtro_tipo %}selected{% endif %}>
+                                        {{ label }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <select name="activo" class="form-control">
+                                <option value="">Todos los estados</option>
+                                <option value="true" {% if filtro_activo == "true" %}selected{% endif %}>Activos</option>
+                                <option value="false" {% if filtro_activo == "false" %}selected{% endif %}>Inactivos</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-search"></i> Buscar
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Lista de Proveedores -->
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">📋 Lista de Proveedores IA</h3>
+                    <div class="card-tools">
+                        <a href="{% url 'generador_actas:crear_proveedor_ia' %}" class="btn btn-success btn-sm">
+                            <i class="fas fa-plus"></i> Nuevo Proveedor
+                        </a>
+                        <a href="{% url 'generador_actas:test_proveedor_ia' %}" class="btn btn-info btn-sm">
+                            <i class="fas fa-flask"></i> Probar Conexiones
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    {% if proveedores %}
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Nombre</th>
+                                        <th>Tipo</th>
+                                        <th>Modelo</th>
+                                        <th>Estado</th>
+                                        <th>Temperatura</th>
+                                        <th>Max Tokens</th>
+                                        <th>Última Conexión</th>
+                                        <th>Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for proveedor in proveedores %}
+                                        <tr>
+                                            <td>
+                                                <strong>{{ proveedor.nombre }}</strong>
+                                                {% if proveedor.total_llamadas %}
+                                                    <br><small class="text-muted">{{ proveedor.total_llamadas }} llamadas</small>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                <span class="badge badge-info">{{ proveedor.get_tipo_display }}</span>
+                                            </td>
+                                            <td>
+                                                <code>{{ proveedor.modelo|default:"-" }}</code>
+                                            </td>
+                                            <td>
+                                                {% if proveedor.activo %}
+                                                    <span class="badge badge-success">
+                                                        <i class="fas fa-check"></i> Activo
+                                                    </span>
+                                                {% else %}
+                                                    <span class="badge badge-danger">
+                                                        <i class="fas fa-times"></i> Inactivo
+                                                    </span>
+                                                {% endif %}
+                                            </td>
+                                            <td>{{ proveedor.temperatura }}</td>
+                                            <td>{{ proveedor.max_tokens|floatformat:0 }}</td>
+                                            <td>
+                                                {% if proveedor.ultima_conexion_exitosa %}
+                                                    <span class="text-success">
+                                                        {{ proveedor.ultima_conexion_exitosa|date:"d/m/Y H:i" }}
+                                                    </span>
+                                                {% elif proveedor.ultimo_error %}
+                                                    <span class="text-danger" title="{{ proveedor.ultimo_error }}">
+                                                        <i class="fas fa-exclamation-triangle"></i> Error
+                                                    </span>
+                                                {% else %}
+                                                    <span class="text-muted">Sin probar</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                <div class="btn-group" role="group">
+                                                    <button type="button" 
+                                                            class="btn btn-info btn-sm" 
+                                                            onclick="probarConexion({{ proveedor.id }})" 
+                                                            title="Probar Conexión">
+                                                        <i class="fas fa-flask"></i>
+                                                    </button>
+                                                    <a href="{% url 'generador_actas:editar_proveedor_ia' proveedor.pk %}" 
+                                                       class="btn btn-warning btn-sm" title="Editar">
+                                                        <i class="fas fa-edit"></i>
+                                                    </a>
+                                                    <button type="button" 
+                                                            class="btn btn-danger btn-sm" 
+                                                            onclick="confirmarEliminacion({{ proveedor.id }}, '{{ proveedor.nombre }}')" 
+                                                            title="Eliminar">
+                                                        <i class="fas fa-trash"></i>
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="fas fa-robot fa-3x text-muted mb-3"></i>
+                            <h4>No hay proveedores IA configurados</h4>
+                            <p class="text-muted">Crea el primer proveedor IA para comenzar a generar actas.</p>
+                            <a href="{% url 'generador_actas:crear_proveedor_ia' %}" class="btn btn-primary">
+                                <i class="fas fa-plus"></i> Crear Primer Proveedor
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </section>
+</div>
+
+<!-- Modal para confirmación de eliminación -->
+<div class="modal fade" id="deleteModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-danger">
+                <h5 class="modal-title text-white">⚠️ Confirmar Eliminación</h5>
+                <button type="button" class="close text-white" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p>¿Está seguro de que desea eliminar el proveedor <strong id="proveedorNombre"></strong>?</p>
+                <p class="text-warning">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    Esta acción no se puede deshacer.
+                </p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+                <form id="deleteForm" method="post" style="display: inline;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger">Eliminar</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para prueba de conexión -->
+<div class="modal fade" id="testModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">🧪 Probar Conexión</h5>
+                <button type="button" class="close" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div id="testResult"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function probarConexion(proveedorId) {
+    $('#testModal').modal('show');
+    $('#testResult').html(`
+        <div class="text-center">
+            <i class="fas fa-spinner fa-spin fa-2x"></i>
+            <p>Probando conexión...</p>
+        </div>
+    `);
+    
+    fetch('{% url "generador_actas:api_probar_conexion_proveedor" %}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token }}'
+        },
+        body: JSON.stringify({
+            'proveedor_id': proveedorId,
+            'prompt_prueba': 'Responde únicamente con el siguiente JSON exacto: {"status": "ok", "test": "exitoso"}'
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        let resultHtml = '';
+        if (data.success) {
+            resultHtml = `
+                <div class="alert alert-success">
+                    <h5><i class="fas fa-check-circle"></i> Conexión Exitosa</h5>
+                    <p><strong>Proveedor:</strong> ${data.proveedor.nombre}</p>
+                    <p><strong>Tipo:</strong> ${data.proveedor.tipo}</p>
+                    <p><strong>Modelo:</strong> ${data.proveedor.modelo}</p>
+                    <p><strong>Tiempo de respuesta:</strong> ${data.tiempo_respuesta}s</p>
+                    <p><strong>Mensaje:</strong> ${data.mensaje}</p>
+                </div>
+            `;
+            
+            if (data.prueba_prompt) {
+                if (data.prueba_prompt.exito) {
+                    resultHtml += `
+                        <div class="alert alert-info">
+                            <h6><i class="fas fa-comment"></i> Prueba de Prompt</h6>
+                            <p><strong>Respuesta:</strong></p>
+                            <pre class="bg-light p-2">${data.prueba_prompt.respuesta}</pre>
+                        </div>
+                    `;
+                } else {
+                    resultHtml += `
+                        <div class="alert alert-warning">
+                            <h6><i class="fas fa-exclamation-triangle"></i> Error en Prueba de Prompt</h6>
+                            <p>${data.prueba_prompt.error}</p>
+                        </div>
+                    `;
+                }
+            }
+        } else {
+            resultHtml = `
+                <div class="alert alert-danger">
+                    <h5><i class="fas fa-times-circle"></i> Error de Conexión</h5>
+                    <p>${data.error || data.mensaje}</p>
+                </div>
+            `;
+        }
+        
+        $('#testResult').html(resultHtml);
+        
+        // Recargar la página después de un tiempo para mostrar la última conexión
+        setTimeout(() => {
+            location.reload();
+        }, 3000);
+    })
+    .catch(error => {
+        $('#testResult').html(`
+            <div class="alert alert-danger">
+                <h5><i class="fas fa-times-circle"></i> Error</h5>
+                <p>Error al probar la conexión: ${error}</p>
+            </div>
+        `);
+    });
+}
+
+function confirmarEliminacion(proveedorId, proveedorNombre) {
+    $('#proveedorNombre').text(proveedorNombre);
+    $('#deleteForm').attr('action', '{% url "generador_actas:eliminar_proveedor_ia" 0 %}'.replace('0', proveedorId));
+    $('#deleteModal').modal('show');
+}
+</script>
+
+{% endblock content %}
+
+{% block javascripts %}
+    <script src="{% static 'generador_actas/js/proveedores-ia.js' %}"></script>
+    <script>
+        // Configurar ProveedoresIA con datos del template
+        document.addEventListener('DOMContentLoaded', function() {
+            ProveedoresIA.init({
+                urls: {
+                    probar_conexion: '{% url "generador_actas:api_probar_conexion_proveedor" %}',
+                    modelos_proveedor: '{% url "generador_actas:api_modelos_proveedor" "TIPO" %}'.replace('TIPO', ''),
+                    configuracion_defecto: '{% url "generador_actas:api_configuracion_defecto" "TIPO" %}'.replace('TIPO', '')
+                },
+                csrfToken: '{{ csrf_token }}'
+            });
+        });
+    </script>
+{% endblock %}

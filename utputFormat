@@ -1,0 +1,2089 @@
+HTTP/1.1 404 Not Found
+Date: Sun, 14 Sep 2025 20:38:37 GMT
+Server: WSGIServer/0.2 CPython/3.11.13
+Content-Type: text/html; charset=utf-8
+X-Frame-Options: DENY
+Content-Length: 41180
+X-Session-Key: 53d5pktgf9wtc2pjp6r1j5ca58ha97yk
+X-Session-Age: 7200
+X-User-Authenticated: True
+X-Request-Count: 14
+Vary: Cookie
+X-Content-Type-Options: nosniff
+Referrer-Policy: same-origin
+Cross-Origin-Opener-Policy: same-origin
+Set-Cookie:  actas_sessionid=53d5pktgf9wtc2pjp6r1j5ca58ha97yk; expires=Sun, 14 Sep 2025 22:38:37 GMT; HttpOnly; Max-Age=7200; Path=/; SameSite=Lax
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+  <title>Page not found at /generador-actas/api/proveedores/test/</title>
+  <meta name="robots" content="NONE,NOARCHIVE">
+  <style type="text/css">
+    html * { padding:0; margin:0; }
+    body * { padding:10px 20px; }
+    body * * { padding:0; }
+    body { font:small sans-serif; background:#eee; color:#000; }
+    body>div { border-bottom:1px solid #ddd; }
+    h1 { font-weight:normal; margin-bottom:.4em; }
+    h1 span { font-size:60%; color:#666; font-weight:normal; }
+    table { border:none; border-collapse: collapse; width:100%; }
+    td, th { vertical-align:top; padding:2px 3px; }
+    th { width:12em; text-align:right; color:#666; padding-right:.5em; }
+    #info { background:#f6f6f6; }
+    #info ol { margin: 0.5em 4em; }
+    #info ol li { font-family: monospace; }
+    #summary { background: #ffc; }
+    #explanation { background:#eee; border-bottom: 0px none; }
+    pre.exception_value { font-family: sans-serif; color: #575757; font-size: 1.5em; margin: 10px 0 10px 0; }
+  </style>
+</head>
+<body>
+  <div id="summary">
+    <h1>Page not found <span>(404)</span></h1>
+    
+    <table class="meta">
+      <tr>
+        <th>Request Method:</th>
+        <td>POST</td>
+      </tr>
+      <tr>
+        <th>Request URL:</th>
+        <td>http://localhost:8000/generador-actas/api/proveedores/test/</td>
+      </tr>
+      
+    </table>
+  </div>
+  <div id="info">
+    
+      <p>
+      Using the URLconf defined in <code>config.urls</code>,
+      Django tried these URL patterns, in this order:
+      </p>
+      <ol>
+        
+          <li>
+            
+                
+                
+            
+                
+                [name='index']
+            
+          </li>
+        
+          <li>
+            
+                
+                
+            
+                dashboard-v2/
+                [name='dashboardv2']
+            
+          </li>
+        
+          <li>
+            
+                
+                
+            
+                dashboard-v3/
+                [name='dashboardv3']
+            
+          </li>
+        
+          <li>
+            
+                
+                
+            
+                widgets/
+                [name='widgets']
+            
+          </li>
+        
+          <li>
+            
+                
+                
+            
+                profile/
+                [name='profile']
+            
+          </li>
+        
+          <li>
+            
+                
+                
+            
+                examples/calendar/
+                [name='examples_calendar']
+            
+          </li>
+        
+          <li>
+            
+                
+                
+            
+                examples/gallery/
+                [name='examples_gallery']
+            
+          </li>
+        
+          <li>
+            
+                
+                
+            
+                examples/kanban/
+                [name='examples_kanban']
+            
+          </li>
+        
+          <li>
+            
+                
+                
+            
+                examples/invoice/
+                [name='examples_invoice']
+            
+          </li>
+        
+          <li>
+            
+                
+                
+            
+                invoice-print/
+                [name='invoice_print']
+            
+          </li>
+        
+          <li>
+            
+                
+                
+            
+                examples/profile/
+                [name='examples_profile']
+            
+          </li>
+        
+          <li>
+            
+                
+                
+            
+                examples/e-commerce/
+                [name='examples_e_commerce']
+            
+          </li>
+        
+          <li>
+            
+                
+                
+            
+                examples/projects/
+                [name='examples_projects']
+            
+          </li>
+        
+          <li>
+            
+                
+                
+            
+                examples/project-add/
+                [name='examples_project_add']
+            
+          </li>
+        
+          <li>
+            
+                
+                
+            
+                examples/project-edit/
+                [name='examples_project_edit']
+            
+          </li>
+        
+          <li>
+            
+                
+                
+            
+                examples/project-detail/
+                [name='examples_project_detail']
+            
+          </li>
+        
+          <li>
+            
+                
+                
+            
+                examples/contacts/
+                [name='examples_contacts']
+            
+          </li>
+        
+          <li>
+            
+                
+                
+            
+                examples/faq/
+                [name='examples_faq']
+            
+          </li>
+        
+          <li>
+            
+                
+                
+            
+                examples/contact-us/
+                [name='examples_contact_us']
+            
+          </li>
+        
+          <li>
+            
+                
+                
+            
+                login-v1/
+                [name='login_v1']
+            
+          </li>
+        
+          <li>
+            
+                
+                
+            
+                login-v2/
+                [name='login_v2']
+            
+          </li>
+        
+          <li>
+            
+                
+                
+            
+                registration-v1/
+                [name='registration_v1']
+            
+          </li>
+        
+          <li>
+            
+                
+                
+            
+                registration-v2/
+                [name='registration_v2']
+            
+          </li>
+        
+          <li>
+            
+                
+                
+            
+                forgot-password-v1/
+                [name='forgot_password_v1']
+            
+          </li>
+        
+          <li>
+            
+                
+                
+            
+                forgot-password-v2/
+                [name='forgot_password_v2']
+            
+          </li>
+        
+          <li>
+            
+                
+                
+            
+                recover-password-v1/
+                [name='recover_password_v1']
+            
+          </li>
+        
+          <li>
+            
+                
+                
+            
+                recover-password-v2/
+                [name='recover_password_v2']
+            
+          </li>
+        
+          <li>
+            
+                
+                
+            
+                lockscreen/
+                [name='lockscreen']
+            
+          </li>
+        
+          <li>
+            
+                
+                
+            
+                legacy-user-menu/
+                [name='legacy_user_menu']
+            
+          </li>
+        
+          <li>
+            
+                
+                
+            
+                language-menu/
+                [name='language_menu']
+            
+          </li>
+        
+          <li>
+            
+                
+                
+            
+                error-404/
+                [name='error_404']
+            
+          </li>
+        
+          <li>
+            
+                
+                
+            
+                error-500/
+                [name='error_500']
+            
+          </li>
+        
+          <li>
+            
+                
+                
+            
+                pace/
+                [name='pace']
+            
+          </li>
+        
+          <li>
+            
+                
+                
+            
+                blank-page/
+                [name='blank_page']
+            
+          </li>
+        
+          <li>
+            
+                
+                
+            
+                starter-page/
+                [name='starter_page']
+            
+          </li>
+        
+          <li>
+            
+                
+                
+            
+                search-simple/
+                [name='search_simple']
+            
+          </li>
+        
+          <li>
+            
+                
+                
+            
+                search-enhanced/
+                [name='search_enhanced']
+            
+          </li>
+        
+          <li>
+            
+                
+                
+            
+                simple-result/
+                [name='simple_results']
+            
+          </li>
+        
+          <li>
+            
+                
+                
+            
+                enhanced-result/
+                [name='enhanced_results']
+            
+          </li>
+        
+          <li>
+            
+                
+                
+            
+                portal-ciudadano/
+                [name='portal_ciudadano']
+            
+          </li>
+        
+          <li>
+            
+                
+                
+            
+                acta/&lt;int:pk&gt;/
+                [name='acta_detail']
+            
+          </li>
+        
+          <li>
+            
+                
+                
+            
+                acta/&lt;int:pk&gt;/pdf/
+                [name='acta_pdf_view']
+            
+          </li>
+        
+          <li>
+            
+                
+                
+            
+                acta/&lt;int:pk&gt;/download/
+                [name='acta_pdf_download']
+            
+          </li>
+        
+          <li>
+            
+                
+                
+            
+                api/portal-ciudadano/
+                [name='portal_ciudadano_api']
+            
+          </li>
+        
+          <li>
+            
+                
+                
+            
+                iframe/
+                [name='iframe']
+            
+          </li>
+        
+          <li>
+            
+                
+                
+            
+                mailbox/inbox/
+                [name='mailbox_inbox']
+            
+          </li>
+        
+          <li>
+            
+                
+                
+            
+                mailbox/compose/
+                [name='mailbox_compose']
+            
+          </li>
+        
+          <li>
+            
+                
+                
+            
+                mailbox/read-mail/
+                [name='mailbox_read_mail']
+            
+          </li>
+        
+          <li>
+            
+                
+                
+            
+                chartjs/
+                [name='chartjs']
+            
+          </li>
+        
+          <li>
+            
+                
+                
+            
+                flot/
+                [name='flot']
+            
+          </li>
+        
+          <li>
+            
+                
+                
+            
+                inline/
+                [name='inline']
+            
+          </li>
+        
+          <li>
+            
+                
+                
+            
+                uplot/
+                [name='uplot']
+            
+          </li>
+        
+          <li>
+            
+                
+                
+            
+                ui/general/
+                [name='ui_general']
+            
+          </li>
+        
+          <li>
+            
+                
+                
+            
+                ui/icons/
+                [name='ui_icons']
+            
+          </li>
+        
+          <li>
+            
+                
+                
+            
+                ui/buttons/
+                [name='ui_buttons']
+            
+          </li>
+        
+          <li>
+            
+                
+                
+            
+                ui/sliders/
+                [name='ui_sliders']
+            
+          </li>
+        
+          <li>
+            
+                
+                
+            
+                ui/modals-alerts/
+                [name='ui_modals_alerts']
+            
+          </li>
+        
+          <li>
+            
+                
+                
+            
+                ui/navbar-tabs/
+                [name='ui_navbar_tabs']
+            
+          </li>
+        
+          <li>
+            
+                
+                
+            
+                ui/timeline/
+                [name='ui_timeline']
+            
+          </li>
+        
+          <li>
+            
+                
+                
+            
+                ui/ribbons/
+                [name='ui_ribbons']
+            
+          </li>
+        
+          <li>
+            
+                
+                
+            
+                form/general/
+                [name='form_general']
+            
+          </li>
+        
+          <li>
+            
+                
+                
+            
+                form/advanced/
+                [name='form_advanced']
+            
+          </li>
+        
+          <li>
+            
+                
+                
+            
+                form/editors/
+                [name='form_editors']
+            
+          </li>
+        
+          <li>
+            
+                
+                
+            
+                form/validation/
+                [name='form_validation']
+            
+          </li>
+        
+          <li>
+            
+                
+                
+            
+                table/simple/
+                [name='table_simple']
+            
+          </li>
+        
+          <li>
+            
+                
+                
+            
+                table/data/
+                [name='table_data']
+            
+          </li>
+        
+          <li>
+            
+                
+                
+            
+                table/jsgrid/
+                [name='table_jsgrid']
+            
+          </li>
+        
+          <li>
+            
+                
+                
+            
+                top-navigation/
+                [name='top_navigation']
+            
+          </li>
+        
+          <li>
+            
+                
+                
+            
+                top-nav-sidebar/
+                [name='top_nav_sidebar']
+            
+          </li>
+        
+          <li>
+            
+                
+                
+            
+                boxed/
+                [name='boxed']
+            
+          </li>
+        
+          <li>
+            
+                
+                
+            
+                fixed-sidebar/
+                [name='fixed_sidebar']
+            
+          </li>
+        
+          <li>
+            
+                
+                
+            
+                fixed-sidebar-custom/
+                [name='fixed_sidebar_custom']
+            
+          </li>
+        
+          <li>
+            
+                
+                
+            
+                fixed-topnav/
+                [name='fixed_topnav']
+            
+          </li>
+        
+          <li>
+            
+                
+                
+            
+                fixed-navbar/
+                [name='fixed_navbar']
+            
+          </li>
+        
+          <li>
+            
+                
+                
+            
+                fixed-footer/
+                [name='fixed_footer']
+            
+          </li>
+        
+          <li>
+            
+                
+                
+            
+                collapsed-sidebar/
+                [name='collapsed_sidebar']
+            
+          </li>
+        
+          <li>
+            
+                
+                
+            
+                accounts/register/
+                [name='register']
+            
+          </li>
+        
+          <li>
+            
+                
+                
+            
+                accounts/login/
+                [name='login']
+            
+          </li>
+        
+          <li>
+            
+                
+                
+            
+                accounts/logout/
+                [name='logout']
+            
+          </li>
+        
+          <li>
+            
+                
+                
+            
+                accounts/password-change/
+                [name='password_change']
+            
+          </li>
+        
+          <li>
+            
+                
+                
+            
+                accounts/password-change-done/
+                [name='password_change_done']
+            
+          </li>
+        
+          <li>
+            
+                
+                
+            
+                accounts/password-reset/
+                [name='password_reset']
+            
+          </li>
+        
+          <li>
+            
+                
+                
+            
+                accounts/password-reset-confirm/&lt;uidb64&gt;/&lt;token&gt;/
+                [name='password_reset_confirm']
+            
+          </li>
+        
+          <li>
+            
+                
+                
+            
+                accounts/password-reset-done/
+                [name='password_reset_done']
+            
+          </li>
+        
+          <li>
+            
+                
+                
+            
+                accounts/password-reset-complete/
+                [name='password_reset_complete']
+            
+          </li>
+        
+          <li>
+            
+                
+                
+            
+                actas/listado/
+                [name='actas_listado']
+            
+          </li>
+        
+          <li>
+            
+                
+                
+            
+                actas/nueva/
+                [name='actas_nueva']
+            
+          </li>
+        
+          <li>
+            
+                
+                
+            
+                ia/transcripcion/
+                [name='actas_transcripcion']
+            
+          </li>
+        
+          <li>
+            
+                
+                
+            
+                ia/analisis-texto/
+                [name='actas_analisis_texto']
+            
+          </li>
+        
+          <li>
+            
+                
+                
+            
+                digitalizacion/escaneo/
+                [name='actas_digitalizacion']
+            
+          </li>
+        
+          <li>
+            
+                
+                
+            
+                publicacion/transparencia/
+                [name='actas_publicacion']
+            
+          </li>
+        
+          <li>
+            
+                
+                
+            
+                reportes/metricas/
+                [name='actas_reportes']
+            
+          </li>
+        
+          <li>
+            
+                
+                
+            
+                administracion/configuracion/
+                [name='actas_configuracion']
+            
+          </li>
+        
+          <li>
+            
+                
+                
+            
+                transparencia/
+                [name='transparencia_index']
+            
+          </li>
+        
+          <li>
+            
+                
+                
+            
+                transparencia/indicadores/
+                [name='transparencia_indicadores']
+            
+          </li>
+        
+          <li>
+            
+                
+                
+            
+                transparencia/estadisticas/
+                [name='transparencia_estadisticas']
+            
+          </li>
+        
+          <li>
+            
+                
+                
+            
+                transparencia/proyectos/
+                [name='transparencia_proyectos']
+            
+          </li>
+        
+          <li>
+            
+                
+                
+            
+                api/transparencia/metricas/
+                [name='api_transparencia_metricas']
+            
+          </li>
+        
+          <li>
+            
+                
+                
+            
+                api/transparencia/timeline/
+                [name='api_transparencia_timeline']
+            
+          </li>
+        
+          <li>
+            
+                
+                
+            
+                api/transparencia/proyectos-stats/
+                [name='api_transparencia_proyectos_stats']
+            
+          </li>
+        
+          <li>
+            
+                
+                
+            
+                eventos/
+                [name='eventos_index']
+            
+          </li>
+        
+          <li>
+            
+                
+                
+            
+                eventos/calendario/
+                [name='eventos_calendario']
+            
+          </li>
+        
+          <li>
+            
+                
+                
+            
+                eventos/nuevo/
+                [name='eventos_nuevo']
+            
+          </li>
+        
+          <li>
+            
+                
+                
+            
+                eventos/&lt;int:pk&gt;/
+                [name='eventos_detalle']
+            
+          </li>
+        
+          <li>
+            
+                
+                
+            
+                eventos/&lt;int:pk&gt;/editar/
+                [name='eventos_editar']
+            
+          </li>
+        
+          <li>
+            
+                
+                
+            
+                eventos/&lt;int:pk&gt;/confirmar/
+                [name='eventos_confirmar_asistencia']
+            
+          </li>
+        
+          <li>
+            
+                
+                
+            
+                eventos/&lt;int:pk&gt;/confirmar-externa/&lt;str:token&gt;/
+                [name='eventos_confirmar_externa']
+            
+          </li>
+        
+          <li>
+            
+                
+                
+            
+                api/eventos/calendario/
+                [name='api_eventos_calendario']
+            
+          </li>
+        
+          <li>
+            
+                
+                
+            
+                api/eventos/hoy/
+                [name='api_eventos_hoy']
+            
+          </li>
+        
+          <li>
+            
+                admin/
+                
+            
+          </li>
+        
+          <li>
+            
+                administracion/
+                
+            
+          </li>
+        
+          <li>
+            
+                accounts/
+                
+            
+          </li>
+        
+          <li>
+            
+                
+                
+            
+                api/
+                [name='dynamic_api']
+            
+          </li>
+        
+          <li>
+            
+                
+                
+            
+                api/&lt;str:model_name&gt;/
+                [name='model_api']
+            
+          </li>
+        
+          <li>
+            
+                
+                
+            
+                api/&lt;str:model_name&gt;/&lt;str:id&gt;
+                
+            
+          </li>
+        
+          <li>
+            
+                
+                
+            
+                api/&lt;str:model_name&gt;/&lt;str:id&gt;/
+                
+            
+          </li>
+        
+          <li>
+            
+                
+                
+            
+                api/frontend-logs/
+                [name='frontend_logs_api']
+            
+          </li>
+        
+          <li>
+            
+                
+                
+            
+                api/frontend-stats/
+                [name='frontend_stats_api']
+            
+          </li>
+        
+          <li>
+            
+                
+                
+            
+                api/user-activity-timeline/
+                [name='user_activity_timeline']
+            
+          </li>
+        
+          <li>
+            
+                
+                
+            
+                dynamic-dt/
+                [name='dynamic_dt']
+            
+          </li>
+        
+          <li>
+            
+                
+                
+            
+                create-filter/&lt;str:model_name&gt;/
+                [name='create_filter']
+            
+          </li>
+        
+          <li>
+            
+                
+                
+            
+                create-page-items/&lt;str:model_name&gt;/
+                [name='create_page_items']
+            
+          </li>
+        
+          <li>
+            
+                
+                
+            
+                create-hide-show-items/&lt;str:model_name&gt;/
+                [name='create_hide_show_filter']
+            
+          </li>
+        
+          <li>
+            
+                
+                
+            
+                delete-filter/&lt;str:model_name&gt;/&lt;int:id&gt;/
+                [name='delete_filter']
+            
+          </li>
+        
+          <li>
+            
+                
+                
+            
+                create/&lt;str:aPath&gt;/
+                [name='create']
+            
+          </li>
+        
+          <li>
+            
+                
+                
+            
+                delete/&lt;str:aPath&gt;/&lt;int:id&gt;/
+                [name='delete']
+            
+          </li>
+        
+          <li>
+            
+                
+                
+            
+                update/&lt;str:aPath&gt;/&lt;int:id&gt;/
+                [name='update']
+            
+          </li>
+        
+          <li>
+            
+                
+                
+            
+                export-csv/&lt;str:aPath&gt;/
+                [name='export_csv']
+            
+          </li>
+        
+          <li>
+            
+                
+                
+            
+                dynamic-dt/&lt;str:aPath&gt;/
+                [name='model_dt']
+            
+          </li>
+        
+          <li>
+            
+                charts/
+                
+            
+          </li>
+        
+          <li>
+            
+                
+                
+            
+                ^file-manager(?:/(?P&lt;directory&gt;.*?)/?)?$
+                [name='file_manager']
+            
+          </li>
+        
+          <li>
+            
+                
+                
+            
+                delete-file/&lt;str:file_path&gt;/
+                [name='delete_file']
+            
+          </li>
+        
+          <li>
+            
+                
+                
+            
+                download-file/&lt;str:file_path&gt;/
+                [name='download_file']
+            
+          </li>
+        
+          <li>
+            
+                
+                
+            
+                upload-file/
+                [name='upload_file']
+            
+          </li>
+        
+          <li>
+            
+                
+                
+            
+                save-info/&lt;str:file_path&gt;/
+                [name='save_info']
+            
+          </li>
+        
+          <li>
+            
+                users/
+                
+            
+          </li>
+        
+          <li>
+            
+                tasks/
+                
+            
+          </li>
+        
+          <li>
+            
+                auditoria/
+                
+            
+          </li>
+        
+          <li>
+            
+                
+                
+            
+                react-charts
+                [name='react_charts']
+            
+          </li>
+        
+          <li>
+            
+                config-system/
+                
+            
+          </li>
+        
+          <li>
+            
+                audio/
+                
+            
+          </li>
+        
+          <li>
+            
+                transcripcion/
+                
+            
+          </li>
+        
+          <li>
+            
+                generador-actas/
+                
+            
+                
+                [name='dashboard']
+            
+          </li>
+        
+          <li>
+            
+                generador-actas/
+                
+            
+                proveedores/
+                [name='proveedores_lista']
+            
+          </li>
+        
+          <li>
+            
+                generador-actas/
+                
+            
+                proveedores/crear/
+                [name='crear_proveedor_ia']
+            
+          </li>
+        
+          <li>
+            
+                generador-actas/
+                
+            
+                proveedores/&lt;int:pk&gt;/editar/
+                [name='editar_proveedor_ia']
+            
+          </li>
+        
+          <li>
+            
+                generador-actas/
+                
+            
+                proveedores/&lt;int:pk&gt;/eliminar/
+                [name='eliminar_proveedor_ia']
+            
+          </li>
+        
+          <li>
+            
+                generador-actas/
+                
+            
+                proveedores/test/
+                [name='test_proveedor_ia']
+            
+          </li>
+        
+          <li>
+            
+                generador-actas/
+                
+            
+                segmentos/
+                [name='segmentos_lista']
+            
+          </li>
+        
+          <li>
+            
+                generador-actas/
+                
+            
+                segmentos/crear/
+                [name='crear_segmento']
+            
+          </li>
+        
+          <li>
+            
+                generador-actas/
+                
+            
+                segmentos/&lt;int:pk&gt;/
+                [name='segmento_detail']
+            
+          </li>
+        
+          <li>
+            
+                generador-actas/
+                
+            
+                segmentos/&lt;int:pk&gt;/editar/
+                [name='editar_segmento']
+            
+          </li>
+        
+          <li>
+            
+                generador-actas/
+                
+            
+                segmentos/&lt;int:pk&gt;/eliminar/
+                [name='eliminar_segmento']
+            
+          </li>
+        
+          <li>
+            
+                generador-actas/
+                
+            
+                plantillas/
+                [name='plantillas_lista']
+            
+          </li>
+        
+          <li>
+            
+                generador-actas/
+                
+            
+                plantillas/crear/
+                [name='crear_plantilla']
+            
+          </li>
+        
+          <li>
+            
+                generador-actas/
+                
+            
+                plantillas/&lt;int:pk&gt;/
+                [name='plantilla_detail']
+            
+          </li>
+        
+          <li>
+            
+                generador-actas/
+                
+            
+                plantillas/&lt;int:pk&gt;/editar/
+                [name='editar_plantilla']
+            
+          </li>
+        
+          <li>
+            
+                generador-actas/
+                
+            
+                plantillas/&lt;int:pk&gt;/eliminar/
+                [name='eliminar_plantilla']
+            
+          </li>
+        
+          <li>
+            
+                generador-actas/
+                
+            
+                plantillas/&lt;int:plantilla_id&gt;/duplicar/
+                [name='duplicar_plantilla']
+            
+          </li>
+        
+          <li>
+            
+                generador-actas/
+                
+            
+                actas/
+                [name='actas_lista']
+            
+          </li>
+        
+          <li>
+            
+                generador-actas/
+                
+            
+                actas/crear/
+                [name='crear_acta']
+            
+          </li>
+        
+          <li>
+            
+                generador-actas/
+                
+            
+                actas/&lt;int:pk&gt;/
+                [name='acta_detail']
+            
+          </li>
+        
+          <li>
+            
+                generador-actas/
+                
+            
+                actas/&lt;int:pk&gt;/editar/
+                [name='editar_acta']
+            
+          </li>
+        
+          <li>
+            
+                generador-actas/
+                
+            
+                actas/&lt;int:pk&gt;/eliminar/
+                [name='eliminar_acta']
+            
+          </li>
+        
+          <li>
+            
+                generador-actas/
+                
+            
+                actas/crear/&lt;int:transcripcion_id&gt;/
+                [name='crear_acta_desde_transcripcion']
+            
+          </li>
+        
+          <li>
+            
+                generador-actas/
+                
+            
+                actas/&lt;int:acta_id&gt;/procesar/
+                [name='procesar_acta']
+            
+          </li>
+        
+          <li>
+            
+                generador-actas/
+                
+            
+                actas/&lt;int:acta_id&gt;/estado/
+                [name='estado_procesamiento']
+            
+          </li>
+        
+          <li>
+            
+                generador-actas/
+                
+            
+                actas/&lt;int:acta_id&gt;/exportar/
+                [name='exportar_acta']
+            
+          </li>
+        
+          <li>
+            
+                generador-actas/
+                
+            
+                configuracion/
+                [name='configuracion']
+            
+          </li>
+        
+          <li>
+            
+                generador-actas/
+                
+            
+                configuracion/avanzada/
+                [name='configuracion_avanzada']
+            
+          </li>
+        
+          <li>
+            
+                generador-actas/
+                
+            
+                operaciones/
+                [name='operaciones_sistema']
+            
+          </li>
+        
+          <li>
+            
+                generador-actas/
+                
+            
+                operaciones/&lt;uuid:operacion_id&gt;/
+                [name='detalle_operacion']
+            
+          </li>
+        
+          <li>
+            
+                generador-actas/
+                
+            
+                operaciones/iniciar/
+                [name='iniciar_operacion_sistema']
+            
+          </li>
+        
+          <li>
+            
+                generador-actas/
+                
+            
+                transcripciones/
+                [name='transcripciones_disponibles']
+            
+          </li>
+        
+          <li>
+            
+                generador-actas/
+                
+            
+                api/
+                
+            
+                actas/&lt;int:acta_id&gt;/procesar/
+                [name='api_procesar_acta']
+            
+          </li>
+        
+          <li>
+            
+                generador-actas/
+                
+            
+                api/
+                
+            
+                actas/&lt;int:acta_id&gt;/estado/
+                [name='api_estado_acta']
+            
+          </li>
+        
+          <li>
+            
+                generador-actas/
+                
+            
+                api/
+                
+            
+                actas/&lt;int:acta_id&gt;/cancelar/
+                [name='api_cancelar_procesamiento']
+            
+          </li>
+        
+          <li>
+            
+                generador-actas/
+                
+            
+                api/
+                
+            
+                actas/&lt;int:acta_id&gt;/preview/
+                [name='api_previsualizar_contenido']
+            
+          </li>
+        
+          <li>
+            
+                generador-actas/
+                
+            
+                api/
+                
+            
+                actas/estados/
+                [name='api_estados_multiple']
+            
+          </li>
+        
+          <li>
+            
+                generador-actas/
+                
+            
+                api/
+                
+            
+                transcripciones/&lt;int:transcripcion_id&gt;/validar/
+                [name='api_validar_transcripcion']
+            
+          </li>
+        
+          <li>
+            
+                generador-actas/
+                
+            
+                api/
+                
+            
+                transcripciones/&lt;int:transcripcion_id&gt;/plantillas/
+                [name='api_plantillas_compatibles']
+            
+          </li>
+        
+          <li>
+            
+                generador-actas/
+                
+            
+                api/
+                
+            
+                plantillas/&lt;int:plantilla_id&gt;/segmentos/
+                [name='api_segmentos_plantilla']
+            
+          </li>
+        
+          <li>
+            
+                generador-actas/
+                
+            
+                api/
+                
+            
+                proveedores/&lt;int:proveedor_id&gt;/probar/
+                [name='api_probar_proveedor_ia']
+            
+          </li>
+        
+          <li>
+            
+                generador-actas/
+                
+            
+                api/
+                
+            
+                proveedores/probar-conexion/
+                [name='api_probar_conexion_proveedor']
+            
+          </li>
+        
+          <li>
+            
+                generador-actas/
+                
+            
+                api/
+                
+            
+                proveedores/modelos/&lt;str:tipo_proveedor&gt;/
+                [name='api_modelos_proveedor']
+            
+          </li>
+        
+          <li>
+            
+                generador-actas/
+                
+            
+                api/
+                
+            
+                proveedores/configuracion/&lt;str:tipo_proveedor&gt;/
+                [name='api_configuracion_defecto']
+            
+          </li>
+        
+          <li>
+            
+                generador-actas/
+                
+            
+                api/
+                
+            
+                dashboard/stats/
+                [name='api_dashboard_stats']
+            
+          </li>
+        
+          <li>
+            
+                generador-actas/
+                
+            
+                api/
+                
+            
+                actividad/
+                [name='api_actividad_reciente']
+            
+          </li>
+        
+          <li>
+            
+                generador-actas/
+                
+            
+                api/
+                
+            
+                salud/
+                [name='api_sistema_salud']
+            
+          </li>
+        
+          <li>
+            
+                generador-actas/
+                
+            
+                api/
+                
+            
+                operaciones/iniciar/
+                [name='api_iniciar_operacion']
+            
+          </li>
+        
+          <li>
+            
+                generador-actas/
+                
+            
+                api/
+                
+            
+                operaciones/&lt;uuid:operacion_id&gt;/estado/
+                [name='api_estado_operacion']
+            
+          </li>
+        
+          <li>
+            
+                generador-actas/
+                
+            
+                api/
+                
+            
+                operaciones/&lt;uuid:operacion_id&gt;/resultado/
+                [name='api_descargar_resultado']
+            
+          </li>
+        
+          <li>
+            
+                generador-actas/
+                
+            
+                api/
+                
+            
+                operaciones/&lt;uuid:operacion_id&gt;/cancelar/
+                [name='api_cancelar_operacion']
+            
+          </li>
+        
+          <li>
+            
+                generador-actas/
+                
+            
+                api/
+                
+            
+                operaciones/
+                [name='api_listar_operaciones']
+            
+          </li>
+        
+          <li>
+            
+                ^media/(?P&lt;path&gt;.*)$
+                
+            
+          </li>
+        
+          <li>
+            
+                ^static/(?P&lt;path&gt;.*)$
+                
+            
+          </li>
+        
+          <li>
+            
+                __debug__/
+                
+            
+          </li>
+        
+          <li>
+            
+                ^media/(?P&lt;path&gt;.*)$
+                
+            
+          </li>
+        
+          <li>
+            
+                es-ec/
+                
+            
+          </li>
+        
+      </ol>
+      <p>
+        
+          The current path, <code>generador-actas/api/proveedores/test/</code>,
+        
+        didn’t match any of these.
+      </p>
+    
+  </div>
+
+  <div id="explanation">
+    <p>
+      You’re seeing this error because you have <code>DEBUG = True</code> in
+      your Django settings file. Change that to <code>False</code>, and Django
+      will display a standard 404 page.
+    </p>
+  </div>
+</body>
+</html>

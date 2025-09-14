@@ -14,10 +14,14 @@ class ProveedorIA(models.Model):
     """Configuración de proveedores de IA disponibles"""
     TIPO_PROVEEDOR = [
         ('openai', 'OpenAI'),
-        ('deepseek', 'DeepSeek'),
-        ('ollama', 'Ollama (Local)'),
         ('anthropic', 'Anthropic Claude'),
-        ('google', 'Google Gemini')
+        ('deepseek', 'DeepSeek'),
+        ('google', 'Google Gemini'),
+        ('ollama', 'Ollama (Local)'),
+        ('lmstudio', 'LM Studio (Local)'),
+        ('groq', 'Groq'),
+        ('generic1', 'Proveedor Genérico 1'),
+        ('generic2', 'Proveedor Genérico 2'),
     ]
     
     # Identificación
@@ -26,20 +30,27 @@ class ProveedorIA(models.Model):
     
     # Configuración de API
     api_key = models.CharField(max_length=500, blank=True, help_text="Clave API (se encripta en producción)")
-    api_url = models.URLField(blank=True, help_text="URL base de la API (opcional)")
-    modelo = models.CharField(max_length=100, help_text="Modelo específico a usar (ej: gpt-4, deepseek-v2)")
+    api_url = models.URLField(blank=True, help_text="URL base de la API")
+    modelo = models.CharField(max_length=100, help_text="Modelo específico a usar")
     
     # Parámetros de generación
     temperatura = models.FloatField(default=0.7, help_text="Creatividad del modelo (0-1)")
     max_tokens = models.IntegerField(default=4000, help_text="Máximo de tokens por respuesta")
     timeout = models.IntegerField(default=60, help_text="Timeout en segundos")
     
-    # Configuración adicional
+    # Configuración adicional JSON
     configuracion_adicional = models.JSONField(default=dict, blank=True, help_text="Parámetros adicionales del proveedor")
+    prompt_sistema_global = models.TextField(blank=True, help_text="Prompt de sistema global para este proveedor")
     
     # Estado y costos
     activo = models.BooleanField(default=True, help_text="Si está disponible para uso")
     costo_por_1k_tokens = models.DecimalField(max_digits=10, decimal_places=6, default=0, help_text="Costo estimado por 1000 tokens")
+    
+    # Métricas de uso
+    total_llamadas = models.IntegerField(default=0, help_text="Total de llamadas realizadas")
+    total_tokens_usados = models.BigIntegerField(default=0, help_text="Total de tokens consumidos")
+    ultima_conexion_exitosa = models.DateTimeField(null=True, blank=True, help_text="Última conexión exitosa")
+    ultimo_error = models.TextField(blank=True, help_text="Último error registrado")
     
     # Auditoría
     usuario_creacion = models.ForeignKey(User, on_delete=models.PROTECT, related_name='proveedores_ia_creados')
@@ -55,16 +66,98 @@ class ProveedorIA(models.Model):
         return f"{self.nombre} ({self.get_tipo_display()})"
     
     def get_absolute_url(self):
-        return reverse('generador_actas:editar_proveedor', kwargs={'pk': self.pk})
+        return reverse('generador_actas:proveedor_detail', kwargs={'pk': self.pk})
     
     @property
     def esta_configurado(self):
         """Verifica si el proveedor está correctamente configurado"""
-        if self.tipo in ['openai', 'deepseek', 'anthropic'] and not self.api_key:
+        # Proveedores que requieren API key
+        if self.tipo in ['openai', 'anthropic', 'deepseek', 'google', 'groq', 'generic1', 'generic2']:
+            if not self.api_key:
+                # Buscar en variables de entorno
+                from django.conf import settings
+                env_key = f"{self.tipo.upper()}_API_KEY"
+                if not getattr(settings, env_key, None):
+                    return False
+        
+        # Proveedores locales que requieren URL
+        if self.tipo in ['ollama', 'lmstudio'] and not self.api_url:
             return False
-        if self.tipo == 'ollama' and not self.api_url:
-            return False
-        return True
+            
+        return bool(self.modelo)
+    
+    @property
+    def api_key_masked(self):
+        """Devuelve la API key enmascarada para mostrar en UI"""
+        if not self.api_key:
+            return "No configurada"
+        if len(self.api_key) <= 8:
+            return "*" * len(self.api_key)
+        return f"{self.api_key[:4]}{'*' * (len(self.api_key) - 8)}{self.api_key[-4:]}"
+    
+    def obtener_configuracion_completa(self):
+        """Obtiene la configuración completa incluyendo valores por defecto del .env"""
+        from django.conf import settings
+        
+        config = {
+            'tipo': self.tipo,
+            'nombre': self.nombre,
+            'modelo': self.modelo,
+            'temperatura': self.temperatura,
+            'max_tokens': self.max_tokens,
+            'timeout': self.timeout,
+            'configuracion_adicional': self.configuracion_adicional,
+            'prompt_sistema_global': self.prompt_sistema_global,
+        }
+        
+        # API Key (prioridad: BD > .env)
+        if self.api_key:
+            config['api_key'] = self.api_key
+        else:
+            env_key = f"{self.tipo.upper()}_API_KEY"
+            config['api_key'] = getattr(settings, env_key, '')
+        
+        # API URL (prioridad: BD > .env)
+        if self.api_url:
+            config['api_url'] = self.api_url
+        else:
+            env_url = f"{self.tipo.upper()}_API_URL"
+            config['api_url'] = getattr(settings, env_url, '')
+        
+        return config
+    
+    def actualizar_metricas(self, tokens_usados=0, exito=True, error=None):
+        """Actualiza las métricas de uso del proveedor"""
+        self.total_llamadas += 1
+        if tokens_usados > 0:
+            self.total_tokens_usados += tokens_usados
+        
+        if exito:
+            self.ultima_conexion_exitosa = timezone.now()
+            self.ultimo_error = ""
+        else:
+            self.ultimo_error = error or "Error desconocido"
+        
+        self.save(update_fields=['total_llamadas', 'total_tokens_usados', 
+                                'ultima_conexion_exitosa', 'ultimo_error'])
+    
+    @classmethod
+    def obtener_configuraciones_por_defecto(cls):
+        """Obtiene las configuraciones por defecto desde el .env"""
+        from django.conf import settings
+        
+        configuraciones = {}
+        for tipo, nombre in cls.TIPO_PROVEEDOR:
+            env_prefix = tipo.upper()
+            configuraciones[tipo] = {
+                'api_key': getattr(settings, f'{env_prefix}_API_KEY', ''),
+                'api_url': getattr(settings, f'{env_prefix}_API_URL', ''),
+                'modelo': getattr(settings, f'{env_prefix}_DEFAULT_MODEL', ''),
+                'temperatura': float(getattr(settings, f'{env_prefix}_DEFAULT_TEMPERATURE', 0.7)),
+                'max_tokens': int(getattr(settings, f'{env_prefix}_DEFAULT_MAX_TOKENS', 4000)),
+            }
+        
+        return configuraciones
 
 
 class SegmentoPlantilla(models.Model):

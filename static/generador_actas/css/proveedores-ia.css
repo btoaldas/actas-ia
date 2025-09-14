@@ -1,0 +1,395 @@
+/**
+ * Estilos específicos para gestión de proveedores IA
+ * Complementa AdminLTE con estilos personalizados para esta funcionalidad
+ */
+
+/* ============================
+   LAYOUT GENERAL
+   ============================ */
+
+.proveedores-ia-container {
+    min-height: calc(100vh - 200px);
+}
+
+.proveedor-card {
+    transition: all 0.3s ease;
+    border-left: 4px solid transparent;
+}
+
+.proveedor-card:hover {
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    transform: translateY(-2px);
+}
+
+.proveedor-card.activo {
+    border-left-color: #28a745;
+}
+
+.proveedor-card.inactivo {
+    border-left-color: #dc3545;
+    opacity: 0.8;
+}
+
+/* ============================
+   FORMULARIO DE PROVEEDORES
+   ============================ */
+
+.form-section {
+    margin-bottom: 1.5rem;
+}
+
+.form-section .card-header {
+    padding: 0.75rem 1rem;
+    background-color: rgba(0,123,255,0.1);
+    border-bottom: 1px solid rgba(0,123,255,0.2);
+}
+
+.form-group label.required::after {
+    content: " *";
+    color: #dc3545;
+    font-weight: bold;
+}
+
+/* Campo de temperatura con indicador visual */
+.temperatura-container {
+    position: relative;
+}
+
+.temperatura-indicator {
+    margin-top: 0.5rem;
+}
+
+.temperatura-gauge {
+    height: 4px;
+    background: linear-gradient(to right, 
+        #007bff 0%, 
+        #28a745 25%, 
+        #ffc107 50%, 
+        #fd7e14 75%, 
+        #dc3545 100%);
+    border-radius: 2px;
+    position: relative;
+}
+
+.temperatura-marker {
+    position: absolute;
+    top: -2px;
+    width: 8px;
+    height: 8px;
+    background: #fff;
+    border: 2px solid #333;
+    border-radius: 50%;
+    transform: translateX(-50%);
+    transition: left 0.3s ease;
+}
+
+/* Campo API Key con toggle de visibilidad */
+.api-key-container .input-group-text {
+    cursor: pointer;
+    user-select: none;
+}
+
+.api-key-container .input-group-text:hover {
+    background-color: #e9ecef;
+}
+
+/* ============================
+   PRUEBAS DE CONEXIÓN
+   ============================ */
+
+.test-result {
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.test-loading {
+    text-align: center;
+    padding: 2rem 0;
+}
+
+.test-loading .spinner {
+    width: 3rem;
+    height: 3rem;
+}
+
+.connection-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.25rem 0.75rem;
+    border-radius: 1rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+}
+
+.connection-status.success {
+    background-color: rgba(40, 167, 69, 0.1);
+    color: #28a745;
+    border: 1px solid rgba(40, 167, 69, 0.2);
+}
+
+.connection-status.error {
+    background-color: rgba(220, 53, 69, 0.1);
+    color: #dc3545;
+    border: 1px solid rgba(220, 53, 69, 0.2);
+}
+
+.connection-status.warning {
+    background-color: rgba(255, 193, 7, 0.1);
+    color: #ffc107;
+    border: 1px solid rgba(255, 193, 7, 0.2);
+}
+
+.connection-status.pending {
+    background-color: rgba(108, 117, 125, 0.1);
+    color: #6c757d;
+    border: 1px solid rgba(108, 117, 125, 0.2);
+}
+
+/* Animación para spinner de carga */
+@keyframes test-pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.5; }
+    100% { opacity: 1; }
+}
+
+.test-in-progress {
+    animation: test-pulse 1.5s ease-in-out infinite;
+}
+
+/* ============================
+   LISTA DE PROVEEDORES
+   ============================ */
+
+.providers-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+.provider-card {
+    border: 1px solid #dee2e6;
+    border-radius: 0.375rem;
+    padding: 1rem;
+    background: #fff;
+    transition: all 0.3s ease;
+}
+
+.provider-card:hover {
+    border-color: #007bff;
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+}
+
+.provider-header {
+    display: flex;
+    justify-content: between;
+    align-items: center;
+    margin-bottom: 0.75rem;
+}
+
+.provider-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin: 0;
+    color: #333;
+}
+
+.provider-type {
+    font-size: 0.875rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.25rem;
+    background: #e9ecef;
+    color: #495057;
+}
+
+.provider-stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
+    margin: 0.75rem 0;
+    font-size: 0.875rem;
+}
+
+.provider-stat {
+    text-align: center;
+    padding: 0.5rem;
+    background: #f8f9fa;
+    border-radius: 0.25rem;
+}
+
+.provider-stat-label {
+    display: block;
+    font-size: 0.75rem;
+    color: #6c757d;
+    margin-bottom: 0.25rem;
+}
+
+.provider-stat-value {
+    font-weight: 600;
+    color: #333;
+}
+
+.provider-actions {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 1rem;
+}
+
+/* ============================
+   MODALES Y OVERLAYS
+   ============================ */
+
+.modal-header.bg-danger {
+    border-bottom: 1px solid rgba(255,255,255,0.2);
+}
+
+.test-modal .modal-body {
+    min-height: 200px;
+}
+
+.delete-modal .modal-body {
+    padding: 1.5rem;
+}
+
+/* ============================
+   BADGES Y ESTADOS
+   ============================ */
+
+.badge-proveedor {
+    font-size: 0.75rem;
+    padding: 0.375rem 0.75rem;
+    border-radius: 0.375rem;
+}
+
+.badge-openai { background-color: #10a37f; color: white; }
+.badge-anthropic { background-color: #ff6b35; color: white; }
+.badge-deepseek { background-color: #000; color: white; }
+.badge-google { background-color: #4285f4; color: white; }
+.badge-groq { background-color: #ff6b00; color: white; }
+.badge-ollama { background-color: #000; color: white; }
+.badge-lmstudio { background-color: #6c757d; color: white; }
+.badge-generic1 { background-color: #6f42c1; color: white; }
+.badge-generic2 { background-color: #20c997; color: white; }
+
+/* ============================
+   RESPONSIVE DESIGN
+   ============================ */
+
+@media (max-width: 768px) {
+    .providers-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .provider-stats {
+        grid-template-columns: 1fr;
+    }
+    
+    .provider-actions {
+        flex-direction: column;
+    }
+    
+    .btn-group {
+        flex-direction: column;
+    }
+    
+    .btn-group .btn {
+        border-radius: 0.375rem !important;
+        margin-bottom: 0.25rem;
+    }
+}
+
+@media (max-width: 576px) {
+    .form-section .card-header h5 {
+        font-size: 1rem;
+    }
+    
+    .temperatura-container,
+    .api-key-container {
+        margin-bottom: 1rem;
+    }
+}
+
+/* ============================
+   UTILIDADES
+   ============================ */
+
+.text-truncate-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.border-success-light {
+    border-color: rgba(40, 167, 69, 0.3) !important;
+}
+
+.border-danger-light {
+    border-color: rgba(220, 53, 69, 0.3) !important;
+}
+
+.bg-success-light {
+    background-color: rgba(40, 167, 69, 0.1) !important;
+}
+
+.bg-danger-light {
+    background-color: rgba(220, 53, 69, 0.1) !important;
+}
+
+/* Animaciones sutiles */
+.fade-in {
+    animation: fadeIn 0.3s ease-in;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Estados de carga */
+.loading-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+/* Tooltips personalizados */
+.tooltip-custom {
+    position: relative;
+    cursor: help;
+}
+
+.tooltip-custom:hover::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #333;
+    color: white;
+    padding: 0.5rem;
+    border-radius: 0.25rem;
+    font-size: 0.75rem;
+    white-space: nowrap;
+    z-index: 1000;
+    margin-bottom: 0.25rem;
+}
+
+.tooltip-custom:hover::before {
+    content: '';
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 4px solid transparent;
+    border-top-color: #333;
+    z-index: 1000;
+}

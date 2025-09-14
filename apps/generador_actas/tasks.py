@@ -488,3 +488,254 @@ def probar_proveedores_ia(self, operacion_id, proveedor_ids=None):
         operacion.marcar_fallido(str(e))
         operacion.agregar_log('error', f'Error probando proveedores IA: {str(e)}')
         raise
+
+
+@shared_task(bind=True, max_retries=2)
+def procesar_prueba_ia_task(self, proveedor_id: int, prompt_prueba: str, incluir_contexto: bool = False, task_uuid: str = None):
+    """
+    Tarea Celery para procesar pruebas de IA en segundo plano con logging detallado
+    
+    Args:
+        proveedor_id: ID del proveedor de IA a probar
+        prompt_prueba: Texto del prompt a enviar
+        incluir_contexto: Si incluir contexto adicional
+        task_uuid: UUID único para tracking del progreso
+    
+    Returns:
+        dict: Resultado de la prueba con métricas y respuesta
+    """
+    import time
+    import logging
+    from django.core.cache import cache
+    
+    logger = logging.getLogger(__name__)
+    
+    if not task_uuid:
+        task_uuid = self.request.id
+    
+    # Actualizar progreso inicial
+    cache_key = f"ia_test_progress_{task_uuid}"
+    
+    def actualizar_progreso(paso: str, detalle: str, porcentaje: int = 0):
+        """Helper para actualizar el progreso en cache"""
+        progreso = {
+            'paso': paso,
+            'detalle': detalle,
+            'porcentaje': porcentaje,
+            'timestamp': timezone.now().isoformat(),
+            'task_id': task_uuid
+        }
+        cache.set(cache_key, progreso, timeout=300)  # 5 minutos
+        logger.info(f"[{task_uuid}] {paso}: {detalle}")
+        return progreso
+    
+    try:
+        actualizar_progreso("INICIANDO", "Preparando prueba de IA...", 10)
+        
+        # Obtener proveedor
+        actualizar_progreso("VALIDANDO", "Obteniendo información del proveedor...", 20)
+        try:
+            proveedor = ProveedorIA.objects.get(id=proveedor_id, activo=True)
+        except ProveedorIA.DoesNotExist:
+            error_msg = f"Proveedor con ID {proveedor_id} no encontrado o inactivo"
+            actualizar_progreso("ERROR", error_msg, 100)
+            return {
+                'success': False,
+                'error': error_msg,
+                'proveedor_id': proveedor_id,
+                'task_id': task_uuid
+            }
+        
+        actualizar_progreso("CONFIGURANDO", f"Configurando conexión con {proveedor.nombre}...", 30)
+        
+        # Obtener el handler del proveedor
+        from .ia_providers import get_ia_provider
+        handler = get_ia_provider(proveedor)
+        
+        if not handler:
+            error_msg = f"Handler no encontrado para el tipo: {proveedor.tipo}"
+            actualizar_progreso("ERROR", error_msg, 100)
+            return {
+                'success': False,
+                'error': error_msg,
+                'proveedor': {
+                    'id': proveedor.id,
+                    'nombre': proveedor.nombre,
+                    'tipo': proveedor.tipo
+                },
+                'task_id': task_uuid
+            }
+        
+        # Preparar prompt con contexto si se solicita
+        prompt_final = prompt_prueba
+        if incluir_contexto:
+            actualizar_progreso("PREPARANDO", "Agregando contexto adicional al prompt...", 40)
+            contexto_adicional = {
+                'fecha_prueba': timezone.now().isoformat(),
+                'proveedor_probado': proveedor.nombre,
+                'tipo_prueba': 'automatizada',
+                'contexto_municipal': 'Municipio de Pastaza, Ecuador'
+            }
+            prompt_final = f"""Contexto de prueba: {json.dumps(contexto_adicional, indent=2)}
+
+Prompt de prueba: {prompt_prueba}
+
+Por favor responde considerando este contexto municipal."""
+        
+        actualizar_progreso("CONECTANDO", f"Estableciendo conexión con {proveedor.tipo}...", 50)
+        
+        # Logging detallado de parámetros
+        parametros_envio = {
+            'proveedor_id': proveedor.id,
+            'proveedor_nombre': proveedor.nombre,
+            'proveedor_tipo': proveedor.tipo,
+            'modelo': proveedor.modelo,
+            'url_api': proveedor.api_url or 'Default',
+            'prompt_length': len(prompt_final),
+            'incluir_contexto': incluir_contexto,
+            'timestamp_envio': timezone.now().isoformat()
+        }
+        
+        logger.info(f"[{task_uuid}] PARÁMETROS DE ENVÍO: {json.dumps(parametros_envio, indent=2)}")
+        actualizar_progreso("ENVIANDO", f"Enviando prompt ({len(prompt_final)} caracteres)...", 70)
+        
+        # Medir tiempo de inicio
+        tiempo_inicio = time.time()
+        
+        # Realizar la prueba real de conexión
+        resultado_prueba = handler.test_conexion()
+        
+        # Si la conexión es exitosa Y tenemos un prompt personalizado, ejecutarlo
+        prueba_prompt_resultado = {}
+        if resultado_prueba.get('exito', False) and prompt_final.strip():
+            actualizar_progreso("ENVIANDO_PROMPT", f"Enviando prompt personalizado a {proveedor.tipo}...", 85)
+            try:
+                # Ejecutar el prompt personalizado directamente
+                if hasattr(handler, 'generar_respuesta'):
+                    respuesta_ia = handler.generar_respuesta(prompt_final)
+                    prueba_prompt_resultado = {
+                        'exito': True,
+                        'respuesta': respuesta_ia.get('contenido', respuesta_ia.get('response', str(respuesta_ia))),
+                        'tokens': respuesta_ia.get('tokens_usados'),
+                        'modelo_usado': respuesta_ia.get('modelo_usado', proveedor.modelo),
+                        'tiempo_respuesta': respuesta_ia.get('tiempo_respuesta')
+                    }
+                else:
+                    # Fallback para proveedores sin método generar_respuesta
+                    prueba_prompt_resultado = {
+                        'exito': False,
+                        'error': f'Proveedor {proveedor.tipo} no soporta ejecución de prompts personalizados'
+                    }
+            except Exception as e:
+                prueba_prompt_resultado = {
+                    'exito': False,
+                    'error': f'Error ejecutando prompt personalizado: {str(e)}'
+                }
+        elif prompt_final.strip():
+            prueba_prompt_resultado = {
+                'exito': False,
+                'error': 'Conexión falló, no se pudo ejecutar el prompt'
+            }
+        
+        # Medir tiempo final
+        tiempo_total = round(time.time() - tiempo_inicio, 2)
+        
+        actualizar_progreso("PROCESANDO", "Procesando respuesta de la IA...", 90)
+        
+        # Preparar resultado completo
+        resultado_completo = {
+            'success': True,
+            'proveedor': {
+                'id': proveedor.id,
+                'nombre': proveedor.nombre,
+                'tipo': proveedor.tipo,
+                'modelo': proveedor.modelo,
+                'api_url': proveedor.api_url
+            },
+            'parametros_envio': parametros_envio,
+            'tiempo_respuesta': tiempo_total,
+            'timestamp_completado': timezone.now().isoformat(),
+            'task_id': task_uuid,
+            'incluir_contexto': incluir_contexto,
+            'prompt_enviado': prompt_final,
+            'prueba_prompt': prueba_prompt_resultado,  # Usar el resultado real del prompt
+            'mensaje': resultado_prueba.get('mensaje', 'Prueba completada'),
+            'metricas': {
+                'tiempo_respuesta_segundos': tiempo_total,
+                'caracteres_prompt': len(prompt_final),
+                'exito_conexion': resultado_prueba.get('exito', False),
+                'tokens_estimados': prueba_prompt_resultado.get('tokens'),
+                'modelo_usado': prueba_prompt_resultado.get('modelo_usado', proveedor.modelo),
+                'prompt_ejecutado': bool(prompt_final.strip() and prueba_prompt_resultado.get('exito'))
+            }
+        }
+        
+        # Logging detallado del resultado
+        logger.info(f"[{task_uuid}] RESULTADO COMPLETO: {json.dumps(resultado_completo, indent=2, default=str)}")
+        
+        actualizar_progreso("COMPLETADO", f"Prueba exitosa en {tiempo_total}s", 100)
+        
+        return resultado_completo
+        
+    except Exception as e:
+        error_msg = f"Error durante la prueba: {str(e)}"
+        logger.error(f"[{task_uuid}] ERROR: {error_msg}", exc_info=True)
+        
+        actualizar_progreso("ERROR", error_msg, 100)
+        
+        return {
+            'success': False,
+            'error': error_msg,
+            'proveedor_id': proveedor_id,
+            'task_id': task_uuid,
+            'timestamp_error': timezone.now().isoformat()
+        }
+
+
+def obtener_progreso_tarea(task_uuid: str):
+    """
+    Obtener el progreso actual de una tarea
+    
+    Args:
+        task_uuid: UUID de la tarea
+    
+    Returns:
+        dict: Información del progreso o None si no existe
+    """
+    from django.core.cache import cache
+    cache_key = f"ia_test_progress_{task_uuid}"
+    return cache.get(cache_key)
+
+
+@shared_task(bind=True)
+def procesar_generacion_acta_task(self, proveedor_id: int, contenido_reunion: str, configuracion: dict = None):
+    """
+    Tarea Celery para generar actas usando IA (para uso futuro)
+    
+    Args:
+        proveedor_id: ID del proveedor de IA
+        contenido_reunion: Transcripción o contenido de la reunión
+        configuracion: Configuración específica para la generación
+    
+    Returns:
+        dict: Acta generada y métricas
+    """
+    # TODO: Implementar para módulos futuros de generación de actas
+    pass
+
+
+@shared_task(bind=True)
+def procesar_resumen_acta_task(self, proveedor_id: int, acta_contenido: str, tipo_resumen: str = "ejecutivo"):
+    """
+    Tarea Celery para generar resúmenes de actas (para uso futuro)
+    
+    Args:
+        proveedor_id: ID del proveedor de IA
+        acta_contenido: Contenido completo del acta
+        tipo_resumen: Tipo de resumen a generar
+    
+    Returns:
+        dict: Resumen generado y métricas
+    """
+    # TODO: Implementar para módulos futuros de resúmenes
+    pass

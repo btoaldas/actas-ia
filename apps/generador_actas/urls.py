@@ -12,11 +12,11 @@ urlpatterns = [
     path('', views.dashboard_actas, name='dashboard'),
     
     # === PROVEEDORES IA ===
-    path('proveedores/', views.ProveedoresListView.as_view(), name='proveedores_lista'),
-    path('proveedores/crear/', views.CrearProveedorView.as_view(), name='crear_proveedor'),
-    path('proveedores/<int:pk>/', views.ProveedorDetailView.as_view(), name='proveedor_detail'),
-    path('proveedores/<int:pk>/editar/', views.EditarProveedorView.as_view(), name='editar_proveedor'),
-    path('proveedores/<int:pk>/eliminar/', views.EliminarProveedorView.as_view(), name='eliminar_proveedor'),
+    path('proveedores/', views.lista_proveedores_ia, name='proveedores_lista'),
+    path('proveedores/crear/', views.crear_proveedor_ia, name='crear_proveedor_ia'),
+    path('proveedores/<int:pk>/editar/', views.editar_proveedor_ia, name='editar_proveedor_ia'),
+    path('proveedores/<int:pk>/eliminar/', views.eliminar_proveedor_ia, name='eliminar_proveedor_ia'),
+    path('proveedores/test/', views.test_proveedor_ia, name='test_proveedor_ia'),
     
     # === SEGMENTOS ===
     path('segmentos/', views.SegmentosListView.as_view(), name='segmentos_lista'),
@@ -74,6 +74,11 @@ urlpatterns = [
         
         # APIs de proveedores IA
         path('proveedores/<int:proveedor_id>/probar/', api_views.api_probar_proveedor_ia, name='api_probar_proveedor_ia'),
+        path('proveedores/probar-conexion/', views.probar_conexion_proveedor, name='api_probar_conexion_proveedor'),
+        path('proveedores/probar-conexion-celery/', views.probar_conexion_proveedor_celery, name='api_probar_conexion_proveedor_celery'),
+        path('proveedores/progreso-prueba/<str:task_id>/', views.obtener_progreso_prueba, name='api_progreso_prueba'),
+        path('proveedores/modelos/<str:tipo_proveedor>/', views.obtener_modelos_proveedor, name='api_modelos_proveedor'),
+        path('proveedores/configuracion/<str:tipo_proveedor>/', views.obtener_configuracion_defecto, name='api_configuracion_defecto'),
         
         # APIs de estadísticas y monitoreo
         path('dashboard/stats/', api_views.api_dashboard_stats, name='api_dashboard_stats'),

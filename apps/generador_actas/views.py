@@ -28,7 +28,7 @@ from .models import (
     SegmentoPlantilla, ConfiguracionSegmento
 )
 from .services import GeneradorActasService, PlantillasService, EstadisticasService
-from .forms import ActaGeneradaForm, PlantillaActaForm, ConfiguracionSegmentoFormSet
+from .forms import ActaGeneradaForm, PlantillaActaForm, ConfiguracionSegmentoFormSet, ProveedorIAForm, TestProveedorForm
 
 logger = logging.getLogger(__name__)
 
@@ -1409,3 +1409,492 @@ def _iniciar_tarea_asincrona(tipo_operacion, operacion_id, parametros):
     except Exception as e:
         logger.error(f"Error iniciando tarea asíncrona: {str(e)}")
         return None
+
+
+# ================== GESTIÓN DE PROVEEDORES IA ==================
+
+@login_required
+def lista_proveedores_ia(request):
+    """Vista para listar proveedores de IA"""
+    proveedores = ProveedorIA.objects.all().order_by('nombre')
+    
+    # Filtros
+    filtro_tipo = request.GET.get('tipo', '')
+    filtro_activo = request.GET.get('activo', '')
+    filtro_busqueda = request.GET.get('q', '')
+    
+    if filtro_tipo:
+        proveedores = proveedores.filter(tipo=filtro_tipo)
+    
+    if filtro_activo:
+        activo_bool = filtro_activo.lower() == 'true'
+        proveedores = proveedores.filter(activo=activo_bool)
+    
+    if filtro_busqueda:
+        proveedores = proveedores.filter(
+            Q(nombre__icontains=filtro_busqueda) |
+            Q(modelo__icontains=filtro_busqueda)
+        )
+    
+    context = {
+        'proveedores': proveedores,
+        'filtro_tipo': filtro_tipo,
+        'filtro_activo': filtro_activo,
+        'filtro_busqueda': filtro_busqueda,
+        'tipos_disponibles': ProveedorIA.TIPO_PROVEEDOR,
+        'page_title': 'Proveedores de IA',
+        'breadcrumbs': [
+            {'title': 'Generador Actas', 'url': reverse('generador_actas:dashboard')},
+            {'title': 'Proveedores IA', 'url': ''}
+        ]
+    }
+    
+    return render(request, 'generador_actas/proveedores_ia/lista.html', context)
+
+
+@login_required
+def crear_proveedor_ia(request):
+    """Vista para crear un nuevo proveedor de IA"""
+    
+    if request.method == 'POST':
+        form = ProveedorIAForm(request.POST)
+        if form.is_valid():
+            try:
+                proveedor = form.save(commit=False)
+                proveedor.usuario_creacion = request.user
+                proveedor.save()
+                
+                messages.success(request, f'Proveedor "{proveedor.nombre}" creado exitosamente.')
+                return redirect('generador_actas:proveedores_lista')
+            except Exception as e:
+                logger.error(f"Error creando proveedor: {str(e)}")
+                messages.error(request, f'Error al crear el proveedor: {str(e)}')
+    else:
+        form = ProveedorIAForm()
+    
+    context = {
+        'form': form,
+        'page_title': 'Crear Proveedor IA',
+        'breadcrumbs': [
+            {'title': 'Generador Actas', 'url': reverse('generador_actas:dashboard')},
+            {'title': 'Proveedores IA', 'url': reverse('generador_actas:proveedores_lista')},
+            {'title': 'Crear', 'url': ''}
+        ],
+        'modelos_por_proveedor': json.dumps({})  # TODO: Investigar problema con ProveedorIAForm.obtener_modelos_por_proveedor()
+    }
+    
+    return render(request, 'generador_actas/proveedores_ia/form.html', context)
+
+
+@login_required
+def editar_proveedor_ia(request, pk):
+    """Vista para editar un proveedor de IA"""
+    
+    proveedor = get_object_or_404(ProveedorIA, pk=pk)
+    
+    if request.method == 'POST':
+        form = ProveedorIAForm(request.POST, instance=proveedor)
+        if form.is_valid():
+            try:
+                proveedor = form.save(commit=False)
+                proveedor.usuario_modificacion = request.user
+                proveedor.fecha_modificacion = timezone.now()
+                proveedor.save()
+                
+                messages.success(request, f'Proveedor "{proveedor.nombre}" actualizado exitosamente.')
+                return redirect('generador_actas:proveedores_lista')
+            except Exception as e:
+                logger.error(f"Error actualizando proveedor: {str(e)}")
+                messages.error(request, f'Error al actualizar el proveedor: {str(e)}')
+    else:
+        form = ProveedorIAForm(instance=proveedor)
+    
+    context = {
+        'form': form,
+        'proveedor': proveedor,
+        'page_title': f'Editar {proveedor.nombre}',
+        'breadcrumbs': [
+            {'title': 'Generador Actas', 'url': reverse('generador_actas:dashboard')},
+            {'title': 'Proveedores IA', 'url': reverse('generador_actas:proveedores_lista')},
+            {'title': 'Editar', 'url': ''}
+        ],
+        'modelos_por_proveedor': json.dumps({})  # TODO: Investigar problema con ProveedorIAForm.obtener_modelos_por_proveedor()
+    }
+    
+    return render(request, 'generador_actas/proveedores_ia/form.html', context)
+
+
+@login_required
+def eliminar_proveedor_ia(request, pk):
+    """Vista para eliminar un proveedor de IA"""
+    proveedor = get_object_or_404(ProveedorIA, pk=pk)
+    
+    if request.method == 'POST':
+        try:
+            # Verificar si tiene actas asociadas
+            actas_count = ActaGenerada.objects.filter(proveedor_ia=proveedor).count()
+            if actas_count > 0:
+                messages.error(
+                    request, 
+                    f'No se puede eliminar "{proveedor.nombre}" porque tiene {actas_count} actas asociadas.'
+                )
+                return redirect('generador_actas:proveedores_lista')
+            
+            nombre = proveedor.nombre
+            proveedor.delete()
+            messages.success(request, f'Proveedor "{nombre}" eliminado exitosamente.')
+            
+        except Exception as e:
+            logger.error(f"Error eliminando proveedor: {str(e)}")
+            messages.error(request, f'Error al eliminar el proveedor: {str(e)}')
+    
+    return redirect('generador_actas:proveedores_lista')
+
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def probar_conexion_proveedor(request):
+    """API para probar la conexión con un proveedor de IA"""
+    try:
+        data = json.loads(request.body)
+        proveedor_id = data.get('proveedor_id')
+        prompt_prueba = data.get('prompt_prueba', 
+            'Dime en JSON tu información real: {"tecnologia": "tu_nombre_real", "modelo": "modelo_real_usado", '
+            '"empresa": "tu_empresa_real", "capacidades": "lo_que_puedes_hacer"}. Responde con datos verdaderos.'
+        )
+        
+        if not proveedor_id:
+            return JsonResponse({
+                'success': False,
+                'error': 'ID del proveedor requerido'
+            }, status=400)
+        
+        proveedor = get_object_or_404(ProveedorIA, pk=proveedor_id)
+        
+        # Importar dinámicamente para evitar errores si no está disponible
+        from .ia_providers import get_ia_provider
+        
+        # Obtener el proveedor y probar conexión
+        provider = get_ia_provider(proveedor)
+        
+        # Ejecutar prueba de conexión con logging detallado
+        import time
+        
+        # Paso 1: Validar conexión
+        inicio = timezone.now()
+        tiempo_inicio = time.time()
+        
+        resultado_conexion = provider.test_conexion()
+        tiempo_conexion = round(time.time() - tiempo_inicio, 2)
+        
+        # Extraer datos del resultado de conexión
+        exito_conexion = resultado_conexion.get('exito', False)
+        mensaje_conexion = resultado_conexion.get('mensaje', 'Error desconocido')
+        
+        # Paso 2: Si hay prompt y conexión exitosa, ejecutarlo
+        prueba_prompt_resultado = {}
+        tiempo_total = tiempo_conexion
+        
+        if exito_conexion and prompt_prueba and prompt_prueba.strip():
+            try:
+                tiempo_prompt_inicio = time.time()
+                
+                # Intentar ejecutar el prompt personalizado
+                if hasattr(provider, 'generar_respuesta'):
+                    respuesta_ia = provider.generar_respuesta(prompt_prueba)
+                    tiempo_prompt = round(time.time() - tiempo_prompt_inicio, 2)
+                    tiempo_total = tiempo_conexion + tiempo_prompt
+                    
+                    prueba_prompt_resultado = {
+                        'exito': True,
+                        'respuesta': respuesta_ia.get('contenido', respuesta_ia.get('response', str(respuesta_ia))),
+                        'tokens': respuesta_ia.get('tokens_usados'),
+                        'modelo_usado': respuesta_ia.get('modelo_usado', proveedor.modelo),
+                        'tiempo_respuesta': tiempo_prompt
+                    }
+                else:
+                    # Fallback para proveedores antiguos
+                    respuesta_raw = provider.procesar_prompt(prompt_prueba, {})
+                    tiempo_prompt = round(time.time() - tiempo_prompt_inicio, 2)
+                    tiempo_total = tiempo_conexion + tiempo_prompt
+                    
+                    prueba_prompt_resultado = {
+                        'exito': True,
+                        'respuesta': respuesta_raw.get('contenido', str(respuesta_raw)) if isinstance(respuesta_raw, dict) else str(respuesta_raw),
+                        'tokens': respuesta_raw.get('tokens_usados') if isinstance(respuesta_raw, dict) else None,
+                        'modelo_usado': proveedor.modelo,
+                        'tiempo_respuesta': tiempo_prompt
+                    }
+                
+                # Actualizar contador de llamadas
+                proveedor.total_llamadas = (proveedor.total_llamadas or 0) + 1
+                
+            except Exception as e:
+                tiempo_prompt = round(time.time() - tiempo_prompt_inicio, 2)
+                tiempo_total = tiempo_conexion + tiempo_prompt
+                
+                prueba_prompt_resultado = {
+                    'exito': False,
+                    'error': f'Error ejecutando prompt: {str(e)}',
+                    'tiempo_respuesta': tiempo_prompt
+                }
+        elif prompt_prueba and prompt_prueba.strip():
+            prueba_prompt_resultado = {
+                'exito': False,
+                'error': 'Conexión falló, no se pudo ejecutar el prompt'
+            }
+        
+        # Actualizar métricas del proveedor
+        if exito_conexion:
+            proveedor.ultima_conexion_exitosa = timezone.now()
+            proveedor.ultimo_error = ""
+        else:
+            proveedor.ultimo_error = mensaje_conexion
+        
+        proveedor.save()
+        
+        # Preparar respuesta completa con todos los datos de logging
+        response_data = {
+            'success': exito_conexion,
+            'mensaje': mensaje_conexion,
+            'tiempo_respuesta': tiempo_total,
+            'timestamp': timezone.now().isoformat(),
+            'proveedor': {
+                'id': proveedor.id,
+                'nombre': proveedor.nombre,
+                'tipo': proveedor.tipo,
+                'modelo': proveedor.modelo,
+                'api_url': proveedor.api_url if proveedor.api_url else 'Default',
+            },
+            'parametros_envio': {
+                'proveedor_id': proveedor.id,
+                'proveedor_nombre': proveedor.nombre,
+                'proveedor_tipo': proveedor.tipo,
+                'modelo': proveedor.modelo,
+                'url_api': proveedor.api_url or 'Default',
+                'prompt_length': len(prompt_prueba) if prompt_prueba else 0,
+                'timestamp_envio': timezone.now().isoformat()
+            },
+            'prueba_prompt': prueba_prompt_resultado,
+            'metricas': {
+                'tiempo_respuesta_segundos': tiempo_total,
+                'tiempo_conexion': tiempo_conexion,
+                'caracteres_prompt': len(prompt_prueba) if prompt_prueba else 0,
+                'exito_conexion': exito_conexion,
+                'tokens_estimados': prueba_prompt_resultado.get('tokens'),
+                'modelo_usado': prueba_prompt_resultado.get('modelo_usado', proveedor.modelo),
+                'prompt_ejecutado': prueba_prompt_resultado.get('exito', False)
+            },
+            'resultado_completo': resultado_conexion
+        }
+        
+        return JsonResponse(response_data)
+        
+    except json.JSONDecodeError:
+        return JsonResponse({
+            'success': False,
+            'error': 'JSON inválido en la solicitud'
+        }, status=400)
+    except Exception as e:
+        logger.error(f"Error probando conexión proveedor: {str(e)}")
+        return JsonResponse({
+            'success': False,
+            'error': f'Error interno: {str(e)}'
+        }, status=500)
+
+
+@csrf_exempt
+@require_http_methods(["GET"])
+def obtener_modelos_proveedor(request, tipo_proveedor):
+    """API para obtener modelos disponibles por tipo de proveedor"""
+    try:
+        # TODO: Arreglar ProveedorIAForm.obtener_modelos_por_proveedor()
+        modelos_por_proveedor = {
+            'openai': ['gpt-4o', 'gpt-4o-mini', 'gpt-4-turbo', 'gpt-4', 'gpt-3.5-turbo'],
+            'anthropic': ['claude-3-5-sonnet-20241022', 'claude-3-opus-20240229'],
+            'deepseek': ['deepseek-chat', 'deepseek-coder'],
+            'google': ['gemini-1.5-pro', 'gemini-1.5-flash'],
+            'groq': ['llama-3.1-70b-versatile', 'mixtral-8x7b-32768'],
+            'ollama': ['llama3.2:3b', 'llama3.1:8b', 'mistral:7b'],
+            'lmstudio': ['lmstudio-community/Meta-Llama-3.1-8B-Instruct-GGUF'],
+            'generic1': ['custom-model-1', 'custom-model-2'],
+            'generic2': ['custom-model-1', 'custom-model-2']
+        }
+        modelos = modelos_por_proveedor.get(tipo_proveedor, [])
+        
+        return JsonResponse({
+            'success': True,
+            'modelos': modelos,
+            'tipo_proveedor': tipo_proveedor
+        })
+        
+    except Exception as e:
+        logger.error(f"Error obteniendo modelos para {tipo_proveedor}: {str(e)}")
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        }, status=500)
+
+
+@csrf_exempt
+@require_http_methods(["GET"])
+def obtener_configuracion_defecto(request, tipo_proveedor):
+    """API para obtener configuración por defecto para un tipo de proveedor"""
+    try:
+        configuraciones = ProveedorIA.obtener_configuraciones_por_defecto()
+        config = configuraciones.get(tipo_proveedor, {})
+        
+        return JsonResponse({
+            'success': True,
+            'configuracion': config,
+            'tipo_proveedor': tipo_proveedor
+        })
+        
+    except Exception as e:
+        logger.error(f"Error obteniendo configuración para {tipo_proveedor}: {str(e)}")
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        }, status=500)
+
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def probar_conexion_proveedor_celery(request):
+    """API para probar conexión usando Celery (procesamiento en segundo plano)"""
+    try:
+        data = json.loads(request.body)
+        proveedor_id = data.get('proveedor_id')
+        prompt_prueba = data.get('prompt_prueba', 
+            'Responde con un JSON válido indicando información REAL sobre ti mismo. Formato: '
+            '{"tecnologia": "ChatGPT/Claude/DeepSeek/etc", "modelo": "tu_modelo_real", "empresa": "OpenAI/Anthropic/etc", "capacidades": "describe_lo_que_puedes_hacer"}'
+        )
+        incluir_contexto = data.get('incluir_contexto', False)
+        
+        if not proveedor_id:
+            return JsonResponse({
+                'success': False,
+                'error': 'ID del proveedor requerido'
+            }, status=400)
+        
+        # Verificar que el proveedor existe
+        proveedor = get_object_or_404(ProveedorIA, pk=proveedor_id)
+        
+        # Importar la tarea Celery
+        from .tasks import procesar_prueba_ia_task
+        
+        # Iniciar tarea en segundo plano
+        import uuid
+        task_uuid = str(uuid.uuid4())
+        
+        # Enviar a Celery
+        task = procesar_prueba_ia_task.delay(
+            proveedor_id=proveedor_id,
+            prompt_prueba=prompt_prueba,
+            incluir_contexto=incluir_contexto,
+            task_uuid=task_uuid
+        )
+        
+        return JsonResponse({
+            'success': True,
+            'task_id': task.id,
+            'task_uuid': task_uuid,
+            'mensaje': 'Prueba iniciada en segundo plano',
+            'proveedor': {
+                'id': proveedor.id,
+                'nombre': proveedor.nombre,
+                'tipo': proveedor.tipo
+            }
+        })
+        
+    except Exception as e:
+        logger.error(f"Error iniciando prueba Celery: {str(e)}")
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        }, status=500)
+
+
+@login_required
+def obtener_progreso_prueba(request, task_id):
+    """API para obtener el progreso de una prueba Celery"""
+    try:
+        from celery.result import AsyncResult
+        from .tasks import obtener_progreso_tarea
+        
+        # Intentar obtener progreso del cache primero
+        progreso = obtener_progreso_tarea(task_id)
+        
+        if progreso:
+            return JsonResponse({
+                'success': True,
+                'progreso': progreso
+            })
+        
+        # Si no hay progreso en cache, verificar Celery
+        task_result = AsyncResult(task_id)
+        
+        if task_result.state == 'PENDING':
+            return JsonResponse({
+                'success': True,
+                'progreso': {
+                    'paso': 'PENDIENTE',
+                    'detalle': 'Tarea en cola...',
+                    'porcentaje': 0,
+                    'task_id': task_id
+                }
+            })
+        elif task_result.state == 'SUCCESS':
+            return JsonResponse({
+                'success': True,
+                'resultado': task_result.result,
+                'completado': True
+            })
+        elif task_result.state == 'FAILURE':
+            return JsonResponse({
+                'success': False,
+                'error': str(task_result.info),
+                'task_id': task_id
+            })
+        else:
+            return JsonResponse({
+                'success': True,
+                'progreso': {
+                    'paso': task_result.state,
+                    'detalle': 'Procesando...',
+                    'porcentaje': 50,
+                    'task_id': task_id
+                }
+            })
+            
+    except Exception as e:
+        logger.error(f"Error obteniendo progreso: {str(e)}")
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        }, status=500)
+
+
+@login_required
+def test_proveedor_ia(request):
+    """Vista para testing de proveedores"""
+    
+    if request.method == 'POST':
+        form = TestProveedorForm(request.POST)
+        if form.is_valid():
+            # Redirigir a la página de proveedores con datos de prueba
+            return redirect('generador_actas:proveedores_lista')
+    else:
+        form = TestProveedorForm()
+    
+    context = {
+        'form': form,
+        'page_title': 'Probar Proveedores IA',
+        'breadcrumbs': [
+            {'title': 'Generador Actas', 'url': reverse('generador_actas:dashboard')},
+            {'title': 'Proveedores IA', 'url': reverse('generador_actas:proveedores_lista')},
+            {'title': 'Probar', 'url': ''}
+        ]
+    }
+    
+    return render(request, 'generador_actas/proveedores_ia/test.html', context)

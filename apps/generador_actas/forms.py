@@ -1,11 +1,294 @@
 """
 Formularios para el módulo generador de actas
+Incluye formularios dinámicos e inteligentes para proveedores de IA
 """
+import json
 from django import forms
+from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.forms import inlineformset_factory
 
 from .models import ActaGenerada, PlantillaActa, SegmentoPlantilla, ConfiguracionSegmento, ProveedorIA
+
+
+class ProveedorIAForm(forms.ModelForm):
+    """Formulario dinámico para proveedores de IA"""
+    
+    # Campos para configuración adicional JSON de forma amigable
+    top_p = forms.FloatField(
+        required=False, 
+        initial=1.0, 
+        min_value=0.0, 
+        max_value=1.0,
+        help_text="Controla la diversidad de respuestas (0.0-1.0)"
+    )
+    
+    frequency_penalty = forms.FloatField(
+        required=False, 
+        initial=0.0, 
+        min_value=-2.0, 
+        max_value=2.0,
+        help_text="Penaliza repetición de palabras (-2.0 a 2.0)"
+    )
+    
+    presence_penalty = forms.FloatField(
+        required=False, 
+        initial=0.0, 
+        min_value=-2.0, 
+        max_value=2.0,
+        help_text="Penaliza temas ya mencionados (-2.0 a 2.0)"
+    )
+    
+    stream = forms.BooleanField(
+        required=False, 
+        initial=False,
+        help_text="Transmisión en tiempo real de la respuesta"
+    )
+    
+    stop_sequences = forms.CharField(
+        required=False,
+        widget=forms.TextInput(attrs={'placeholder': 'Separar por comas: \\n, \\t, STOP'}),
+        help_text="Secuencias que detienen la generación (separadas por comas)"
+    )
+    
+    class Meta:
+        model = ProveedorIA
+        fields = [
+            'nombre', 'tipo', 'api_key', 'api_url', 'modelo', 
+            'temperatura', 'max_tokens', 'timeout', 'prompt_sistema_global',
+            'costo_por_1k_tokens', 'activo'
+        ]
+        widgets = {
+            'nombre': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Ej: OpenAI GPT-4 Principal'
+            }),
+            'tipo': forms.Select(attrs={
+                'class': 'form-control',
+                'id': 'id_tipo_proveedor'
+            }),
+            'api_key': forms.PasswordInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Dejar vacío para usar la del .env'
+            }),
+            'api_url': forms.URLInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'URL se completa automáticamente'
+            }),
+            'modelo': forms.TextInput(attrs={
+                'class': 'form-control',
+                'id': 'id_modelo_proveedor',
+                'list': 'modelos_disponibles'
+            }),
+            'temperatura': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'min': '0.0',
+                'max': '2.0',
+                'step': '0.1'
+            }),
+            'max_tokens': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'min': '100',
+                'max': '32000',
+                'step': '100'
+            }),
+            'timeout': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'min': '10',
+                'max': '300',
+                'step': '10'
+            }),
+            'prompt_sistema_global': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 4,
+                'placeholder': 'Instrucciones adicionales para este proveedor...'
+            }),
+            'costo_por_1k_tokens': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'min': '0',
+                'step': '0.000001'
+            }),
+            'activo': forms.CheckboxInput(attrs={
+                'class': 'form-check-input'
+            }),
+        }
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        
+        # Cargar valores por defecto si es un nuevo proveedor
+        if not self.instance.pk:
+            self._aplicar_valores_defecto()
+        
+        # Configurar campos según el proveedor existente
+        if self.instance.pk and self.instance.configuracion_adicional:
+            self._cargar_configuracion_adicional()
+    
+    def _aplicar_valores_defecto(self):
+        """Aplica valores por defecto desde el .env"""
+        configuraciones = ProveedorIA.obtener_configuraciones_por_defecto()
+        
+        # Si ya hay un tipo seleccionado, aplicar sus defaults
+        tipo_inicial = self.data.get('tipo') or self.initial.get('tipo')
+        if tipo_inicial and tipo_inicial in configuraciones:
+            config = configuraciones[tipo_inicial]
+            
+            for campo, valor in config.items():
+                if campo in self.fields and not self.initial.get(campo):
+                    self.initial[campo] = valor
+    
+    def _cargar_configuracion_adicional(self):
+        """Carga la configuración adicional JSON en campos separados"""
+        config = self.instance.configuracion_adicional or {}
+        
+        for campo in ['top_p', 'frequency_penalty', 'presence_penalty', 'stream']:
+            if campo in config:
+                self.fields[campo].initial = config[campo]
+        
+        # Manejar stop_sequences como string
+        if 'stop' in config and isinstance(config['stop'], list):
+            self.fields['stop_sequences'].initial = ', '.join(config['stop'])
+    
+    def clean(self):
+        cleaned_data = super().clean()
+        tipo = cleaned_data.get('tipo')
+        api_key = cleaned_data.get('api_key')
+        api_url = cleaned_data.get('api_url')
+        modelo = cleaned_data.get('modelo')
+        
+        # Validaciones específicas por tipo de proveedor
+        if tipo in ['openai', 'anthropic', 'deepseek', 'google', 'groq', 'generic1', 'generic2']:
+            if not api_key:
+                # Verificar si existe en .env
+                env_key = f"{tipo.upper()}_API_KEY"
+                if not getattr(settings, env_key, None):
+                    raise ValidationError({
+                        'api_key': f'API Key requerida para {dict(ProveedorIA.TIPO_PROVEEDOR)[tipo]}'
+                    })
+        
+        elif tipo in ['ollama', 'lmstudio']:
+            if not api_url:
+                raise ValidationError({
+                    'api_url': f'URL del servicio requerida para {dict(ProveedorIA.TIPO_PROVEEDOR)[tipo]}'
+                })
+        
+        # Validar modelo
+        if not modelo:
+            raise ValidationError({
+                'modelo': 'El modelo es requerido'
+            })
+        
+        return cleaned_data
+    
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        
+        # Construir configuración adicional JSON desde campos separados
+        configuracion_adicional = {}
+        
+        # Agregar parámetros opcionales si fueron especificados
+        for campo in ['top_p', 'frequency_penalty', 'presence_penalty', 'stream']:
+            valor = self.cleaned_data.get(campo)
+            if valor is not None and valor != self.fields[campo].initial:
+                configuracion_adicional[campo] = valor
+        
+        # Manejar stop_sequences
+        stop_sequences = self.cleaned_data.get('stop_sequences')
+        if stop_sequences:
+            # Convertir string a lista
+            stop_list = [seq.strip() for seq in stop_sequences.split(',') if seq.strip()]
+            if stop_list:
+                configuracion_adicional['stop'] = stop_list
+        
+        # Mantener configuración existente y agregar nuevos valores
+        config_existente = instance.configuracion_adicional or {}
+        config_existente.update(configuracion_adicional)
+        instance.configuracion_adicional = config_existente
+        
+        if commit:
+            instance.save()
+        
+        return instance
+    
+    @staticmethod
+    def obtener_modelos_por_proveedor():
+        """Obtiene los modelos disponibles por proveedor"""
+        return {
+            'openai': [
+                'gpt-4o',
+                'gpt-4o-mini',
+                'gpt-4-turbo',
+                'gpt-4',
+                'gpt-3.5-turbo',
+                'gpt-3.5-turbo-16k'
+            ],
+            'anthropic': [
+                'claude-3-5-sonnet-20241022',
+                'claude-3-5-haiku-20241022',
+                'claude-3-opus-20240229',
+                'claude-3-sonnet-20240229',
+                'claude-3-haiku-20240307'
+            ],
+            'deepseek': [
+                'deepseek-chat',
+                'deepseek-coder',
+                'deepseek-reasoning'
+            ],
+            'google': [
+                'gemini-1.5-flash',
+                'gemini-1.5-pro',
+                'gemini-1.0-pro'
+            ],
+            'groq': [
+                'llama-3.1-70b-versatile',
+                'llama-3.1-8b-instant',
+                'mixtral-8x7b-32768',
+                'gemma2-9b-it'
+            ],
+            'ollama': [
+                'llama3.2:3b',
+                'llama3.2:1b',
+                'llama3.1:8b',
+                'llama3.1:70b',
+                'mistral:7b',
+                'mixtral:8x7b',
+                'qwen2.5:7b',
+                'gemma2:9b'
+            ],
+            'lmstudio': [
+                'lmstudio-community/Meta-Llama-3.1-8B-Instruct-GGUF',
+                'lmstudio-ai/gemma-2b-it-GGUF',
+                'microsoft/DialoGPT-medium',
+                'microsoft/Phi-3-mini-4k-instruct-gguf'
+            ],
+            'generic1': ['custom-model-1', 'custom-model-2'],
+            'generic2': ['custom-model-1', 'custom-model-2']
+        }
+
+
+class TestProveedorForm(forms.Form):
+    """Formulario para probar conexión con proveedores"""
+    
+    proveedor = forms.ModelChoiceField(
+        queryset=ProveedorIA.objects.filter(activo=True),
+        widget=forms.Select(attrs={'class': 'form-control'}),
+        help_text="Selecciona el proveedor a probar"
+    )
+    
+    prompt_prueba = forms.CharField(
+        initial="Responde únicamente con el siguiente JSON exacto: {\"status\": \"ok\", \"test\": \"exitoso\"}",
+        widget=forms.Textarea(attrs={
+            'class': 'form-control',
+            'rows': 3
+        }),
+        help_text="Prompt para probar el proveedor"
+    )
+    
+    incluir_contexto = forms.BooleanField(
+        initial=False,
+        required=False,
+        help_text="Incluir contexto de prueba en la solicitud"
+    )
 
 
 class ActaGeneradaForm(forms.ModelForm):

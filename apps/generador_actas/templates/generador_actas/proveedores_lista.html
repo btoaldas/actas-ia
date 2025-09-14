@@ -72,7 +72,7 @@
                         <h3><i class="fas fa-plus"></i></h3>
                         <p>Nuevo Proveedor</p>
                     </div>
-                    <a href="{% url 'generador_actas:crear_proveedor' %}" class="small-box-footer">
+                    <a href="{% url 'generador_actas:crear_proveedor_ia' %}" class="small-box-footer">
                         Crear <i class="fas fa-arrow-circle-right"></i>
                     </a>
                 </div>
@@ -121,7 +121,7 @@
             <div class="card-header">
                 <h3 class="card-title">📋 Lista de Proveedores IA</h3>
                 <div class="card-tools">
-                    <a href="{% url 'generador_actas:crear_proveedor' %}" class="btn btn-success btn-sm">
+                    <a href="{% url 'generador_actas:crear_proveedor_ia' %}" class="btn btn-success btn-sm">
                         <i class="fas fa-plus"></i> Nuevo Proveedor
                     </a>
                 </div>
@@ -168,11 +168,11 @@
                                                    class="btn btn-info btn-sm" title="Ver Detalle">
                                                     <i class="fas fa-eye"></i>
                                                 </a>
-                                                <a href="{% url 'generador_actas:editar_proveedor' proveedor.pk %}" 
+                                                <a href="{% url 'generador_actas:editar_proveedor_ia' proveedor.pk %}" 
                                                    class="btn btn-warning btn-sm" title="Editar">
                                                     <i class="fas fa-edit"></i>
                                                 </a>
-                                                <a href="{% url 'generador_actas:eliminar_proveedor' proveedor.pk %}" 
+                                                <a href="{% url 'generador_actas:eliminar_proveedor_ia' proveedor.pk %}" 
                                                    class="btn btn-danger btn-sm" title="Eliminar"
                                                    onclick="return confirm('¿Está seguro de eliminar este proveedor?')">
                                                     <i class="fas fa-trash"></i>
@@ -219,7 +219,7 @@
                         <i class="fas fa-robot fa-3x text-muted mb-3"></i>
                         <h4>No hay proveedores IA configurados</h4>
                         <p class="text-muted">Crea el primer proveedor IA para comenzar a generar actas.</p>
-                        <a href="{% url 'generador_actas:crear_proveedor' %}" class="btn btn-primary">
+                        <a href="{% url 'generador_actas:crear_proveedor_ia' %}" class="btn btn-primary">
                             <i class="fas fa-plus"></i> Crear Primer Proveedor
                         </a>
                     </div>
