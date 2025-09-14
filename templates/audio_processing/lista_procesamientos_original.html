@@ -1,0 +1,460 @@
+{% extends "layouts/base.html" %}
+{% load static %}
+
+{% block title %} {{ title }} {% endblock %}
+
+{% block stylesheets %}
+<!-- Estilos específicos para el widget de audio -->
+<link rel="stylesheet" href="{% static 'css/audio_widget.css' %}">
+
+<!-- Solo estilos mínimos necesarios, usando AdminLTE -->
+<style>
+.status-badge {
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.25rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+</style>
+<meta name="csrf-token" content="{{ csrf_token }}">
+{% endblock stylesheets %}
+
+{% block content %}
+
+<div class="content-wrapper">
+    <div class="content-header">
+        <div class="container-fluid">
+            <div class="row mb-2">
+                <div class="col-sm-6">
+                    <h1 class="m-0">
+                        <i class="fas fa-list text-primary"></i>
+                        Lista de Procesamientos
+                    </h1>
+                    <p class="text-muted">Gestiona y supervisa todos los procesamientos de audio</p>
+                </div>
+                <div class="col-sm-6">
+                    <ol class="breadcrumb float-sm-right">
+                        <li class="breadcrumb-item"><a href="{% url 'index' %}">Inicio</a></li>
+                        <li class="breadcrumb-item"><a href="{% url 'audio_processing:centro_audio' %}">Audio</a></li>
+                        <li class="breadcrumb-item active">Lista</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <section class="content">
+        <div class="container-fluid">
+            
+            <!-- Filtros -->
+            <div class="card card-primary card-outline collapsed-card">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <i class="fas fa-filter"></i> Filtros de Búsqueda y Ordenación
+                    </h3>
+                    <div class="card-tools">
+                        <button type="button" class="btn btn-tool" data-card-widget="collapse" title="Expandir filtros">
+                            <i class="fas fa-plus"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body" style="display: none;">
+                    <form method="get" class="row">
+                        <div class="col-md-3">
+                            <div class="form-group">
+                                <label for="titulo">Buscar por título</label>
+                                {{ form.titulo }}
+                            </div>
+                        </div>
+                        <div class="col-md-2">
+                            <div class="form-group">
+                                <label for="tipo_reunion">Tipo de reunión</label>
+                                {{ form.tipo_reunion }}
+                            </div>
+                        </div>
+                        <div class="col-md-2">
+                            <div class="form-group">
+                                <label for="estado">Estado</label>
+                                {{ form.estado }}
+                            </div>
+                        </div>
+                        <div class="col-md-2">
+                            <div class="form-group">
+                                <label for="fecha_desde">Fecha desde</label>
+                                {{ form.fecha_desde }}
+                            </div>
+                        </div>
+                        <div class="col-md-2">
+                            <div class="form-group">
+                                <label for="fecha_hasta">Fecha hasta</label>
+                                {{ form.fecha_hasta }}
+                            </div>
+                        </div>
+                        <div class="col-md-1">
+                            <div class="form-group">
+                                <label>&nbsp;</label>
+                                <button type="submit" class="btn btn-primary btn-block" title="Aplicar filtros">
+                                    <i class="fas fa-search"></i>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- Ocultar página actual para mantener filtros -->
+                        {% if request.GET.page %}
+                        <input type="hidden" name="page" value="{{ request.GET.page }}">
+                        {% endif %}
+                    </form>
+                    
+                    <!-- Ordenación -->
+                    <div class="row mt-3">
+                        <div class="col-md-3">
+                            <label for="orden">Ordenar por:</label>
+                            <select class="form-control" name="orden" id="orden" onchange="aplicarOrdenacion()">
+                                <option value="-created_at" {% if orden_actual == "-created_at" %}selected{% endif %}>Fecha creación (reciente)</option>
+                                <option value="created_at" {% if orden_actual == "created_at" %}selected{% endif %}>Fecha creación (antiguo)</option>
+                                <option value="-fecha_reunion" {% if orden_actual == "-fecha_reunion" %}selected{% endif %}>Fecha reunión (reciente)</option>
+                                <option value="fecha_reunion" {% if orden_actual == "fecha_reunion" %}selected{% endif %}>Fecha reunión (antiguo)</option>
+                                <option value="titulo" {% if orden_actual == "titulo" %}selected{% endif %}>Título (A-Z)</option>
+                                <option value="-titulo" {% if orden_actual == "-titulo" %}selected{% endif %}>Título (Z-A)</option>
+                                <option value="tipo_reunion" {% if orden_actual == "tipo_reunion" %}selected{% endif %}>Tipo reunión (A-Z)</option>
+                                <option value="-tipo_reunion" {% if orden_actual == "-tipo_reunion" %}selected{% endif %}>Tipo reunión (Z-A)</option>
+                                <option value="estado" {% if orden_actual == "estado" %}selected{% endif %}>Estado (A-Z)</option>
+                                <option value="-estado" {% if orden_actual == "-estado" %}selected{% endif %}>Estado (Z-A)</option>
+                                <option value="-duracion" {% if orden_actual == "-duracion" %}selected{% endif %}>Duración (mayor)</option>
+                                <option value="duracion" {% if orden_actual == "duracion" %}selected{% endif %}>Duración (menor)</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3 d-flex align-items-end">
+                            <a href="{% url 'audio_processing:lista_procesamientos' %}" class="btn btn-secondary" title="Limpiar filtros">
+                                <i class="fas fa-times"></i> Limpiar Filtros
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Acciones rápidas y resultados -->
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <h5 class="text-muted">{{ total_procesamientos }} procesamiento(s) encontrado(s)</h5>
+                </div>
+                <div class="col-md-6 text-right">
+                    <a href="{% url 'audio_processing:centro_audio' %}" class="btn btn-success">
+                        <i class="fas fa-microphone"></i> Nueva Grabación
+                    </a>
+                    <a href="{% url 'audio_processing:centro_audio' %}" class="btn btn-info">
+                        <i class="fas fa-upload"></i> Subir Archivo
+                    </a>
+                </div>
+            </div>
+
+            <!-- Widget Reproductor de Audio -->
+            <div class="card card-outline card-primary" id="audioPlayerWidget" style="display: none;">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <i class="fas fa-play text-primary"></i> Reproductor de Audio
+                    </h3>
+                    <div class="card-tools">
+                        <button type="button" class="btn btn-tool" onclick="cerrarReproductor()" title="Cerrar reproductor">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-8">
+                            <audio id="audioPlayer" controls class="w-100" preload="metadata">
+                                Tu navegador no soporta la reproducción de audio.
+                            </audio>
+                        </div>
+                        <div class="col-md-4">
+                            <div id="audioInfo">
+                                <h6 id="audioTitle" class="text-primary">Ningún audio seleccionado</h6>
+                                <small id="audioDetails" class="text-muted">Haz clic en el botón Play de cualquier procesamiento para reproducir</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Grid de procesamientos -->
+            {% if page_obj %}
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <i class="fas fa-th-large"></i> Lista de Procesamientos de Audio
+                    </h3>
+                    <div class="card-tools">
+                        <span class="badge badge-info">{{ total_procesamientos }} procesamiento(s)</span>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        {% for procesamiento in page_obj %}
+                        <div class="col-lg-4 col-md-6 mb-4">
+                            <div class="card h-100 card-outline {% if procesamiento.estado == 'completado' %}card-success{% elif procesamiento.estado == 'error' %}card-danger{% elif procesamiento.estado in 'procesando,transcribiendo,diarizando' %}card-primary{% else %}card-warning{% endif %}">
+                                <div class="card-header">
+                                    <h5 class="card-title mb-0">
+                                        <i class="fas fa-file-audio text-info"></i>
+                                        {{ procesamiento.titulo|truncatechars:25 }}
+                                    </h5>
+                                    <div class="card-tools">
+                                        {% if procesamiento.estado == 'pendiente' %}
+                                            <span class="badge badge-warning">
+                                                <i class="fas fa-clock"></i> Pendiente
+                                            </span>
+                                        {% elif procesamiento.estado == 'procesando' %}
+                                            <span class="badge badge-info">
+                                                <i class="fas fa-cog fa-spin"></i> Procesando
+                                            </span>
+                                        {% elif procesamiento.estado == 'transcribiendo' %}
+                                            <span class="badge badge-primary">
+                                                <i class="fas fa-file-alt"></i> Transcribiendo
+                                            </span>
+                                        {% elif procesamiento.estado == 'diarizando' %}
+                                            <span class="badge badge-info">
+                                                <i class="fas fa-users"></i> Diarizando
+                                            </span>
+                                        {% elif procesamiento.estado == 'completado' %}
+                                            <span class="badge badge-success">
+                                                <i class="fas fa-check"></i> Completado
+                                            </span>
+                                        {% elif procesamiento.estado == 'error' %}
+                                            <span class="badge badge-danger">
+                                                <i class="fas fa-exclamation-triangle"></i> Error
+                                            </span>
+                                        {% elif procesamiento.estado == 'cancelado' %}
+                                            <span class="badge badge-secondary">
+                                                <i class="fas fa-times"></i> Cancelado
+                                            </span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div class="card-body">
+                                    <!-- Información básica -->
+                                    <div class="mb-2">
+                                        <strong>Tipo:</strong> 
+                                        <span class="badge badge-secondary">{{ procesamiento.tipo_reunion.nombre }}</span>
+                                    </div>
+                                    
+                                    <!-- Fechas -->
+                                    <div class="mb-2 small text-muted">
+                                        <i class="fas fa-calendar"></i> Creado: {{ procesamiento.created_at|date:"d/m/Y H:i" }}
+                                        {% if procesamiento.fecha_reunion %}
+                                            <br><i class="fas fa-calendar-check"></i> Reunión: {{ procesamiento.fecha_reunion|date:"d/m/Y" }}
+                                        {% endif %}
+                                    </div>
+                                    
+                                    <!-- Duración -->
+                                    {% if procesamiento.duracion_seg %}
+                                    <div class="mb-2">
+                                        <strong>Duración:</strong> 
+                                        <i class="fas fa-clock text-muted"></i> {{ procesamiento.duracion_seg|floatformat:0 }}s
+                                    </div>
+                                    {% endif %}
+                                    
+                                    <!-- Progreso -->
+                                    {% if procesamiento.estado in 'pendiente,procesando,transcribiendo,diarizando' %}
+                                    <div class="mb-2">
+                                        <strong>Progreso:</strong>
+                                        <div class="progress progress-xs mb-1">
+                                            <div class="progress-bar bg-primary progress-bar-striped" role="progressbar" 
+                                                 aria-valuenow="{{ procesamiento.progreso|default:0 }}" 
+                                                 aria-valuemin="0" aria-valuemax="100"
+                                                 style="width: {{ procesamiento.progreso|default:0 }}%"></div>
+                                        </div>
+                                        <span class="text-sm">{{ procesamiento.progreso|default:0 }}%</span>
+                                    </div>
+                                    {% endif %}
+                                    
+                                    <!-- Descripción si existe -->
+                                    {% if procesamiento.descripcion %}
+                                    <div class="mb-2">
+                                        <small class="text-muted">{{ procesamiento.descripcion|truncatechars:80 }}</small>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                                <div class="card-footer">
+                                    <div class="btn-group w-100" role="group">
+                                        <a href="{% url 'audio_processing:detalle_procesamiento' procesamiento.id %}" 
+                                           class="btn btn-sm btn-info flex-fill" title="Ver detalles">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        {% if procesamiento.archivo_audio %}
+                                            <button type="button" class="btn btn-sm btn-primary flex-fill" 
+                                                    onclick="cargarAudio('{{ procesamiento.archivo_audio.url }}', '{{ procesamiento.titulo|escapejs }}', '{{ procesamiento.tipo_reunion.nombre|escapejs }}', '{{ procesamiento.created_at|date:"d/m/Y H:i"|escapejs }}')" 
+                                                    title="Reproducir audio">
+                                                <i class="fas fa-play"></i>
+                                            </button>
+                                        {% endif %}
+                                        {% if procesamiento.estado == 'completado' %}
+                                            <a href="{% url 'transcripcion:audios_dashboard' %}" 
+                                               class="btn btn-sm btn-success flex-fill" title="Ir a transcripción">
+                                                <i class="fas fa-file-alt"></i>
+                                            </a>
+                                        {% endif %}
+                                        <a href="{% url 'audio_processing:editar_procesamiento' procesamiento.id %}" 
+                                           class="btn btn-sm btn-warning flex-fill" title="Editar">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            {% else %}
+                <div class="card">
+                    <div class="card-body text-center">
+                        <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                        <h5 class="text-muted">No se encontraron procesamientos</h5>
+                        <p class="text-muted">Ajusta los filtros de búsqueda o crea un nuevo procesamiento</p>
+                        <a href="{% url 'audio_processing:centro_audio' %}" class="btn btn-primary">
+                            <i class="fas fa-arrow-left"></i> Volver al Centro de Audio
+                        </a>
+                    </div>
+                </div>
+            {% endif %}
+
+            <!-- Paginación -->
+            {% if page_obj.has_other_pages %}
+            <div class="card">
+                <div class="card-body">
+                    <nav aria-label="Paginación">
+                        <ul class="pagination justify-content-center mb-0">
+                            {% if page_obj.has_previous %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page=1{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" title="Primera página">
+                                        &laquo; Primera
+                                    </a>
+                                </li>
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" title="Página anterior">
+                                        Anterior
+                                    </a>
+                                </li>
+                            {% endif %}
+                            
+                            {% for num in page_obj.paginator.page_range %}
+                                {% if page_obj.number == num %}
+                                    <li class="page-item active">
+                                        <span class="page-link">{{ num }}</span>
+                                    </li>
+                                {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ num }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">{{ num }}</a>
+                                    </li>
+                                {% endif %}
+                            {% endfor %}
+                            
+                            {% if page_obj.has_next %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ page_obj.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" title="Página siguiente">
+                                        Siguiente
+                                    </a>
+                                </li>
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" title="Última página">
+                                        Última &raquo;
+                                    </a>
+                                </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                </div>
+            </div>
+            {% endif %}
+
+        </div>
+    </section>
+</div>
+
+{% endblock content %}
+
+{% block javascripts %}
+{% endblock content %}
+
+{% block javascripts %}
+    <!-- Archivo JavaScript para el widget de audio -->
+    <script src="{% static 'js/audio_widget.js' %}"></script>
+    
+    <script>
+    // URLs para las acciones
+    const URLS = {
+        editar: '{% url "audio_processing:editar_procesamiento" 0 %}',
+        eliminar: '{% url "audio_processing:eliminar_procesamiento" 0 %}'
+    };
+
+    // Función para editar procesamiento
+    function editarProcesamiento(id) {
+        const url = URLS.editar.replace('0', id);
+        window.location.href = url;
+    }
+
+    // Función para confirmar eliminación
+    function confirmarEliminacion(id) {
+        if (confirm('¿Estás seguro de que deseas eliminar este procesamiento? Esta acción no se puede deshacer.')) {
+            // Crear formulario para enviar POST request
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = URLS.eliminar.replace('0', id);
+            
+            // Agregar token CSRF
+            const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+            
+            const csrfInput = document.createElement('input');
+            csrfInput.type = 'hidden';
+            csrfInput.name = 'csrfmiddlewaretoken';
+            csrfInput.value = csrfToken;
+            form.appendChild(csrfInput);
+            
+            // Agregar al DOM y enviar
+            document.body.appendChild(form);
+            form.submit();
+        }
+    }
+
+    // Función para aplicar ordenación
+    function aplicarOrdenacion() {
+        const ordenSelect = document.getElementById('orden');
+        const ordenSeleccionado = ordenSelect.value;
+        
+        // Obtener parámetros actuales de la URL
+        const urlParams = new URLSearchParams(window.location.search);
+        
+        // Actualizar el parámetro de orden
+        urlParams.set('orden', ordenSeleccionado);
+        
+        // Mantener la página 1 al cambiar ordenación
+        urlParams.delete('page');
+        
+        // Redirigir con los nuevos parámetros
+        window.location.search = urlParams.toString();
+    }
+
+    // Auto-refresh para procesamientos en curso
+    $(document).ready(function() {
+        {% if page_obj %}
+            let hasActiveProcessing = false;
+            {% for procesamiento in page_obj %}
+                {% if procesamiento.estado in 'pendiente,procesando,transcribiendo,diarizando' %}
+                    hasActiveProcessing = true;
+                {% endif %}
+            {% endfor %}
+            
+            if (hasActiveProcessing) {
+                setInterval(function() {
+                    location.reload();
+                }, 30000);
+            }
+        {% endif %}
+        
+        // Auto-submit del formulario de filtros
+        $('#filtroFormulario select, #filtroFormulario input[type="date"]').change(function() {
+            $('#filtroFormulario').submit();
+        });
+    });
+    </script>
+{% endblock javascripts %}
