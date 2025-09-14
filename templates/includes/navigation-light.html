@@ -1,4 +1,4 @@
-  {% load static %}
+{% load static %}
   
   <!-- Navbar -->
   <nav class="main-header navbar navbar-expand navbar-white navbar-light">
@@ -7,62 +7,61 @@
       <li class="nav-item">
         <a class="nav-link" data-widget="pushmenu" href="#" role="button"><i class="fas fa-bars"></i></a>
       </li>
-      <!-- Enlace de Inicio comentado -->
-      <!-- <li class="nav-item d-none d-sm-inline-block">
-        <a href="{% url 'dashboardv3' %}" class="nav-link">Inicio</a>
-      </li> -->
-      <li class="nav-item d-none d-sm-inline-block">
-        <a href="{% url 'portal_ciudadano' %}" class="nav-link">
-          <i class="fas fa-scroll text-primary"></i> 
-          <strong>Actas Públicas</strong>
+      
+      <!-- Enlaces públicos destacados - Visible en pantallas grandes -->
+      <li class="nav-item d-none d-lg-inline-block">
+        <a href="{% url 'portal_ciudadano' %}" class="btn btn-primary btn-sm ml-2" style="margin-top: 4px;">
+          <i class="fas fa-scroll"></i> 
+          <span class="font-weight-bold">ACTAS PÚBLICAS</span>
         </a>
       </li>
-      <li class="nav-item d-none d-sm-inline-block">
-        <a href="{% url 'transparencia_index' %}" class="nav-link">
-          <i class="fas fa-eye text-info"></i> 
-          <strong class="text-info">Portal Transparencia</strong>
+      <li class="nav-item d-none d-lg-inline-block">
+        <a href="{% url 'transparencia_index' %}" class="btn btn-info btn-sm ml-2" style="margin-top: 4px;">
+          <i class="fas fa-eye"></i> 
+          <span class="font-weight-bold">PORTAL TRANSPARENCIA</span>
         </a>
       </li>
-      {% if request.user.is_authenticated %}
-        {% if request.user.is_superuser %}
-          <li class="nav-item d-none d-sm-inline-block">
-            <a href="{% url 'admin:password_change' %}" class="nav-link">
-              <i class="fas fa-key text-warning"></i> 
-              <strong class="text-warning">Cambiar Contraseña</strong>
-            </a>
-          </li>
-          <li class="nav-item d-none d-sm-inline-block">
-            <a href="{% url 'admin:logout' %}" class="nav-link">
-              <i class="fas fa-sign-out-alt text-danger"></i> 
-              <strong class="text-danger">Cerrar Sesión</strong>
-            </a>
-          </li>
-        {% else %}
-          <li class="nav-item d-none d-sm-inline-block">
-            <a href="{% url 'admin:password_change' %}" class="nav-link">
-              <i class="fas fa-key text-warning"></i> 
-              <strong class="text-warning">Cambiar Contraseña</strong>
-            </a>
-          </li>
-          <li class="nav-item d-none d-sm-inline-block">
-            <a href="{% url 'admin:logout' %}" class="nav-link">
-              <i class="fas fa-sign-out-alt text-danger"></i> 
-              <strong class="text-danger">Cerrar Sesión</strong>
-            </a>
-          </li>
-        {% endif %}
-      {% else %}
-        <li class="nav-item d-none d-sm-inline-block">
-          <a href="{% url 'login' %}" class="nav-link">
-            <i class="fas fa-sign-in-alt text-success"></i> 
-            <strong class="text-success">Iniciar Sesión</strong>
+      
+      <!-- Menú dropdown para pantallas medianas y pequeñas -->
+      <li class="nav-item dropdown d-lg-none">
+        <a class="nav-link dropdown-toggle btn btn-outline-primary btn-sm ml-2" data-toggle="dropdown" href="#" role="button" aria-expanded="false">
+          <i class="fas fa-globe"></i> <span class="d-none d-md-inline">Portales Públicos</span>
+        </a>
+        <div class="dropdown-menu">
+          <a class="dropdown-item" href="{% url 'portal_ciudadano' %}">
+            <i class="fas fa-scroll text-primary"></i> 
+            <strong>Actas Públicas</strong>
+            <small class="d-block text-muted">Consulte las actas municipales</small>
           </a>
-        </li>
+          <div class="dropdown-divider"></div>
+          <a class="dropdown-item" href="{% url 'transparencia_index' %}">
+            <i class="fas fa-eye text-info"></i> 
+            <strong>Portal Transparencia</strong>
+            <small class="d-block text-muted">Información pública municipal</small>
+          </a>
+        </div>
+      </li>
+      
+      {% if request.user.is_authenticated %}
+        <!-- Enlaces de usuario autenticado comentados -->
+      {% else %}
+        <!-- Enlaces de login comentados -->
       {% endif %}
     </ul>
 
     <!-- Right navbar links -->
     <ul class="navbar-nav ml-auto">
+      <!-- Indicador visual para usuarios no autenticados -->
+      {% if not request.user.is_authenticated %}
+      <li class="nav-item d-none d-md-inline-block mr-2">
+        <span class="navbar-text">
+          <small class="text-muted">
+            <i class="fas fa-info-circle"></i> Portal público de información municipal
+          </small>
+        </span>
+      </li>
+      {% endif %}
+      
       <!-- Navbar Search -->
       <li class="nav-item">
         <a class="nav-link" data-widget="navbar-search" href="#" role="button">
@@ -183,3 +182,48 @@
     </ul>
   </nav>
   <!-- /.navbar -->
+
+  <!-- CSS adicional para mejorar la presentación -->
+  <style>
+    /* Animación hover para botones del menú */
+    .navbar .btn-primary:hover,
+    .navbar .btn-info:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+      transition: all 0.3s ease;
+    }
+    
+    /* Asegurar que los botones estén alineados */
+    .navbar .btn-sm {
+      padding: 0.25rem 0.75rem;
+      font-size: 0.875rem;
+      line-height: 1.5;
+      border-radius: 0.2rem;
+    }
+    
+    /* Mejorar el dropdown en móviles */
+    @media (max-width: 991px) {
+      .navbar .dropdown-menu {
+        margin-top: 0.5rem !important;
+        border: 2px solid #007bff;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      }
+      
+      .navbar .dropdown-item:hover {
+        background-color: #f8f9fa;
+        padding-left: 1.5rem;
+        transition: all 0.2s ease;
+      }
+    }
+    
+    /* Prevenir overflow en pantallas pequeñas */
+    @media (max-width: 576px) {
+      .navbar-nav {
+        flex-wrap: nowrap;
+      }
+      
+      .nav-item {
+        flex-shrink: 0;
+      }
+    }
+  </style>

@@ -3,26 +3,79 @@
 <!-- Main Sidebar Container -->
 <aside class="main-sidebar sidebar-dark-primary elevation-4">
   <!-- Brand Logo -->
-  <a href="/" class="brand-link">
-    <img src="{% static 'dist/img/logoia.png' %}?v={{ request.GET.v|default:'20250906' }}" alt="Municipio Logo" class="brand-image img-circle elevation-3"
-      style="opacity: .8">
-    <span class="brand-text font-weight-light">Actas IA</span>
+  <a href="/" class="brand-link d-flex align-items-center" style="padding: 0.8rem 1rem; height: auto; min-height: 3.5rem;">
+    <div class="brand-logo-container" style="display: flex; align-items: center; margin-right: 10px;">
+      <!-- Opción 1: Logo con fondo blanco (descomentar para usar) -->
+      <img src="{% static 'dist/img/logoia2.svg' %}?v={{ request.GET.v|default:'20250906' }}" 
+           alt="Municipio Logo" 
+           class="brand-image-custom logo-con-fondo"
+           style="width: 70px; 
+                  height: 70px;"> 
+      
+      <!-- Opción 2: Logo invertido a blanco (activo por defecto) -->
+       <!--<img src="{% static 'dist/img/logoia2.svg' %}?v={{ request.GET.v|default:'20250906' }}" 
+           alt="Municipio Logo" 
+           class="brand-image-custom logo-invertido"
+           style="width: 45px; 
+                  height: 45px;"> -->
+    </div>
+    <div class="brand-text-container" style="display: flex; align-items: center;">
+      <span class="brand-text font-weight-bold" 
+            style="font-size: 2rem; 
+                   color: #ffffff; 
+                   text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+                   letter-spacing: 1px;">
+        Actas <span style="color: #17a2b8;">IA</span>
+      </span>
+    </div>
   </a>
 
   <!-- Sidebar -->
-  <div class="sidebar">
+  <div class="sidebar" style="padding-top: 0.5rem;">
     <!-- Sidebar user panel (optional) -->
-    <div class="user-panel mt-3 pb-3 mb-3 d-flex">
-      <div class="image">
-        <img src="{% static 'dist/img/user2-160x160.jpg' %}" class="img-circle elevation-2" alt="User Image">
+    <div class="user-panel mt-2 pb-3 mb-3 d-flex align-items-center" style="border-top: 1px solid rgba(255,255,255,0.1); padding-top: 1rem; min-height: 80px;">
+      <div class="image" style="padding-left: 0.5rem;">
+        <img src="{% static 'dist/img/user2-160x160.jpg' %}" 
+             class="img-circle elevation-2" 
+             alt="User Image"
+             style="width: 55px; height: 55px; object-fit: cover;">
       </div>
-      <div class="info">
+      <div class="info" style="padding-left: 10px;">
         {% if request.user.is_authenticated %}
-          <a href="{% url 'profile' %}" class="d-block">{{request.user.username}}</a>
+          <a href="{% url 'profile' %}" class="d-block" style="font-size: 1.1rem;">
+            <i class="fas fa-user-circle"></i> {{request.user.username}}
+          </a>
+          <small class="d-block text-muted" style="margin-top: 5px;">
+            <i class="fas fa-circle text-success" style="font-size: 8px;"></i> En línea
+          </small>
         {% else %}
-          <a href="{% url 'login' %}" class="d-block">Guest</a>
+          <span class="d-block text-gray" style="font-size: 1.1rem;">
+            <i class="fas fa-user-slash"></i> Invitado
+          </span>
+          <small class="d-block text-muted" style="margin-top: 5px;">
+            <i class="fas fa-circle text-warning" style="font-size: 8px;"></i> Sin autenticar
+          </small>
         {% endif %}        
       </div>
+    </div>
+
+    <!-- Enlaces de autenticación -->
+    <div class="user-actions px-3 pb-3 mb-3" style="border-bottom: 1px solid #4f5962;">
+      {% if request.user.is_authenticated %}
+        <a href="{% url 'admin:logout' %}" class="btn btn-sm btn-danger btn-block">
+          <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
+        </a>
+        <a href="{% url 'admin:password_change' %}" class="btn btn-sm btn-outline-info btn-block mt-2">
+          <i class="fas fa-key"></i> Cambiar Contraseña
+        </a>
+      {% else %}
+        <a href="{% url 'login' %}" class="btn btn-sm btn-primary btn-block mb-2">
+          <i class="fas fa-sign-in-alt"></i> Iniciar Sesión
+        </a>
+        <a href="{% url 'register' %}" class="btn btn-sm btn-outline-info btn-block">
+          <i class="fas fa-user-plus"></i> Registrarse
+        </a>
+      {% endif %}
     </div>
 
     <!-- SidebarSearch Form -->
@@ -45,3 +98,83 @@
   </div>
   <!-- /.sidebar -->
 </aside>
+
+<style>
+  /* Estilos base del brand-link */
+  .brand-link {
+    display: flex !important;
+    align-items: center !important;
+    border-bottom: 3px solid #17a2b8;
+    background: linear-gradient(135deg, rgba(52,58,64,1) 0%, rgba(33,37,41,1) 100%);
+    margin-bottom: 0;
+  }
+  
+  /* Opción 1: Logo con fondo blanco */
+  .logo-con-fondo {
+    background-color: #ffffff;
+    padding: 8px !important;
+    border-radius: 50%;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.2), 
+                0 0 20px rgba(255,255,255,0.3);
+    opacity: 1;
+    transition: all 0.3s ease;
+  }
+  
+  .logo-con-fondo:hover {
+    transform: scale(1.1) rotate(5deg);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.3), 
+                0 0 30px rgba(23, 162, 184, 0.5);
+    background-color: #f8f9fa;
+  }
+  
+  /* Opción 2: Logo invertido a blanco */
+  .logo-invertido {
+    filter: brightness(0) invert(1);
+    opacity: 0.95;
+    transition: all 0.3s ease;
+    padding: 5px;
+    background-color: rgba(255, 255, 255, 0.1);
+    border-radius: 50%;
+    box-shadow: 0 0 15px rgba(255,255,255,0.2);
+  }
+  
+  .logo-invertido:hover {
+    transform: scale(1.1) rotate(5deg);
+    filter: brightness(0) invert(1) drop-shadow(0 0 10px rgba(23, 162, 184, 0.8));
+    opacity: 1;
+    background-color: rgba(23, 162, 184, 0.2);
+    box-shadow: 0 0 25px rgba(23, 162, 184, 0.5);
+  }
+  
+  /* Efecto hover en el brand-link */
+  .brand-link:hover .brand-text {
+    color: #17a2b8 !important;
+  }
+  
+  /* Asegurar que el sidebar comience después del brand */
+  .sidebar {
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+  
+  /* Ajustar el panel de usuario para que no se sobreponga */
+  .user-panel {
+    clear: both;
+    overflow: hidden;
+    transition: all 0.3s ease;
+  }
+  
+  .user-panel:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+  }
+  
+  .user-panel .image img {
+    border: 3px solid rgba(255, 255, 255, 0.2);
+    transition: all 0.3s ease;
+  }
+  
+  .user-panel:hover .image img {
+    border-color: #17a2b8;
+    transform: scale(1.05);
+  }
+</style>

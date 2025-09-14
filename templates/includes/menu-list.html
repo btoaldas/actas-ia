@@ -5,45 +5,46 @@
     <li class="nav-item">
         <a href="/" class="nav-link {% if 'dashboardv1' in segment %} active {% endif %}">
             <i class="nav-icon fas fa-tachometer-alt"></i>
-            <p>📊 Dashboard Principal</p>
+            <p>Dashboard Principal</p>
         </a>
     </li>
-
+  <!-- Separador -->
+    <li class="nav-header">PROCESAMIENTO DE AUDIO</li>
+    
     <!-- Procesamiento de Audio -->
     <li class="nav-item {% if 'audio' in parent %} menu-open {% endif %}">
         <a href="#" class="nav-link {% if 'audio' in parent %} active {% endif %}">
             <i class="nav-icon fas fa-microphone-alt"></i>
-            <p>
-                🎙️ Proceso de Audio
+            <p>Proceso de Audio
                 <i class="right fas fa-angle-left"></i>
             </p>
         </a>
         <ul class="nav nav-treeview">
             <li class="nav-item">
                 <a href="{% url 'audio_processing:centro_audio' %}" class="nav-link {% if 'centro-audio' in segment or 'dashboard' in segment or 'grabar-audio' in segment or 'subir-archivo' in segment %} active {% endif %}">
-                    <i class="far fa-circle nav-icon"></i>
+                    
                     <p>🎯 Centro de Audio</p>
                 </a>
             </li>
             <li class="nav-item">
                 <a href="{% url 'audio_processing:lista_procesamientos' %}" class="nav-link {% if 'lista-procesamientos' in segment %} active {% endif %}">
-                    <i class="far fa-circle nav-icon"></i>
+                    
                     <p>📋 Lista de Procesos</p>
                 </a>
             </li>
             <li class="nav-item">
                 <a href="{% url 'audio_processing:tipos_reunion' %}" class="nav-link {% if 'tipos-reunion' in segment %} active {% endif %}">
-                    <i class="far fa-circle nav-icon"></i>
-                    <p>⚙️ Tipos de Reunión</p>
+                                        <p>⚙️ Tipos de Reunión</p>
                 </a>
             </li>
         </ul>
     </li>
 
     <!-- Transcripción y Diarización -->
+    <!--Transcripción version anterior
     <li class="nav-item {% if 'transcripcion' in parent %} menu-open {% endif %}">
         <a href="#" class="nav-link {% if 'transcripcion' in parent %} active {% endif %}">
-            <i class="nav-icon fas fa-comments"></i>
+          
             <p>
                 🗣️ Transcripción
                 <i class="right fas fa-angle-left"></i>
@@ -76,33 +77,34 @@
             </li>
         </ul>
     </li>
+    --- IGNORE --->
+
 
     <!-- Transcripción V2 - Nueva Arquitectura de Dashboards -->
     <li class="nav-item {% if 'audios' in segment or 'transcripciones' in segment or 'proceso' in segment or 'detalle' in segment %} menu-open {% endif %}">
         <a href="#" class="nav-link {% if 'audios' in segment or 'transcripciones' in segment or 'proceso' in segment or 'detalle' in segment %} active {% endif %}">
-            <i class="nav-icon fas fa-microphone-lines"></i>
-            <p>
-                🎯 Transcripción V2
+              <i class="nav-icon fas fa-comments"></i>
+            <p>             Transcripción V2
                 <i class="right fas fa-angle-left"></i>
             </p>
         </a>
         <ul class="nav nav-treeview">
             <li class="nav-item">
                 <a href="{% url 'transcripcion:audios_dashboard' %}" class="nav-link {% if 'audios' in segment and 'dashboard' in request.resolver_match.url_name %} active {% endif %}">
-                    <i class="far fa-circle nav-icon"></i>
+                 
                     <p>🎵 Audios por Transcribir</p>
                 </a>
             </li>
             <li class="nav-item">
                 <a href="{% url 'transcripcion:transcripciones_dashboard' %}" class="nav-link {% if 'transcripciones' in segment and 'dashboard' in request.resolver_match.url_name %} active {% endif %}">
-                    <i class="far fa-circle nav-icon"></i>
+              
                     <p>📋 Transcripciones Realizadas</p>
                 </a>
             </li>
+            <!-- Se accede desde audios y transcripciones
             <li class="nav-item">
                 <a href="#" class="nav-link disabled" style="opacity: 0.6;">
-                    <i class="far fa-circle nav-icon"></i>
-                    <p>⚙️ Configurar Procesamiento</p>
+                   <p>⚙️ Configurar Procesamiento</p>
                     <small class="text-muted">(Se accede desde audios)</small>
                 </a>
             </li>
@@ -113,15 +115,16 @@
                     <small class="text-muted">(Se accede desde transcripciones)</small>
                 </a>
             </li>
+            --- IGNORE --->
         </ul>
     </li>
-
+<!-- Separador -->
+    <li class="nav-header">PROCESAMIENTO DE ACTAS</li>
     <!-- Generador de Actas IA - Menú Principal -->
     <li class="nav-item {% if 'generador-actas' in segment or 'generador_actas' in segment %} menu-open {% endif %}">
         <a href="#" class="nav-link {% if 'generador-actas' in segment or 'generador_actas' in segment %} active {% endif %}">
             <i class="nav-icon fas fa-brain"></i>
-            <p>
-                🤖 Generador de Actas IA
+            <p>Generador de Actas IA
                 <i class="right fas fa-angle-left"></i>
             </p>
         </a>
@@ -129,7 +132,7 @@
             <!-- Dashboard Principal del Generador -->
             <li class="nav-item">
                 <a href="{% url 'generador_actas:dashboard' %}" class="nav-link {% if 'dashboard' in segment and 'generador' in request.resolver_match.url_name %} active {% endif %}">
-                    <i class="far fa-circle nav-icon"></i>
+                   
                     <p>📊 Dashboard General</p>
                 </a>
             </li>
@@ -137,14 +140,14 @@
             <!-- Gestión de Proveedores IA -->
             <li class="nav-item">
                 <a href="{% url 'generador_actas:proveedores_lista' %}" class="nav-link {% if 'proveedores' in segment and 'lista' in request.resolver_match.url_name %} active {% endif %}">
-                    <i class="far fa-circle nav-icon"></i>
+                 
                     <p>🧠 Dashboard de IAs</p>
                 </a>
             </li>
             
             <li class="nav-item">
                 <a href="{% url 'generador_actas:crear_proveedor' %}" class="nav-link {% if 'crear-proveedor' in segment %} active {% endif %}">
-                    <i class="far fa-circle nav-icon"></i>
+                
                     <p>⚙️ Crear/Editar IA</p>
                 </a>
             </li>
@@ -152,14 +155,14 @@
             <!-- Gestión de Segmentos -->
             <li class="nav-item">
                 <a href="{% url 'generador_actas:segmentos_lista' %}" class="nav-link {% if 'segmentos' in segment and 'lista' in request.resolver_match.url_name %} active {% endif %}">
-                    <i class="far fa-circle nav-icon"></i>
+                 
                     <p>📝 Dashboard de Segmentos</p>
                 </a>
             </li>
             
             <li class="nav-item">
                 <a href="{% url 'generador_actas:crear_segmento' %}" class="nav-link {% if 'crear-segmento' in segment %} active {% endif %}">
-                    <i class="far fa-circle nav-icon"></i>
+                 
                     <p>✏️ Crear/Editar Segmento</p>
                 </a>
             </li>
@@ -167,14 +170,14 @@
             <!-- Gestión de Plantillas -->
             <li class="nav-item">
                 <a href="{% url 'generador_actas:plantillas_lista' %}" class="nav-link {% if 'plantillas' in segment and 'lista' in request.resolver_match.url_name %} active {% endif %}">
-                    <i class="far fa-circle nav-icon"></i>
+         
                     <p>📋 Dashboard de Plantillas</p>
                 </a>
             </li>
             
             <li class="nav-item">
                 <a href="{% url 'generador_actas:crear_plantilla' %}" class="nav-link {% if 'crear-plantilla' in segment %} active {% endif %}">
-                    <i class="far fa-circle nav-icon"></i>
+               
                     <p>📄 Crear/Editar Plantilla</p>
                 </a>
             </li>
@@ -182,14 +185,14 @@
             <!-- Gestión de Actas IA -->
             <li class="nav-item">
                 <a href="{% url 'generador_actas:actas_lista' %}" class="nav-link {% if 'actas' in segment and 'lista' in request.resolver_match.url_name and 'generador' in request.resolver_match.url_name %} active {% endif %}">
-                    <i class="far fa-circle nav-icon"></i>
+            
                     <p>📊 Dashboard de Actas IA</p>
                 </a>
             </li>
             
             <li class="nav-item">
                 <a href="{% url 'generador_actas:crear_acta' %}" class="nav-link {% if 'crear-acta' in segment %} active {% endif %}">
-                    <i class="far fa-circle nav-icon"></i>
+              
                     <p>🚀 Crear/Procesar Acta IA</p>
                 </a>
             </li>
@@ -197,19 +200,18 @@
             <!-- Configuración Avanzada -->
             <li class="nav-item">
                 <a href="{% url 'generador_actas:configuracion' %}" class="nav-link {% if 'configuracion' in segment and 'generador' in request.resolver_match.url_name %} active {% endif %}">
-                    <i class="far fa-circle nav-icon"></i>
+             
                     <p>⚙️ Configuración Global</p>
                 </a>
             </li>
         </ul>
     </li>
 
-    <!-- Gestión de Actas (simplificado) -->
+    <!-- Gestión de Actas no funcional (simplificado) 
     <li class="nav-item {% if 'actas' in parent %} menu-open {% endif %}">
         <a href="#" class="nav-link {% if 'actas' in parent %} active {% endif %}">
             <i class="nav-icon fas fa-file-alt"></i>
-            <p>
-                📋 Gestión de Actas
+            <p>Gestión de Actas
                 <i class="right fas fa-angle-left"></i>
             </p>
         </a>
@@ -228,8 +230,9 @@
             </li>
         </ul>
     </li>
+    --- IGNORE --->
 
-    <!-- Procesamiento con IA (simplificado) -->
+    <!-- Procesamiento con IA no funcional (simplificado) 
     <li class="nav-item {% if 'ia_procesamiento' in parent %} menu-open {% endif %}">
         <a href="#" class="nav-link {% if 'ia_procesamiento' in parent %} active {% endif %}">
             <i class="nav-icon fas fa-robot"></i>
@@ -247,58 +250,101 @@
             </li>
         </ul>
     </li>
+    --- IGNORE --->
 
-    <!-- Eventos Municipales -->
-    <li class="nav-item {% if 'eventos' in parent %} menu-open {% endif %}">
-        <a href="#" class="nav-link {% if 'eventos' in parent %} active {% endif %}">
-            <i class="nav-icon fas fa-calendar-alt"></i>
-            <p>
-                📅 Eventos
+
+    <!-- Administración de Actas -->
+     <!-- AQUI SE PONDRA EL MENU DE GESTION DE ACTAS CUANDO ESTE FUNCIONAL -->
+      <li class="nav-item {% if 'actas' in parent %} menu-open {% endif %}">
+        <a href="#" class="nav-link {% if 'actas' in parent %} active {% endif %}">
+            <i class="nav-icon fas fa-file-alt"></i>
+            <p>Gestión de Actas
+                <i class="right fas fa-angle-left"></i>
+            </p>
+        </a>
+      <!-- Validación de Actas -->
+       <!-- AQUI SE PONDRA EL MENU DE VALIDACION DE ACTAS CUANDO ESTE FUNCIONAL -->
+      <!--Aprobación de Actas -->
+       <!-- AQUI SE PONDRA EL MENU DE APROBACION DE ACTAS CUANDO ESTE FUNCIONAL -->
+      <!--Publicación de Actas -->
+       <!-- AQUI SE PONDRA EL MENU DE PUBLICACION DE ACTAS CUANDO ESTE FUNCIONAL -->
+ 
+ 
+       {% if request.user.is_superuser %}
+<!-- Separador -->
+    <li class="nav-header">ADMINISTRACION GENERAL</li>
+
+    <!-- Administración del Sistema -->
+    <li class="nav-item {% if 'sistema' in parent %} menu-open {% endif %}">
+        <a href="#" class="nav-link {% if 'sistema' in parent %} active {% endif %}">
+            <i class="nav-icon fas fa-cogs"></i>
+            <p>Sistema
                 <i class="right fas fa-angle-left"></i>
             </p>
         </a>
         <ul class="nav nav-treeview">
+            <!-- Panel de Administración Django no funcional 
             <li class="nav-item">
-                <a href="{% url 'eventos_calendario' %}" class="nav-link {% if 'eventos_calendario' in segment %} active {% endif %}">
+                <a href="{% url 'admin:index' %}" class="nav-link {% if 'admin' in segment %} active {% endif %}">
                     <i class="far fa-circle nav-icon"></i>
-                    <p>📅 Calendario</p>
+                    <p>🔐 Panel de Administración</p>
                 </a>
             </li>
-            {% if user.is_authenticated %}
-            <li class="nav-item">
-                <a href="{% url 'eventos_nuevo' %}" class="nav-link {% if 'eventos_nuevo' in segment %} active {% endif %}">
-                    <i class="far fa-circle nav-icon"></i>
-                    <p>➕ Añadir Evento</p>
-                </a>
-            </li>
-            {% endif %}
-            <li class="nav-item">
-                <a href="{% url 'eventos_calendario' %}?tipo=sesion_concejo" class="nav-link">
-                    <i class="far fa-circle nav-icon"></i>
-                    <p>🏛️ Sesiones de Concejo</p>
-                </a>
-            </li>
-            <li class="nav-item">
-                <a href="{% url 'eventos_calendario' %}?tipo=reunion_publica" class="nav-link">
-                    <i class="far fa-circle nav-icon"></i>
-                    <p>👥 Reuniones Públicas</p>
-                </a>
-            </li>
-            <li class="nav-item">
-                <a href="{% url 'eventos_calendario' %}?tipo=audiencia_publica" class="nav-link">
-                    <i class="far fa-circle nav-icon"></i>
-                    <p>🎤 Audiencias Públicas</p>
-                </a>
-            </li>
+        -->
+            <!-- Configuraciones del Sistema IA -->
+            
+                    <li class="nav-item">
+                        <a href="{% url 'config_system:dashboard' %}" class="nav-link {% if 'dashboard' in segment %} active {% endif %}">
+                            <i class="far fa-dot-circle nav-icon"></i>
+                            <p>📊 Dashboard Config</p>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{% url 'config_system:ia_list' %}" class="nav-link {% if 'ia' in segment %} active {% endif %}">
+                            <i class="far fa-dot-circle nav-icon"></i>
+                            <p>🧠 Config IA</p>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{% url 'config_system:whisper_list' %}" class="nav-link {% if 'whisper' in segment %} active {% endif %}">
+                            <i class="far fa-dot-circle nav-icon"></i>
+                            <p>🎤 Config Whisper</p>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{% url 'config_system:smtp_list' %}" class="nav-link {% if 'smtp' in segment %} active {% endif %}">
+                            <i class="far fa-dot-circle nav-icon"></i>
+                            <p>📧 Config SMTP</p>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{% url 'config_system:email_config' %}" class="nav-link {% if 'email-config' in segment %} active {% endif %}">
+                            <i class="far fa-dot-circle nav-icon"></i>
+                            <p>✉️ Config Emails</p>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{% url 'config_system:email_logs' %}" class="nav-link {% if 'email-logs' in segment %} active {% endif %}">
+                            <i class="far fa-dot-circle nav-icon"></i>
+                            <p>📋 Logs Email</p>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{% url 'config_system:usuarios_list' %}" class="nav-link {% if 'usuarios' in segment %} active {% endif %}">
+                            <i class="far fa-dot-circle nav-icon"></i>
+                            <p>👥 Usuarios Config</p>
+                        </a>
+                    </li>
+          
         </ul>
     </li>
+   
 
     <!-- Auditoría y Seguridad -->
     <li class="nav-item {% if 'auditoria' in parent %} menu-open {% endif %}">
         <a href="#" class="nav-link {% if 'auditoria' in parent %} active {% endif %}">
             <i class="nav-icon fas fa-shield-alt"></i>
-            <p>
-                🛡️ Auditoría & Seguridad
+            <p>Auditoría & Seguridad
                 <i class="right fas fa-angle-left"></i>
             </p>
         </a>
@@ -342,91 +388,64 @@
         </ul>
     </li>
 
-    {% if request.user.is_superuser %}
-    <!-- Administración del Sistema -->
-    <li class="nav-item {% if 'sistema' in parent %} menu-open {% endif %}">
-        <a href="#" class="nav-link {% if 'sistema' in parent %} active {% endif %}">
-            <i class="nav-icon fas fa-cogs"></i>
-            <p>
-                ⚙️ Sistema
+   {% endif %}
+
+
+<!-- Separador -->
+    <li class="nav-header">OTROS</li>
+
+    
+
+    <!-- Eventos Municipales -->
+    <li class="nav-item {% if 'eventos' in parent %} menu-open {% endif %}">
+        <a href="#" class="nav-link {% if 'eventos' in parent %} active {% endif %}">
+            <i class="nav-icon fas fa-calendar-alt"></i>
+            <p>Eventos
                 <i class="right fas fa-angle-left"></i>
             </p>
         </a>
         <ul class="nav nav-treeview">
             <li class="nav-item">
-                <a href="{% url 'admin:index' %}" class="nav-link {% if 'admin' in segment %} active {% endif %}">
-                    <i class="far fa-circle nav-icon"></i>
-                    <p>🔐 Panel de Administración</p>
+                <a href="{% url 'eventos_calendario' %}" class="nav-link {% if 'eventos_calendario' in segment %} active {% endif %}">
+                    
+                    <p>📅 Calendario</p>
                 </a>
             </li>
-            
-            <!-- Configuraciones del Sistema IA -->
-            <li class="nav-item {% if 'config-system' in segment %} menu-open {% endif %}">
-                <a href="{% url 'config_system:dashboard' %}" class="nav-link {% if 'config-system' in segment %} active {% endif %}">
-                    <i class="far fa-circle nav-icon"></i>
-                    <p>
-                        🤖 Configuraciones del Sistema
-                        <i class="right fas fa-angle-left"></i>
-                    </p>
+            {% if user.is_authenticated %}
+            <li class="nav-item">
+                <a href="{% url 'eventos_nuevo' %}" class="nav-link {% if 'eventos_nuevo' in segment %} active {% endif %}">
+                 
+                    <p>➕ Añadir Evento</p>
                 </a>
-                <ul class="nav nav-treeview">
-                    <li class="nav-item">
-                        <a href="{% url 'config_system:dashboard' %}" class="nav-link {% if 'dashboard' in segment %} active {% endif %}">
-                            <i class="far fa-dot-circle nav-icon"></i>
-                            <p>📊 Dashboard Config</p>
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a href="{% url 'config_system:ia_list' %}" class="nav-link {% if 'ia' in segment %} active {% endif %}">
-                            <i class="far fa-dot-circle nav-icon"></i>
-                            <p>🧠 Config IA</p>
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a href="{% url 'config_system:whisper_list' %}" class="nav-link {% if 'whisper' in segment %} active {% endif %}">
-                            <i class="far fa-dot-circle nav-icon"></i>
-                            <p>🎤 Config Whisper</p>
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a href="{% url 'config_system:smtp_list' %}" class="nav-link {% if 'smtp' in segment %} active {% endif %}">
-                            <i class="far fa-dot-circle nav-icon"></i>
-                            <p>📧 Config SMTP</p>
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a href="{% url 'config_system:email_config' %}" class="nav-link {% if 'email-config' in segment %} active {% endif %}">
-                            <i class="far fa-dot-circle nav-icon"></i>
-                            <p>✉️ Config Emails</p>
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a href="{% url 'config_system:email_logs' %}" class="nav-link {% if 'email-logs' in segment %} active {% endif %}">
-                            <i class="far fa-dot-circle nav-icon"></i>
-                            <p>📋 Logs Email</p>
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a href="{% url 'config_system:usuarios_list' %}" class="nav-link {% if 'usuarios' in segment %} active {% endif %}">
-                            <i class="far fa-dot-circle nav-icon"></i>
-                            <p>👥 Usuarios Config</p>
-                        </a>
-                    </li>
-                </ul>
+            </li>
+            {% endif %}
+            <li class="nav-item">
+                <a href="{% url 'eventos_calendario' %}?tipo=sesion_concejo" class="nav-link">
+                  
+                    <p>🏛️ Sesiones de Concejo</p>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="{% url 'eventos_calendario' %}?tipo=reunion_publica" class="nav-link">
+            
+                    <p>👥 Reuniones Públicas</p>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="{% url 'eventos_calendario' %}?tipo=audiencia_publica" class="nav-link">
+                  
+                    <p>🎤 Audiencias Públicas</p>
+                </a>
             </li>
         </ul>
     </li>
-    {% endif %}
-
-    <!-- OTROS - Sección reorganizada -->
-    <li class="nav-header">OTROS</li>
+    
     
     <!-- Elementos reorganizados -->
     <li class="nav-item {% if 'otros' in parent %} menu-open {% endif %}">
         <a href="#" class="nav-link {% if 'otros' in parent %} active {% endif %}">
             <i class="nav-icon fas fa-th-large"></i>
-            <p>
-                📦 Herramientas Adicionales
+            <p>Herramientas Adicionales
                 <i class="right fas fa-angle-left"></i>
             </p>
         </a>
@@ -588,10 +607,10 @@
         </ul>
     </li>
 
-    <!-- Separador -->
+    <!-- Separador NO visible 
     <li class="nav-header">ACCESO RÁPIDO</li>
-    
-    <!-- Accesos Rápidos -->
+--- IGNORE --->
+    <!-- Accesos Rápidos 
     <li class="nav-item">
         <a href="{% url 'actas_nueva' %}" class="nav-link">
             <i class="nav-icon fas fa-plus text-success"></i>
@@ -612,30 +631,7 @@
             <p>Estadísticas</p>
         </a>
     </li>
-
-    <!-- Autenticación -->
-    {% if request.user.is_authenticated %}
-    <li class="nav-item">
-        <a href="{% url 'logout' %}" class="nav-link">
-            <i class="fa fa-sign-out-alt nav-icon"></i>
-            <p>Logout</p>
-        </a>
-    </li>
-    {% else %}
-    <li class="nav-item">
-        <a href="{% url 'login' %}" class="nav-link">
-            <i class="fa fa-sign-in-alt nav-icon"></i>
-            <p>Login</p>
-        </a>
-    </li>
-    <li class="nav-item">
-        <a href="{% url 'register' %}" class="nav-link">
-            <i class="fa fa-user-plus nav-icon"></i>
-            <p>Register</p>
-        </a>
-    </li>        
-    {% endif %} 
-    
+      
     <li class="nav-item">
         <a target="_blank" href="https://puyo.gob.ec/soporte/" class="nav-link">
             <i class="fa fa-download text-primary nav-icon"></i>
@@ -644,3 +640,29 @@
     </li>
 
 </ul>
+
+    --- IGNORE --->
+    
+    <!-- Autenticación -->
+    {% if request.user.is_authenticated %}
+    <li class="nav-item">
+        <a href="{% url 'logout' %}" class="nav-link">
+            <i class="fa fa-sign-out-alt nav-icon"></i>
+            <p>Salir</p>
+        </a>
+    </li>
+    {% else %}
+    <li class="nav-item">
+        <a href="{% url 'login' %}" class="nav-link">
+            <i class="fa fa-sign-in-alt nav-icon"></i>
+            <p>Iniciar Sesión</p>
+        </a>
+    </li>
+    <li class="nav-item">
+        <a href="{% url 'register' %}" class="nav-link">
+            <i class="fa fa-user-plus nav-icon"></i>
+            <p>Registrarse</p>
+        </a>
+    </li>        
+    {% endif %} 
+  
