@@ -1,0 +1,490 @@
+/* Estilos CSS para el detalle de transcripción avanzado */
+
+/* Variables CSS para consistencia */
+:root {
+    --color-primary: #007bff;
+    --color-warning: #ffc107;
+    --color-success: #28a745;
+    --color-danger: #dc3545;
+    --color-info: #17a2b8;
+    --color-secondary: #6c757d;
+    --color-light: #f8f9fa;
+    --color-dark: #343a40;
+    
+    --border-radius: 6px;
+    --transition-fast: 0.2s ease;
+    --transition-normal: 0.3s ease;
+    --shadow-light: 0 2px 4px rgba(0, 0, 0, 0.1);
+    --shadow-medium: 0 4px 12px rgba(0, 0, 0, 0.15);
+    --shadow-strong: 0 8px 25px rgba(0, 0, 0, 0.25);
+}
+
+/* Estilos base para el chat de transcripción */
+.chat-message {
+    cursor: pointer;
+    transition: all var(--transition-normal);
+    border-left: 3px solid transparent;
+    margin-bottom: 10px;
+    position: relative;
+    border-radius: var(--border-radius);
+    padding: 10px;
+}
+
+.chat-message:hover {
+    background-color: var(--color-light);
+    border-left-color: var(--color-primary);
+    box-shadow: var(--shadow-light);
+}
+
+.chat-message.editando {
+    background-color: #fff3cd;
+    border-left-color: var(--color-warning);
+    box-shadow: var(--shadow-medium);
+}
+
+.chat-message.seleccionado {
+    background-color: #d1ecf1;
+    border-left-color: var(--color-info);
+    box-shadow: var(--shadow-medium);
+}
+
+/* Controles de segmento */
+.segment-controls {
+    opacity: 0;
+    transition: opacity var(--transition-normal);
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: rgba(255, 255, 255, 0.9);
+    border-radius: var(--border-radius);
+    padding: 5px;
+    box-shadow: var(--shadow-light);
+}
+
+.chat-message:hover .segment-controls {
+    opacity: 1;
+}
+
+/* Contenido editable */
+.editable-content {
+    border: 1px solid transparent;
+    border-radius: var(--border-radius);
+    padding: 8px;
+    min-height: 40px;
+    transition: border-color var(--transition-normal);
+    background-color: transparent;
+}
+
+.editable-content.editando {
+    border-color: var(--color-warning);
+    background-color: #fff;
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+/* Elementos de tiempo y hablante */
+.time-display {
+    font-family: 'Courier New', 'Monaco', monospace;
+    font-size: 0.9em;
+    color: var(--color-secondary);
+    font-weight: bold;
+    background-color: rgba(108, 117, 125, 0.1);
+    padding: 2px 6px;
+    border-radius: 12px;
+    display: inline-block;
+}
+
+.speaker-tag {
+    background-color: var(--color-primary);
+    color: white;
+    padding: 4px 12px;
+    border-radius: 16px;
+    font-size: 0.85em;
+    font-weight: 500;
+    display: inline-block;
+    margin-right: 8px;
+    box-shadow: var(--shadow-light);
+}
+
+/* Tarjeta de estadísticas */
+.stats-card {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 12px;
+    padding: 25px;
+    margin-bottom: 20px;
+    box-shadow: var(--shadow-medium);
+}
+
+.stats-card h5 {
+    margin-bottom: 15px;
+    font-weight: 600;
+}
+
+.stats-card .info-box-number {
+    font-size: 2em;
+    font-weight: bold;
+    line-height: 1;
+}
+
+.stats-card .info-box-text {
+    font-size: 0.9em;
+    opacity: 0.9;
+}
+
+/* Botón flotante para guardar */
+.floating-save-btn {
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    z-index: 1000;
+    box-shadow: var(--shadow-strong);
+    border-radius: 50px;
+    padding: 15px 25px;
+    font-size: 1.1em;
+    font-weight: 600;
+    display: none;
+    animation: pulseFloat 2s infinite;
+}
+
+@keyframes pulseFloat {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-5px); }
+}
+
+/* Editor de segmento en línea */
+.segment-editor {
+    background: linear-gradient(145deg, #f8f9fa 0%, #e9ecef 100%);
+    border: 2px solid var(--color-warning);
+    border-radius: var(--border-radius);
+    padding: 20px;
+    margin: 15px 0;
+    box-shadow: var(--shadow-medium);
+}
+
+.segment-editor .form-control:focus {
+    border-color: var(--color-warning);
+    box-shadow: 0 0 0 0.2rem rgba(255, 193, 7, 0.25);
+}
+
+/* Vista previa de JSON */
+.json-preview {
+    max-height: 350px;
+    overflow-y: auto;
+    background: linear-gradient(145deg, #2d3748 0%, #1a202c 100%);
+    color: #e2e8f0;
+    font-family: 'Courier New', 'Monaco', monospace;
+    font-size: 0.9em;
+    border-radius: var(--border-radius);
+    padding: 20px;
+    border: 1px solid #4a5568;
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.json-preview::-webkit-scrollbar {
+    width: 8px;
+}
+
+.json-preview::-webkit-scrollbar-track {
+    background: #1a202c;
+}
+
+.json-preview::-webkit-scrollbar-thumb {
+    background: #4a5568;
+    border-radius: 4px;
+}
+
+.json-preview::-webkit-scrollbar-thumb:hover {
+    background: #718096;
+}
+
+/* Tabs de estructura */
+.estructura-tabs .nav-link {
+    border-radius: var(--border-radius) var(--border-radius) 0 0;
+    border: none;
+    background-color: var(--color-light);
+    margin-right: 5px;
+    transition: all var(--transition-fast);
+    font-weight: 500;
+}
+
+.estructura-tabs .nav-link:hover {
+    background-color: #dee2e6;
+    transform: translateY(-2px);
+}
+
+.estructura-tabs .nav-link.active {
+    background-color: var(--color-primary);
+    color: white;
+    box-shadow: var(--shadow-light);
+}
+
+/* Animaciones para feedback visual */
+@keyframes pulseSuccess {
+    0% { background-color: #d4edda; transform: scale(1); }
+    50% { background-color: #c3e6cb; transform: scale(1.02); }
+    100% { background-color: #d4edda; transform: scale(1); }
+}
+
+@keyframes pulseError {
+    0% { background-color: #f8d7da; transform: scale(1); }
+    50% { background-color: #f5c6cb; transform: scale(1.02); }
+    100% { background-color: #f8d7da; transform: scale(1); }
+}
+
+@keyframes slideInUp {
+    from { transform: translateY(30px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes slideOutDown {
+    from { transform: translateY(0); opacity: 1; }
+    to { transform: translateY(30px); opacity: 0; }
+}
+
+.animate-success {
+    animation: pulseSuccess 0.8s ease-in-out;
+}
+
+.animate-error {
+    animation: pulseError 0.8s ease-in-out;
+}
+
+.animate-slide-in {
+    animation: slideInUp 0.5s ease-out;
+}
+
+.animate-slide-out {
+    animation: slideOutDown 0.3s ease-in;
+}
+
+/* Loading overlay */
+.loading-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(255, 255, 255, 0.85);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    border-radius: var(--border-radius);
+    backdrop-filter: blur(2px);
+}
+
+.loading-overlay .spinner-border {
+    width: 3rem;
+    height: 3rem;
+}
+
+/* Indicadores de color para hablantes */
+.hablante-color {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    display: inline-block;
+    margin-right: 10px;
+    border: 3px solid #fff;
+    box-shadow: var(--shadow-light);
+    vertical-align: middle;
+}
+
+/* Modo edición activo */
+.modo-edicion-activo {
+    background: linear-gradient(45deg, #fff3cd, #ffeaa7);
+    border: 2px solid var(--color-warning);
+    border-radius: 10px;
+    padding: 15px;
+    margin: 15px 0;
+    text-align: center;
+    box-shadow: var(--shadow-light);
+    animation: slideInUp 0.5s ease-out;
+}
+
+.modo-edicion-activo strong {
+    color: var(--color-warning);
+    font-size: 1.1em;
+}
+
+/* Estilos para modales */
+.modal-xl .modal-dialog {
+    max-width: 95%;
+}
+
+.modal-header.bg-warning {
+    background-color: var(--color-warning) !important;
+    color: var(--color-dark);
+}
+
+.modal-header.bg-info {
+    background-color: var(--color-info) !important;
+    color: white;
+}
+
+.modal-header.bg-dark {
+    background-color: var(--color-dark) !important;
+    color: white;
+}
+
+/* Tabla de hablantes */
+.tabla-hablantes-container {
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.tabla-hablantes-container::-webkit-scrollbar {
+    width: 6px;
+}
+
+.tabla-hablantes-container::-webkit-scrollbar-track {
+    background: var(--color-light);
+}
+
+.tabla-hablantes-container::-webkit-scrollbar-thumb {
+    background: var(--color-secondary);
+    border-radius: 3px;
+}
+
+/* Estado vacío */
+.estado-vacio {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--color-secondary);
+}
+
+.estado-vacio i {
+    font-size: 4em;
+    margin-bottom: 15px;
+    opacity: 0.5;
+}
+
+/* Elementos ocultos por defecto */
+.hidden {
+    display: none !important;
+}
+
+.visible {
+    display: block !important;
+}
+
+/* Info boxes personalizadas */
+.info-box.bg-gradient-primary {
+    background: linear-gradient(45deg, var(--color-primary), #0056b3);
+}
+
+.info-box.bg-gradient-success {
+    background: linear-gradient(45deg, var(--color-success), #1e7e34);
+}
+
+.info-box.bg-gradient-warning {
+    background: linear-gradient(45deg, var(--color-warning), #d39e00);
+}
+
+.info-box.bg-gradient-info {
+    background: linear-gradient(45deg, var(--color-info), #117a8b);
+}
+
+/* Efectos hover para botones */
+.btn {
+    transition: all var(--transition-fast);
+}
+
+.btn:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-light);
+}
+
+.btn:active {
+    transform: translateY(0);
+}
+
+/* Mejoras para formularios */
+.form-control:focus {
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+    border-color: var(--color-primary);
+}
+
+.form-group label {
+    font-weight: 600;
+    color: var(--color-dark);
+    margin-bottom: 5px;
+}
+
+.form-text {
+    font-size: 0.85em;
+    margin-top: 5px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .floating-save-btn {
+        bottom: 20px;
+        right: 20px;
+        padding: 12px 20px;
+        font-size: 1em;
+    }
+    
+    .stats-card {
+        padding: 15px;
+        margin-bottom: 15px;
+    }
+    
+    .segment-controls {
+        position: static;
+        opacity: 1;
+        transform: none;
+        margin-top: 10px;
+        background: none;
+        box-shadow: none;
+    }
+    
+    .chat-message {
+        padding: 15px;
+    }
+    
+    .modal-xl .modal-dialog {
+        max-width: 98%;
+        margin: 10px auto;
+    }
+}
+
+/* Utilidades de display */
+.d-none-important {
+    display: none !important;
+}
+
+.d-block-important {
+    display: block !important;
+}
+
+.d-flex-important {
+    display: flex !important;
+}
+
+/* Espaciado personalizado */
+.p-15 {
+    padding: 15px !important;
+}
+
+.m-15 {
+    margin: 15px !important;
+}
+
+.mt-15 {
+    margin-top: 15px !important;
+}
+
+.mb-15 {
+    margin-bottom: 15px !important;
+}
+
+/* Bordes redondeados */
+.rounded-lg {
+    border-radius: 10px !important;
+}
+
+.rounded-xl {
+    border-radius: 15px !important;
+}

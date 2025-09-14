@@ -20,7 +20,11 @@ urlpatterns = [
     
     # APIs
     path('api/estadisticas/', views.api_estadisticas_auditoria, name='api_estadisticas'),
+    path('api/eventos/', views.api_ultimos_eventos, name='api_ultimos_eventos'),
     path('api/detalle/<int:log_id>/<str:tipo>/', views.detalle_log, name='detalle_log'),
+    
+    # Vista de eventos en tiempo real
+    path('eventos/', views.eventos_tiempo_real, name='eventos_tiempo_real'),
     
     # Debug de sesiones y cookies
     path('debug/session/', debug_views.debug_session_info, name='debug_session'),

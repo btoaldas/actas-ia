@@ -1,3 +1,7 @@
+{% load static %}
+  <!-- CSS adicional para eventos del navbar -->
+  <link rel="stylesheet" href="{% static 'css/navbar-eventos.css' %}">
+  
   <!-- Navbar -->
   <nav class="main-header navbar navbar-expand navbar-dark">
     <!-- Left navbar links -->
@@ -76,9 +80,9 @@
           <i class="fas fa-search"></i>
         </a>
         <div class="navbar-search-block">
-          <form class="form-inline">
+          <form class="form-inline" method="get" action="{% url 'portal_ciudadano' %}">
             <div class="input-group input-group-sm">
-              <input class="form-control form-control-navbar" type="search" placeholder="Buscar actas..." aria-label="Buscar">
+              <input class="form-control form-control-navbar" type="search" name="search" placeholder="Buscar en actas municipales..." aria-label="Buscar" value="{{ request.GET.search|default:'' }}">
               <div class="input-group-append">
                 <button class="btn btn-navbar" type="submit">
                   <i class="fas fa-search"></i>
@@ -93,88 +97,100 @@
       </li>
 
       <!-- Messages Dropdown Menu -->
-      <li class="nav-item dropdown">
+      <li class="nav-item dropdown navbar-eventos">
         <a class="nav-link" data-toggle="dropdown" href="#">
           <i class="far fa-comments"></i>
-          <span class="badge badge-danger navbar-badge">3</span>
+          <span class="badge badge-danger navbar-badge">{{ ultimos_eventos_sistema|length }}</span>
         </a>
         <div class="dropdown-menu dropdown-menu-lg dropdown-menu-right">
-          <a href="#" class="dropdown-item">
-            <!-- Message Start -->
-            <div class="media">
-              <img src="dist/img/user1-128x128.jpg" alt="Usuario" class="img-size-50 mr-3 img-circle">
-              <div class="media-body">
-                <h3 class="dropdown-item-title">
-                  Ana López - Secretaría
-                  <span class="float-right text-sm text-danger"><i class="fas fa-star"></i></span>
-                </h3>
-                <p class="text-sm">Acta del Consejo Municipal lista para revisión</p>
-                <p class="text-sm text-muted"><i class="far fa-clock mr-1"></i> Hace 2 horas</p>
-              </div>
+          {% if ultimos_eventos_sistema %}
+            {% for evento in ultimos_eventos_sistema %}
+              <a href="#" class="dropdown-item">
+                <!-- Message Start -->
+                <div class="media">
+                  <div class="media-object mr-3">
+                    <i class="{{ evento.icono }}"></i>
+                  </div>
+                  <div class="media-body">
+                    <h3 class="dropdown-item-title">
+                      {{ evento.titulo }}
+                      {% if evento.tipo == 'error' %}
+                        <span class="float-right text-sm text-danger"><i class="fas fa-exclamation-triangle"></i></span>
+                      {% elif evento.tipo == 'celery' and 'SUCCESS' in evento.titulo %}
+                        <span class="float-right text-sm text-success"><i class="fas fa-check"></i></span>
+                      {% endif %}
+                    </h3>
+                    <p class="text-sm">{{ evento.descripcion }}</p>
+                    <p class="text-sm text-muted">
+                      <i class="far fa-clock mr-1"></i> {{ evento.tiempo_hace }}
+                    </p>
+                  </div>
+                </div>
+                <!-- Message End -->
+              </a>
+              {% if not forloop.last %}
+                <div class="dropdown-divider"></div>
+              {% endif %}
+            {% endfor %}
+          {% else %}
+            <div class="no-notificaciones">
+              <i class="fas fa-info-circle evento-icono-info"></i>
+              <span>No hay eventos recientes</span>
+              <small class="d-block text-muted mt-1">El sistema está funcionando normalmente</small>
             </div>
-            <!-- Message End -->
-          </a>
+          {% endif %}
           <div class="dropdown-divider"></div>
-          <a href="#" class="dropdown-item">
-            <!-- Message Start -->
-            <div class="media">
-              <img src="dist/img/user8-128x128.jpg" alt="Usuario" class="img-size-50 img-circle mr-3">
-              <div class="media-body">
-                <h3 class="dropdown-item-title">
-                  Juan Pérez - Supervisor
-                  <span class="float-right text-sm text-muted"><i class="fas fa-star"></i></span>
-                </h3>
-                <p class="text-sm">Transcripción IA completada al 97.2%</p>
-                <p class="text-sm text-muted"><i class="far fa-clock mr-1"></i> Hace 4 horas</p>
-              </div>
-            </div>
-            <!-- Message End -->
-          </a>
-          <div class="dropdown-divider"></div>
-          <a href="#" class="dropdown-item">
-            <!-- Message Start -->
-            <div class="media">
-              <img src="dist/img/user3-128x128.jpg" alt="Usuario" class="img-size-50 img-circle mr-3">
-              <div class="media-body">
-                <h3 class="dropdown-item-title">
-                  María García - Técnica
-                  <span class="float-right text-sm text-warning"><i class="fas fa-star"></i></span>
-                </h3>
-                <p class="text-sm">Sesión extraordinaria programada para mañana</p>
-                <p class="text-sm text-muted"><i class="far fa-clock mr-1"></i> Hace 6 horas</p>
-              </div>
-            </div>
-            <!-- Message End -->
-          </a>
-          <div class="dropdown-divider"></div>
-          <a href="#" class="dropdown-item dropdown-footer">Ver Todos los Mensajes</a>
+          <a href="{% url 'auditoria:eventos_tiempo_real' %}" class="dropdown-item dropdown-footer">Ver Todos los Eventos</a>
         </div>
       </li>
       <!-- Notifications Dropdown Menu -->
       <li class="nav-item dropdown">
         <a class="nav-link" data-toggle="dropdown" href="#">
           <i class="far fa-bell"></i>
-          <span class="badge badge-warning navbar-badge">15</span>
+          <span class="badge navbar-badge actas-badge">{{ ultimas_actas_publicadas|length }}</span>
         </a>
         <div class="dropdown-menu dropdown-menu-lg dropdown-menu-right">
-          <span class="dropdown-item dropdown-header">15 Notificaciones</span>
+          <span class="dropdown-item dropdown-header actas-header">{{ ultimas_actas_publicadas|length }} Acta{{ ultimas_actas_publicadas|length|pluralize }} Reciente{{ ultimas_actas_publicadas|length|pluralize }}</span>
           <div class="dropdown-divider"></div>
-          <a href="#" class="dropdown-item">
-            <i class="fas fa-file-alt mr-2"></i> Nueva acta requiere revisión
-            <span class="float-right text-muted text-sm">hace 3 min</span>
+          
+          {% if ultimas_actas_publicadas %}
+            {% for acta in ultimas_actas_publicadas %}
+              <a href="{{ acta.url }}" class="dropdown-item acta-item">
+                <div class="d-flex align-items-start">
+                  <div class="icono-sesion {{ acta.tipo_sesion|lower|cut:' ' }}">
+                    <i class="{{ acta.icono }}"></i>
+                  </div>
+                  <div class="flex-grow-1">
+                    <div class="acta-numero">{{ acta.numero_acta }}</div>
+                    <div class="acta-titulo">{{ acta.titulo }}</div>
+                    <div class="d-flex justify-content-between align-items-center mt-1">
+                      <small class="acta-meta">
+                        <i class="fas fa-calendar"></i> {{ acta.tipo_sesion }}
+                      </small>
+                      <small class="acta-meta">{{ acta.tiempo_hace }}</small>
+                    </div>
+                    <small class="acta-secretario">
+                      <i class="fas fa-user"></i> {{ acta.secretario_nombre }}
+                    </small>
+                  </div>
+                </div>
+              </a>
+              {% if not forloop.last %}
+                <div class="acta-divider"></div>
+              {% endif %}
+            {% endfor %}
+          {% else %}
+            <div class="actas-vacio">
+              <i class="fas fa-file-alt"></i>
+              <div>No hay actas publicadas recientes</div>
+              <small class="text-muted">El sistema está funcionando normalmente</small>
+            </div>
+          {% endif %}
+          
+          <div class="dropdown-divider"></div>
+          <a href="{% url 'portal_ciudadano' %}" class="dropdown-item dropdown-footer actas-footer">
+            <i class="fas fa-eye mr-2"></i>Ver Todas las Actas Públicas
           </a>
-          <div class="dropdown-divider"></div>
-          <a href="#" class="dropdown-item">
-            <i class="fas fa-robot mr-2"></i> Procesamiento IA completado
-            <span class="float-right text-muted text-sm">hace 12 min</span>
-          </a>
-          <div class="dropdown-divider"></div>
-          <a href="#" class="dropdown-item">
-            <i class="fas fa-users mr-2"></i> Sesión ordinaria programada
-            <span class="float-right text-muted text-sm">hace 2 horas</span>
-          </a>
-          <div class="dropdown-divider"></div>
-          <a href="#" class="dropdown-item dropdown-footer">Ver Todas las Notificaciones</a>
         </div>
       </li>
       <li class="nav-item">

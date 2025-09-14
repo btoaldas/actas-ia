@@ -60,34 +60,48 @@
     </div>
 
     <!-- Enlaces de autenticación -->
-    <div class="user-actions px-3 pb-3 mb-3" style="border-bottom: 1px solid #4f5962;">
-      {% if request.user.is_authenticated %}
-        <a href="{% url 'admin:logout' %}" class="btn btn-sm btn-danger btn-block">
-          <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
-        </a>
-        <a href="{% url 'admin:password_change' %}" class="btn btn-sm btn-outline-info btn-block mt-2">
-          <i class="fas fa-key"></i> Cambiar Contraseña
-        </a>
-      {% else %}
-        <a href="{% url 'login' %}" class="btn btn-sm btn-primary btn-block mb-2">
-          <i class="fas fa-sign-in-alt"></i> Iniciar Sesión
-        </a>
-        <a href="{% url 'register' %}" class="btn btn-sm btn-outline-info btn-block">
-          <i class="fas fa-user-plus"></i> Registrarse
-        </a>
-      {% endif %}
+    <div class="user-actions" style="border-bottom: 1px solid #4f5962; margin-bottom: 1rem;">
+      <ul class="nav nav-pills nav-sidebar flex-column">
+        {% if request.user.is_authenticated %}
+          <li class="nav-item">
+            <a href="{% url 'admin:logout' %}" class="nav-link">
+              <i class="fas fa-sign-out-alt nav-icon text-danger"></i>
+              <p>Cerrar Sesión</p>
+            </a> 
+          </li>
+          <li class="nav-item">
+            <a href="{% url 'admin:password_change' %}" class="nav-link ">
+              <i class="fas fa-key nav-icon text-info"></i>
+              <p>Cambiar Contraseña</p>
+            </a>
+          </li>
+        {% else %}
+          <li class="nav-item">
+            <a href="{% url 'login' %}" class="nav-link ">
+              <i class="fas fa-sign-in-alt nav-icon text-primary"></i>
+              <p>Iniciar Sesión</p>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="{% url 'register' %}" class="nav-link ">
+              <i class="fas fa-user-plus nav-icon"></i>
+              <p>Registrarse</p>
+            </a>
+          </li>
+        {% endif %}
+      </ul>
     </div>
 
     <!-- SidebarSearch Form -->
     <div class="form-inline">
-      <div class="input-group" data-widget="sidebar-search">
-        <input class="form-control form-control-sidebar" type="search" placeholder="Search" aria-label="Search">
+      <form class="input-group" method="get" action="{% url 'portal_ciudadano' %}" style="width:100%;">
+        <input class="form-control form-control-sidebar" type="search" name="search" placeholder="Buscar en actas municipales..." aria-label="Buscar" value="{{ request.GET.search|default:'' }}">
         <div class="input-group-append">
-          <button class="btn btn-sidebar">
+          <button class="btn btn-sidebar" type="submit">
             <i class="fas fa-search fa-fw"></i>
           </button>
         </div>
-      </div>
+      </form>
     </div>
 
     <!-- Sidebar Menu -->

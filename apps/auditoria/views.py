@@ -13,6 +13,7 @@ from .models import (
     SistemaLogs, NavegacionUsuarios, ApiLogs, ErroresSistema,
     AccesoUsuarios, CeleryLogs, ArchivoLogs, AdminLogs, CambiosBD
 )
+from django.contrib.auth.models import User
 
 
 @login_required
@@ -358,3 +359,254 @@ def detalle_log(request, log_id, tipo='sistema'):
             return JsonResponse({'log': log_data})
         else:
             return JsonResponse({'error': 'Log no encontrado'}, status=404)
+
+
+def obtener_ultimos_eventos_sistema(limit=5):
+    """
+    Obtiene los últimos eventos del sistema combinando múltiples fuentes
+    """
+    eventos = []
+    
+    try:
+        with connection.cursor() as cursor:
+            # Primero obtener eventos de Celery
+            try:
+                cursor.execute("""
+                    SELECT 
+                        task_name,
+                        estado,
+                        timestamp,
+                        duracion_segundos
+                    FROM logs.celery_logs 
+                    WHERE task_name LIKE '%%audio%%' OR task_name LIKE '%%transcr%%'
+                    ORDER BY timestamp DESC 
+                    LIMIT %s
+                """, [limit])
+                
+                celery_rows = cursor.fetchall()
+                for row in celery_rows:
+                    task_name, estado, timestamp, duracion = row
+                    
+                    tipo_tarea = "Audio" if "audio" in task_name.lower() else "Transcripción"
+                    estado_icon = {
+                        'SUCCESS': 'fas fa-check-circle text-success',
+                        'FAILURE': 'fas fa-times-circle text-danger', 
+                        'PENDING': 'fas fa-clock text-warning',
+                        'STARTED': 'fas fa-play-circle text-info'
+                    }.get(estado, 'fas fa-question-circle text-muted')
+                    
+                    eventos.append({
+                        'tipo': 'celery',
+                        'icono': estado_icon,
+                        'titulo': f"{tipo_tarea} - {estado}",
+                        'descripcion': f"Tarea: {task_name.split('.')[-1]}",
+                        'timestamp': timestamp,
+                        'tiempo_hace': tiempo_relativo(timestamp),
+                        'metadata': {
+                            'duracion_s': duracion
+                        }
+                    })
+            except Exception:
+                pass
+            
+            # Obtener archivos recientes (si existen)
+            try:
+                cursor.execute("""
+                    SELECT 
+                        operacion,
+                        archivo_nombre,
+                        timestamp,
+                        resultado
+                    FROM logs.archivo_logs 
+                    ORDER BY timestamp DESC 
+                    LIMIT %s
+                """, [limit])
+                
+                archivo_rows = cursor.fetchall()
+                for row in archivo_rows:
+                    operacion, nombre, timestamp, resultado = row
+                    
+                    icono = 'fas fa-upload text-primary' if operacion == 'UPLOAD' else 'fas fa-download text-info'
+                    if resultado == 'ERROR':
+                        icono = 'fas fa-exclamation-triangle text-danger'
+                    
+                    eventos.append({
+                        'tipo': 'archivo',
+                        'icono': icono,
+                        'titulo': f"{operacion.title()} - {nombre[:30]}{'...' if len(nombre) > 30 else ''}",
+                        'descripcion': f"Resultado: {resultado}",
+                        'timestamp': timestamp,
+                        'tiempo_hace': tiempo_relativo(timestamp),
+                        'metadata': {
+                            'resultado': resultado
+                        }
+                    })
+            except Exception:
+                pass
+            
+            # Obtener actividad del sistema general
+            try:
+                cursor.execute("""
+                    SELECT 
+                        categoria,
+                        subcategoria,
+                        mensaje,
+                        timestamp,
+                        nivel
+                    FROM logs.sistema_logs 
+                    WHERE categoria IN ('admin', 'api', 'auth', 'celery')
+                    ORDER BY timestamp DESC 
+                    LIMIT %s
+                """, [limit])
+                
+                sistema_rows = cursor.fetchall()
+                for row in sistema_rows:
+                    categoria, subcategoria, mensaje, timestamp, nivel = row
+                    
+                    icono_map = {
+                        'admin': 'fas fa-user-shield text-primary',
+                        'api': 'fas fa-code text-info',
+                        'auth': 'fas fa-sign-in-alt text-success',
+                        'celery': 'fas fa-cogs text-warning'
+                    }
+                    
+                    icono = icono_map.get(categoria, 'fas fa-info-circle text-muted')
+                    if nivel in ['ERROR', 'CRITICAL']:
+                        icono = 'fas fa-exclamation-triangle text-danger'
+                    
+                    eventos.append({
+                        'tipo': 'sistema',
+                        'icono': icono,
+                        'titulo': f"{categoria.title()} - {subcategoria or 'Actividad'}",
+                        'descripcion': f"{mensaje[:50]}..." if len(mensaje) > 50 else mensaje,
+                        'timestamp': timestamp,
+                        'tiempo_hace': tiempo_relativo(timestamp),
+                        'metadata': {
+                            'nivel': nivel
+                        }
+                    })
+            except Exception:
+                pass
+            
+            # Obtener algunos errores críticos si no hay mucha actividad
+            if len(eventos) < limit:
+                try:
+                    cursor.execute("""
+                        SELECT 
+                            nivel_error,
+                            mensaje_error,
+                            timestamp,
+                            resuelto
+                        FROM logs.errores_sistema 
+                        WHERE nivel_error IN ('ERROR', 'CRITICAL')
+                        ORDER BY timestamp DESC 
+                        LIMIT %s
+                    """, [limit - len(eventos)])
+                    
+                    error_rows = cursor.fetchall()
+                    for row in error_rows:
+                        nivel, mensaje, timestamp, resuelto = row
+                        
+                        icono = 'fas fa-bug text-danger' if nivel == 'ERROR' else 'fas fa-skull text-danger'
+                        if resuelto:
+                            icono = 'fas fa-check-circle text-success'
+                        
+                        eventos.append({
+                            'tipo': 'error',
+                            'icono': icono,
+                            'titulo': f"{nivel}: Error del sistema",
+                            'descripcion': f"{mensaje[:50]}..." if len(mensaje) > 50 else mensaje,
+                            'timestamp': timestamp,
+                            'tiempo_hace': tiempo_relativo(timestamp),
+                            'metadata': {
+                                'resuelto': resuelto
+                            }
+                        })
+                except Exception:
+                    pass
+                
+    except Exception as e:
+        # En caso de error, devolver lista vacía pero con un evento de error
+        eventos = [{
+            'tipo': 'system',
+            'icono': 'fas fa-exclamation-triangle text-warning',
+            'titulo': 'Sistema de monitoreo',
+            'descripcion': 'No se pudieron cargar los eventos recientes',
+            'timestamp': datetime.now(),
+            'tiempo_hace': 'ahora',
+            'metadata': {'error': str(e)}
+        }]
+    
+    # Si no hay eventos, agregar un evento indicando sistema funcionando
+    if not eventos:
+        eventos = [{
+            'tipo': 'system',
+            'icono': 'fas fa-check-circle text-success',
+            'titulo': 'Sistema funcionando',
+            'descripcion': 'No hay actividad reciente para mostrar',
+            'timestamp': datetime.now(),
+            'tiempo_hace': 'ahora',
+            'metadata': {}
+        }]
+    
+    # Ordenar todos los eventos por timestamp y tomar los más recientes
+    try:
+        eventos.sort(key=lambda x: x['timestamp'], reverse=True)
+    except:
+        pass
+        
+    return eventos[:limit]
+
+
+def tiempo_relativo(timestamp):
+    """Convierte un timestamp a tiempo relativo (ej: 'hace 2 horas')"""
+    if not timestamp:
+        return "Desconocido"
+    
+    ahora = datetime.now(timestamp.tzinfo) if timestamp.tzinfo else datetime.now()
+    diferencia = ahora - timestamp
+    
+    if diferencia.days > 0:
+        return f"hace {diferencia.days} día{'s' if diferencia.days != 1 else ''}"
+    elif diferencia.seconds > 3600:
+        horas = diferencia.seconds // 3600
+        return f"hace {horas} hora{'s' if horas != 1 else ''}"
+    elif diferencia.seconds > 60:
+        minutos = diferencia.seconds // 60
+        return f"hace {minutos} minuto{'s' if minutos != 1 else ''}"
+    else:
+        return "hace un momento"
+
+
+@login_required
+def api_ultimos_eventos(request):
+    """API endpoint para obtener los últimos eventos del sistema"""
+    limit = int(request.GET.get('limit', 5))
+    eventos = obtener_ultimos_eventos_sistema(limit)
+    
+    # Convertir datetime a string para JSON
+    for evento in eventos:
+        if isinstance(evento['timestamp'], datetime):
+            evento['timestamp'] = evento['timestamp'].strftime('%Y-%m-%d %H:%M:%S')
+    
+    return JsonResponse({
+        'eventos': eventos,
+        'total': len(eventos),
+        'timestamp_consulta': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    })
+
+
+@login_required
+def eventos_tiempo_real(request):
+    """Vista para mostrar eventos del sistema en tiempo real"""
+    limit = int(request.GET.get('limit', 20))
+    eventos = obtener_ultimos_eventos_sistema(limit)
+    
+    context = {
+        'eventos': eventos,
+        'total_eventos': len(eventos),
+        'parent': 'auditoria',
+        'segment': 'eventos'
+    }
+    
+    return render(request, 'auditoria/eventos_tiempo_real.html', context)

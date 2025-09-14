@@ -1,0 +1,236 @@
+{% extends 'layouts/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="content-wrapper">
+    <!-- Content Header (Page header) -->
+    <section class="content-header">
+        <div class="container-fluid">
+            <div class="row mb-2">
+                <div class="col-sm-6">
+                    <h1>
+                        <i class="fas fa-stream mr-2"></i>
+                        Eventos del Sistema en Tiempo Real
+                    </h1>
+                </div>
+                <div class="col-sm-6">
+                    <ol class="breadcrumb float-sm-right">
+                        <li class="breadcrumb-item"><a href="{% url 'auditoria:dashboard' %}">Auditoría</a></li>
+                        <li class="breadcrumb-item active">Eventos en Tiempo Real</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Main content -->
+    <section class="content">
+        <div class="container-fluid">
+            
+            <!-- Info Box -->
+            <div class="row">
+                <div class="col-12">
+                    <div class="info-box bg-info">
+                        <span class="info-box-icon"><i class="fas fa-chart-line"></i></span>
+                        <div class="info-box-content">
+                            <span class="info-box-text">Eventos Monitoreados</span>
+                            <span class="info-box-number">{{ total_eventos }}</span>
+                            <div class="progress">
+                                <div class="progress-bar" style="width: 70%"></div>
+                            </div>
+                            <span class="progress-description">
+                                Actividad del sistema municipal
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Filtros -->
+            <div class="row">
+                <div class="col-12">
+                    <div class="card collapsed-card">
+                        <div class="card-header">
+                            <h3 class="card-title">
+                                <i class="fas fa-filter mr-2"></i>
+                                Filtros de Eventos
+                            </h3>
+                            <div class="card-tools">
+                                <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                                    <i class="fas fa-plus"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card-body" style="display: none;">
+                            <form method="get" class="row">
+                                <div class="col-md-3">
+                                    <div class="form-group">
+                                        <label for="tipo">Tipo de Evento</label>
+                                        <select class="form-control" name="tipo" id="tipo">
+                                            <option value="">Todos los tipos</option>
+                                            <option value="celery">Tareas Celery</option>
+                                            <option value="archivo">Archivos</option>
+                                            <option value="sistema">Sistema</option>
+                                            <option value="error">Errores</option>
+                                            <option value="admin">Administración</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="form-group">
+                                        <label for="limit">Cantidad de Eventos</label>
+                                        <select class="form-control" name="limit" id="limit">
+                                            <option value="10">10 eventos</option>
+                                            <option value="20" selected>20 eventos</option>
+                                            <option value="50">50 eventos</option>
+                                            <option value="100">100 eventos</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="form-group">
+                                        <label>&nbsp;</label>
+                                        <div>
+                                            <button type="submit" class="btn btn-primary">
+                                                <i class="fas fa-search"></i> Filtrar
+                                            </button>
+                                            <a href="{% url 'auditoria:eventos_tiempo_real' %}" class="btn btn-default">
+                                                <i class="fas fa-undo"></i> Limpiar
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="form-group">
+                                        <label>&nbsp;</label>
+                                        <div>
+                                            <button type="button" class="btn btn-success" onclick="location.reload()">
+                                                <i class="fas fa-sync"></i> Refrescar
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Lista de Eventos -->
+            <div class="row">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">
+                                <i class="fas fa-list mr-2"></i>
+                                Últimos Eventos del Sistema
+                            </h3>
+                            <div class="card-tools">
+                                <span class="badge badge-info">{{ total_eventos }} eventos</span>
+                            </div>
+                        </div>
+                        <div class="card-body p-0">
+                            {% if eventos %}
+                                <div class="table-responsive">
+                                    <table class="table table-striped projects">
+                                        <thead>
+                                            <tr>
+                                                <th style="width: 5%">Tipo</th>
+                                                <th style="width: 25%">Evento</th>
+                                                <th style="width: 40%">Descripción</th>
+                                                <th style="width: 15%">Tiempo</th>
+                                                <th style="width: 15%">Estado</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for evento in eventos %}
+                                            <tr>
+                                                <td>
+                                                    <i class="{{ evento.icono }}" title="{{ evento.tipo|title }}"></i>
+                                                </td>
+                                                <td>
+                                                    <strong>{{ evento.titulo }}</strong>
+                                                    <br>
+                                                    <small class="text-muted">{{ evento.tipo|title }}</small>
+                                                </td>
+                                                <td>
+                                                    {{ evento.descripcion }}
+                                                    {% if evento.metadata %}
+                                                        <br>
+                                                        <small class="text-muted">
+                                                            {% for key, value in evento.metadata.items %}
+                                                                {% if value %}
+                                                                    <span class="badge badge-light">{{ key }}: {{ value }}</span>
+                                                                {% endif %}
+                                                            {% endfor %}
+                                                        </small>
+                                                    {% endif %}
+                                                </td>
+                                                <td>
+                                                    <small class="text-muted">
+                                                        <i class="far fa-clock"></i>
+                                                        {{ evento.tiempo_hace }}
+                                                    </small>
+                                                    <br>
+                                                    <small class="text-xs text-muted">
+                                                        {{ evento.timestamp|date:"d/m/Y H:i" }}
+                                                    </small>
+                                                </td>
+                                                <td>
+                                                    {% if evento.tipo == 'error' %}
+                                                        {% if evento.metadata.resuelto %}
+                                                            <span class="badge badge-success">Resuelto</span>
+                                                        {% else %}
+                                                            <span class="badge badge-danger">Pendiente</span>
+                                                        {% endif %}
+                                                    {% elif evento.tipo == 'celery' %}
+                                                        {% if 'SUCCESS' in evento.titulo %}
+                                                            <span class="badge badge-success">Exitoso</span>
+                                                        {% elif 'FAILURE' in evento.titulo %}
+                                                            <span class="badge badge-danger">Fallido</span>
+                                                        {% elif 'PENDING' in evento.titulo %}
+                                                            <span class="badge badge-warning">Pendiente</span>
+                                                        {% else %}
+                                                            <span class="badge badge-info">En proceso</span>
+                                                        {% endif %}
+                                                    {% else %}
+                                                        <span class="badge badge-info">Normal</span>
+                                                    {% endif %}
+                                                </td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            {% else %}
+                                <div class="text-center p-4">
+                                    <i class="fas fa-info-circle fa-3x text-muted mb-3"></i>
+                                    <h4 class="text-muted">No hay eventos para mostrar</h4>
+                                    <p class="text-muted">El sistema no ha registrado actividad reciente o los filtros aplicados no devolvieron resultados.</p>
+                                    <a href="{% url 'auditoria:eventos_tiempo_real' %}" class="btn btn-primary">
+                                        <i class="fas fa-refresh"></i> Refrescar
+                                    </a>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </section>
+</div>
+
+<!-- Auto-refresh cada 30 segundos -->
+<script>
+$(document).ready(function() {
+    // Auto-refresh cada 30 segundos
+    setTimeout(function() {
+        location.reload();
+    }, 30000);
+    
+    // Mostrar tooltip en iconos
+    $('[title]').tooltip();
+});
+</script>
+{% endblock content %}

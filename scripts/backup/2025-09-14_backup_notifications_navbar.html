@@ -1,0 +1,58 @@
+/* 
+Backup de navigation-light.html antes de los cambios de actas en notificaciones
+Fecha: 2025-09-14
+*/
+
+<!-- Notifications Dropdown Menu original (con stats_sistema) -->
+<li class="nav-item dropdown">
+  <a class="nav-link" data-toggle="dropdown" href="#">
+    <i class="far fa-bell"></i>
+    <span class="badge badge-warning navbar-badge">{{ stats_sistema.total_notificaciones|default:0 }}</span>
+  </a>
+  <div class="dropdown-menu dropdown-menu-lg dropdown-menu-right">
+    <span class="dropdown-item dropdown-header">{{ stats_sistema.total_notificaciones|default:0 }} Notificaciones</span>
+    <div class="dropdown-divider"></div>
+    
+    {% if stats_sistema.tareas_fallidas_hoy > 0 %}
+      <a href="{% url 'auditoria:logs_sistema' %}?nivel=ERROR&categoria=celery" class="dropdown-item">
+        <i class="fas fa-robot mr-2 text-danger"></i> {{ stats_sistema.tareas_fallidas_hoy }} tarea{{ stats_sistema.tareas_fallidas_hoy|pluralize }} fallida{{ stats_sistema.tareas_fallidas_hoy|pluralize }}
+        <span class="float-right text-muted text-sm">hoy</span>
+      </a>
+      <div class="dropdown-divider"></div>
+    {% endif %}
+    
+    {% if stats_sistema.errores_pendientes > 0 %}
+      <a href="{% url 'auditoria:logs_sistema' %}?nivel=ERROR" class="dropdown-item">
+        <i class="fas fa-exclamation-triangle mr-2 text-warning"></i> {{ stats_sistema.errores_pendientes }} error{{ stats_sistema.errores_pendientes|pluralize }} sin resolver
+        <span class="float-right text-muted text-sm">pendiente{{ stats_sistema.errores_pendientes|pluralize }}</span>
+      </a>
+      <div class="dropdown-divider"></div>
+    {% endif %}
+    
+    {% if stats_sistema.tareas_exitosas_hoy > 0 %}
+      <a href="{% url 'auditoria:logs_sistema' %}?categoria=celery" class="dropdown-item">
+        <i class="fas fa-check-circle mr-2 text-success"></i> {{ stats_sistema.tareas_exitosas_hoy }} procesamiento{{ stats_sistema.tareas_exitosas_hoy|pluralize }} exitoso{{ stats_sistema.tareas_exitosas_hoy|pluralize }}
+        <span class="float-right text-muted text-sm">hoy</span>
+      </a>
+      <div class="dropdown-divider"></div>
+    {% endif %}
+    
+    {% if stats_sistema.archivos_subidos_hoy > 0 %}
+      <a href="{% url 'auditoria:logs_sistema' %}?categoria=archivo" class="dropdown-item">
+        <i class="fas fa-upload mr-2 text-info"></i> {{ stats_sistema.archivos_subidos_hoy }} archivo{{ stats_sistema.archivos_subidos_hoy|pluralize }} subido{{ stats_sistema.archivos_subidos_hoy|pluralize }}
+        <span class="float-right text-muted text-sm">hoy</span>
+      </a>
+      <div class="dropdown-divider"></div>
+    {% endif %}
+    
+    {% if stats_sistema.total_notificaciones == 0 %}
+      <div class="dropdown-item text-center text-muted">
+        <i class="fas fa-check-circle mr-2 text-success"></i>
+        <small>Todo funcionando correctamente</small>
+      </div>
+      <div class="dropdown-divider"></div>
+    {% endif %}
+    
+    <a href="{% url 'auditoria:dashboard' %}" class="dropdown-item dropdown-footer">Ver Panel de Auditoría</a>
+  </div>
+</li>

@@ -1,0 +1,281 @@
+/* Estilos para el módulo de operaciones del sistema */
+
+/* Estados de operaciones */
+.operation-status {
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    display: inline-block;
+}
+
+.status-pending { 
+    background-color: #fef3c7; 
+    color: #d97706; 
+}
+
+.status-queued { 
+    background-color: #dbeafe; 
+    color: #2563eb; 
+}
+
+.status-running { 
+    background-color: #fecaca; 
+    color: #dc2626; 
+}
+
+.status-completed { 
+    background-color: #dcfce7; 
+    color: #16a34a; 
+}
+
+.status-failed { 
+    background-color: #fee2e2; 
+    color: #dc2626; 
+}
+
+.status-cancelled { 
+    background-color: #f3f4f6; 
+    color: #6b7280; 
+}
+
+/* Contenedores de parámetros del modal */
+.parametros-container {
+    display: none;
+    margin-top: 15px;
+    padding: 15px;
+    background-color: #f8f9fa;
+    border-radius: 5px;
+    border: 1px solid #dee2e6;
+}
+
+.parametros-container h5 {
+    color: #495057;
+    margin-bottom: 15px;
+    font-weight: 600;
+}
+
+/* Estilos para progreso */
+.progress-lg {
+    height: 1.5rem;
+}
+
+.progress-bar-large {
+    font-size: 0.875rem;
+    line-height: 1.5rem;
+}
+
+/* Estilos para la timeline de logs */
+.timeline {
+    position: relative;
+    margin: 0 0 30px 0;
+    padding: 0;
+    list-style: none;
+}
+
+.timeline:before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 25px;
+    height: 100%;
+    width: 4px;
+    background: #dee2e6;
+}
+
+.timeline > li {
+    position: relative;
+    margin-right: 10px;
+    margin-bottom: 15px;
+}
+
+.timeline > li:before,
+.timeline > li:after {
+    content: " ";
+    display: table;
+}
+
+.timeline > li:after {
+    clear: both;
+}
+
+.timeline > li > .timeline-item {
+    box-shadow: 0 1px 1px rgba(0, 0, 0, 0.1);
+    border-radius: 3px;
+    margin-top: 0;
+    background: #fff;
+    color: #444;
+    margin-left: 60px;
+    margin-right: 15px;
+    padding: 0;
+    position: relative;
+}
+
+.timeline > li > .timeline-item > .time {
+    color: #999;
+    float: right;
+    padding: 10px;
+    font-size: 12px;
+}
+
+.timeline > li > .timeline-item > .timeline-header {
+    margin: 0;
+    color: #555;
+    border-bottom: 1px solid #f4f4f4;
+    padding: 10px;
+    font-size: 16px;
+    line-height: 1.1;
+}
+
+.timeline > li > .timeline-item > .timeline-body,
+.timeline > li > .timeline-item > .timeline-footer {
+    padding: 10px;
+}
+
+.timeline > li > .fa,
+.timeline > li > .fas,
+.timeline > li > .far,
+.timeline > li > .fab,
+.timeline > li > .fal,
+.timeline > li > .fad,
+.timeline > li > .svg-inline--fa {
+    width: 30px;
+    height: 30px;
+    font-size: 15px;
+    line-height: 30px;
+    position: absolute;
+    color: #666;
+    background: #d2d6de;
+    border-radius: 50%;
+    text-align: center;
+    left: 18px;
+    top: 0;
+}
+
+.timeline > .time-label > span {
+    font-weight: 600;
+    padding: 5px;
+    display: inline-block;
+    background-color: #fff;
+    border-radius: 4px;
+}
+
+/* Estilos específicos para los botones de operaciones */
+.btn-operacion {
+    margin-bottom: 10px;
+    transition: all 0.3s ease;
+}
+
+.btn-operacion:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Overlay para loading states */
+.card-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+}
+
+.card-overlay i {
+    font-size: 2rem;
+    color: #007bff;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .timeline > li > .timeline-item {
+        margin-left: 30px;
+        margin-right: 5px;
+    }
+    
+    .timeline > li > .fa,
+    .timeline > li > .fas,
+    .timeline > li > .far,
+    .timeline > li > .fab,
+    .timeline > li > .fal,
+    .timeline > li > .fad,
+    .timeline > li > .svg-inline--fa {
+        left: 8px;
+    }
+    
+    .timeline:before {
+        left: 15px;
+    }
+    
+    .btn-operacion {
+        margin-bottom: 5px;
+    }
+}
+
+/* Estilos para códigos y pre */
+.code-block {
+    background-color: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 4px;
+    padding: 15px;
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    font-size: 0.875rem;
+    line-height: 1.5;
+    overflow-x: auto;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+}
+
+/* Estados de badges */
+.badge-pending { background-color: #ffc107; }
+.badge-queued { background-color: #17a2b8; }
+.badge-running { background-color: #dc3545; }
+.badge-completed { background-color: #28a745; }
+.badge-failed { background-color: #dc3545; }
+.badge-cancelled { background-color: #6c757d; }
+
+/* Animaciones */
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.5; }
+    100% { opacity: 1; }
+}
+
+.status-running,
+.badge-running {
+    animation: pulse 2s infinite;
+}
+
+/* Tooltip personalizado */
+.tooltip-custom {
+    position: relative;
+    cursor: pointer;
+}
+
+.tooltip-custom:hover::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #333;
+    color: #fff;
+    padding: 5px 10px;
+    border-radius: 4px;
+    font-size: 12px;
+    white-space: nowrap;
+    z-index: 1000;
+    margin-bottom: 5px;
+}
+
+/* Iconos de estado */
+.icon-status-pending::before { content: "\f017"; color: #ffc107; }
+.icon-status-queued::before { content: "\f140"; color: #17a2b8; }
+.icon-status-running::before { content: "\f110"; color: #dc3545; }
+.icon-status-completed::before { content: "\f058"; color: #28a745; }
+.icon-status-failed::before { content: "\f057"; color: #dc3545; }
+.icon-status-cancelled::before { content: "\f056"; color: #6c757d; }

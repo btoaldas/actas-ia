@@ -1,6 +1,7 @@
 # -*- encoding: utf-8 -*-
 
 import os, json, glob, fnmatch, shutil, re
+import unicodedata
 from datetime import datetime
 try:
     import pandas as pd
@@ -367,4 +368,90 @@ def process_tmpl( aContent, aMap):
 
     #print( aContent )
     return aContent
+
+def normalizar_busqueda(texto):
+    """
+    Normaliza texto para búsqueda insensible a acentos y mayúsculas/minúsculas.
+    
+    Convierte texto como "Sesión" para que coincida con búsquedas como:
+    "sesion", "sesión", "Sesion", "SESION", "SESIÓN", etc.
+    
+    Args:
+        texto (str): Texto a normalizar
+        
+    Returns:
+        str: Texto normalizado (sin acentos, en minúsculas)
+    """
+    if not texto:
+        return ""
+    
+    # Convertir a minúsculas
+    texto = texto.lower()
+    
+    # Remover acentos usando unicodedata
+    texto_sin_acentos = ''.join(
+        c for c in unicodedata.normalize('NFD', texto)
+        if unicodedata.category(c) != 'Mn'
+    )
+    
+    return texto_sin_acentos
+
+def crear_filtro_busqueda_normalizada(campo, busqueda):
+    """
+    Crea un filtro Q de Django para búsqueda normalizada.
+    
+    Usa unaccent de PostgreSQL cuando está disponible, sino normalización manual.
+    
+    Args:
+        campo (str): Nombre del campo a buscar
+        busqueda (str): Término de búsqueda
+        
+    Returns:
+        Q: Objeto Q para usar en filter()
+    """
+    from django.db.models import Q
+    from django.db import connection
+    
+    # Normalizar término de búsqueda
+    busqueda_normalizada = normalizar_busqueda(busqueda)
+    
+    # Para PostgreSQL con unaccent
+    if connection.vendor == 'postgresql':
+        # Usar unaccent en ambos lados de la comparación
+        return Q(**{f"{campo}__unaccent__icontains": busqueda})
+    else:
+        # Para otros backends, usar búsqueda múltiple
+        return (
+            Q(**{f"{campo}__icontains": busqueda}) | 
+            Q(**{f"{campo}__icontains": busqueda_normalizada})
+        )
+
+def crear_filtros_busqueda_multiple(campos, busqueda):
+    """
+    Crea filtros Q para búsqueda normalizada en múltiples campos.
+    
+    Busca tanto con el término original como con el término normalizado,
+    cubriendo todas las variaciones de acentos y mayúsculas.
+    
+    Args:
+        campos (list): Lista de nombres de campos a buscar
+        busqueda (str): Término de búsqueda
+        
+    Returns:
+        Q: Objeto Q combinado para usar en filter()
+    """
+    from django.db.models import Q
+    
+    filtros = Q()
+    busqueda_normalizada = normalizar_busqueda(busqueda)
+    
+    for campo in campos:
+        # Búsqueda original (case-insensitive ya incluido en icontains)
+        filtros |= Q(**{f"{campo}__icontains": busqueda})
+        
+        # Búsqueda normalizada (sin acentos) solo si es diferente
+        if busqueda_normalizada != busqueda.lower():
+            filtros |= Q(**{f"{campo}__icontains": busqueda_normalizada})
+    
+    return filtros
 

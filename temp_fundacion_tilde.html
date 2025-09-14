@@ -1,0 +1,1937 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Actas IA |  Portal Ciudadano - Actas Municipales </title>
+
+  <!-- Google Font: Source Sans Pro -->
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700&display=fallback">
+  <!-- Theme style -->
+  <link rel="stylesheet" href="/static/dist/css/adminlte.min.css">
+  <!-- overlayScrollbars -->
+  <link rel="stylesheet" href="/static/plugins/overlayScrollbars/css/OverlayScrollbars.min.css">
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="/static/plugins/fontawesome-free/css/all.min.css">
+
+
+  
+</head>
+<body class=" hold-transition sidebar-mini layout-fixed layout-navbar-fixed layout-footer-fixed ">
+
+  <div class="wrapper">
+
+    
+      <!-- Preloader -->
+      <div class="preloader flex-column justify-content-center align-items-center">
+        <img class="animation__shake" src="/static/dist/img/logoia.png" alt="AdminLTELogo" height="60" width="60">
+      </div>
+    
+
+    
+      
+  
+  <!-- Navbar -->
+  <nav class="main-header navbar navbar-expand navbar-white navbar-light">
+    <!-- Left navbar links -->
+    <ul class="navbar-nav">
+      <li class="nav-item">
+        <a class="nav-link" data-widget="pushmenu" href="#" role="button"><i class="fas fa-bars"></i></a>
+      </li>
+      
+      <!-- Enlaces públicos destacados - Visible en pantallas grandes -->
+      <li class="nav-item d-none d-lg-inline-block">
+        <a href="/portal-ciudadano/" class="btn btn-primary btn-sm ml-2" style="margin-top: 4px;">
+          <i class="fas fa-scroll"></i> 
+          <span class="font-weight-bold">ACTAS PÚBLICAS</span>
+        </a>
+      </li>
+      <li class="nav-item d-none d-lg-inline-block">
+        <a href="/transparencia/" class="btn btn-info btn-sm ml-2" style="margin-top: 4px;">
+          <i class="fas fa-eye"></i> 
+          <span class="font-weight-bold">PORTAL TRANSPARENCIA</span>
+        </a>
+      </li>
+      
+      <!-- Menú dropdown para pantallas medianas y pequeñas -->
+      <li class="nav-item dropdown d-lg-none">
+        <a class="nav-link dropdown-toggle btn btn-outline-primary btn-sm ml-2" data-toggle="dropdown" href="#" role="button" aria-expanded="false">
+          <i class="fas fa-globe"></i> <span class="d-none d-md-inline">Portales Públicos</span>
+        </a>
+        <div class="dropdown-menu">
+          <a class="dropdown-item" href="/portal-ciudadano/">
+            <i class="fas fa-scroll text-primary"></i> 
+            <strong>Actas Públicas</strong>
+            <small class="d-block text-muted">Consulte las actas municipales</small>
+          </a>
+          <div class="dropdown-divider"></div>
+          <a class="dropdown-item" href="/transparencia/">
+            <i class="fas fa-eye text-info"></i> 
+            <strong>Portal Transparencia</strong>
+            <small class="d-block text-muted">Información pública municipal</small>
+          </a>
+        </div>
+      </li>
+      
+      
+        <!-- Enlaces de login comentados -->
+      
+    </ul>
+
+    <!-- Right navbar links -->
+    <ul class="navbar-nav ml-auto">
+      <!-- Indicador visual para usuarios no autenticados -->
+      
+      <li class="nav-item d-none d-md-inline-block mr-2">
+        <span class="navbar-text">
+          <small class="text-muted">
+            <i class="fas fa-info-circle"></i> Portal público de información municipal
+          </small>
+        </span>
+      </li>
+      
+      
+      <!-- Navbar Search -->
+      <li class="nav-item">
+        <a class="nav-link" data-widget="navbar-search" href="#" role="button">
+          <i class="fas fa-search"></i>
+        </a>
+        <div class="navbar-search-block">
+          <form class="form-inline" method="get" action="/portal-ciudadano/">
+            <div class="input-group input-group-sm">
+              <input class="form-control form-control-navbar" type="search" name="search" placeholder="Buscar en actas municipales..." aria-label="Buscar" value="Fundación">
+              <div class="input-group-append">
+                <button class="btn btn-navbar" type="submit">
+                  <i class="fas fa-search"></i>
+                </button>
+                <button class="btn btn-navbar" type="button" data-widget="navbar-search">
+                  <i class="fas fa-times"></i>
+                </button>
+              </div>
+            </div>
+          </form>
+        </div>
+      </li>
+
+      <!-- Messages Dropdown Menu -->
+      <li class="nav-item dropdown">
+        <a class="nav-link" data-toggle="dropdown" href="#">
+          <i class="far fa-comments"></i>
+          <span class="badge badge-danger navbar-badge">3</span>
+        </a>
+        <div class="dropdown-menu dropdown-menu-lg dropdown-menu-right">
+          <a href="#" class="dropdown-item">
+            <!-- Message Start -->
+            <div class="media">
+              <img src="/static/dist/img/user1-128x128.jpg" alt="Usuario" class="img-size-50 mr-3 img-circle">
+              <div class="media-body">
+                <h3 class="dropdown-item-title">
+                  Ana López - Secretaría
+                  <span class="float-right text-sm text-danger"><i class="fas fa-star"></i></span>
+                </h3>
+                <p class="text-sm">Acta del Consejo Municipal lista para revisión</p>
+                <p class="text-sm text-muted"><i class="far fa-clock mr-1"></i> Hace 2 horas</p>
+              </div>
+            </div>
+            <!-- Message End -->
+          </a>
+          <div class="dropdown-divider"></div>
+          <a href="#" class="dropdown-item">
+            <!-- Message Start -->
+            <div class="media">
+              <img src="/static/dist/img/user8-128x128.jpg" alt="Usuario" class="img-size-50 img-circle mr-3">
+              <div class="media-body">
+                <h3 class="dropdown-item-title">
+                  Juan Pérez - Supervisor
+                  <span class="float-right text-sm text-muted"><i class="fas fa-star"></i></span>
+                </h3>
+                <p class="text-sm">Transcripción IA completada al 97.2%</p>
+                <p class="text-sm text-muted"><i class="far fa-clock mr-1"></i> Hace 4 horas</p>
+              </div>
+            </div>
+            <!-- Message End -->
+          </a>
+          <div class="dropdown-divider"></div>
+          <a href="#" class="dropdown-item">
+            <!-- Message Start -->
+            <div class="media">
+              <img src="/static/dist/img/user3-128x128.jpg" alt="Usuario" class="img-size-50 img-circle mr-3">
+              <div class="media-body">
+                <h3 class="dropdown-item-title">
+                  María García - Técnica
+                  <span class="float-right text-sm text-warning"><i class="fas fa-star"></i></span>
+                </h3>
+                <p class="text-sm">Sesión extraordinaria programada para mañana</p>
+                <p class="text-sm text-muted"><i class="far fa-clock mr-1"></i> Hace 6 horas</p>
+              </div>
+            </div>
+            <!-- Message End -->
+          </a>
+          <div class="dropdown-divider"></div>
+          <a href="#" class="dropdown-item dropdown-footer">Ver Todos los Mensajes</a>
+        </div>
+      </li>
+      <!-- Notifications Dropdown Menu -->
+      <li class="nav-item dropdown">
+        <a class="nav-link" data-toggle="dropdown" href="#">
+          <i class="far fa-bell"></i>
+          <span class="badge badge-warning navbar-badge">15</span>
+        </a>
+        <div class="dropdown-menu dropdown-menu-lg dropdown-menu-right">
+          <span class="dropdown-item dropdown-header">15 Notificaciones</span>
+          <div class="dropdown-divider"></div>
+          <a href="#" class="dropdown-item">
+            <i class="fas fa-file-alt mr-2"></i> Nueva acta requiere revisión
+            <span class="float-right text-muted text-sm">hace 3 min</span>
+          </a>
+          <div class="dropdown-divider"></div>
+          <a href="#" class="dropdown-item">
+            <i class="fas fa-robot mr-2"></i> Procesamiento IA completado
+            <span class="float-right text-muted text-sm">hace 12 min</span>
+          </a>
+          <div class="dropdown-divider"></div>
+          <a href="#" class="dropdown-item">
+            <i class="fas fa-users mr-2"></i> Sesión ordinaria programada
+            <span class="float-right text-muted text-sm">hace 2 horas</span>
+          </a>
+          <div class="dropdown-divider"></div>
+          <a href="#" class="dropdown-item dropdown-footer">Ver Todas las Notificaciones</a>
+        </div>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" data-widget="fullscreen" href="#" role="button">
+          <i class="fas fa-expand-arrows-alt"></i>
+        </a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" data-widget="control-sidebar" data-controlsidebar-slide="true" href="#" role="button">
+          <i class="fas fa-th-large"></i>
+        </a>
+      </li>
+    </ul>
+  </nav>
+  <!-- /.navbar -->
+
+  <!-- CSS adicional para mejorar la presentación -->
+  <style>
+    /* Animación hover para botones del menú */
+    .navbar .btn-primary:hover,
+    .navbar .btn-info:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+      transition: all 0.3s ease;
+    }
+    
+    /* Asegurar que los botones estén alineados */
+    .navbar .btn-sm {
+      padding: 0.25rem 0.75rem;
+      font-size: 0.875rem;
+      line-height: 1.5;
+      border-radius: 0.2rem;
+    }
+    
+    /* Mejorar el dropdown en móviles */
+    @media (max-width: 991px) {
+      .navbar .dropdown-menu {
+        margin-top: 0.5rem !important;
+        border: 2px solid #007bff;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      }
+      
+      .navbar .dropdown-item:hover {
+        background-color: #f8f9fa;
+        padding-left: 1.5rem;
+        transition: all 0.2s ease;
+      }
+    }
+    
+    /* Prevenir overflow en pantallas pequeñas */
+    @media (max-width: 576px) {
+      .navbar-nav {
+        flex-wrap: nowrap;
+      }
+      
+      .nav-item {
+        flex-shrink: 0;
+      }
+    }
+  </style>
+    
+
+    
+      
+
+<!-- Main Sidebar Container -->
+<aside class="main-sidebar sidebar-dark-primary elevation-4">
+  <!-- Brand Logo -->
+  <a href="/" class="brand-link d-flex align-items-center" style="padding: 0.8rem 1rem; height: auto; min-height: 3.5rem;">
+    <div class="brand-logo-container" style="display: flex; align-items: center; margin-right: 10px;">
+      <!-- Opción 1: Logo con fondo blanco (descomentar para usar) -->
+      <img src="/static/dist/img/logoia2.svg?v=20250906" 
+           alt="Municipio Logo" 
+           class="brand-image-custom logo-con-fondo"
+           style="width: 70px; 
+                  height: 70px;"> 
+      
+      <!-- Opción 2: Logo invertido a blanco (activo por defecto) -->
+       <!--<img src="/static/dist/img/logoia2.svg?v=20250906" 
+           alt="Municipio Logo" 
+           class="brand-image-custom logo-invertido"
+           style="width: 45px; 
+                  height: 45px;"> -->
+    </div>
+    <div class="brand-text-container" style="display: flex; align-items: center;">
+      <span class="brand-text font-weight-bold" 
+            style="font-size: 2rem; 
+                   color: #ffffff; 
+                   text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+                   letter-spacing: 1px;">
+        Actas <span style="color: #17a2b8;">IA</span>
+      </span>
+    </div>
+  </a>
+
+  <!-- Sidebar -->
+  <div class="sidebar" style="padding-top: 0.5rem;">
+    <!-- Sidebar user panel (optional) -->
+    <div class="user-panel mt-2 pb-3 mb-3 d-flex align-items-center" style="border-top: 1px solid rgba(255,255,255,0.1); padding-top: 1rem; min-height: 80px;">
+      <div class="image" style="padding-left: 0.5rem;">
+        <img src="/static/dist/img/user2-160x160.jpg" 
+             class="img-circle elevation-2" 
+             alt="User Image"
+             style="width: 55px; height: 55px; object-fit: cover;">
+      </div>
+      <div class="info" style="padding-left: 10px;">
+        
+          <span class="d-block text-gray" style="font-size: 1.1rem;">
+            <i class="fas fa-user-slash"></i> Invitado
+          </span>
+          <small class="d-block text-muted" style="margin-top: 5px;">
+            <i class="fas fa-circle text-warning" style="font-size: 8px;"></i> Sin autenticar
+          </small>
+                
+      </div>
+    </div>
+
+    <!-- Enlaces de autenticación -->
+    <div class="user-actions px-3 pb-3 mb-3" style="border-bottom: 1px solid #4f5962;">
+      
+        <a href="/accounts/login/" class="btn btn-sm btn-primary btn-block mb-2">
+          <i class="fas fa-sign-in-alt"></i> Iniciar Sesión
+        </a>
+        <a href="/accounts/register/" class="btn btn-sm btn-outline-info btn-block">
+          <i class="fas fa-user-plus"></i> Registrarse
+        </a>
+      
+    </div>
+
+    <!-- SidebarSearch Form -->
+    <div class="form-inline">
+      <form class="input-group" method="get" action="/portal-ciudadano/" style="width:100%;">
+        <input class="form-control form-control-sidebar" type="search" name="search" placeholder="Buscar en actas municipales..." aria-label="Buscar" value="Fundación">
+        <div class="input-group-append">
+          <button class="btn btn-sidebar" type="submit">
+            <i class="fas fa-search fa-fw"></i>
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Sidebar Menu -->
+    <nav class="mt-2">
+      
+
+<ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu" data-accordion="false">
+    <!-- Dashboard Principal (simplificado) -->
+    <li class="nav-item">
+        <a href="/" class="nav-link ">
+            <i class="nav-icon fas fa-tachometer-alt"></i>
+            <p>Dashboard Principal</p>
+        </a>
+    </li>
+  <!-- Separador -->
+    <li class="nav-header">PROCESAMIENTO DE AUDIO</li>
+    
+    <!-- Procesamiento de Audio -->
+    <li class="nav-item ">
+        <a href="#" class="nav-link ">
+            <i class="nav-icon fas fa-microphone-alt"></i>
+            <p>Proceso de Audio
+                <i class="right fas fa-angle-left"></i>
+            </p>
+        </a>
+        <ul class="nav nav-treeview">
+            <li class="nav-item">
+                <a href="/audio/" class="nav-link ">
+                    
+                    <p>🎯 Centro de Audio</p>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="/audio/lista/" class="nav-link ">
+                    
+                    <p>📋 Lista de Procesos</p>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="/audio/tipos-reunion/" class="nav-link ">
+                                        <p>⚙️ Tipos de Reunión</p>
+                </a>
+            </li>
+        </ul>
+    </li>
+
+    <!-- Transcripción y Diarización -->
+    <!--Transcripción version anterior
+    <li class="nav-item ">
+        <a href="#" class="nav-link ">
+          
+            <p>
+                🗣️ Transcripción
+                <i class="right fas fa-angle-left"></i>
+            </p>
+        </a>
+        <ul class="nav nav-treeview">
+            <li class="nav-item">
+                <a href="/transcripcion/audios-listos/" class="nav-link ">
+                    <i class="far fa-circle nav-icon"></i>
+                    <p>🎵 Audios Listos para Transcribir</p>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="/transcripcion/lista/" class="nav-link ">
+                    <i class="far fa-circle nav-icon"></i>
+                    <p>📋 Lista de Transcripciones</p>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="#" class="nav-link ">
+                    <i class="far fa-circle nav-icon"></i>
+                    <p>⚙️ Configuración</p>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="#" class="nav-link ">
+                    <i class="far fa-circle nav-icon"></i>
+                    <p>📊 Estadísticas</p>
+                </a>
+            </li>
+        </ul>
+    </li>
+    --- IGNORE --->
+
+
+    <!-- Transcripción V2 - Nueva Arquitectura de Dashboards -->
+    <li class="nav-item ">
+        <a href="#" class="nav-link ">
+              <i class="nav-icon fas fa-comments"></i>
+            <p>             Transcripción V2
+                <i class="right fas fa-angle-left"></i>
+            </p>
+        </a>
+        <ul class="nav nav-treeview">
+            <li class="nav-item">
+                <a href="/transcripcion/audios/" class="nav-link ">
+                 
+                    <p>🎵 Audios por Transcribir</p>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="/transcripcion/transcripciones/" class="nav-link ">
+              
+                    <p>📋 Transcripciones Realizadas</p>
+                </a>
+            </li>
+            <!-- Se accede desde audios y transcripciones
+            <li class="nav-item">
+                <a href="#" class="nav-link disabled" style="opacity: 0.6;">
+                   <p>⚙️ Configurar Procesamiento</p>
+                    <small class="text-muted">(Se accede desde audios)</small>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="#" class="nav-link disabled" style="opacity: 0.6;">
+                    <i class="far fa-circle nav-icon"></i>
+                    <p>🔍 Ver Detalle</p>
+                    <small class="text-muted">(Se accede desde transcripciones)</small>
+                </a>
+            </li>
+            --- IGNORE --->
+        </ul>
+    </li>
+<!-- Separador -->
+    <li class="nav-header">PROCESAMIENTO DE ACTAS</li>
+    <!-- Generador de Actas IA - Menú Principal -->
+    <li class="nav-item ">
+        <a href="#" class="nav-link ">
+            <i class="nav-icon fas fa-brain"></i>
+            <p>Generador de Actas IA
+                <i class="right fas fa-angle-left"></i>
+            </p>
+        </a>
+        <ul class="nav nav-treeview">
+            <!-- Dashboard Principal del Generador -->
+            <li class="nav-item">
+                <a href="/generador-actas/" class="nav-link ">
+                   
+                    <p>📊 Dashboard General</p>
+                </a>
+            </li>
+            
+            <!-- Gestión de Proveedores IA -->
+            <li class="nav-item">
+                <a href="/generador-actas/proveedores/" class="nav-link ">
+                 
+                    <p>🧠 Dashboard de IAs</p>
+                </a>
+            </li>
+            
+            <li class="nav-item">
+                <a href="/generador-actas/proveedores/crear/" class="nav-link ">
+                
+                    <p>⚙️ Crear/Editar IA</p>
+                </a>
+            </li>
+            
+            <!-- Gestión de Segmentos -->
+            <li class="nav-item">
+                <a href="/generador-actas/segmentos/" class="nav-link ">
+                 
+                    <p>📝 Dashboard de Segmentos</p>
+                </a>
+            </li>
+            
+            <li class="nav-item">
+                <a href="/generador-actas/segmentos/crear/" class="nav-link ">
+                 
+                    <p>✏️ Crear/Editar Segmento</p>
+                </a>
+            </li>
+            
+            <!-- Gestión de Plantillas -->
+            <li class="nav-item">
+                <a href="/generador-actas/plantillas/" class="nav-link ">
+         
+                    <p>📋 Dashboard de Plantillas</p>
+                </a>
+            </li>
+            
+            <li class="nav-item">
+                <a href="/generador-actas/plantillas/crear/" class="nav-link ">
+               
+                    <p>📄 Crear/Editar Plantilla</p>
+                </a>
+            </li>
+            
+            <!-- Gestión de Actas IA -->
+            <li class="nav-item">
+                <a href="/generador-actas/actas/" class="nav-link ">
+            
+                    <p>📊 Dashboard de Actas IA</p>
+                </a>
+            </li>
+            
+            <li class="nav-item">
+                <a href="/generador-actas/actas/crear/" class="nav-link ">
+              
+                    <p>🚀 Crear/Procesar Acta IA</p>
+                </a>
+            </li>
+            
+            <!-- Configuración Avanzada -->
+            <li class="nav-item">
+                <a href="/generador-actas/configuracion/" class="nav-link ">
+             
+                    <p>⚙️ Configuración Global</p>
+                </a>
+            </li>
+        </ul>
+    </li>
+
+    <!-- Gestión de Actas no funcional (simplificado) 
+    <li class="nav-item ">
+        <a href="#" class="nav-link ">
+            <i class="nav-icon fas fa-file-alt"></i>
+            <p>Gestión de Actas
+                <i class="right fas fa-angle-left"></i>
+            </p>
+        </a>
+        <ul class="nav nav-treeview">
+            <li class="nav-item">
+                <a href="/actas/listado/" class="nav-link ">
+                    <i class="far fa-circle nav-icon"></i>
+                    <p>📄 Listado de Actas</p>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="/actas/nueva/" class="nav-link ">
+                    <i class="far fa-circle nav-icon"></i>
+                    <p>📂 Nueva Acta</p>
+                </a>
+            </li>
+        </ul>
+    </li>
+    --- IGNORE --->
+
+    <!-- Procesamiento con IA no funcional (simplificado) 
+    <li class="nav-item ">
+        <a href="#" class="nav-link ">
+            <i class="nav-icon fas fa-robot"></i>
+            <p>
+                🤖 Procesamiento IA
+                <i class="right fas fa-angle-left"></i>
+            </p>
+        </a>
+        <ul class="nav nav-treeview">
+            <li class="nav-item">
+                <a href="/audio/" class="nav-link ">
+                    <i class="far fa-circle nav-icon"></i>
+                    <p>🎤 Transcripción de Audio</p>
+                </a>
+            </li>
+        </ul>
+    </li>
+    --- IGNORE --->
+
+
+    <!-- Administración de Actas -->
+     <!-- AQUI SE PONDRA EL MENU DE GESTION DE ACTAS CUANDO ESTE FUNCIONAL -->
+      <li class="nav-item ">
+        <a href="#" class="nav-link ">
+            <i class="nav-icon fas fa-file-alt"></i>
+            <p>Gestión de Actas
+                <i class="right fas fa-angle-left"></i>
+            </p>
+        </a>
+      <!-- Validación de Actas -->
+       <!-- AQUI SE PONDRA EL MENU DE VALIDACION DE ACTAS CUANDO ESTE FUNCIONAL -->
+      <!--Aprobación de Actas -->
+       <!-- AQUI SE PONDRA EL MENU DE APROBACION DE ACTAS CUANDO ESTE FUNCIONAL -->
+      <!--Publicación de Actas -->
+       <!-- AQUI SE PONDRA EL MENU DE PUBLICACION DE ACTAS CUANDO ESTE FUNCIONAL -->
+ 
+ 
+       
+
+
+<!-- Separador -->
+    <li class="nav-header">OTROS</li>
+
+    
+
+    <!-- Eventos Municipales -->
+    <li class="nav-item ">
+        <a href="#" class="nav-link ">
+            <i class="nav-icon fas fa-calendar-alt"></i>
+            <p>Eventos
+                <i class="right fas fa-angle-left"></i>
+            </p>
+        </a>
+        <ul class="nav nav-treeview">
+            <li class="nav-item">
+                <a href="/eventos/calendario/" class="nav-link ">
+                    
+                    <p>📅 Calendario</p>
+                </a>
+            </li>
+            
+            <li class="nav-item">
+                <a href="/eventos/calendario/?tipo=sesion_concejo" class="nav-link">
+                  
+                    <p>🏛️ Sesiones de Concejo</p>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="/eventos/calendario/?tipo=reunion_publica" class="nav-link">
+            
+                    <p>👥 Reuniones Públicas</p>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="/eventos/calendario/?tipo=audiencia_publica" class="nav-link">
+                  
+                    <p>🎤 Audiencias Públicas</p>
+                </a>
+            </li>
+        </ul>
+    </li>
+    
+    
+    <!-- Elementos reorganizados -->
+    <li class="nav-item ">
+        <a href="#" class="nav-link ">
+            <i class="nav-icon fas fa-th-large"></i>
+            <p>Herramientas Adicionales
+                <i class="right fas fa-angle-left"></i>
+            </p>
+        </a>
+        <ul class="nav nav-treeview">
+            <!-- Estadísticas Avanzadas (sin renombrar) -->
+            <li class="nav-item">
+                <a href="/dashboard-v2/" class="nav-link ">
+                    <i class="far fa-circle nav-icon"></i>
+                    <p>Estadísticas Avanzadas</p>
+                </a>
+            </li>
+            <!-- Métricas de IA (sin renombrar) -->
+            <li class="nav-item">
+                <a href="/dashboard-v3/" class="nav-link ">
+                    <i class="far fa-circle nav-icon"></i>
+                    <p>Métricas de IA</p>
+                </a>
+            </li>
+            <!-- Buscar Actas → widgets -->
+            <li class="nav-item">
+                <a href="/widgets/" class="nav-link ">
+                    <i class="far fa-circle nav-icon"></i>
+                    <p>widgets</p>
+                </a>
+            </li>
+            <!-- Estadísticas de Actas → chartjs -->
+            <li class="nav-item">
+                <a href="/chartjs/" class="nav-link ">
+                    <i class="far fa-circle nav-icon"></i>
+                    <p>chartjs</p>
+                </a>
+            </li>
+            <!-- Procesamiento Automático → tasks -->
+            <li class="nav-item">
+                <a href="/tasks/" class="nav-link ">
+                    <i class="far fa-circle nav-icon"></i>
+                    <p>tasks</p>
+                </a>
+            </li>
+            <!-- Configurar IA → Perfil -->
+            <li class="nav-item">
+                <a href="/users/profile/" class="nav-link ">
+                    <i class="far fa-circle nav-icon"></i>
+                    <p>Perfil</p>
+                </a>
+            </li>
+            <!-- Dashboard General → inicio -->
+            <li class="nav-item">
+                <a href="/" class="nav-link ">
+                    <i class="far fa-circle nav-icon"></i>
+                    <p>inicio</p>
+                </a>
+            </li>
+            <!-- Gestión de Datos → panel -->
+            <li class="nav-item">
+                <a href="/table/simple/" class="nav-link ">
+                    <i class="far fa-circle nav-icon"></i>
+                    <p>panel</p>
+                </a>
+            </li>
+            <!-- Tablas Dinámicas → monitoring -->
+            <li class="nav-item">
+                <a href="/table/data/" class="nav-link ">
+                    <i class="far fa-circle nav-icon"></i>
+                    <p>monitoring</p>
+                </a>
+            </li>
+            <!-- Herramientas Rápidas → batch -->
+            <li class="nav-item">
+                <a href="/table/jsgrid/" class="nav-link ">
+                    <i class="far fa-circle nav-icon"></i>
+                    <p>batch</p>
+                </a>
+            </li>
+            <!-- Análisis de Texto → text-analysis -->
+            <li class="nav-item">
+                <a href="/ia/analisis-texto/" class="nav-link ">
+                    <i class="far fa-circle nav-icon"></i>
+                    <p>text-analysis</p>
+                </a>
+            </li>
+            <!-- Escaneo de Documentos → auto-classification -->
+            <li class="nav-item">
+                <a href="/top-navigation/" class="nav-link">
+                    <i class="far fa-circle nav-icon"></i>
+                    <p>auto-classification</p>
+                </a>
+            </li>
+            <!-- OCR - Reconocimiento → data-extraction -->
+            <li class="nav-item">
+                <a href="/top-nav-sidebar/" class="nav-link">
+                    <i class="far fa-circle nav-icon"></i>
+                    <p>data-extraction</p>
+                </a>
+            </li>
+            <!-- Validación de Datos → version-control -->
+            <li class="nav-item">
+                <a href="/boxed/" class="nav-link ">
+                    <i class="far fa-circle nav-icon"></i>
+                    <p>version-control</p>
+                </a>
+            </li>
+            <!-- Archivo Digital → backup -->
+            <li class="nav-item">
+                <a href="/fixed-sidebar/" class="nav-link ">
+                    <i class="far fa-circle nav-icon"></i>
+                    <p>backup</p>
+                </a>
+            </li>
+            <!-- Portal de Transparencia → network -->
+            <li class="nav-item">
+                <a href="/fixed-navbar/" class="nav-link ">
+                    <i class="far fa-circle nav-icon"></i>
+                    <p>network</p>
+                </a>
+            </li>
+            <!-- Galería de Documentos → file-manager -->
+            <li class="nav-item">
+                <a href="/examples/gallery/" class="nav-link ">
+                    <i class="far fa-circle nav-icon"></i>
+                    <p>file-manager</p>
+                </a>
+            </li>
+            <!-- Gestión de Usuarios → code-editor -->
+            <li class="nav-item">
+                <a href="/form/general/" class="nav-link ">
+                    <i class="far fa-circle nav-icon"></i>
+                    <p>code-editor</p>
+                </a>
+            </li>
+            <!-- Configuración Municipal → web-terminal -->
+            <li class="nav-item">
+                <a href="/form/advanced/" class="nav-link ">
+                    <i class="far fa-circle nav-icon"></i>
+                    <p>web-terminal</p>
+                </a>
+            </li>
+            <!-- Manual de Usuario → tech-docs -->
+            <li class="nav-item">
+                <a href="/examples/invoice/" class="nav-link ">
+                    <i class="far fa-circle nav-icon"></i>
+                    <p>tech-docs</p>
+                </a>
+            </li>
+            <!-- APIs Públicas → api-docs -->
+            <li class="nav-item">
+                <a href="#" class="nav-link ">
+                    <i class="far fa-circle nav-icon"></i>
+                    <p>api-docs</p>
+                </a>
+            </li>
+            <!-- KPIs de Eficiencia → dev-tools -->
+            <li class="nav-item">
+                <a href="/uplot/" class="nav-link ">
+                    <i class="far fa-circle nav-icon"></i>
+                    <p>dev-tools</p>
+                </a>
+            </li>
+        </ul>
+    </li>
+
+    <!-- Separador NO visible 
+    <li class="nav-header">ACCESO RÁPIDO</li>
+--- IGNORE --->
+    <!-- Accesos Rápidos 
+    <li class="nav-item">
+        <a href="/actas/nueva/" class="nav-link">
+            <i class="nav-icon fas fa-plus text-success"></i>
+            <p>Nueva Acta</p>
+        </a>
+    </li>
+    
+    <li class="nav-item">
+        <a href="/actas/listado/" class="nav-link">
+            <i class="nav-icon fas fa-search text-primary"></i>
+            <p>Buscar Actas</p>
+        </a>
+    </li>
+    
+    <li class="nav-item">
+        <a href="/chartjs/" class="nav-link">
+            <i class="nav-icon fas fa-chart-bar text-warning"></i>
+            <p>Estadísticas</p>
+        </a>
+    </li>
+      
+    <li class="nav-item">
+        <a target="_blank" href="https://puyo.gob.ec/soporte/" class="nav-link">
+            <i class="fa fa-download text-primary nav-icon"></i>
+            <p>Soporte</p>
+        </a>
+    </li>
+
+</ul>
+
+    --- IGNORE --->
+    
+    <!-- Autenticación -->
+    
+    <li class="nav-item">
+        <a href="/accounts/login/" class="nav-link">
+            <i class="fa fa-sign-in-alt nav-icon"></i>
+            <p>Iniciar Sesión</p>
+        </a>
+    </li>
+    <li class="nav-item">
+        <a href="/accounts/register/" class="nav-link">
+            <i class="fa fa-user-plus nav-icon"></i>
+            <p>Registrarse</p>
+        </a>
+    </li>        
+     
+  
+    </nav>
+    <!-- /.sidebar-menu -->
+  </div>
+  <!-- /.sidebar -->
+</aside>
+
+<style>
+  /* Estilos base del brand-link */
+  .brand-link {
+    display: flex !important;
+    align-items: center !important;
+    border-bottom: 3px solid #17a2b8;
+    background: linear-gradient(135deg, rgba(52,58,64,1) 0%, rgba(33,37,41,1) 100%);
+    margin-bottom: 0;
+  }
+  
+  /* Opción 1: Logo con fondo blanco */
+  .logo-con-fondo {
+    background-color: #ffffff;
+    padding: 8px !important;
+    border-radius: 50%;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.2), 
+                0 0 20px rgba(255,255,255,0.3);
+    opacity: 1;
+    transition: all 0.3s ease;
+  }
+  
+  .logo-con-fondo:hover {
+    transform: scale(1.1) rotate(5deg);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.3), 
+                0 0 30px rgba(23, 162, 184, 0.5);
+    background-color: #f8f9fa;
+  }
+  
+  /* Opción 2: Logo invertido a blanco */
+  .logo-invertido {
+    filter: brightness(0) invert(1);
+    opacity: 0.95;
+    transition: all 0.3s ease;
+    padding: 5px;
+    background-color: rgba(255, 255, 255, 0.1);
+    border-radius: 50%;
+    box-shadow: 0 0 15px rgba(255,255,255,0.2);
+  }
+  
+  .logo-invertido:hover {
+    transform: scale(1.1) rotate(5deg);
+    filter: brightness(0) invert(1) drop-shadow(0 0 10px rgba(23, 162, 184, 0.8));
+    opacity: 1;
+    background-color: rgba(23, 162, 184, 0.2);
+    box-shadow: 0 0 25px rgba(23, 162, 184, 0.5);
+  }
+  
+  /* Efecto hover en el brand-link */
+  .brand-link:hover .brand-text {
+    color: #17a2b8 !important;
+  }
+  
+  /* Asegurar que el sidebar comience después del brand */
+  .sidebar {
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+  
+  /* Ajustar el panel de usuario para que no se sobreponga */
+  .user-panel {
+    clear: both;
+    overflow: hidden;
+    transition: all 0.3s ease;
+  }
+  
+  .user-panel:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+  }
+  
+  .user-panel .image img {
+    border: 3px solid rgba(255, 255, 255, 0.2);
+    transition: all 0.3s ease;
+  }
+  
+  .user-panel:hover .image img {
+    border-color: #17a2b8;
+    transform: scale(1.05);
+  }
+</style>
+    
+    
+    
+  <!-- Content Wrapper. Contains page content -->
+  <div class="content-wrapper">
+    <!-- Content Header (Page header) -->
+    <section class="content-header">
+      <div class="container-fluid">
+        <div class="row mb-2">
+          <div class="col-sm-6">
+            <h1><i class="fas fa-globe mr-2 text-primary"></i>Portal Ciudadano</h1>
+            <p class="mb-0 text-muted">Consulta transparente de actas municipales</p>
+          </div>
+          <div class="col-sm-6">
+            <ol class="breadcrumb float-sm-right">
+              <li class="breadcrumb-item"><a href="/">Inicio</a></li>
+              <li class="breadcrumb-item active">Portal Ciudadano</li>
+            </ol>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Main content -->
+    <section class="content">
+      <div class="container-fluid">
+        
+        <!-- Métricas (envolvemos en card colapsable) -->
+        <div class="card card-outline card-secondary mb-4" id="metrics-card">
+          <div class="card-header py-2">
+            <h3 class="card-title"><i class="fas fa-chart-bar mr-2"></i>Métricas Generales</h3>
+            <div class="card-tools">
+              <button type="button" class="btn btn-tool" data-card-widget="collapse" title="Colapsar / Expandir">
+                <i class="fas fa-minus"></i>
+              </button>
+            </div>
+          </div>
+          <div class="card-body pt-3 pb-1">
+            <div class="row mb-3">
+              <div class="col-lg-3 col-6">
+                <div class="small-box bg-info">
+                  <div class="inner">
+                    <h3>1</h3>
+                    <p>Total de Actas</p>
+                  </div>
+                  <div class="icon">
+                    <i class="fas fa-file-alt"></i>
+                  </div>
+                </div>
+              </div>
+              <div class="col-lg-3 col-6">
+                <div class="small-box bg-success">
+                  <div class="inner">
+                    <h3>1</h3>
+                    <p>Acceso Público</p>
+                  </div>
+                  <div class="icon">
+                    <i class="fas fa-globe"></i>
+                  </div>
+                </div>
+              </div>
+              <div class="col-lg-3 col-6">
+                <div class="small-box bg-warning">
+                  <div class="inner">
+                    <h3>0</h3>
+                    <p>Este Mes</p>
+                  </div>
+                  <div class="icon">
+                    <i class="fas fa-calendar"></i>
+                  </div>
+                </div>
+              </div>
+              <div class="col-lg-3 col-6">
+                <div class="small-box bg-primary">
+                  <div class="inner">
+                    <h3>98,1%</h3>
+                    <p>Precisión IA</p>
+                  </div>
+                  <div class="icon">
+                    <i class="fas fa-brain"></i>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="row mb-2">
+              <div class="col-lg-3 col-6">
+                <div class="small-box bg-info">
+                  <div class="inner">
+                    <h3>122</h3>
+                    <p>Vistas Este Mes</p>
+                  </div>
+                  <div class="icon">
+                    <i class="fas fa-eye"></i>
+                  </div>
+                </div>
+              </div>
+              <div class="col-lg-3 col-6">
+                <div class="small-box bg-secondary">
+                  <div class="inner">
+                    <h3>44</h3>
+                    <p>Descargas Este Mes</p>
+                  </div>
+                  <div class="icon">
+                    <i class="fas fa-download"></i>
+                  </div>
+                </div>
+              </div>
+              <div class="col-lg-3 col-6">
+                <div class="small-box bg-light">
+                  <div class="inner">
+                    <h3>100,0%</h3>
+                    <p>Actas con IA</p>
+                  </div>
+                  <div class="icon">
+                    <i class="fas fa-robot"></i>
+                  </div>
+                </div>
+              </div>
+              <div class="col-lg-3 col-6">
+                <div class="small-box bg-dark">
+                  <div class="inner">
+                    <h3>
+                      8 días
+                    </h3>
+                    <p>Última Actualización</p>
+                  </div>
+                  <div class="icon">
+                    <i class="fas fa-sync-alt"></i>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Panel de búsqueda y filtros (colapsado por defecto) -->
+        <div class="card card-outline card-primary collapsed-card" id="filters-card">
+          <div class="card-header">
+            <h3 class="card-title"><i class="fas fa-search mr-2"></i>Búsqueda y Filtros</h3>
+            <div class="card-tools">
+              <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                <i class="fas fa-plus"></i>
+              </button>
+            </div>
+          </div>
+          <div class="card-body">
+            <form method="GET" id="search-form">
+              <div class="row">
+                <!-- Búsqueda principal -->
+                <div class="col-md-12 mb-3">
+                  <div class="input-group input-group-lg">
+                    <input type="search" 
+                           class="form-control form-control-lg" 
+                           placeholder="Buscar en actas municipales (título, número, contenido)..." 
+                           name="search"
+                           value="Fundación"
+                           id="search-input">
+                    <div class="input-group-append">
+                      <button type="submit" class="btn btn-primary btn-lg">
+                        <i class="fas fa-search"></i>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <div class="row">
+                <!-- Tipo de sesión -->
+                <div class="col-md-3">
+                  <div class="form-group">
+                    <label for="tipo_sesion">Tipo de Sesión:</label>
+                    <select class="form-control select2" name="tipo_sesion" id="tipo_sesion">
+                      <option value="">Todos los tipos</option>
+                      
+                        <option value="comision" 
+                                >
+                          Comisión
+                        </option>
+                      
+                        <option value="extraordinaria" 
+                                >
+                          Sesión Extraordinaria
+                        </option>
+                      
+                        <option value="ordinaria" 
+                                >
+                          Sesión Ordinaria
+                        </option>
+                      
+                        <option value="publica" 
+                                >
+                          Audiencia Pública
+                        </option>
+                      
+                        <option value="solemne" 
+                                >
+                          Sesión Solemne
+                        </option>
+                      
+                    </select>
+                  </div>
+                </div>
+                
+                <!-- Estado -->
+                <div class="col-md-3">
+                  <div class="form-group">
+                    <label for="estado">Estado:</label>
+                    <select class="form-control select2" name="estado" id="estado">
+                      <option value="">Todos los estados</option>
+                      
+                        <option value="borrador" 
+                                >
+                          Borrador
+                        </option>
+                      
+                        <option value="transcripcion" 
+                                >
+                          En Transcripción
+                        </option>
+                      
+                        <option value="revision" 
+                                >
+                          En Revisión
+                        </option>
+                      
+                        <option value="aprobada" 
+                                >
+                          Aprobada
+                        </option>
+                      
+                        <option value="publicada" 
+                                >
+                          Publicada
+                        </option>
+                      
+                        <option value="archivada" 
+                                >
+                          Archivada
+                        </option>
+                      
+                    </select>
+                  </div>
+                </div>
+                
+                <!-- Acceso -->
+                <div class="col-md-3">
+                  <div class="form-group">
+                    <label for="acceso">Nivel de Acceso:</label>
+                    <select class="form-control select2" name="acceso" id="acceso">
+                      <option value="">Todos los niveles</option>
+                      
+                        <option value="publico" 
+                                >
+                          Acceso Público
+                        </option>
+                      
+                        <option value="restringido" 
+                                >
+                          Acceso Restringido
+                        </option>
+                      
+                        <option value="confidencial" 
+                                >
+                          Confidencial
+                        </option>
+                      
+                    </select>
+                  </div>
+                </div>
+                
+                <!-- Ordenar por -->
+                <div class="col-md-3">
+                  <div class="form-group">
+                    <label for="orden">Ordenar por:</label>
+                    <select class="form-control select2" name="orden" id="orden">
+                      
+                        <option value="-fecha_sesion" 
+                                selected>
+                          Sesión más recientes
+                        </option>
+                      
+                        <option value="fecha_sesion" 
+                                >
+                          Sesión más antiguos
+                        </option>
+                      
+                        <option value="-fecha_publicacion" 
+                                >
+                          Publicación más recientes
+                        </option>
+                      
+                        <option value="fecha_publicacion" 
+                                >
+                          Publicación más antiguos
+                        </option>
+                      
+                        <option value="-fecha_creacion" 
+                                >
+                          Creación más recientes
+                        </option>
+                      
+                        <option value="fecha_creacion" 
+                                >
+                          Creación más antiguos
+                        </option>
+                      
+                        <option value="titulo" 
+                                >
+                          Título A-Z
+                        </option>
+                      
+                        <option value="-titulo" 
+                                >
+                          Título Z-A
+                        </option>
+                      
+                        <option value="numero_acta" 
+                                >
+                          Número de acta
+                        </option>
+                      
+                        <option value="tipo_sesion__nombre" 
+                                >
+                          Tipo de sesión A-Z
+                        </option>
+                      
+                        <option value="-tipo_sesion__nombre" 
+                                >
+                          Tipo de sesión Z-A
+                        </option>
+                      
+                        <option value="prioridad" 
+                                >
+                          Prioridad (Baja→Alta)
+                        </option>
+                      
+                        <option value="-prioridad" 
+                                >
+                          Prioridad (Alta→Baja)
+                        </option>
+                      
+                    </select>
+                  </div>
+                </div>
+              </div>
+              
+              <div class="row">
+                <!-- Fecha desde -->
+                <div class="col-md-4">
+                  <div class="form-group">
+                    <label for="fecha_desde">Fecha desde:</label>
+                    <input type="date" 
+                           class="form-control" 
+                           name="fecha_desde" 
+                           value=""
+                           id="fecha_desde">
+                  </div>
+                </div>
+                
+                <!-- Fecha hasta -->
+                <div class="col-md-4">
+                  <div class="form-group">
+                    <label for="fecha_hasta">Fecha hasta:</label>
+                    <input type="date" 
+                           class="form-control" 
+                           name="fecha_hasta" 
+                           value=""
+                           id="fecha_hasta">
+                  </div>
+                </div>
+                
+                <!-- Botones -->
+                <div class="col-md-4">
+                  <div class="form-group">
+                    <label>&nbsp;</label>
+                    <div class="d-block">
+                      <button type="submit" class="btn btn-primary mr-2">
+                        <i class="fas fa-search"></i> Buscar
+                      </button>
+                      <a href="/portal-ciudadano/" class="btn btn-secondary">
+                        <i class="fas fa-times"></i> Limpiar
+                      </a>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+
+        <!-- Resultados (vista en grid) -->
+        <div class="card card-outline card-lightblue" id="resultados-card">
+          <div class="card-header">
+            <h3 class="card-title mb-0">
+              <i class="fas fa-folder-open mr-2"></i>
+              Actas Municipales
+              <small class="text-muted">&nbsp;— "Fundación"</small>
+            </h3>
+            <div class="card-tools d-flex align-items-center">
+              <!-- Toolbar de ordenación rápida -->
+              <div class="btn-group btn-group-sm mr-2 d-none d-md-inline-flex" role="group" aria-label="Orden rápido">
+                
+                  <a href="?search=Fundaci%C3%B3n&orden=-fecha_sesion" 
+                     class="btn btn-outline-secondary active" 
+                     title="Ordenar por Sesión recientes">
+                    <i class="fas fa-check mr-1"></i>Sesión recientes
+                  </a>
+                
+                  <a href="?search=Fundaci%C3%B3n&orden=fecha_sesion" 
+                     class="btn btn-outline-secondary " 
+                     title="Ordenar por Sesión antiguos">
+                    Sesión antiguos
+                  </a>
+                
+                  <a href="?search=Fundaci%C3%B3n&orden=-fecha_publicacion" 
+                     class="btn btn-outline-secondary " 
+                     title="Ordenar por Publicación recientes">
+                    Publicación recientes
+                  </a>
+                
+                  <a href="?search=Fundaci%C3%B3n&orden=-fecha_creacion" 
+                     class="btn btn-outline-secondary " 
+                     title="Ordenar por Creación recientes">
+                    Creación recientes
+                  </a>
+                
+                  <a href="?search=Fundaci%C3%B3n&orden=titulo" 
+                     class="btn btn-outline-secondary " 
+                     title="Ordenar por Título A-Z">
+                    Título A-Z
+                  </a>
+                
+                  <a href="?search=Fundaci%C3%B3n&orden=-titulo" 
+                     class="btn btn-outline-secondary " 
+                     title="Ordenar por Título Z-A">
+                    Título Z-A
+                  </a>
+                
+                  <a href="?search=Fundaci%C3%B3n&orden=numero_acta" 
+                     class="btn btn-outline-secondary " 
+                     title="Ordenar por Nº Acta">
+                    Nº Acta
+                  </a>
+                
+                  <a href="?search=Fundaci%C3%B3n&orden=tipo_sesion__nombre" 
+                     class="btn btn-outline-secondary " 
+                     title="Ordenar por Tipo A-Z">
+                    Tipo A-Z
+                  </a>
+                
+                  <a href="?search=Fundaci%C3%B3n&orden=prioridad" 
+                     class="btn btn-outline-secondary " 
+                     title="Ordenar por Prioridad Baja→Alta">
+                    Prioridad Baja→Alta
+                  </a>
+                
+                  <a href="?search=Fundaci%C3%B3n&orden=-prioridad" 
+                     class="btn btn-outline-secondary " 
+                     title="Ordenar por Prioridad Alta→Baja">
+                    Prioridad Alta→Baja
+                  </a>
+                
+              </div>
+              <!-- Dropdown compacto en pantallas pequeñas -->
+              <div class="dropdown mr-2 d-inline-block d-md-none">
+                <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" id="dropdownOrdenMobile" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                  <i class="fas fa-sort mr-1"></i>Sesión más recientes
+                </button>
+                <div class="dropdown-menu dropdown-menu-right p-1" aria-labelledby="dropdownOrdenMobile" style="min-width: 240px;">
+                  
+                    <a class="dropdown-item small active"
+                       href="?search=Fundaci%C3%B3n&orden=-fecha_sesion">
+                       <i class="fas fa-check text-success mr-1"></i> Sesión recientes
+                    </a>
+                  
+                    <a class="dropdown-item small "
+                       href="?search=Fundaci%C3%B3n&orden=fecha_sesion">
+                       <i class="fas fa-sort mr-1 text-muted"></i> Sesión antiguos
+                    </a>
+                  
+                    <a class="dropdown-item small "
+                       href="?search=Fundaci%C3%B3n&orden=-fecha_publicacion">
+                       <i class="fas fa-sort mr-1 text-muted"></i> Publicación recientes
+                    </a>
+                  
+                    <a class="dropdown-item small "
+                       href="?search=Fundaci%C3%B3n&orden=-fecha_creacion">
+                       <i class="fas fa-sort mr-1 text-muted"></i> Creación recientes
+                    </a>
+                  
+                    <a class="dropdown-item small "
+                       href="?search=Fundaci%C3%B3n&orden=titulo">
+                       <i class="fas fa-sort mr-1 text-muted"></i> Título A-Z
+                    </a>
+                  
+                    <a class="dropdown-item small "
+                       href="?search=Fundaci%C3%B3n&orden=-titulo">
+                       <i class="fas fa-sort mr-1 text-muted"></i> Título Z-A
+                    </a>
+                  
+                    <a class="dropdown-item small "
+                       href="?search=Fundaci%C3%B3n&orden=numero_acta">
+                       <i class="fas fa-sort mr-1 text-muted"></i> Nº Acta
+                    </a>
+                  
+                    <a class="dropdown-item small "
+                       href="?search=Fundaci%C3%B3n&orden=tipo_sesion__nombre">
+                       <i class="fas fa-sort mr-1 text-muted"></i> Tipo A-Z
+                    </a>
+                  
+                    <a class="dropdown-item small "
+                       href="?search=Fundaci%C3%B3n&orden=prioridad">
+                       <i class="fas fa-sort mr-1 text-muted"></i> Prioridad Baja→Alta
+                    </a>
+                  
+                    <a class="dropdown-item small "
+                       href="?search=Fundaci%C3%B3n&orden=-prioridad">
+                       <i class="fas fa-sort mr-1 text-muted"></i> Prioridad Alta→Baja
+                    </a>
+                  
+                </div>
+              </div>
+              <span class="badge badge-primary mr-2" title="Total de actas en la búsqueda">
+                1 acta
+              </span>
+              <button class="btn btn-tool" data-card-widget="collapse" title="Colapsar / Expandir">
+                <i class="fas fa-minus"></i>
+              </button>
+            </div>
+          </div>
+          <div class="card-body pt-3">
+            
+              <div class="row" id="actas-grid">
+                
+                  <div class="col-xl-3 col-lg-4 col-md-6 col-sm-12 mb-4 d-flex">
+                    <div class="card card-outline card-primary shadow-sm flex-fill acta-card h-100" style="border-radius: .5rem;">
+                      <div class="position-relative">
+                        
+                          <div class="d-flex align-items-center justify-content-center bg-light" style="height:160px;">
+                            <i class="fas fa-file-alt fa-3x text-muted"></i>
+                          </div>
+                        
+                        
+                        
+                        <span class="badge badge-pill position-absolute estado-badge" data-color="#28a745" style="top:8px; left:8px;">Publicada</span>
+                        
+                        <span class="position-absolute" style="top:8px; right:10px;">
+                          <i class="fas fa-globe text-success text-white" title="Acceso Público" style="text-shadow:0 0 3px rgba(0,0,0,.6);"></i>
+                        </span>
+                      </div>
+                      <div class="card-body d-flex flex-column pb-2">
+                        <h5 class="card-title mb-1 text-truncate" title="Sesión Solemne - 150 Años de Fundación del Cantón">
+                          <a href="/acta/4/" class="text-dark">Sesión Solemne - 150 Años de Fundación del Cantón</a>
+                        </h5>
+                        <p class="small text-muted mb-2">
+                          <strong>ACT-2025-004</strong><br>
+                          25/07/2025 11:55<br>
+                          Sesión Solemne
+                        </p>
+                        <p class="small mb-3 flex-grow-1" style="line-height:1.3;">
+                          Sesión solemne conmemorativa de los 150 años de fundación del cantón, con reconocimientos a personalidades destacadas y presentación de proyectos emblemáticos.
+                        </p>
+                        <div class="mt-auto">
+                          <div class="d-flex justify-content-between align-items-center mb-2">
+                            <small class="text-muted">
+                              <i class="fas fa-user mr-1"></i>Dr. Carlos Mendoza - Alcalde
+                              <br><span class="text-info"><i class="fas fa-robot mr-1"></i>IA 98,10%</span>
+                            </small>
+                          </div>
+                          <div class="btn-group btn-group-sm d-flex" role="group">
+                            <a href="/acta/4/" class="btn btn-outline-primary" title="Ver detalle del acta"><i class="fas fa-eye"></i></a>
+                            
+                              <a href="/acta/4/pdf/" class="btn btn-outline-info" target="_blank" rel="noopener" title="Abrir PDF en nueva pestaña"><i class="fas fa-file-pdf"></i></a>
+                              <a href="/acta/4/download/" class="btn btn-outline-success" download title="Descargar archivo PDF"><i class="fas fa-download"></i></a>
+                            
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                
+              </div>
+              
+            
+          </div>
+        </div>
+        
+      </div>
+    </section>
+  </div>
+
+
+    
+      
+
+<footer class="main-footer">
+
+  <strong>&copy; Actas IA.io</strong> - coded by <a target="_blank" href="https://app-generator.dev">App-Generator</a> and by <a target="_blank" href="#">Grupo 7 Poryecto Integrador 8 - UNIANDES</a>.
+
+  <div class="float-right d-none d-sm-inline-block">
+    <b>Version</b> 3.2.0
+  </div>
+
+</footer>
+
+    
+
+    
+      
+      <!-- Control Sidebar -->
+      <aside class="control-sidebar control-sidebar-dark">
+        <!-- Control sidebar content goes here -->
+      </aside>
+      <!-- /.control-sidebar -->
+    
+    
+
+  </div>
+  
+  <!-- Widget de Debug de Sesiones -->
+  <!-- Widget de Debug de Sesiones solo para superusuarios -->
+
+
+  
+  <!-- Notificación de Cookies -->
+  <!-- Notificación de Cookies -->
+<div id="cookie-notification" style="display: none;">
+    <div style="
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+        color: white;
+        padding: 20px;
+        text-align: center;
+        z-index: 10000;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+        border-bottom: 3px solid #3498db;
+    ">
+        <div style="max-width: 1200px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 15px;">
+            <div style="flex: 1; margin-right: 20px; text-align: left;">
+                <div style="font-size: 18px; font-weight: bold; margin-bottom: 5px;">
+                    🍪 <span style="color: #3498db;">Sistema de Actas Municipales</span> utiliza cookies
+                </div>
+                <div style="font-size: 14px; line-height: 1.4; opacity: 0.9;">
+                    Utilizamos cookies esenciales para el funcionamiento del sistema, autenticación de usuarios, 
+                    y para mejorar tu experiencia de navegación. Al continuar usando este sitio, 
+                    aceptas nuestro uso de cookies.
+                </div>
+            </div>
+            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                <button onclick="acceptCookies()" style="
+                    background: #27ae60; 
+                    border: none; 
+                    color: white; 
+                    padding: 12px 25px; 
+                    border-radius: 8px;
+                    cursor: pointer;
+                    font-weight: bold;
+                    font-size: 14px;
+                    transition: all 0.3s ease;
+                " onmouseover="this.style.background='#2ecc71'" onmouseout="this.style.background='#27ae60'">
+                    ✓ Aceptar Cookies
+                </button>
+                <button onclick="showCookieDetails()" style="
+                    background: transparent; 
+                    border: 2px solid #3498db; 
+                    color: #3498db; 
+                    padding: 10px 20px; 
+                    border-radius: 8px;
+                    cursor: pointer;
+                    font-size: 14px;
+                    transition: all 0.3s ease;
+                " onmouseover="this.style.background='#3498db'; this.style.color='white'" onmouseout="this.style.background='transparent'; this.style.color='#3498db'">
+                    ℹ️ Más Información
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Información Detallada de Cookies -->
+<div id="cookie-details-modal" style="display: none;">
+    <div style="
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0,0,0,0.7);
+        z-index: 10001;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+    " onclick="hideCookieDetails()">
+        <div style="
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            max-width: 600px;
+            max-height: 80vh;
+            overflow-y: auto;
+            position: relative;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        " onclick="event.stopPropagation()">
+            <button onclick="hideCookieDetails()" style="
+                position: absolute;
+                top: 15px;
+                right: 15px;
+                background: #e74c3c;
+                border: none;
+                color: white;
+                width: 30px;
+                height: 30px;
+                border-radius: 50%;
+                cursor: pointer;
+                font-size: 16px;
+            ">✕</button>
+            
+            <h2 style="color: #2c3e50; margin-top: 0; margin-bottom: 20px;">
+                🍪 Información sobre Cookies
+            </h2>
+            
+            <div style="color: #34495e; line-height: 1.6;">
+                <h3 style="color: #27ae60; border-bottom: 2px solid #27ae60; padding-bottom: 5px;">
+                    ✅ Cookies Esenciales (Requeridas)
+                </h3>
+                <ul style="margin-bottom: 20px;">
+                    <li><strong>actas_sessionid:</strong> Identifica tu sesión de usuario activa</li>
+                    <li><strong>actas_csrftoken:</strong> Protección contra ataques de falsificación de solicitudes</li>
+                    <li><strong>Cookies de autenticación:</strong> Mantienen tu sesión iniciada de forma segura</li>
+                </ul>
+                
+                <h3 style="color: #3498db; border-bottom: 2px solid #3498db; padding-bottom: 5px;">
+                    📊 Cookies Funcionales
+                </h3>
+                <ul style="margin-bottom: 20px;">
+                    <li><strong>Preferencias de usuario:</strong> Recuerdan tu configuración personalizada</li>
+                    <li><strong>Configuración de idioma:</strong> Mantienen tu idioma preferido</li>
+                    <li><strong>Datos de navegación:</strong> Mejoran la experiencia de usuario</li>
+                </ul>
+                
+                <h3 style="color: #e67e22; border-bottom: 2px solid #e67e22; padding-bottom: 5px;">
+                    🔒 Seguridad y Privacidad
+                </h3>
+                <ul style="margin-bottom: 20px;">
+                    <li>Todas las cookies están configuradas como <strong>HttpOnly</strong> cuando es posible</li>
+                    <li>Protección automática contra ataques XSS y CSRF</li>
+                    <li>Expiración automática por seguridad (2 horas para sesiones)</li>
+                    <li>No compartimos información con terceros</li>
+                    <li>Los datos se almacenan de forma segura en nuestros servidores</li>
+                </ul>
+                
+                <div style="background: #ecf0f1; padding: 15px; border-radius: 8px; margin-top: 20px;">
+                    <h4 style="margin-top: 0; color: #2c3e50;">🛠️ Para Administradores:</h4>
+                    <p style="margin-bottom: 0; font-size: 14px;">
+                        Si eres administrador del sistema, puedes usar el widget de debug (🔧) 
+                        para ver todas las cookies activas y monitorear las sesiones en tiempo real.
+                    </p>
+                </div>
+            </div>
+            
+            <div style="text-align: center; margin-top: 25px;">
+                <button onclick="acceptCookiesFromModal()" style="
+                    background: #27ae60; 
+                    border: none; 
+                    color: white; 
+                    padding: 12px 30px; 
+                    border-radius: 8px;
+                    cursor: pointer;
+                    font-weight: bold;
+                    font-size: 16px;
+                    margin-right: 10px;
+                ">✓ Aceptar y Continuar</button>
+                <button onclick="hideCookieDetails()" style="
+                    background: #95a5a6; 
+                    border: none; 
+                    color: white; 
+                    padding: 12px 20px; 
+                    border-radius: 8px;
+                    cursor: pointer;
+                    font-size: 14px;
+                ">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Verificar si se debe mostrar la notificación de cookies
+document.addEventListener('DOMContentLoaded', function() {
+    // Verificar si el usuario ya aceptó las cookies
+    if (!localStorage.getItem('cookies_accepted') && !sessionStorage.getItem('cookies_notification_shown')) {
+        showCookieNotification();
+        sessionStorage.setItem('cookies_notification_shown', 'true');
+    }
+});
+
+function showCookieNotification() {
+    const notification = document.getElementById('cookie-notification');
+    notification.style.display = 'block';
+    
+    // Animación de entrada
+    setTimeout(() => {
+        notification.style.opacity = '1';
+        notification.style.transform = 'translateY(0)';
+    }, 100);
+}
+
+function acceptCookies() {
+    localStorage.setItem('cookies_accepted', 'true');
+    localStorage.setItem('cookies_accepted_date', new Date().toISOString());
+    hideCookieNotification();
+    
+    // Opcional: Enviar evento al servidor
+    logCookieAcceptance();
+}
+
+function acceptCookiesFromModal() {
+    acceptCookies();
+    hideCookieDetails();
+}
+
+function hideCookieNotification() {
+    const notification = document.getElementById('cookie-notification');
+    notification.style.display = 'none';
+}
+
+function showCookieDetails() {
+    document.getElementById('cookie-details-modal').style.display = 'flex';
+}
+
+function hideCookieDetails() {
+    document.getElementById('cookie-details-modal').style.display = 'none';
+}
+
+function logCookieAcceptance() {
+    // Registrar que el usuario aceptó las cookies
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value;
+    if (!csrfToken) return;
+    
+    fetch('/auditoria/log-activity/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSrfToken': csrfToken,
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: JSON.stringify({
+            action: 'cookie_acceptance',
+            data: {
+                timestamp: new Date().toISOString(),
+                user_agent: navigator.userAgent,
+                url: window.location.href
+            }
+        })
+    }).catch(error => console.log('Cookie acceptance log error:', error));
+}
+
+// Función para mostrar la notificación manualmente (para testing)
+function showCookieNotificationTest() {
+    localStorage.removeItem('cookies_accepted');
+    sessionStorage.removeItem('cookies_notification_shown');
+    showCookieNotification();
+}
+</script>
+
+  
+  
+
+<!-- jQuery -->
+<script src="/static/plugins/jquery/jquery.min.js"></script>
+<!-- Bootstrap 4 -->
+<script src="/static/plugins/bootstrap/js/bootstrap.bundle.min.js"></script>
+<!-- Actas IA App -->
+<script src="/static/dist/js/adminlte.min.js"></script>
+<!-- Actas IA for demo purposes -->
+<script src="/static/dist/js/demo.js"></script>
+  
+  <!-- Select2 -->
+  <script src="/static/plugins/select2/js/select2.full.min.js"></script>
+  
+  <script>
+    $(function () {
+      // Inicializar Select2
+      $('.select2').select2({
+        theme: 'bootstrap4'
+      });
+      
+      // Búsqueda dinámica (opcional)
+      let searchTimeout;
+      $('#search-input').on('input', function() {
+        clearTimeout(searchTimeout);
+        const query = $(this).val();
+        
+        // Si hay más de 2 caracteres, hacer búsqueda automática
+        if (query.length > 2) {
+          searchTimeout = setTimeout(function() {
+            // Aquí podrías implementar búsqueda AJAX en tiempo real
+            console.log('Buscando:', query);
+          }, 500);
+        }
+      });
+      
+      // Auto-submit cuando cambian los filtros
+      $('#tipo_sesion, #estado, #acceso, #orden').change(function() {
+        $('#search-form').submit();
+      });
+      
+      // Limpiar fechas fácilmente
+      $('#fecha_desde, #fecha_hasta').change(function() {
+        if ($(this).val()) {
+          // Auto-submit cuando se selecciona una fecha
+          setTimeout(function() {
+            $('#search-form').submit();
+          }, 100);
+        }
+      });
+      
+        // Persistencia de estado de cards (filtros y métricas)
+        const storageKey = 'portal_ciudadano_states_v1';
+        let states = {};
+        try { states = JSON.parse(localStorage.getItem(storageKey)) || {}; } catch(e) { states = {}; }
+
+        function saveStates(){ localStorage.setItem(storageKey, JSON.stringify(states)); }
+
+        function applyInitialState(cardId){
+          const $card = $('#'+cardId);
+          if(!$card.length) return;
+          const state = states[cardId];
+          if(state === 'collapsed' && !$card.hasClass('collapsed-card')){
+            // trigger collapse
+            $card.find('[data-card-widget="collapse"]').trigger('click');
+          } else if(state === 'expanded' && $card.hasClass('collapsed-card')){
+            $card.find('[data-card-widget="collapse"]').trigger('click');
+          }
+        }
+
+        // Aplicar estado guardado
+        applyInitialState('filters-card');
+        applyInitialState('metrics-card');
+        applyInitialState('resultados-card');
+
+        // Escuchar eventos de collapse (AdminLTE emite expanded.lte.card / collapsed.lte.card)
+        $('#filters-card, #metrics-card, #resultados-card').on('expanded.lte.card collapsed.lte.card', function(e){
+          const id = this.id;
+          if(!id) return;
+          const isCollapsed = $(this).hasClass('collapsed-card');
+          states[id] = isCollapsed ? 'collapsed' : 'expanded';
+          saveStates();
+        });
+    
+        // Ajustar iconos dinámicamente
+        $(document).on('expanded.lte.card collapsed.lte.card', function(){
+          $('[data-card-widget="collapse"]').each(function(){
+            const $btn = $(this);
+            const $card = $btn.closest('.card');
+            const $icon = $btn.find('i.fas');
+            if($card.hasClass('collapsed-card')){
+              $icon.removeClass('fa-minus').addClass('fa-plus');
+            } else {
+              $icon.removeClass('fa-plus').addClass('fa-minus');
+            }
+          });
+        }).trigger('expanded.lte.card');
+    });
+  </script>
+
+
+
+</body>
+</html>

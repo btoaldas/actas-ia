@@ -18,6 +18,7 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.urls import reverse_lazy, reverse
 from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
+from helpers.util import normalizar_busqueda, crear_filtros_busqueda_multiple
 from django.views.decorators.http import require_http_methods
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView
 
@@ -101,11 +102,9 @@ class ActasListView(LoginRequiredMixin, ListView):
         # Filtros de búsqueda
         search = self.request.GET.get('search')
         if search:
-            queryset = queryset.filter(
-                Q(numero_acta__icontains=search) |
-                Q(titulo__icontains=search) |
-                Q(plantilla__nombre__icontains=search)
-            )
+            campos_busqueda = ['numero_acta', 'titulo', 'plantilla__nombre']
+            filtros_busqueda = crear_filtros_busqueda_multiple(campos_busqueda, search)
+            queryset = queryset.filter(filtros_busqueda)
         
         # Filtro por estado
         estado = self.request.GET.get('estado')
@@ -393,11 +392,9 @@ class PlantillasListView(LoginRequiredMixin, ListView):
         # Filtro de búsqueda
         search = self.request.GET.get('search')
         if search:
-            queryset = queryset.filter(
-                Q(nombre__icontains=search) |
-                Q(descripcion__icontains=search) |
-                Q(tipo_acta__icontains=search)
-            )
+            campos_busqueda = ['nombre', 'descripcion', 'tipo_acta']
+            filtros_busqueda = crear_filtros_busqueda_multiple(campos_busqueda, search)
+            queryset = queryset.filter(filtros_busqueda)
         
         # Filtro por tipo
         tipo_acta = self.request.GET.get('tipo_acta')
@@ -542,10 +539,9 @@ def transcripciones_disponibles(request):
         # Filtros
         search = request.GET.get('search')
         if search:
-            transcripciones = transcripciones.filter(
-                Q(procesamiento_audio__nombre_archivo__icontains=search) |
-                Q(procesamiento_audio__ubicacion__icontains=search)
-            )
+            campos_busqueda = ['procesamiento_audio__nombre_archivo', 'procesamiento_audio__ubicacion']
+            filtros_busqueda = crear_filtros_busqueda_multiple(campos_busqueda, search)
+            transcripciones = transcripciones.filter(filtros_busqueda)
         
         # Paginación
         paginator = Paginator(transcripciones, 10)
@@ -593,10 +589,9 @@ class ProveedoresListView(LoginRequiredMixin, ListView):
         # Filtro por búsqueda
         search = self.request.GET.get('search', '')
         if search:
-            queryset = queryset.filter(
-                Q(nombre__icontains=search) |
-                Q(tipo__icontains=search)
-            )
+            campos_busqueda = ['nombre', 'tipo']
+            filtros_busqueda = crear_filtros_busqueda_multiple(campos_busqueda, search)
+            queryset = queryset.filter(filtros_busqueda)
         
         # Filtro por tipo
         tipo = self.request.GET.get('tipo', '')
@@ -740,11 +735,9 @@ class SegmentosListView(LoginRequiredMixin, ListView):
         # Filtro por búsqueda
         search = self.request.GET.get('search', '')
         if search:
-            queryset = queryset.filter(
-                Q(nombre__icontains=search) |
-                Q(descripcion__icontains=search) |
-                Q(categoria__icontains=search)
-            )
+            campos_busqueda = ['nombre', 'descripcion', 'categoria']
+            filtros_busqueda = crear_filtros_busqueda_multiple(campos_busqueda, search)
+            queryset = queryset.filter(filtros_busqueda)
         
         # Filtro por categoría
         categoria = self.request.GET.get('categoria', '')

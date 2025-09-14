@@ -1,0 +1,86 @@
+/* Estilos para eventos del sistema en navbar */
+.navbar-eventos .media-object i {
+    font-size: 1.5rem;
+}
+
+.navbar-eventos .dropdown-item {
+    padding: 0.75rem 1rem;
+}
+
+.navbar-eventos .dropdown-item:hover {
+    background-color: #f8f9fa;
+    transform: translateX(2px);
+    transition: all 0.2s ease;
+}
+
+.navbar-eventos .media {
+    align-items: center;
+}
+
+.navbar-eventos .media-body h3 {
+    font-size: 0.9rem;
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+}
+
+.navbar-eventos .media-body p {
+    margin-bottom: 0.125rem;
+    font-size: 0.8rem;
+}
+
+/* Iconos de estado específicos */
+.evento-icono-success {
+    color: #28a745 !important;
+}
+
+.evento-icono-danger {
+    color: #dc3545 !important;
+}
+
+.evento-icono-warning {
+    color: #ffc107 !important;
+}
+
+.evento-icono-info {
+    color: #17a2b8 !important;
+}
+
+/* Animaciones para los badges de notificación */
+.navbar .badge.navbar-badge {
+    animation: pulse-badge 2s infinite;
+}
+
+@keyframes pulse-badge {
+    0% {
+        transform: scale(1);
+        opacity: 1;
+    }
+    50% {
+        transform: scale(1.1);
+        opacity: 0.8;
+    }
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+/* Mejorar el dropdown de notificaciones */
+.navbar .dropdown-menu-lg {
+    min-width: 300px;
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+/* Estilo especial para cuando no hay notificaciones */
+.no-notificaciones {
+    padding: 2rem 1rem;
+    text-align: center;
+    color: #6c757d;
+}
+
+.no-notificaciones i {
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
+    display: block;
+}

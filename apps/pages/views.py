@@ -10,6 +10,7 @@ from django.utils.decorators import method_decorator
 from django.views.generic import ListView, DetailView
 from django.utils import timezone
 from .models import ActaMunicipal, TipoSesion, EstadoActa, VisualizacionActa, DescargaActa
+from helpers.util import normalizar_busqueda, crear_filtros_busqueda_multiple
 import json
 from datetime import datetime, timedelta
 
@@ -1110,14 +1111,33 @@ def portal_ciudadano(request):
 
   # Aplicar filtros de búsqueda
   if search_query:
-    actas = actas.filter(
-      Q(titulo__icontains=search_query) |
-      Q(numero_acta__icontains=search_query) |
-      Q(resumen__icontains=search_query) |
-      Q(contenido__icontains=search_query) |
-      Q(palabras_clave__icontains=search_query) |
-      Q(presidente__icontains=search_query)
-    )
+    from django.db import connection
+    
+    # Para PostgreSQL, usar SQL con unaccent
+    if connection.vendor == 'postgresql':
+      with connection.cursor() as cursor:
+        # Preparar la consulta con unaccent
+        placeholders = ', '.join(['%s'] * 6)  # 6 campos de búsqueda
+        sql_condition = f"""
+          id IN (
+            SELECT id FROM pages_actamunicipal 
+            WHERE activo = true AND (
+              unaccent(titulo) ILIKE unaccent(%s) OR
+              unaccent(numero_acta) ILIKE unaccent(%s) OR  
+              unaccent(resumen) ILIKE unaccent(%s) OR
+              unaccent(contenido) ILIKE unaccent(%s) OR
+              unaccent(palabras_clave) ILIKE unaccent(%s) OR
+              unaccent(presidente) ILIKE unaccent(%s)
+            )
+          )
+        """
+        search_pattern = f'%{search_query}%'
+        actas = actas.extra(where=[sql_condition], params=[search_pattern] * 6)
+    else:
+      # Fallback para otros backends
+      campos_busqueda = ['titulo', 'numero_acta', 'resumen', 'contenido', 'palabras_clave', 'presidente']
+      filtros_busqueda = crear_filtros_busqueda_multiple(campos_busqueda, search_query)
+      actas = actas.filter(filtros_busqueda)
 
   if tipo_sesion:
     actas = actas.filter(tipo_sesion__nombre=tipo_sesion)
@@ -1385,12 +1405,30 @@ def portal_ciudadano_api(request):
         
         # Aplicar búsqueda
         if search_query:
-            actas = actas.filter(
-                Q(titulo__icontains=search_query) |
-                Q(numero_acta__icontains=search_query) |
-                Q(resumen__icontains=search_query) |
-                Q(palabras_clave__icontains=search_query)
-            )
+            from django.db import connection
+            
+            # Para PostgreSQL, usar SQL con unaccent
+            if connection.vendor == 'postgresql':
+                with connection.cursor() as cursor:
+                    # Preparar la consulta con unaccent
+                    sql_condition = f"""
+                      id IN (
+                        SELECT id FROM pages_actamunicipal 
+                        WHERE activo = true AND (
+                          unaccent(titulo) ILIKE unaccent(%s) OR
+                          unaccent(numero_acta) ILIKE unaccent(%s) OR  
+                          unaccent(resumen) ILIKE unaccent(%s) OR
+                          unaccent(palabras_clave) ILIKE unaccent(%s)
+                        )
+                      )
+                    """
+                    search_pattern = f'%{search_query}%'
+                    actas = actas.extra(where=[sql_condition], params=[search_pattern] * 4)
+            else:
+                # Fallback para otros backends
+                campos_busqueda = ['titulo', 'numero_acta', 'resumen', 'palabras_clave']
+                filtros_busqueda = crear_filtros_busqueda_multiple(campos_busqueda, search_query)
+                actas = actas.filter(filtros_busqueda)
         
         # Aplicar filtros
         if filters.get('tipo_sesion'):
