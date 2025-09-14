@@ -1,0 +1,437 @@
+{% extends "layouts/base.html" %}
+{% load static %}
+
+{% block title %}Gestión de Plantillas de Actas{% endblock title %}
+
+{% block content %}
+<div class="content-wrapper">
+<!-- Content Header -->
+<div class="content-header">
+    <div class="container-fluid">
+        <div class="row mb-2">
+            <div class="col-sm-6">
+                <h1>📄 Plantillas de Actas</h1>
+            </div>
+            <div class="col-sm-6">
+                <ol class="breadcrumb float-sm-right">
+                    <li class="breadcrumb-item"><a href="{% url 'generador_actas:dashboard' %}">Dashboard</a></li>
+                    <li class="breadcrumb-item active">Plantillas</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Main content -->
+<section class="content">
+    <div class="container-fluid">
+        
+        <!-- Estadísticas -->
+        <div class="row mb-3">
+            <div class="col-lg-3 col-6">
+                <div class="small-box bg-primary">
+                    <div class="inner">
+                        <h3>{{ stats.total }}</h3>
+                        <p>Total Plantillas</p>
+                    </div>
+                    <div class="icon">
+                        <i class="fas fa-file-alt"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-3 col-6">
+                <div class="small-box bg-success">
+                    <div class="inner">
+                        <h3>{{ stats.activas }}</h3>
+                        <p>Plantillas Activas</p>
+                    </div>
+                    <div class="icon">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-3 col-6">
+                <div class="small-box bg-info">
+                    <div class="inner">
+                        <h3>{{ stats.utilizadas }}</h3>
+                        <p>Utilizadas en Actas</p>
+                    </div>
+                    <div class="icon">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-3 col-6">
+                <div class="small-box bg-warning">
+                    <div class="inner">
+                        <h3>{{ stats.promedio_segmentos }}</h3>
+                        <p>Promedio Segmentos</p>
+                    </div>
+                    <div class="icon">
+                        <i class="fas fa-puzzle-piece"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filtros y Búsqueda -->
+        <div class="card collapsed-card">
+            <div class="card-header">
+                <h3 class="card-title">🔍 Filtros de Búsqueda</h3>
+                <div class="card-tools">
+                    <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                        <i class="fas fa-plus"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="card-body">
+                <form method="get" class="form-inline">
+                    <div class="form-group mr-3">
+                        <label for="search" class="mr-2">Buscar:</label>
+                        <input type="text" name="search" id="search" class="form-control" 
+                               value="{{ request.GET.search }}" placeholder="Nombre o descripción...">
+                    </div>
+                    
+                    <div class="form-group mr-3">
+                        <label for="activa" class="mr-2">Estado:</label>
+                        <select name="activa" id="activa" class="form-control">
+                            <option value="">Todas</option>
+                            <option value="true" {% if request.GET.activa == 'true' %}selected{% endif %}>Activas</option>
+                            <option value="false" {% if request.GET.activa == 'false' %}selected{% endif %}>Inactivas</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group mr-3">
+                        <label for="utilizada" class="mr-2">Uso:</label>
+                        <select name="utilizada" id="utilizada" class="form-control">
+                            <option value="">Todas</option>
+                            <option value="true" {% if request.GET.utilizada == 'true' %}selected{% endif %}>Con actas generadas</option>
+                            <option value="false" {% if request.GET.utilizada == 'false' %}selected{% endif %}>Sin usar</option>
+                        </select>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary mr-2">
+                        <i class="fas fa-search"></i> Filtrar
+                    </button>
+                    <a href="{% url 'generador_actas:plantillas_lista' %}" class="btn btn-secondary">
+                        <i class="fas fa-times"></i> Limpiar
+                    </a>
+                </form>
+            </div>
+        </div>
+
+        <!-- Tabla de Plantillas -->
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">📋 Lista de Plantillas</h3>
+                <div class="card-tools">
+                    <a href="{% url 'generador_actas:crear_plantilla' %}" class="btn btn-primary btn-sm">
+                        <i class="fas fa-plus"></i> Nueva Plantilla
+                    </a>
+                </div>
+            </div>
+            <div class="card-body">
+                {% if plantillas %}
+                    <div class="row">
+                        {% for plantilla in plantillas %}
+                        <div class="col-md-6 col-lg-4 mb-4">
+                            <div class="card card-outline {% if plantilla.activa %}card-success{% else %}card-secondary{% endif %}">
+                                <div class="card-header">
+                                    <h5 class="card-title">
+                                        {{ plantilla.nombre }}
+                                        {% if not plantilla.activa %}
+                                            <span class="badge badge-secondary">Inactiva</span>
+                                        {% endif %}
+                                    </h5>
+                                    <div class="card-tools">
+                                        <div class="dropdown">
+                                            <button class="btn btn-tool" type="button" data-toggle="dropdown">
+                                                <i class="fas fa-ellipsis-v"></i>
+                                            </button>
+                                            <div class="dropdown-menu dropdown-menu-right">
+                                                <a class="dropdown-item" href="{% url 'generador_actas:plantilla_detail' plantilla.pk %}">
+                                                    <i class="fas fa-eye"></i> Ver Detalle
+                                                </a>
+                                                <a class="dropdown-item" href="{% url 'generador_actas:editar_plantilla' plantilla.pk %}">
+                                                    <i class="fas fa-edit"></i> Editar
+                                                </a>
+                                                <div class="dropdown-divider"></div>
+                                                <a class="dropdown-item" href="#" onclick="duplicarPlantilla({{ plantilla.pk }})">
+                                                    <i class="fas fa-copy"></i> Duplicar
+                                                </a>
+                                                <a class="dropdown-item" href="#" onclick="previewPlantilla({{ plantilla.pk }})">
+                                                    <i class="fas fa-eye"></i> Vista Previa
+                                                </a>
+                                                {% if plantilla.actas_count == 0 %}
+                                                <div class="dropdown-divider"></div>
+                                                <a class="dropdown-item text-danger" href="#" 
+                                                   onclick="confirmarEliminacion({{ plantilla.pk }}, '{{ plantilla.nombre }}')">
+                                                    <i class="fas fa-trash"></i> Eliminar
+                                                </a>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="card-body">
+                                    <p class="card-text">
+                                        {{ plantilla.descripcion|truncatechars:120|default:"Sin descripción" }}
+                                    </p>
+                                    
+                                    <!-- Información de segmentos -->
+                                    <div class="mb-2">
+                                        <small class="text-muted">
+                                            <i class="fas fa-puzzle-piece"></i> 
+                                            {{ plantilla.segmentos.count }} segmento{{ plantilla.segmentos.count|pluralize:"s" }}
+                                        </small>
+                                    </div>
+                                    
+                                    <!-- Etiquetas de segmentos -->
+                                    <div class="mb-3">
+                                        {% for segmento in plantilla.segmentos.all|slice:":3" %}
+                                            <span class="badge badge-light">{{ segmento.get_tipo_display }}</span>
+                                        {% endfor %}
+                                        {% if plantilla.segmentos.count > 3 %}
+                                            <span class="badge badge-secondary">+{{ plantilla.segmentos.count|add:"-3" }} más</span>
+                                        {% endif %}
+                                    </div>
+                                    
+                                    <!-- Estadísticas de uso -->
+                                    <div class="row text-center">
+                                        <div class="col-6">
+                                            <small class="text-muted d-block">Actas Generadas</small>
+                                            <strong class="text-primary">{{ plantilla.actas_count|default:0 }}</strong>
+                                        </div>
+                                        <div class="col-6">
+                                            <small class="text-muted d-block">Última Actualización</small>
+                                            <strong class="text-info">{{ plantilla.fecha_actualizacion|date:"d/m" }}</strong>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="card-footer">
+                                    <div class="row">
+                                        <div class="col-8">
+                                            <a href="{% url 'generador_actas:plantilla_detail' plantilla.pk %}" 
+                                               class="btn btn-info btn-sm">
+                                                <i class="fas fa-eye"></i> Ver
+                                            </a>
+                                            <a href="{% url 'generador_actas:editar_plantilla' plantilla.pk %}" 
+                                               class="btn btn-warning btn-sm">
+                                                <i class="fas fa-edit"></i> Editar
+                                            </a>
+                                        </div>
+                                        <div class="col-4 text-right">
+                                            {% if plantilla.activa %}
+                                                <a href="{% url 'generador_actas:crear_acta' %}?plantilla={{ plantilla.pk }}" 
+                                                   class="btn btn-success btn-sm">
+                                                    <i class="fas fa-plus"></i> Usar
+                                                </a>
+                                            {% else %}
+                                                <button class="btn btn-secondary btn-sm" disabled>
+                                                    <i class="fas fa-ban"></i> Inactiva
+                                                </button>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+
+                    <!-- Paginación -->
+                    {% if is_paginated %}
+                    <nav aria-label="Navegación de página">
+                        <ul class="pagination justify-content-center">
+                            {% if page_obj.has_previous %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page=1{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.activa %}&activa={{ request.GET.activa }}{% endif %}{% if request.GET.utilizada %}&utilizada={{ request.GET.utilizada }}{% endif %}">Primera</a>
+                                </li>
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.activa %}&activa={{ request.GET.activa }}{% endif %}{% if request.GET.utilizada %}&utilizada={{ request.GET.utilizada }}{% endif %}">Anterior</a>
+                                </li>
+                            {% endif %}
+
+                            <li class="page-item active">
+                                <span class="page-link">{{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span>
+                            </li>
+
+                            {% if page_obj.has_next %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.activa %}&activa={{ request.GET.activa }}{% endif %}{% if request.GET.utilizada %}&utilizada={{ request.GET.utilizada }}{% endif %}">Siguiente</a>
+                                </li>
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.activa %}&activa={{ request.GET.activa }}{% endif %}{% if request.GET.utilizada %}&utilizada={{ request.GET.utilizada }}{% endif %}">Última</a>
+                                </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                    {% endif %}
+
+                {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-file-alt fa-3x text-muted mb-3"></i>
+                        <h4>No hay plantillas disponibles</h4>
+                        <p class="text-muted">Aún no se han creado plantillas de actas.</p>
+                        <a href="{% url 'generador_actas:crear_plantilla' %}" class="btn btn-primary">
+                            <i class="fas fa-plus"></i> Crear Primera Plantilla
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Guía Rápida -->
+        <div class="card card-info">
+            <div class="card-header">
+                <h3 class="card-title">💡 Guía de Plantillas</h3>
+                <div class="card-tools">
+                    <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                        <i class="fas fa-minus"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6><strong>¿Qué es una plantilla?</strong></h6>
+                        <p>Una plantilla es una estructura predefinida que combina múltiples segmentos para generar actas completas y consistentes.</p>
+                        
+                        <h6><strong>Componentes:</strong></h6>
+                        <ul class="list-unstyled">
+                            <li>• <strong>Nombre:</strong> Identificador único</li>
+                            <li>• <strong>Descripción:</strong> Propósito y contexto</li>
+                            <li>• <strong>Segmentos:</strong> Bloques de contenido ordenados</li>
+                            <li>• <strong>Estado:</strong> Activa/Inactiva</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <h6><strong>Proceso de Uso:</strong></h6>
+                        <ol>
+                            <li>Crear segmentos necesarios</li>
+                            <li>Diseñar plantilla combinando segmentos</li>
+                            <li>Activar plantilla</li>
+                            <li>Generar actas usando la plantilla</li>
+                        </ol>
+                        
+                        <h6><strong>Consejos:</strong></h6>
+                        <ul class="list-unstyled">
+                            <li>• Use nombres descriptivos</li>
+                            <li>• Ordene segmentos lógicamente</li>
+                            <li>• Pruebe antes de activar</li>
+                            <li>• Duplique para crear variaciones</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Modal de vista previa -->
+<div class="modal fade" id="previewModal" tabindex="-1" role="dialog" aria-labelledby="previewModalLabel">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="previewModalLabel">Vista Previa de Plantilla</h5>
+                <button type="button" class="close" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <div class="modal-body" id="previewContent">
+                <div class="text-center">
+                    <i class="fas fa-spinner fa-spin fa-2x"></i>
+                    <p>Cargando vista previa...</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de confirmación de eliminación -->
+<div class="modal fade" id="deleteModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-danger">
+                <h5 class="modal-title text-white">⚠️ Confirmar Eliminación</h5>
+                <button type="button" class="close text-white" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p>¿Está seguro de que desea eliminar la plantilla <strong id="plantillaNombre"></strong>?</p>
+                <p class="text-warning">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    Esta acción no se puede deshacer.
+                </p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+                <form method="post" id="deleteForm">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger">Eliminar</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+</div>
+<script>
+function confirmarEliminacion(plantillaId, nombre) {
+    document.getElementById('plantillaNombre').textContent = nombre;
+    document.getElementById('deleteForm').action = `/generador-actas/plantillas/${plantillaId}/eliminar/`;
+    $('#deleteModal').modal('show');
+}
+
+function duplicarPlantilla(plantillaId) {
+    if (confirm('¿Desea crear una copia de esta plantilla?')) {
+        fetch(`/generador-actas/plantillas/${plantillaId}/duplicar/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}',
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                toastr.success('Plantilla duplicada exitosamente');
+                location.reload();
+            } else {
+                toastr.error('Error al duplicar la plantilla');
+            }
+        })
+        .catch(error => {
+            toastr.error('Error en la operación');
+        });
+    }
+}
+
+function previewPlantilla(plantillaId) {
+    $('#previewModal').modal('show');
+    
+    fetch(`/generador-actas/plantillas/${plantillaId}/preview/`)
+        .then(response => response.text())
+        .then(html => {
+            document.getElementById('previewContent').innerHTML = html;
+        })
+        .catch(error => {
+            document.getElementById('previewContent').innerHTML = 
+                '<div class="alert alert-danger">Error al cargar la vista previa</div>';
+        });
+}
+
+// Auto-envío del formulario al cambiar filtros
+document.getElementById('activa').addEventListener('change', function() {
+    this.form.submit();
+});
+
+document.getElementById('utilizada').addEventListener('change', function() {
+    this.form.submit();
+});
+</script>
+
+{% endblock content %}

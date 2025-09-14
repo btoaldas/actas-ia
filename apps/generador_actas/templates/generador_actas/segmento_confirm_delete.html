@@ -1,0 +1,241 @@
+{% extends "layouts/base.html" %}
+{% load static %}
+
+{% block title %}Confirmar Eliminación{% endblock title %}
+
+{% block content %}
+<div class="content-wrapper">
+<!-- Content Header -->
+<div class="content-header">
+    <div class="container-fluid">
+        <div class="row mb-2">
+            <div class="col-sm-6">
+                <h1>🗑️ Confirmar Eliminación</h1>
+            </div>
+            <div class="col-sm-6">
+                <ol class="breadcrumb float-sm-right">
+                    <li class="breadcrumb-item"><a href="{% url 'generador_actas:dashboard' %}">Dashboard</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'generador_actas:segmentos_lista' %}">Segmentos</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'generador_actas:segmento_detail' object.pk %}">{{ object.nombre }}</a></li>
+                    <li class="breadcrumb-item active">Eliminar</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Main content -->
+<section class="content">
+    <div class="container-fluid">
+        <div class="row justify-content-center">
+            <div class="col-md-8">
+                <div class="card card-danger">
+                    <div class="card-header">
+                        <h3 class="card-title">⚠️ Confirmar Eliminación del Segmento</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="alert alert-danger">
+                            <h5><i class="icon fas fa-exclamation-triangle"></i> ¡Atención!</h5>
+                            Está a punto de eliminar permanentemente el segmento <strong>"{{ object.nombre }}"</strong>.
+                            Esta acción no se puede deshacer.
+                        </div>
+
+                        <!-- Información del Segmento -->
+                        <div class="card card-outline card-secondary">
+                            <div class="card-header">
+                                <h4 class="card-title">📋 Información del Segmento</h4>
+                            </div>
+                            <div class="card-body">
+                                <dl class="row">
+                                    <dt class="col-sm-3">Nombre:</dt>
+                                    <dd class="col-sm-9">{{ object.nombre }}</dd>
+                                    
+                                    <dt class="col-sm-3">Tipo:</dt>
+                                    <dd class="col-sm-9">
+                                        <span class="badge badge-info">{{ object.get_tipo_display }}</span>
+                                    </dd>
+                                    
+                                    <dt class="col-sm-3">Estado:</dt>
+                                    <dd class="col-sm-9">
+                                        <span class="badge badge-{% if object.activo %}success{% else %}secondary{% endif %}">
+                                            {% if object.activo %}Activo{% else %}Inactivo{% endif %}
+                                        </span>
+                                    </dd>
+                                    
+                                    <dt class="col-sm-3">Orden:</dt>
+                                    <dd class="col-sm-9">{{ object.orden }}</dd>
+                                    
+                                    <dt class="col-sm-3">Creado:</dt>
+                                    <dd class="col-sm-9">{{ object.fecha_creacion|date:"d/m/Y H:i" }}</dd>
+                                </dl>
+
+                                {% if object.descripcion %}
+                                <div class="mt-3">
+                                    <strong>Descripción:</strong>
+                                    <p class="text-muted">{{ object.descripcion|truncatewords:30 }}</p>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Análisis de Impacto -->
+                        <div class="card card-outline card-warning">
+                            <div class="card-header">
+                                <h4 class="card-title">📊 Análisis de Impacto</h4>
+                            </div>
+                            <div class="card-body">
+                                {% if object.plantillas.exists %}
+                                    <div class="alert alert-warning">
+                                        <h6><i class="fas fa-exclamation-triangle"></i> <strong>Impacto en Plantillas:</strong></h6>
+                                        <p>Este segmento está siendo utilizado por <strong>{{ object.plantillas.count }} plantilla{{ object.plantillas.count|pluralize }}</strong>:</p>
+                                        <ul class="mb-0">
+                                            {% for plantilla in object.plantillas.all %}
+                                            <li>
+                                                <strong>{{ plantilla.nombre }}</strong>
+                                                <span class="badge badge-{% if plantilla.activa %}success{% else %}secondary{% endif %} ml-1">
+                                                    {% if plantilla.activa %}Activa{% else %}Inactiva{% endif %}
+                                                </span>
+                                            </li>
+                                            {% endfor %}
+                                        </ul>
+                                        <hr>
+                                        <p class="mb-0">
+                                            <strong>⚠️ Consecuencias:</strong> Al eliminar este segmento, las plantillas mencionadas podrían generar actas incompletas.
+                                        </p>
+                                    </div>
+                                {% else %}
+                                    <div class="alert alert-success">
+                                        <h6><i class="fas fa-check-circle"></i> <strong>Seguro para Eliminar:</strong></h6>
+                                        <p class="mb-0">Este segmento no está siendo utilizado por ninguna plantilla actualmente.</p>
+                                    </div>
+                                {% endif %}
+
+                                <!-- Estadísticas de Uso -->
+                                <div class="row text-center">
+                                    <div class="col-md-4">
+                                        <div class="card bg-light">
+                                            <div class="card-body">
+                                                <h4 class="text-primary">{{ object.plantillas.count }}</h4>
+                                                <small class="text-muted">Plantillas Afectadas</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="card bg-light">
+                                            <div class="card-body">
+                                                <h4 class="text-warning">{{ object.actas_generadas_count|default:0 }}</h4>
+                                                <small class="text-muted">Actas Generadas</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="card bg-light">
+                                            <div class="card-body">
+                                                <h4 class="text-info">{{ object.prompt_ia|length }}</h4>
+                                                <small class="text-muted">Caracteres de Prompt</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Recomendaciones -->
+                        <div class="card card-outline card-info">
+                            <div class="card-header">
+                                <h4 class="card-title">💡 Recomendaciones</h4>
+                            </div>
+                            <div class="card-body">
+                                {% if object.plantillas.exists %}
+                                    <div class="alert alert-info">
+                                        <h6><strong>Antes de eliminar, considere:</strong></h6>
+                                        <ul class="mb-0">
+                                            <li>Revisar las plantillas afectadas y actualizar su configuración</li>
+                                            <li>Crear un segmento de reemplazo si es necesario</li>
+                                            <li>Exportar la configuración del segmento como respaldo</li>
+                                            <li>Notificar a los usuarios que usan las plantillas afectadas</li>
+                                        </ul>
+                                    </div>
+                                {% else %}
+                                    <div class="alert alert-success">
+                                        <h6><strong>Eliminación Segura:</strong></h6>
+                                        <p class="mb-0">
+                                            No hay dependencias detectadas. El segmento puede eliminarse sin afectar el funcionamiento del sistema.
+                                        </p>
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Formulario de Confirmación -->
+                        <form method="post" class="mt-4">
+                            {% csrf_token %}
+                            
+                            {% if object.plantillas.exists %}
+                            <div class="form-group">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="confirmar_impacto" required>
+                                    <label class="form-check-label" for="confirmar_impacto">
+                                        <strong>Entiendo que eliminar este segmento afectará {{ object.plantillas.count }} plantilla{{ object.plantillas.count|pluralize }} y acepto las consecuencias.</strong>
+                                    </label>
+                                </div>
+                            </div>
+                            {% endif %}
+
+                            <div class="form-group">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="confirmar_eliminacion" required>
+                                    <label class="form-check-label" for="confirmar_eliminacion">
+                                        <strong>Confirmo que deseo eliminar permanentemente el segmento "{{ object.nombre }}".</strong>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="text-center mt-4">
+                                <button type="submit" class="btn btn-danger btn-lg" id="btn-eliminar" disabled>
+                                    <i class="fas fa-trash"></i> Sí, Eliminar Permanentemente
+                                </button>
+                                <a href="{% url 'generador_actas:segmento_detail' object.pk %}" class="btn btn-secondary btn-lg ml-3">
+                                    <i class="fas fa-arrow-left"></i> No, Cancelar
+                                </a>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+</div>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const checkboxes = document.querySelectorAll('input[type="checkbox"][required]');
+    const btnEliminar = document.getElementById('btn-eliminar');
+    
+    function verificarCheckboxes() {
+        const todosChecked = Array.from(checkboxes).every(cb => cb.checked);
+        btnEliminar.disabled = !todosChecked;
+        
+        if (todosChecked) {
+            btnEliminar.classList.remove('btn-secondary');
+            btnEliminar.classList.add('btn-danger');
+        } else {
+            btnEliminar.classList.remove('btn-danger');
+            btnEliminar.classList.add('btn-secondary');
+        }
+    }
+    
+    checkboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', verificarCheckboxes);
+    });
+    
+    // Confirmación final
+    btnEliminar.addEventListener('click', function(e) {
+        if (!confirm('⚠️ CONFIRMACIÓN FINAL:\n\n¿Está completamente seguro de que desea eliminar el segmento "{{ object.nombre|escapejs }}"?\n\nEsta acción es IRREVERSIBLE.')) {
+            e.preventDefault();
+        }
+    });
+});
+</script>
+
+{% endblock content %}

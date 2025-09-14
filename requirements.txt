@@ -36,6 +36,7 @@ soundfile==0.12.1
 pydub==0.25.1
 noisereduce==3.0.0
 webrtcvad==2.0.10
+resemblyzer==0.1.4
 
 # Procesamiento de PDF
 reportlab==4.0.8

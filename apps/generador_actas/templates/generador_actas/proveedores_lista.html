@@ -1,0 +1,233 @@
+{% extends "layouts/base.html" %}
+{% load static %}
+
+{% block title %}{{ page_title }}{% endblock title %}
+
+{% block content %}
+<div class="content-wrapper">
+    <!-- Content Header -->
+<div class="content-header">
+    <div class="container-fluid">
+        <div class="row mb-2">
+            <div class="col-sm-6">
+                <h1>🧠 {{ page_title }}</h1>
+            </div>
+            <div class="col-sm-6">
+                <ol class="breadcrumb float-sm-right">
+                    {% for item in breadcrumb %}
+                        {% if item.active %}
+                            <li class="breadcrumb-item active">{{ item.name }}</li>
+                        {% else %}
+                            <li class="breadcrumb-item"><a href="{{ item.url }}">{{ item.name }}</a></li>
+                        {% endif %}
+                    {% endfor %}
+                </ol>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Main content -->
+<section class="content">
+    <div class="container-fluid">
+        
+        <!-- Estadísticas -->
+        <div class="row mb-3">
+            <div class="col-lg-3 col-6">
+                <div class="small-box bg-info">
+                    <div class="inner">
+                        <h3>{{ stats.total }}</h3>
+                        <p>Total Proveedores</p>
+                    </div>
+                    <div class="icon">
+                        <i class="fas fa-brain"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-3 col-6">
+                <div class="small-box bg-success">
+                    <div class="inner">
+                        <h3>{{ stats.activos }}</h3>
+                        <p>Proveedores Activos</p>
+                    </div>
+                    <div class="icon">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-3 col-6">
+                <div class="small-box bg-warning">
+                    <div class="inner">
+                        <h3>{{ stats.inactivos }}</h3>
+                        <p>Proveedores Inactivos</p>
+                    </div>
+                    <div class="icon">
+                        <i class="fas fa-pause-circle"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-3 col-6">
+                <div class="small-box bg-primary">
+                    <div class="inner">
+                        <h3><i class="fas fa-plus"></i></h3>
+                        <p>Nuevo Proveedor</p>
+                    </div>
+                    <a href="{% url 'generador_actas:crear_proveedor' %}" class="small-box-footer">
+                        Crear <i class="fas fa-arrow-circle-right"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filtros -->
+        <div class="card card-primary card-outline">
+            <div class="card-header">
+                <h3 class="card-title">🔍 Filtros y Búsqueda</h3>
+            </div>
+            <div class="card-body">
+                <form method="get" class="row">
+                    <div class="col-md-4">
+                        <input type="text" name="search" value="{{ search }}" 
+                               class="form-control" placeholder="Buscar por nombre o tipo...">
+                    </div>
+                    <div class="col-md-3">
+                        <select name="tipo" class="form-control">
+                            <option value="">Todos los tipos</option>
+                            {% for value, label in tipos_proveedor %}
+                                <option value="{{ value }}" {% if value == tipo_filter %}selected{% endif %}>
+                                    {{ label }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <select name="activo" class="form-control">
+                            <option value="">Todos los estados</option>
+                            <option value="1" {% if activo_filter == "1" %}selected{% endif %}>Activos</option>
+                            <option value="0" {% if activo_filter == "0" %}selected{% endif %}>Inactivos</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-search"></i> Buscar
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Lista de Proveedores -->
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">📋 Lista de Proveedores IA</h3>
+                <div class="card-tools">
+                    <a href="{% url 'generador_actas:crear_proveedor' %}" class="btn btn-success btn-sm">
+                        <i class="fas fa-plus"></i> Nuevo Proveedor
+                    </a>
+                </div>
+            </div>
+            <div class="card-body">
+                {% if proveedores %}
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Nombre</th>
+                                    <th>Tipo</th>
+                                    <th>Modelo</th>
+                                    <th>Estado</th>
+                                    <th>Temperatura</th>
+                                    <th>Max Tokens</th>
+                                    <th>Fecha Creación</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for proveedor in proveedores %}
+                                    <tr>
+                                        <td>
+                                            <strong>{{ proveedor.nombre }}</strong>
+                                        </td>
+                                        <td>
+                                            <span class="badge badge-info">{{ proveedor.get_tipo_display }}</span>
+                                        </td>
+                                        <td>{{ proveedor.modelo|default:"-" }}</td>
+                                        <td>
+                                            {% if proveedor.activo %}
+                                                <span class="badge badge-success">Activo</span>
+                                            {% else %}
+                                                <span class="badge badge-danger">Inactivo</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>{{ proveedor.temperatura }}</td>
+                                        <td>{{ proveedor.max_tokens }}</td>
+                                        <td>{{ proveedor.fecha_creacion|date:"d/m/Y H:i" }}</td>
+                                        <td>
+                                            <div class="btn-group" role="group">
+                                                <a href="{% url 'generador_actas:proveedor_detail' proveedor.pk %}" 
+                                                   class="btn btn-info btn-sm" title="Ver Detalle">
+                                                    <i class="fas fa-eye"></i>
+                                                </a>
+                                                <a href="{% url 'generador_actas:editar_proveedor' proveedor.pk %}" 
+                                                   class="btn btn-warning btn-sm" title="Editar">
+                                                    <i class="fas fa-edit"></i>
+                                                </a>
+                                                <a href="{% url 'generador_actas:eliminar_proveedor' proveedor.pk %}" 
+                                                   class="btn btn-danger btn-sm" title="Eliminar"
+                                                   onclick="return confirm('¿Está seguro de eliminar este proveedor?')">
+                                                    <i class="fas fa-trash"></i>
+                                                </a>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Paginación -->
+                    {% if is_paginated %}
+                        <nav aria-label="Page navigation">
+                            <ul class="pagination justify-content-center">
+                                {% if page_obj.has_previous %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if search %}&search={{ search }}{% endif %}{% if tipo_filter %}&tipo={{ tipo_filter }}{% endif %}{% if activo_filter %}&activo={{ activo_filter }}{% endif %}">
+                                            Anterior
+                                        </a>
+                                    </li>
+                                {% endif %}
+                                
+                                <li class="page-item active">
+                                    <span class="page-link">
+                                        Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}
+                                    </span>
+                                </li>
+                                
+                                {% if page_obj.has_next %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if search %}&search={{ search }}{% endif %}{% if tipo_filter %}&tipo={{ tipo_filter }}{% endif %}{% if activo_filter %}&activo={{ activo_filter }}{% endif %}">
+                                            Siguiente
+                                        </a>
+                                    </li>
+                                {% endif %}
+                            </ul>
+                        </nav>
+                    {% endif %}
+                    
+                {% else %}
+                    <div class="text-center">
+                        <i class="fas fa-robot fa-3x text-muted mb-3"></i>
+                        <h4>No hay proveedores IA configurados</h4>
+                        <p class="text-muted">Crea el primer proveedor IA para comenzar a generar actas.</p>
+                        <a href="{% url 'generador_actas:crear_proveedor' %}" class="btn btn-primary">
+                            <i class="fas fa-plus"></i> Crear Primer Proveedor
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</section>
+</div>
+
+{% endblock content %}

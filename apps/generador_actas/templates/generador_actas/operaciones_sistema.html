@@ -1,0 +1,420 @@
+{% extends "layouts/base.html" %}
+{% load static %}
+
+{% block title %}Operaciones del Sistema - Generador IA{% endblock %}
+
+{% block extra_css %}
+<style>
+.operation-status {
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.875rem;
+    font-weight: 500;
+}
+.status-pending { background-color: #fef3c7; color: #d97706; }
+.status-queued { background-color: #dbeafe; color: #2563eb; }
+.status-running { background-color: #fecaca; color: #dc2626; }
+.status-completed { background-color: #dcfce7; color: #16a34a; }
+.status-failed { background-color: #fee2e2; color: #dc2626; }
+.status-cancelled { background-color: #f3f4f6; color: #6b7280; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="content-wrapper">
+    <!-- Content Header -->
+    <div class="content-header">
+        <div class="container-fluid">
+            <div class="row mb-2">
+                <div class="col-sm-6">
+                    <h1 class="m-0">Operaciones del Sistema</h1>
+                </div>
+                <div class="col-sm-6">
+                    <ol class="breadcrumb float-sm-right">
+                        {% for item in breadcrumb %}
+                            {% if item.active %}
+                                <li class="breadcrumb-item active">{{ item.name }}</li>
+                            {% else %}
+                                <li class="breadcrumb-item">
+                                    <a href="{{ item.url }}">{{ item.name }}</a>
+                                </li>
+                            {% endif %}
+                        {% endfor %}
+                    </ol>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main content -->
+    <section class="content">
+        <div class="container-fluid">
+            
+            <!-- Stats Row -->
+            <div class="row">
+                <div class="col-lg-3 col-6">
+                    <div class="small-box bg-info">
+                        <div class="inner">
+                            <h3>{{ stats.total }}</h3>
+                            <p>Total Operaciones</p>
+                        </div>
+                        <div class="icon">
+                            <i class="fas fa-tasks"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-6">
+                    <div class="small-box bg-warning">
+                        <div class="inner">
+                            <h3>{{ stats.en_progreso }}</h3>
+                            <p>En Progreso</p>
+                        </div>
+                        <div class="icon">
+                            <i class="fas fa-clock"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-6">
+                    <div class="small-box bg-success">
+                        <div class="inner">
+                            <h3>{{ stats.completadas }}</h3>
+                            <p>Completadas</p>
+                        </div>
+                        <div class="icon">
+                            <i class="fas fa-check"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-6">
+                    <div class="small-box bg-danger">
+                        <div class="inner">
+                            <h3>{{ stats.fallidas }}</h3>
+                            <p>Fallidas</p>
+                        </div>
+                        <div class="icon">
+                            <i class="fas fa-times"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Control Panel -->
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <i class="fas fa-tools mr-2"></i>
+                        Panel de Control
+                    </h3>
+                    <div class="card-tools">
+                        <button type="button" class="btn btn-sm btn-success" data-toggle="modal" data-target="#nuevaOperacionModal">
+                            <i class="fas fa-plus mr-1"></i> Nueva Operación
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <button type="button" class="btn btn-outline-primary btn-block" onclick="iniciarOperacion('backup_sistema')">
+                                <i class="fas fa-database mr-2"></i>
+                                Backup Sistema
+                            </button>
+                        </div>
+                        <div class="col-md-3">
+                            <button type="button" class="btn btn-outline-info btn-block" onclick="iniciarOperacion('exportar_configuraciones')">
+                                <i class="fas fa-download mr-2"></i>
+                                Exportar Config
+                            </button>
+                        </div>
+                        <div class="col-md-3">
+                            <button type="button" class="btn btn-outline-warning btn-block" onclick="iniciarOperacion('reiniciar_servicios')">
+                                <i class="fas fa-redo mr-2"></i>
+                                Reiniciar Servicios
+                            </button>
+                        </div>
+                        <div class="col-md-3">
+                            <button type="button" class="btn btn-outline-success btn-block" onclick="iniciarOperacion('probar_proveedores')">
+                                <i class="fas fa-plug mr-2"></i>
+                                Probar Proveedores
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Filtros -->
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Filtros</h3>
+                    <div class="card-tools">
+                        <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                            <i class="fas fa-minus"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <form method="get">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <label for="estado">Estado:</label>
+                                <select name="estado" class="form-control">
+                                    <option value="">Todos</option>
+                                    {% for value, label in estados_disponibles %}
+                                        <option value="{{ value }}" {% if estado_filtro == value %}selected{% endif %}>
+                                            {{ label }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="tipo">Tipo:</label>
+                                <select name="tipo" class="form-control">
+                                    <option value="">Todos</option>
+                                    {% for value, label in tipos_disponibles %}
+                                        <option value="{{ value }}" {% if tipo_filtro == value %}selected{% endif %}>
+                                            {{ label }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-4 d-flex align-items-end">
+                                <button type="submit" class="btn btn-primary mr-2">
+                                    <i class="fas fa-search mr-1"></i> Filtrar
+                                </button>
+                                <a href="{% url 'generador_actas:operaciones_sistema' %}" class="btn btn-secondary">
+                                    <i class="fas fa-times mr-1"></i> Limpiar
+                                </a>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Lista de Operaciones -->
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Lista de Operaciones</h3>
+                </div>
+                <div class="card-body table-responsive p-0">
+                    <table class="table table-hover text-nowrap">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Tipo</th>
+                                <th>Estado</th>
+                                <th>Progreso</th>
+                                <th>Fecha Inicio</th>
+                                <th>Duración</th>
+                                <th>Resultado</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for operacion in operaciones %}
+                            <tr>
+                                <td>
+                                    <code>{{ operacion.id|slice:":8" }}...</code>
+                                </td>
+                                <td>
+                                    <span class="badge badge-secondary">{{ operacion.get_tipo_display }}</span>
+                                </td>
+                                <td>
+                                    <span class="operation-status status-{{ operacion.estado }}">
+                                        {{ operacion.get_estado_display }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <div class="progress progress-sm">
+                                        <div class="progress-bar 
+                                            {% if operacion.estado == 'completed' %}bg-success
+                                            {% elif operacion.estado == 'failed' %}bg-danger
+                                            {% elif operacion.estado == 'running' %}bg-info progress-bar-striped progress-bar-animated
+                                            {% else %}bg-warning{% endif %}"
+                                            role="progressbar" 
+                                            style="width: {{ operacion.progreso }}%">
+                                        </div>
+                                    </div>
+                                    <small>{{ operacion.progreso }}%</small>
+                                </td>
+                                <td>
+                                    {% if operacion.fecha_inicio %}
+                                        {{ operacion.fecha_inicio|date:"d/m/Y H:i" }}
+                                    {% else %}
+                                        <span class="text-muted">N/A</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if operacion.duracion_segundos %}
+                                        {{ operacion.duracion_segundos|floatformat:1 }}s
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if operacion.tiene_archivo %}
+                                        <i class="fas fa-file-download text-success" title="Archivo disponible"></i>
+                                    {% else %}
+                                        <i class="fas fa-minus text-muted" title="Sin archivo"></i>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="btn-group btn-group-sm">
+                                        <a href="{% url 'generador_actas:detalle_operacion' operacion.id %}" 
+                                           class="btn btn-info btn-sm" title="Ver detalles">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        {% if operacion.estado in 'pending,queued,running' %}
+                                            <button class="btn btn-warning btn-sm" 
+                                                    onclick="cancelarOperacion('{{ operacion.id }}')" 
+                                                    title="Cancelar">
+                                                <i class="fas fa-stop"></i>
+                                            </button>
+                                        {% endif %}
+                                        {% if operacion.tiene_archivo %}
+                                            <a href="{% url 'generador_actas:api_descargar_resultado' operacion.id %}" 
+                                               class="btn btn-success btn-sm" title="Descargar">
+                                                <i class="fas fa-download"></i>
+                                            </a>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="8" class="text-center text-muted py-4">
+                                    <i class="fas fa-inbox fa-2x mb-2"></i><br>
+                                    No hay operaciones registradas
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                
+                <!-- Paginación -->
+                {% if operaciones.has_other_pages %}
+                <div class="card-footer">
+                    <nav aria-label="Paginación">
+                        <ul class="pagination justify-content-center">
+                            {% if operaciones.has_previous %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ operaciones.previous_page_number }}{% if estado_filtro %}&estado={{ estado_filtro }}{% endif %}{% if tipo_filtro %}&tipo={{ tipo_filtro }}{% endif %}">
+                                        &laquo; Anterior
+                                    </a>
+                                </li>
+                            {% endif %}
+                            
+                            <li class="page-item active">
+                                <span class="page-link">
+                                    Página {{ operaciones.number }} de {{ operaciones.paginator.num_pages }}
+                                </span>
+                            </li>
+                            
+                            {% if operaciones.has_next %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ operaciones.next_page_number }}{% if estado_filtro %}&estado={{ estado_filtro }}{% endif %}{% if tipo_filtro %}&tipo={{ tipo_filtro }}{% endif %}">
+                                        Siguiente &raquo;
+                                    </a>
+                                </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </section>
+</div>
+
+<!-- Modal Nueva Operación -->
+<div class="modal fade" id="nuevaOperacionModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title">Nueva Operación del Sistema</h4>
+                <button type="button" class="close" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <form method="post" action="{% url 'generador_actas:iniciar_operacion_sistema' %}">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="tipo">Tipo de Operación:</label>
+                        <select name="tipo" id="modalTipo" class="form-control" required>
+                            <option value="">Seleccionar...</option>
+                            <option value="backup_sistema">Backup del Sistema</option>
+                            <option value="exportar_configuraciones">Exportar Configuraciones</option>
+                            <option value="reiniciar_servicios">Reiniciar Servicios</option>
+                            <option value="probar_proveedores">Probar Proveedores IA</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Parámetros específicos -->
+                    <div id="parametros-backup" class="parametros-container" style="display: none;">
+                        <h5>Parámetros del Backup</h5>
+                        <div class="form-check">
+                            <input type="checkbox" name="incluir_media" class="form-check-input" id="incluir_media" checked>
+                            <label class="form-check-label" for="incluir_media">Incluir archivos media</label>
+                        </div>
+                        <div class="form-check">
+                            <input type="checkbox" name="incluir_logs" class="form-check-input" id="incluir_logs">
+                            <label class="form-check-label" for="incluir_logs">Incluir logs del sistema</label>
+                        </div>
+                    </div>
+                    
+                    <div id="parametros-exportar" class="parametros-container" style="display: none;">
+                        <h5>Parámetros de Exportación</h5>
+                        <div class="form-group">
+                            <label for="formato">Formato:</label>
+                            <select name="formato" class="form-control">
+                                <option value="json">JSON</option>
+                                <option value="yaml">YAML</option>
+                            </select>
+                        </div>
+                        <div class="form-check">
+                            <input type="checkbox" name="incluir_sensibles" class="form-check-input" id="incluir_sensibles">
+                            <label class="form-check-label" for="incluir_sensibles">Incluir datos sensibles</label>
+                        </div>
+                    </div>
+                    
+                    <div id="parametros-servicios" class="parametros-container" style="display: none;">
+                        <h5>Servicios a Reiniciar</h5>
+                        <div class="form-check">
+                            <input type="checkbox" name="servicios" value="celery" class="form-check-input" id="serv_celery" checked>
+                            <label class="form-check-label" for="serv_celery">Celery Worker</label>
+                        </div>
+                        <div class="form-check">
+                            <input type="checkbox" name="servicios" value="redis" class="form-check-input" id="serv_redis" checked>
+                            <label class="form-check-label" for="serv_redis">Redis</label>
+                        </div>
+                    </div>
+                    
+                    <div id="parametros-proveedores" class="parametros-container" style="display: none;">
+                        <h5>Proveedores a Probar</h5>
+                        <p class="text-muted">Si no selecciona ninguno, se probarán todos los proveedores activos.</p>
+                        <!-- Los proveedores se cargarían dinámicamente aquí -->
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-play mr-1"></i> Iniciar Operación
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/operaciones.js' %}"></script>
+<script>
+// Auto-refresh cada 30 segundos si hay operaciones en progreso
+{% if stats.en_progreso > 0 %}
+setTimeout(function() {
+    location.reload();
+}, 30000);
+{% endif %}
+</script>
+{% endblock %}

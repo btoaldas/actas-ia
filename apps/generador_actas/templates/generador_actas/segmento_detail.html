@@ -1,0 +1,316 @@
+{% extends "layouts/base.html" %}
+{% load static %}
+
+{% block title %}Detalle del Segmento{% endblock title %}
+
+{% block content %}
+<div class="content-wrapper">
+<!-- Content Header -->
+<div class="content-header">
+    <div class="container-fluid">
+        <div class="row mb-2">
+            <div class="col-sm-6">
+                <h1>🧩 Detalle del Segmento</h1>
+            </div>
+            <div class="col-sm-6">
+                <ol class="breadcrumb float-sm-right">
+                    <li class="breadcrumb-item"><a href="{% url 'generador_actas:dashboard' %}">Dashboard</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'generador_actas:segmentos_lista' %}">Segmentos</a></li>
+                    <li class="breadcrumb-item active">{{ object.nombre }}</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Main content -->
+<section class="content">
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-md-8">
+                <!-- Información Principal -->
+                <div class="card card-primary">
+                    <div class="card-header">
+                        <h3 class="card-title">📋 {{ object.nombre }}</h3>
+                        <div class="card-tools">
+                            <span class="badge badge-{% if object.activo %}success{% else %}secondary{% endif %}">
+                                {% if object.activo %}Activo{% else %}Inactivo{% endif %}
+                            </span>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <dl class="row">
+                                    <dt class="col-sm-4">Nombre:</dt>
+                                    <dd class="col-sm-8">{{ object.nombre }}</dd>
+                                    
+                                    <dt class="col-sm-4">Tipo:</dt>
+                                    <dd class="col-sm-8">
+                                        <span class="badge badge-info">{{ object.get_tipo_display }}</span>
+                                    </dd>
+                                    
+                                    <dt class="col-sm-4">Orden:</dt>
+                                    <dd class="col-sm-8">{{ object.orden }}</dd>
+                                    
+                                    <dt class="col-sm-4">Estado:</dt>
+                                    <dd class="col-sm-8">
+                                        <span class="badge badge-{% if object.activo %}success{% else %}secondary{% endif %}">
+                                            {% if object.activo %}Activo{% else %}Inactivo{% endif %}
+                                        </span>
+                                    </dd>
+                                </dl>
+                            </div>
+                            <div class="col-md-6">
+                                <dl class="row">
+                                    <dt class="col-sm-4">Creado:</dt>
+                                    <dd class="col-sm-8">{{ object.fecha_creacion|date:"d/m/Y H:i" }}</dd>
+                                    
+                                    <dt class="col-sm-4">Actualizado:</dt>
+                                    <dd class="col-sm-8">{{ object.fecha_actualizacion|date:"d/m/Y H:i" }}</dd>
+                                    
+                                    <dt class="col-sm-4">Uso en Plantillas:</dt>
+                                    <dd class="col-sm-8">
+                                        <span class="badge badge-primary">{{ object.plantillas_count|default:0 }} plantillas</span>
+                                    </dd>
+                                </dl>
+                            </div>
+                        </div>
+
+                        {% if object.descripcion %}
+                        <div class="mt-3">
+                            <h5>📝 Descripción:</h5>
+                            <p class="text-muted">{{ object.descripcion }}</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Prompt del Segmento -->
+                <div class="card card-info">
+                    <div class="card-header">
+                        <h3 class="card-title">🤖 Prompt de IA</h3>
+                    </div>
+                    <div class="card-body">
+                        {% if object.prompt_ia %}
+                            <div class="bg-light p-3 rounded">
+                                <pre style="white-space: pre-wrap; font-family: 'Courier New', monospace; margin: 0;">{{ object.prompt_ia }}</pre>
+                            </div>
+                        {% else %}
+                            <p class="text-muted">No se ha configurado un prompt específico para este segmento.</p>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Configuración de Procesamiento -->
+                {% if object.configuracion_procesamiento %}
+                <div class="card card-warning">
+                    <div class="card-header">
+                        <h3 class="card-title">⚙️ Configuración de Procesamiento</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="bg-light p-3 rounded">
+                            <pre style="white-space: pre-wrap; font-family: 'Courier New', monospace; margin: 0;">{{ object.configuracion_procesamiento|default:"{}"|pprint }}</pre>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Plantillas que usan este segmento -->
+                <div class="card card-success">
+                    <div class="card-header">
+                        <h3 class="card-title">📄 Plantillas que usan este Segmento</h3>
+                    </div>
+                    <div class="card-body">
+                        {% if object.plantillas.exists %}
+                            <div class="table-responsive">
+                                <table class="table table-sm table-striped">
+                                    <thead>
+                                        <tr>
+                                            <th>Plantilla</th>
+                                            <th>Tipo</th>
+                                            <th>Estado</th>
+                                            <th>Orden en Plantilla</th>
+                                            <th>Acciones</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for plantilla in object.plantillas.all %}
+                                        <tr>
+                                            <td>
+                                                <a href="{% url 'generador_actas:plantilla_detail' plantilla.pk %}" class="text-decoration-none">
+                                                    {{ plantilla.nombre }}
+                                                </a>
+                                            </td>
+                                            <td>
+                                                <span class="badge badge-secondary">{{ plantilla.get_tipo_acta_display }}</span>
+                                            </td>
+                                            <td>
+                                                <span class="badge badge-{% if plantilla.activa %}success{% else %}secondary{% endif %}">
+                                                    {% if plantilla.activa %}Activa{% else %}Inactiva{% endif %}
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <!-- El orden puede variar según la implementación de M2M -->
+                                                <span class="text-muted">-</span>
+                                            </td>
+                                            <td>
+                                                <a href="{% url 'generador_actas:plantilla_detail' plantilla.pk %}" class="btn btn-sm btn-outline-primary">
+                                                    <i class="fas fa-eye"></i>
+                                                </a>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        {% else %}
+                            <div class="alert alert-info">
+                                <i class="fas fa-info-circle"></i>
+                                Este segmento no está siendo utilizado por ninguna plantilla actualmente.
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-4">
+                <!-- Acciones -->
+                <div class="card card-primary">
+                    <div class="card-header">
+                        <h3 class="card-title">🔧 Acciones</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-grid gap-2">
+                            <a href="{% url 'generador_actas:editar_segmento' object.pk %}" class="btn btn-warning btn-block">
+                                <i class="fas fa-edit"></i> Editar Segmento
+                            </a>
+                            
+                            <button type="button" class="btn btn-info btn-block" onclick="probarSegmento()">
+                                <i class="fas fa-play"></i> Probar Prompt
+                            </button>
+                            
+                            <button type="button" class="btn btn-success btn-block" onclick="duplicarSegmento()">
+                                <i class="fas fa-copy"></i> Duplicar Segmento
+                            </button>
+                            
+                            <a href="{% url 'generador_actas:eliminar_segmento' object.pk %}" class="btn btn-danger btn-block">
+                                <i class="fas fa-trash"></i> Eliminar Segmento
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Estadísticas -->
+                <div class="card card-info">
+                    <div class="card-header">
+                        <h3 class="card-title">📊 Estadísticas</h3>
+                    </div>
+                    <div class="card-body">
+                        <dl class="row">
+                            <dt class="col-sm-8">Plantillas que lo usan:</dt>
+                            <dd class="col-sm-4">{{ object.plantillas_count|default:0 }}</dd>
+                            
+                            <dt class="col-sm-8">Actas generadas:</dt>
+                            <dd class="col-sm-4">{{ object.actas_generadas_count|default:0 }}</dd>
+                            
+                            <dt class="col-sm-8">Longitud del prompt:</dt>
+                            <dd class="col-sm-4">{{ object.prompt_ia|length }} chars</dd>
+                            
+                            <dt class="col-sm-8">Tipo de contenido:</dt>
+                            <dd class="col-sm-4">{{ object.get_tipo_display }}</dd>
+                        </dl>
+                    </div>
+                </div>
+
+                <!-- Información Técnica -->
+                <div class="card card-secondary">
+                    <div class="card-header">
+                        <h3 class="card-title">🔧 Información Técnica</h3>
+                    </div>
+                    <div class="card-body">
+                        <dl class="row">
+                            <dt class="col-sm-6">ID:</dt>
+                            <dd class="col-sm-6">{{ object.pk }}</dd>
+                            
+                            <dt class="col-sm-6">Slug:</dt>
+                            <dd class="col-sm-6"><code>{{ object.slug|default:"No definido" }}</code></dd>
+                            
+                            <dt class="col-sm-6">Orden Global:</dt>
+                            <dd class="col-sm-6">{{ object.orden }}</dd>
+                            
+                            <dt class="col-sm-6">Estado Activo:</dt>
+                            <dd class="col-sm-6">
+                                <span class="badge badge-{% if object.activo %}success{% else %}danger{% endif %}">
+                                    {{ object.activo|yesno:"Sí,No" }}
+                                </span>
+                            </dd>
+                        </dl>
+                    </div>
+                </div>
+
+                <!-- Historial de Cambios -->
+                <div class="card card-warning">
+                    <div class="card-header">
+                        <h3 class="card-title">📅 Historial</h3>
+                    </div>
+                    <div class="card-body">
+                        <small class="text-muted">
+                            <strong>Creado:</strong><br>
+                            {{ object.fecha_creacion|date:"d M Y, H:i" }}
+                            <hr class="my-2">
+                            <strong>Última modificación:</strong><br>
+                            {{ object.fecha_actualizacion|date:"d M Y, H:i" }}
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+</div>
+<script>
+function probarSegmento() {
+    const prompt = `{{ object.prompt_ia|escapejs }}`;
+    if (!prompt.trim()) {
+        alert('⚠️ No hay prompt configurado para probar.');
+        return;
+    }
+    
+    if (confirm('¿Desea probar el prompt de este segmento con un texto de ejemplo?')) {
+        // Aquí se podría integrar con una API de prueba
+        alert('🚀 Funcionalidad de prueba de prompt en desarrollo.\n\nPrompt a probar:\n' + prompt.substring(0, 200) + '...');
+    }
+}
+
+function duplicarSegmento() {
+    if (confirm('¿Desea crear una copia de este segmento?')) {
+        // TODO: Implementar endpoint de duplicación de segmento
+        alert('⚠️ Funcionalidad de duplicar segmento en desarrollo.\nContacte al administrador para duplicar segmentos.');
+        
+        /*
+        fetch(`{# {% url 'generador_actas:duplicar_segmento' object.pk %} #}`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('✅ Segmento duplicado exitosamente');
+                window.location.href = data.redirect_url;
+            } else {
+                alert('❌ Error al duplicar el segmento: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('❌ Error de conexión al duplicar el segmento');
+        });
+        */
+    }
+}
+</script>
+
+{% endblock content %}

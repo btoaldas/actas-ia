@@ -1,0 +1,314 @@
+{% extends "layouts/base.html" %}
+{% load static %}
+
+{% block title %}{{ page_title }}{% endblock title %}
+
+{% block content %}
+<div class="content-wrapper">
+<!-- Content Header -->
+<div class="content-header">
+    <div class="container-fluid">
+        <div class="row mb-2">
+            <div class="col-sm-6">
+                <h1>📄 {{ page_title }}</h1>
+            </div>
+            <div class="col-sm-6">
+                <ol class="breadcrumb float-sm-right">
+                    <li class="breadcrumb-item"><a href="{% url 'generador_actas:dashboard' %}">Dashboard</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'generador_actas:segmentos_lista' %}">Segmentos</a></li>
+                    <li class="breadcrumb-item active">{{ form_title }}</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Main content -->
+<section class="content">
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-md-8">
+                <div class="card card-primary">
+                    <div class="card-header">
+                        <h3 class="card-title">{{ form_title }}</h3>
+                    </div>
+                    
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="card-body">
+                            
+                            <!-- Información Básica -->
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="{{ form.nombre.id_for_label }}">
+                                            Nombre del Segmento <span class="text-danger">*</span>
+                                        </label>
+                                        {{ form.nombre }}
+                                        {% if form.nombre.errors %}
+                                            <div class="text-danger">{{ form.nombre.errors }}</div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="{{ form.tipo.id_for_label }}">
+                                            Tipo de Segmento <span class="text-danger">*</span>
+                                        </label>
+                                        {{ form.tipo }}
+                                        {% if form.tipo.errors %}
+                                            <div class="text-danger">{{ form.tipo.errors }}</div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Descripción -->
+                            <div class="form-group">
+                                <label for="{{ form.descripcion.id_for_label }}">
+                                    Descripción
+                                </label>
+                                {{ form.descripcion }}
+                                <small class="form-text text-muted">
+                                    Describe el propósito y contenido de este segmento.
+                                </small>
+                                {% if form.descripcion.errors %}
+                                    <div class="text-danger">{{ form.descripcion.errors }}</div>
+                                {% endif %}
+                            </div>
+
+                            <!-- Contenido del Prompt -->
+                            <div class="form-group">
+                                <label for="{{ form.contenido_prompt.id_for_label }}">
+                                    Contenido del Prompt <span class="text-danger">*</span>
+                                </label>
+                                {{ form.contenido_prompt }}
+                                <small class="form-text text-muted">
+                                    Instrucciones para la IA. Puede usar variables como {fecha}, {participantes}, etc.
+                                </small>
+                                {% if form.contenido_prompt.errors %}
+                                    <div class="text-danger">{{ form.contenido_prompt.errors }}</div>
+                                {% endif %}
+                            </div>
+
+                            <!-- Configuración Avanzada -->
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <div class="form-group">
+                                        <label for="{{ form.orden.id_for_label }}">
+                                            Orden de Procesamiento
+                                        </label>
+                                        {{ form.orden }}
+                                        <small class="form-text text-muted">
+                                            Orden por defecto en las plantillas (1-100)
+                                        </small>
+                                        {% if form.orden.errors %}
+                                            <div class="text-danger">{{ form.orden.errors }}</div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-group">
+                                        <label for="{{ form.max_tokens.id_for_label }}">
+                                            Máximo de Tokens
+                                        </label>
+                                        {{ form.max_tokens }}
+                                        <small class="form-text text-muted">
+                                            Límite de respuesta para este segmento
+                                        </small>
+                                        {% if form.max_tokens.errors %}
+                                            <div class="text-danger">{{ form.max_tokens.errors }}</div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-group">
+                                        <label for="{{ form.activo.id_for_label }}">
+                                            Estado
+                                        </label>
+                                        <div class="form-check">
+                                            {{ form.activo }}
+                                            <label class="form-check-label" for="{{ form.activo.id_for_label }}">
+                                                Segmento Activo
+                                            </label>
+                                        </div>
+                                        {% if form.activo.errors %}
+                                            <div class="text-danger">{{ form.activo.errors }}</div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Variables Disponibles -->
+                            <div class="form-group">
+                                <label for="{{ form.variables_requeridas.id_for_label }}">
+                                    Variables Requeridas
+                                </label>
+                                {{ form.variables_requeridas }}
+                                <small class="form-text text-muted">
+                                    Variables necesarias para este segmento (JSON). Ej: ["fecha", "participantes"]
+                                </small>
+                                {% if form.variables_requeridas.errors %}
+                                    <div class="text-danger">{{ form.variables_requeridas.errors }}</div>
+                                {% endif %}
+                            </div>
+
+                            <!-- Configuración Adicional -->
+                            <div class="form-group">
+                                <label for="{{ form.configuracion_adicional.id_for_label }}">
+                                    Configuración Adicional (JSON)
+                                </label>
+                                {{ form.configuracion_adicional }}
+                                <small class="form-text text-muted">
+                                    Parámetros adicionales en formato JSON. Ej: {"temperatura": 0.7, "top_p": 0.9}
+                                </small>
+                                {% if form.configuracion_adicional.errors %}
+                                    <div class="text-danger">{{ form.configuracion_adicional.errors }}</div>
+                                {% endif %}
+                            </div>
+
+                        </div>
+                        
+                        <div class="card-footer">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> {{ submit_text }}
+                            </button>
+                            <a href="{% url 'generador_actas:segmentos_lista' %}" class="btn btn-secondary">
+                                <i class="fas fa-times"></i> Cancelar
+                            </a>
+                            {% if object %}
+                            <a href="{% url 'generador_actas:segmento_detail' object.pk %}" class="btn btn-info">
+                                <i class="fas fa-eye"></i> Ver Detalle
+                            </a>
+                            {% endif %}
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <div class="col-md-4">
+                <!-- Ayuda sobre tipos de segmento -->
+                <div class="card card-info">
+                    <div class="card-header">
+                        <h3 class="card-title">💡 Tipos de Segmento</h3>
+                    </div>
+                    <div class="card-body">
+                        <h6><strong>Tipos Disponibles:</strong></h6>
+                        <ul class="list-unstyled">
+                            <li><strong>Encabezado:</strong> Información inicial (fecha, lugar, etc.)</li>
+                            <li><strong>Agenda:</strong> Puntos a tratar en la reunión</li>
+                            <li><strong>Desarrollo:</strong> Contenido principal de la sesión</li>
+                            <li><strong>Acuerdos:</strong> Decisiones y resoluciones tomadas</li>
+                            <li><strong>Participantes:</strong> Lista de asistentes y roles</li>
+                            <li><strong>Cierre:</strong> Conclusiones y próximos pasos</li>
+                            <li><strong>Anexos:</strong> Documentos y referencias adicionales</li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <!-- Variables comunes -->
+                <div class="card card-success">
+                    <div class="card-header">
+                        <h3 class="card-title">🔧 Variables Comunes</h3>
+                    </div>
+                    <div class="card-body">
+                        <h6><strong>Variables Disponibles:</strong></h6>
+                        <ul class="list-unstyled">
+                            <li><code>{fecha}</code> - Fecha de la sesión</li>
+                            <li><code>{hora}</code> - Hora de inicio</li>
+                            <li><code>{lugar}</code> - Lugar de la reunión</li>
+                            <li><code>{participantes}</code> - Lista de participantes</li>
+                            <li><code>{transcripcion}</code> - Texto completo</li>
+                            <li><code>{temas}</code> - Temas detectados</li>
+                            <li><code>{duracion}</code> - Duración de la sesión</li>
+                        </ul>
+                        
+                        <small class="text-muted">
+                            Use estas variables en su prompt para contenido dinámico.
+                        </small>
+                    </div>
+                </div>
+                
+                <!-- Vista previa -->
+                <div class="card card-warning">
+                    <div class="card-header">
+                        <h3 class="card-title">👁️ Vista Previa</h3>
+                    </div>
+                    <div class="card-body">
+                        <p>Después de guardar, podrá probar este segmento con datos de ejemplo.</p>
+                        <button type="button" class="btn btn-warning btn-sm" disabled>
+                            <i class="fas fa-eye"></i> Probar Segmento
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+</div>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Auto-completar orden según el tipo
+    const tipoSelect = document.getElementById('{{ form.tipo.id_for_label }}');
+    const ordenInput = document.getElementById('{{ form.orden.id_for_label }}');
+    
+    if (tipoSelect && ordenInput) {
+        tipoSelect.addEventListener('change', function() {
+            const tipo = this.value;
+            let ordenSugerido = '';
+            
+            switch(tipo) {
+                case 'encabezado':
+                    ordenSugerido = '10';
+                    break;
+                case 'agenda':
+                    ordenSugerido = '20';
+                    break;
+                case 'participantes':
+                    ordenSugerido = '30';
+                    break;
+                case 'desarrollo':
+                    ordenSugerido = '40';
+                    break;
+                case 'acuerdos':
+                    ordenSugerido = '50';
+                    break;
+                case 'cierre':
+                    ordenSugerido = '60';
+                    break;
+                case 'anexos':
+                    ordenSugerido = '70';
+                    break;
+            }
+            
+            if (ordenSugerido && !ordenInput.value) {
+                ordenInput.value = ordenSugerido;
+            }
+        });
+    }
+    
+    // Validar JSON en campos JSON
+    const jsonFields = ['{{ form.variables_requeridas.id_for_label }}', '{{ form.configuracion_adicional.id_for_label }}'];
+    
+    jsonFields.forEach(fieldId => {
+        const field = document.getElementById(fieldId);
+        if (field) {
+            field.addEventListener('blur', function() {
+                const value = this.value.trim();
+                if (value && value !== '{}' && value !== '[]') {
+                    try {
+                        JSON.parse(value);
+                        this.classList.remove('is-invalid');
+                        this.classList.add('is-valid');
+                    } catch (e) {
+                        this.classList.remove('is-valid');
+                        this.classList.add('is-invalid');
+                    }
+                }
+            });
+        }
+    });
+});
+</script>
+
+{% endblock content %}

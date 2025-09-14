@@ -77,6 +77,133 @@
         </ul>
     </li>
 
+    <!-- Transcripción V2 - Nueva Arquitectura de Dashboards -->
+    <li class="nav-item {% if 'audios' in segment or 'transcripciones' in segment or 'proceso' in segment or 'detalle' in segment %} menu-open {% endif %}">
+        <a href="#" class="nav-link {% if 'audios' in segment or 'transcripciones' in segment or 'proceso' in segment or 'detalle' in segment %} active {% endif %}">
+            <i class="nav-icon fas fa-microphone-lines"></i>
+            <p>
+                🎯 Transcripción V2
+                <i class="right fas fa-angle-left"></i>
+            </p>
+        </a>
+        <ul class="nav nav-treeview">
+            <li class="nav-item">
+                <a href="{% url 'transcripcion:audios_dashboard' %}" class="nav-link {% if 'audios' in segment and 'dashboard' in request.resolver_match.url_name %} active {% endif %}">
+                    <i class="far fa-circle nav-icon"></i>
+                    <p>🎵 Audios por Transcribir</p>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="{% url 'transcripcion:transcripciones_dashboard' %}" class="nav-link {% if 'transcripciones' in segment and 'dashboard' in request.resolver_match.url_name %} active {% endif %}">
+                    <i class="far fa-circle nav-icon"></i>
+                    <p>📋 Transcripciones Realizadas</p>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="#" class="nav-link disabled" style="opacity: 0.6;">
+                    <i class="far fa-circle nav-icon"></i>
+                    <p>⚙️ Configurar Procesamiento</p>
+                    <small class="text-muted">(Se accede desde audios)</small>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="#" class="nav-link disabled" style="opacity: 0.6;">
+                    <i class="far fa-circle nav-icon"></i>
+                    <p>🔍 Ver Detalle</p>
+                    <small class="text-muted">(Se accede desde transcripciones)</small>
+                </a>
+            </li>
+        </ul>
+    </li>
+
+    <!-- Generador de Actas IA - Menú Principal -->
+    <li class="nav-item {% if 'generador-actas' in segment or 'generador_actas' in segment %} menu-open {% endif %}">
+        <a href="#" class="nav-link {% if 'generador-actas' in segment or 'generador_actas' in segment %} active {% endif %}">
+            <i class="nav-icon fas fa-brain"></i>
+            <p>
+                🤖 Generador de Actas IA
+                <i class="right fas fa-angle-left"></i>
+            </p>
+        </a>
+        <ul class="nav nav-treeview">
+            <!-- Dashboard Principal del Generador -->
+            <li class="nav-item">
+                <a href="{% url 'generador_actas:dashboard' %}" class="nav-link {% if 'dashboard' in segment and 'generador' in request.resolver_match.url_name %} active {% endif %}">
+                    <i class="far fa-circle nav-icon"></i>
+                    <p>📊 Dashboard General</p>
+                </a>
+            </li>
+            
+            <!-- Gestión de Proveedores IA -->
+            <li class="nav-item">
+                <a href="{% url 'generador_actas:proveedores_lista' %}" class="nav-link {% if 'proveedores' in segment and 'lista' in request.resolver_match.url_name %} active {% endif %}">
+                    <i class="far fa-circle nav-icon"></i>
+                    <p>🧠 Dashboard de IAs</p>
+                </a>
+            </li>
+            
+            <li class="nav-item">
+                <a href="{% url 'generador_actas:crear_proveedor' %}" class="nav-link {% if 'crear-proveedor' in segment %} active {% endif %}">
+                    <i class="far fa-circle nav-icon"></i>
+                    <p>⚙️ Crear/Editar IA</p>
+                </a>
+            </li>
+            
+            <!-- Gestión de Segmentos -->
+            <li class="nav-item">
+                <a href="{% url 'generador_actas:segmentos_lista' %}" class="nav-link {% if 'segmentos' in segment and 'lista' in request.resolver_match.url_name %} active {% endif %}">
+                    <i class="far fa-circle nav-icon"></i>
+                    <p>📝 Dashboard de Segmentos</p>
+                </a>
+            </li>
+            
+            <li class="nav-item">
+                <a href="{% url 'generador_actas:crear_segmento' %}" class="nav-link {% if 'crear-segmento' in segment %} active {% endif %}">
+                    <i class="far fa-circle nav-icon"></i>
+                    <p>✏️ Crear/Editar Segmento</p>
+                </a>
+            </li>
+            
+            <!-- Gestión de Plantillas -->
+            <li class="nav-item">
+                <a href="{% url 'generador_actas:plantillas_lista' %}" class="nav-link {% if 'plantillas' in segment and 'lista' in request.resolver_match.url_name %} active {% endif %}">
+                    <i class="far fa-circle nav-icon"></i>
+                    <p>📋 Dashboard de Plantillas</p>
+                </a>
+            </li>
+            
+            <li class="nav-item">
+                <a href="{% url 'generador_actas:crear_plantilla' %}" class="nav-link {% if 'crear-plantilla' in segment %} active {% endif %}">
+                    <i class="far fa-circle nav-icon"></i>
+                    <p>📄 Crear/Editar Plantilla</p>
+                </a>
+            </li>
+            
+            <!-- Gestión de Actas IA -->
+            <li class="nav-item">
+                <a href="{% url 'generador_actas:actas_lista' %}" class="nav-link {% if 'actas' in segment and 'lista' in request.resolver_match.url_name and 'generador' in request.resolver_match.url_name %} active {% endif %}">
+                    <i class="far fa-circle nav-icon"></i>
+                    <p>📊 Dashboard de Actas IA</p>
+                </a>
+            </li>
+            
+            <li class="nav-item">
+                <a href="{% url 'generador_actas:crear_acta' %}" class="nav-link {% if 'crear-acta' in segment %} active {% endif %}">
+                    <i class="far fa-circle nav-icon"></i>
+                    <p>🚀 Crear/Procesar Acta IA</p>
+                </a>
+            </li>
+            
+            <!-- Configuración Avanzada -->
+            <li class="nav-item">
+                <a href="{% url 'generador_actas:configuracion' %}" class="nav-link {% if 'configuracion' in segment and 'generador' in request.resolver_match.url_name %} active {% endif %}">
+                    <i class="far fa-circle nav-icon"></i>
+                    <p>⚙️ Configuración Global</p>
+                </a>
+            </li>
+        </ul>
+    </li>
+
     <!-- Gestión de Actas (simplificado) -->
     <li class="nav-item {% if 'actas' in parent %} menu-open {% endif %}">
         <a href="#" class="nav-link {% if 'actas' in parent %} active {% endif %}">

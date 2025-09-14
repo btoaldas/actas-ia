@@ -1,0 +1,635 @@
+{% extends "layouts/base.html" %}
+{% load static %}
+
+{% block title %}Configuración del Sistema{% endblock title %}
+
+{% block content %}
+<div class="content-wrapper">
+<!-- Content Header -->
+<div class="content-header">
+    <div class="container-fluid">
+        <div class="row mb-2">
+            <div class="col-sm-6">
+                <h1>⚙️ Configuración del Sistema</h1>
+            </div>
+            <div class="col-sm-6">
+                <ol class="breadcrumb float-sm-right">
+                    <li class="breadcrumb-item"><a href="{% url 'generador_actas:dashboard' %}">Dashboard</a></li>
+                    <li class="breadcrumb-item active">Configuración</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Main content -->
+<section class="content">
+    <div class="container-fluid">
+        
+        <!-- Estado del Sistema -->
+        <div class="row mb-3">
+            <div class="col-lg-3 col-6">
+                <div class="small-box bg-info">
+                    <div class="inner">
+                        <h3>{{ stats.total_configuraciones }}</h3>
+                        <p>Configuraciones</p>
+                    </div>
+                    <div class="icon">
+                        <i class="fas fa-cogs"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-3 col-6">
+                <div class="small-box bg-success">
+                    <div class="inner">
+                        <h3>{{ stats.proveedores_activos }}</h3>
+                        <p>Proveedores Activos</p>
+                    </div>
+                    <div class="icon">
+                        <i class="fas fa-robot"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-3 col-6">
+                <div class="small-box bg-warning">
+                    <div class="inner">
+                        <h3>{{ stats.plantillas_activas }}</h3>
+                        <p>Plantillas Activas</p>
+                    </div>
+                    <div class="icon">
+                        <i class="fas fa-file-alt"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-3 col-6">
+                <div class="small-box bg-primary">
+                    <div class="inner">
+                        <h3>{{ stats.actas_generadas }}</h3>
+                        <p>Actas Generadas</p>
+                    </div>
+                    <div class="icon">
+                        <i class="fas fa-clipboard-check"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <!-- Configuraciones Principales -->
+            <div class="col-md-8">
+                <div class="card card-primary">
+                    <div class="card-header">
+                        <h3 class="card-title">🔧 Configuraciones del Sistema</h3>
+                    </div>
+                    <div class="card-body">
+                        <form method="post" id="configForm">
+                            {% csrf_token %}
+                            
+                            <!-- Configuración General -->
+                            <div class="card card-outline card-info mb-3">
+                                <div class="card-header">
+                                    <h4 class="card-title">📋 Configuración General</h4>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="form-group">
+                                                <label>Proveedor IA por Defecto</label>
+                                                <select name="proveedor_ia_defecto" class="form-control">
+                                                    <option value="">Seleccionar proveedor...</option>
+                                                    {% for proveedor in proveedores_activos %}
+                                                        <option value="{{ proveedor.pk }}" 
+                                                                {% if configuraciones.proveedor_ia_defecto == proveedor.pk|stringformat:"s" %}selected{% endif %}>
+                                                            {{ proveedor.nombre }} ({{ proveedor.get_tipo_display }})
+                                                        </option>
+                                                    {% endfor %}
+                                                </select>
+                                                <small class="form-text text-muted">
+                                                    Proveedor de IA que se utilizará por defecto para generar actas.
+                                                </small>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="form-group">
+                                                <label>Plantilla por Defecto</label>
+                                                <select name="plantilla_defecto" class="form-control">
+                                                    <option value="">Seleccionar plantilla...</option>
+                                                    {% for plantilla in plantillas_activas %}
+                                                        <option value="{{ plantilla.pk }}" 
+                                                                {% if configuraciones.plantilla_defecto == plantilla.pk|stringformat:"s" %}selected{% endif %}>
+                                                            {{ plantilla.nombre }}
+                                                        </option>
+                                                    {% endfor %}
+                                                </select>
+                                                <small class="form-text text-muted">
+                                                    Plantilla que se seleccionará automáticamente.
+                                                </small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="form-group">
+                                                <label>Longitud Máxima de Acta (caracteres)</label>
+                                                <input type="number" name="longitud_maxima_acta" class="form-control" 
+                                                       value="{{ configuraciones.longitud_maxima_acta|default:10000 }}" 
+                                                       min="1000" max="50000">
+                                                <small class="form-text text-muted">
+                                                    Límite de caracteres para el contenido generado.
+                                                </small>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="form-group">
+                                                <label>Tiempo Límite de Generación (segundos)</label>
+                                                <input type="number" name="timeout_generacion" class="form-control" 
+                                                       value="{{ configuraciones.timeout_generacion|default:300 }}" 
+                                                       min="60" max="1800">
+                                                <small class="form-text text-muted">
+                                                    Tiempo máximo para esperar la respuesta de IA.
+                                                </small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Configuración de Calidad -->
+                            <div class="card card-outline card-success mb-3">
+                                <div class="card-header">
+                                    <h4 class="card-title">✅ Control de Calidad</h4>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="form-group">
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="checkbox" 
+                                                           name="validacion_automatica" 
+                                                           {% if configuraciones.validacion_automatica %}checked{% endif %}>
+                                                    <label class="form-check-label">
+                                                        Validación Automática de Contenido
+                                                    </label>
+                                                </div>
+                                                <small class="form-text text-muted">
+                                                    Verificar automáticamente la estructura y coherencia del acta.
+                                                </small>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="form-group">
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="checkbox" 
+                                                           name="revision_manual_requerida" 
+                                                           {% if configuraciones.revision_manual_requerida %}checked{% endif %}>
+                                                    <label class="form-check-label">
+                                                        Revisión Manual Requerida
+                                                    </label>
+                                                </div>
+                                                <small class="form-text text-muted">
+                                                    Todas las actas requieren aprobación manual antes de finalizar.
+                                                </small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="form-group">
+                                                <label>Nivel de Detalle Mínimo</label>
+                                                <select name="nivel_detalle_minimo" class="form-control">
+                                                    <option value="basico" {% if configuraciones.nivel_detalle_minimo == 'basico' %}selected{% endif %}>Básico</option>
+                                                    <option value="intermedio" {% if configuraciones.nivel_detalle_minimo == 'intermedio' %}selected{% endif %}>Intermedio</option>
+                                                    <option value="detallado" {% if configuraciones.nivel_detalle_minimo == 'detallado' %}selected{% endif %}>Detallado</option>
+                                                    <option value="completo" {% if configuraciones.nivel_detalle_minimo == 'completo' %}selected{% endif %}>Completo</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="form-group">
+                                                <label>Intentos de Regeneración</label>
+                                                <input type="number" name="intentos_regeneracion" class="form-control" 
+                                                       value="{{ configuraciones.intentos_regeneracion|default:3 }}" 
+                                                       min="1" max="10">
+                                                <small class="form-text text-muted">
+                                                    Número de intentos automáticos si falla la generación.
+                                                </small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Configuración de Seguridad -->
+                            <div class="card card-outline card-warning mb-3">
+                                <div class="card-header">
+                                    <h4 class="card-title">🔒 Configuración de Seguridad</h4>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="form-group">
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="checkbox" 
+                                                           name="logs_detallados" 
+                                                           {% if configuraciones.logs_detallados %}checked{% endif %}>
+                                                    <label class="form-check-label">
+                                                        Logs Detallados
+                                                    </label>
+                                                </div>
+                                                <small class="form-text text-muted">
+                                                    Registrar todas las operaciones para auditoría.
+                                                </small>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="form-group">
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="checkbox" 
+                                                           name="backup_automatico" 
+                                                           {% if configuraciones.backup_automatico %}checked{% endif %}>
+                                                    <label class="form-check-label">
+                                                        Backup Automático
+                                                    </label>
+                                                </div>
+                                                <small class="form-text text-muted">
+                                                    Crear copias de seguridad automáticamente.
+                                                </small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="form-group">
+                                                <label>Días de Retención de Logs</label>
+                                                <input type="number" name="dias_retencion_logs" class="form-control" 
+                                                       value="{{ configuraciones.dias_retencion_logs|default:90 }}" 
+                                                       min="7" max="365">
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="form-group">
+                                                <label>Frecuencia de Backup (días)</label>
+                                                <input type="number" name="frecuencia_backup" class="form-control" 
+                                                       value="{{ configuraciones.frecuencia_backup|default:7 }}" 
+                                                       min="1" max="30">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Configuración de Notificaciones -->
+                            <div class="card card-outline card-info mb-3">
+                                <div class="card-header">
+                                    <h4 class="card-title">📧 Notificaciones</h4>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="form-group">
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="checkbox" 
+                                                           name="notificar_generacion_completada" 
+                                                           {% if configuraciones.notificar_generacion_completada %}checked{% endif %}>
+                                                    <label class="form-check-label">
+                                                        Notificar Generación Completada
+                                                    </label>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="form-group">
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="checkbox" 
+                                                           name="notificar_errores" 
+                                                           {% if configuraciones.notificar_errores %}checked{% endif %}>
+                                                    <label class="form-check-label">
+                                                        Notificar Errores
+                                                    </label>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="form-group">
+                                        <label>Emails de Notificación</label>
+                                        <textarea name="emails_notificacion" class="form-control" rows="3" 
+                                                  placeholder="email1@ejemplo.com, email2@ejemplo.com">{{ configuraciones.emails_notificacion }}</textarea>
+                                        <small class="form-text text-muted">
+                                            Emails separados por comas que recibirán notificaciones.
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save"></i> Guardar Configuración
+                                </button>
+                                <button type="button" class="btn btn-secondary" onclick="resetearConfiguracion()">
+                                    <i class="fas fa-undo"></i> Restaurar Valores por Defecto
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Panel de Herramientas -->
+            <div class="col-md-4">
+                <!-- Estado del Sistema -->
+                <div class="card card-info">
+                    <div class="card-header">
+                        <h3 class="card-title">🚦 Estado del Sistema</h3>
+                    </div>
+                    <div class="card-body">
+                        <dl class="row">
+                            <dt class="col-sm-8">Base de Datos:</dt>
+                            <dd class="col-sm-4">
+                                <span class="badge badge-success">
+                                    <i class="fas fa-check"></i> OK
+                                </span>
+                            </dd>
+                            
+                            <dt class="col-sm-8">Proveedores IA:</dt>
+                            <dd class="col-sm-4">
+                                <span class="badge badge-{% if stats.proveedores_activos > 0 %}success{% else %}warning{% endif %}">
+                                    {{ stats.proveedores_activos }}/{{ stats.total_proveedores }}
+                                </span>
+                            </dd>
+                            
+                            <dt class="col-sm-8">Espacio en Disco:</dt>
+                            <dd class="col-sm-4">
+                                <span class="badge badge-{% if sistema.espacio_disponible > 1000 %}success{% elif sistema.espacio_disponible > 500 %}warning{% else %}danger{% endif %}">
+                                    {{ sistema.espacio_disponible|default:"N/A" }} MB
+                                </span>
+                            </dd>
+                            
+                            <dt class="col-sm-8">Última Actualización:</dt>
+                            <dd class="col-sm-4">
+                                <small>{{ sistema.ultima_actualizacion|date:"d/m H:i"|default:"N/A" }}</small>
+                            </dd>
+                        </dl>
+                    </div>
+                </div>
+
+                <!-- Herramientas de Mantenimiento -->
+                <div class="card card-warning">
+                    <div class="card-header">
+                        <h3 class="card-title">🔧 Herramientas de Mantenimiento</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-grid gap-2">
+                            <button type="button" class="btn btn-info btn-block" onclick="probarConexionesIA()">
+                                <i class="fas fa-flask"></i> Probar Conexiones IA
+                            </button>
+                            
+                            <button type="button" class="btn btn-warning btn-block" onclick="limpiarCache()">
+                                <i class="fas fa-broom"></i> Limpiar Cache
+                            </button>
+                            
+                            <button type="button" class="btn btn-primary btn-block" onclick="crearBackup()">
+                                <i class="fas fa-database"></i> Crear Backup
+                            </button>
+                            
+                            <button type="button" class="btn btn-secondary btn-block" onclick="exportarConfiguracion()">
+                                <i class="fas fa-download"></i> Exportar Configuración
+                            </button>
+                            
+                            <div class="dropdown-divider"></div>
+                            
+                            <button type="button" class="btn btn-danger btn-block" onclick="confirmarReinicio()">
+                                <i class="fas fa-power-off"></i> Reiniciar Sistema
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Información de Versión -->
+                <div class="card card-light">
+                    <div class="card-header">
+                        <h3 class="card-title">ℹ️ Información del Sistema</h3>
+                    </div>
+                    <div class="card-body">
+                        <dl class="row">
+                            <dt class="col-sm-6">Versión:</dt>
+                            <dd class="col-sm-6">{{ sistema.version|default:"1.0.0" }}</dd>
+                            
+                            <dt class="col-sm-6">Entorno:</dt>
+                            <dd class="col-sm-6">
+                                <span class="badge badge-info">{{ sistema.entorno|default:"Desarrollo" }}</span>
+                            </dd>
+                            
+                            <dt class="col-sm-6">Python:</dt>
+                            <dd class="col-sm-6">{{ sistema.python_version|default:"3.x" }}</dd>
+                            
+                            <dt class="col-sm-6">Django:</dt>
+                            <dd class="col-sm-6">{{ sistema.django_version|default:"4.x" }}</dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+</div>
+<script>
+function resetearConfiguracion() {
+    if (confirm('¿Está seguro de que desea restaurar todas las configuraciones a sus valores por defecto?')) {
+        // TODO: Implementar endpoint de reset de configuración
+        alert('⚠️ Funcionalidad de reset en desarrollo.\nPor favor, contacte al administrador para restaurar configuraciones.');
+        /*
+        fetch('{% url "generador_actas:configuracion" %}', {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}',
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                'action': 'reset'
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                toastr.success('Configuración restaurada exitosamente');
+                location.reload();
+            } else {
+                toastr.error('Error al restaurar la configuración');
+            }
+        });
+        */
+    }
+}
+
+function probarConexionesIA() {
+    const btn = event.target;
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Probando...';
+    btn.disabled = true;
+    
+function probarConexionesIA() {
+    const btn = event.target;
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Probando...';
+    btn.disabled = true;
+    
+    // TODO: Implementar endpoint de prueba de proveedores
+    setTimeout(() => {
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+        alert('⚠️ Funcionalidad de prueba de conexiones en desarrollo.\nVerifique los proveedores IA individualmente desde su página de detalle.');
+    }, 2000);
+    
+    /*
+    fetch('{% url "generador_actas:configuracion" %}', {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': '{{ csrf_token }}',
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            'action': 'test_providers'
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            toastr.success(`Pruebas completadas: ${data.exitosos}/${data.total} proveedores funcionando`);
+        } else {
+            toastr.error('Error al probar las conexiones');
+        }
+    })
+    .finally(() => {
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+    });
+    */
+}
+
+function limpiarCache() {
+    if (confirm('¿Desea limpiar el cache del sistema?')) {
+        // TODO: Implementar endpoint de limpieza de cache
+        alert('⚠️ Funcionalidad de limpieza de cache en desarrollo.\nContacte al administrador para operaciones de mantenimiento.');
+        /*
+        fetch('{% url "generador_actas:configuracion" %}', {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}',
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                'action': 'clear_cache'
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                toastr.success('Cache limpiado exitosamente');
+            } else {
+                toastr.error('Error al limpiar el cache');
+            }
+        });
+        */
+    }
+}
+
+function crearBackup() {
+    const btn = event.target;
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creando...';
+    btn.disabled = true;
+    
+    // TODO: Implementar endpoint de creación de backup
+    setTimeout(() => {
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+        alert('⚠️ Funcionalidad de backup en desarrollo.\nContacte al administrador para crear copias de seguridad.');
+    }, 2000);
+    
+    /*
+    fetch('{# % url "generador_actas:crear_backup" % #}', {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': '{{ csrf_token }}',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            toastr.success('Backup creado exitosamente');
+        } else {
+            toastr.error('Error al crear el backup');
+        }
+    })
+    .finally(() => {
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+    });
+    */
+}
+
+function exportarConfiguracion() {
+    // TODO: Implementar endpoint de exportación de configuración
+    alert('⚠️ Funcionalidad de exportación en desarrollo.\nContacte al administrador para obtener la configuración del sistema.');
+    // window.open('{# % url "generador_actas:exportar_configuracion" % #}', '_blank');
+}
+
+function confirmarReinicio() {
+    if (confirm('¿Está seguro de que desea reiniciar el sistema? Esta operación puede tardar unos minutos.')) {
+        // TODO: Implementar endpoint de reinicio del sistema
+        alert('⚠️ Funcionalidad de reinicio en desarrollo.\nContacte al administrador para operaciones de reinicio del sistema.');
+        
+        /*
+        toastr.warning('Reiniciando sistema... Esto puede tardar unos minutos.');
+        
+        fetch('{# % url "generador_actas:reiniciar_sistema" % #}', {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                toastr.success('Sistema reiniciado exitosamente');
+                setTimeout(() => location.reload(), 5000);
+            } else {
+                toastr.error('Error al reiniciar el sistema');
+            }
+        });
+        */
+    }
+}
+
+// Guardar configuración con AJAX
+document.getElementById('configForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    
+    fetch('{% url "generador_actas:configuracion" %}', {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRFToken': '{{ csrf_token }}',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            toastr.success('Configuración guardada exitosamente');
+        } else {
+            toastr.error('Error al guardar la configuración: ' + (data.error || 'Error desconocido'));
+        }
+    })
+    .catch(error => {
+        toastr.error('Error al procesar la solicitud');
+    });
+});
+</script>
+
+{% endblock content %}

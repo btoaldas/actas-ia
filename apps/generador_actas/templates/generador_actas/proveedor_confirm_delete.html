@@ -1,0 +1,112 @@
+{% extends "layouts/base.html" %}
+{% load static %}
+
+{% block title %}Eliminar Proveedor{% endblock title %}
+
+{% block content %}
+<div class="content-wrapper">
+<!-- Content Header -->
+<div class="content-header">
+    <div class="container-fluid">
+        <div class="row mb-2">
+            <div class="col-sm-6">
+                <h1>⚠️ Eliminar Proveedor</h1>
+            </div>
+            <div class="col-sm-6">
+                <ol class="breadcrumb float-sm-right">
+                    <li class="breadcrumb-item"><a href="{% url 'generador_actas:dashboard' %}">Dashboard</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'generador_actas:proveedores_lista' %}">Proveedores</a></li>
+                    <li class="breadcrumb-item active">Eliminar</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Main content -->
+<section class="content">
+    <div class="container-fluid">
+        <div class="row justify-content-center">
+            <div class="col-md-8">
+                <div class="card card-danger">
+                    <div class="card-header">
+                        <h3 class="card-title">⚠️ Confirmar Eliminación</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="alert alert-danger">
+                            <h5><i class="icon fas fa-exclamation-triangle"></i> ¡Atención!</h5>
+                            Está a punto de eliminar el proveedor de IA <strong>{{ object.nombre }}</strong>.
+                            Esta acción no se puede deshacer.
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6><strong>Información del Proveedor:</strong></h6>
+                                <ul class="list-unstyled">
+                                    <li><strong>Nombre:</strong> {{ object.nombre }}</li>
+                                    <li><strong>Tipo:</strong> {{ object.get_tipo_display }}</li>
+                                    <li><strong>Modelo:</strong> {{ object.modelo }}</li>
+                                    <li><strong>Estado:</strong> 
+                                        {% if object.activo %}
+                                            <span class="badge badge-success">Activo</span>
+                                        {% else %}
+                                            <span class="badge badge-secondary">Inactivo</span>
+                                        {% endif %}
+                                    </li>
+                                    <li><strong>Fecha de Creación:</strong> {{ object.fecha_creacion|date:"d/m/Y" }}</li>
+                                </ul>
+                            </div>
+                            <div class="col-md-6">
+                                <h6><strong>Impacto de la Eliminación:</strong></h6>
+                                <ul class="list-unstyled">
+                                    <li>
+                                        <i class="fas fa-file-alt text-warning"></i>
+                                        <strong>{{ stats.actas_generadas|default:0 }}</strong> actas generadas con este proveedor
+                                    </li>
+                                    <li>
+                                        <i class="fas fa-template text-info"></i>
+                                        <strong>{{ stats.plantillas_asociadas|default:0 }}</strong> plantillas lo usan por defecto
+                                    </li>
+                                    <li>
+                                        <i class="fas fa-cog text-secondary"></i>
+                                        Las configuraciones asociadas se mantendrán como historial
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                        
+                        {% if stats.actas_generadas > 0 or stats.plantillas_asociadas > 0 %}
+                        <div class="alert alert-warning">
+                            <h6><i class="icon fas fa-info-circle"></i> Recomendación:</h6>
+                            <p>
+                                Este proveedor tiene datos asociados. Se recomienda <strong>desactivarlo</strong> 
+                                en lugar de eliminarlo para mantener la integridad histórica.
+                            </p>
+                            <a href="{% url 'generador_actas:proveedor_detail' object.pk %}" class="btn btn-warning btn-sm">
+                                <i class="fas fa-pause"></i> Desactivar en su lugar
+                            </a>
+                        </div>
+                        {% endif %}
+                    </div>
+                    <div class="card-footer">
+                        <form method="post" class="d-inline">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-danger">
+                                <i class="fas fa-trash"></i> Sí, Eliminar Proveedor
+                            </button>
+                        </form>
+                        <a href="{% url 'generador_actas:proveedor_detail' object.pk %}" class="btn btn-secondary">
+                            <i class="fas fa-times"></i> Cancelar
+                        </a>
+                        <a href="{% url 'generador_actas:proveedores_lista' %}" class="btn btn-primary">
+                            <i class="fas fa-list"></i> Volver a Lista
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+</div>
+
+{% endblock content %}

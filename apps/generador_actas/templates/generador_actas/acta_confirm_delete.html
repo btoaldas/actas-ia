@@ -1,0 +1,386 @@
+{% extends "layouts/base.html" %}
+{% load static %}
+
+{% block title %}Confirmar Eliminación{% endblock title %}
+
+{% block content %}
+<div class="content-wrapper">
+<!-- Content Header -->
+<div class="content-header">
+    <div class="container-fluid">
+        <div class="row mb-2">
+            <div class="col-sm-6">
+                <h1>🗑️ Confirmar Eliminación</h1>
+            </div>
+            <div class="col-sm-6">
+                <ol class="breadcrumb float-sm-right">
+                    <li class="breadcrumb-item"><a href="{% url 'generador_actas:dashboard' %}">Dashboard</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'generador_actas:actas_lista' %}">Actas</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'generador_actas:acta_detail' object.pk %}">{{ object.titulo|truncatechars:30 }}</a></li>
+                    <li class="breadcrumb-item active">Eliminar</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Main content -->
+<section class="content">
+    <div class="container-fluid">
+        <div class="row justify-content-center">
+            <div class="col-md-8">
+                <div class="card card-danger">
+                    <div class="card-header">
+                        <h3 class="card-title">⚠️ Confirmar Eliminación del Acta</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="alert alert-danger">
+                            <h5><i class="icon fas fa-exclamation-triangle"></i> ¡Atención!</h5>
+                            Está a punto de eliminar permanentemente el acta <strong>"{{ object.titulo }}"</strong>.
+                            Esta acción no se puede deshacer.
+                        </div>
+
+                        <!-- Información del Acta -->
+                        <div class="card card-outline card-secondary">
+                            <div class="card-header">
+                                <h4 class="card-title">📄 Información del Acta</h4>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <dl class="row">
+                                            <dt class="col-sm-4">Título:</dt>
+                                            <dd class="col-sm-8">{{ object.titulo }}</dd>
+                                            
+                                            <dt class="col-sm-4">Número:</dt>
+                                            <dd class="col-sm-8"><code>{{ object.numero_acta }}</code></dd>
+                                            
+                                            <dt class="col-sm-4">Fecha Sesión:</dt>
+                                            <dd class="col-sm-8">{{ object.fecha_sesion|date:"d/m/Y" }}</dd>
+                                            
+                                            <dt class="col-sm-4">Tipo:</dt>
+                                            <dd class="col-sm-8">
+                                                <span class="badge badge-info">{{ object.get_tipo_sesion_display }}</span>
+                                            </dd>
+                                        </dl>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <dl class="row">
+                                            <dt class="col-sm-4">Estado:</dt>
+                                            <dd class="col-sm-8">
+                                                <span class="badge badge-{% if object.estado == 'publicada' %}success{% elif object.estado == 'en_revision' %}warning{% elif object.estado == 'aprobada' %}info{% else %}secondary{% endif %}">
+                                                    {{ object.get_estado_display }}
+                                                </span>
+                                            </dd>
+                                            
+                                            <dt class="col-sm-4">Creado:</dt>
+                                            <dd class="col-sm-8">{{ object.fecha_creacion|date:"d/m/Y H:i" }}</dd>
+                                            
+                                            <dt class="col-sm-4">Plantilla:</dt>
+                                            <dd class="col-sm-8">
+                                                {% if object.plantilla %}
+                                                    <a href="{% url 'generador_actas:plantilla_detail' object.plantilla.pk %}">{{ object.plantilla.nombre }}</a>
+                                                {% else %}
+                                                    <span class="text-muted">Sin plantilla</span>
+                                                {% endif %}
+                                            </dd>
+                                            
+                                            <dt class="col-sm-4">Revisor:</dt>
+                                            <dd class="col-sm-8">
+                                                {% if object.usuario_revisor %}
+                                                    {{ object.usuario_revisor.get_full_name|default:object.usuario_revisor.username }}
+                                                {% else %}
+                                                    <span class="text-muted">Sin revisor</span>
+                                                {% endif %}
+                                            </dd>
+                                        </dl>
+                                    </div>
+                                </div>
+
+                                {% if object.descripcion %}
+                                <div class="mt-3">
+                                    <strong>Descripción:</strong>
+                                    <p class="text-muted">{{ object.descripcion|truncatewords:30 }}</p>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Análisis de Impacto -->
+                        <div class="card card-outline card-warning">
+                            <div class="card-header">
+                                <h4 class="card-title">📊 Análisis de Impacto</h4>
+                            </div>
+                            <div class="card-body">
+                                <!-- Estado del Acta -->
+                                {% if object.estado == 'publicada' %}
+                                    <div class="alert alert-danger">
+                                        <h6><i class="fas fa-exclamation-triangle"></i> <strong>ALTO IMPACTO - Acta Publicada:</strong></h6>
+                                        <p>Esta acta está <strong>PUBLICADA</strong> y puede ser visible públicamente o estar siendo referenciada en otros documentos.</p>
+                                        <p class="mb-0">
+                                            <strong>⚠️ Consecuencias:</strong> Su eliminación puede afectar la transparencia y el acceso público a la información municipal.
+                                        </p>
+                                    </div>
+                                {% elif object.estado == 'en_revision' %}
+                                    <div class="alert alert-warning">
+                                        <h6><i class="fas fa-clock"></i> <strong>IMPACTO MEDIO - Acta en Revisión:</strong></h6>
+                                        <p>Esta acta está en proceso de <strong>REVISIÓN</strong> y puede estar siendo trabajada por otros usuarios.</p>
+                                        <p class="mb-0">
+                                            <strong>⚠️ Consecuencias:</strong> Su eliminación interrumpirá el flujo de trabajo de revisión.
+                                        </p>
+                                    </div>
+                                {% elif object.estado == 'aprobada' %}
+                                    <div class="alert alert-info">
+                                        <h6><i class="fas fa-check"></i> <strong>IMPACTO MEDIO - Acta Aprobada:</strong></h6>
+                                        <p>Esta acta está <strong>APROBADA</strong> y lista para ser publicada.</p>
+                                        <p class="mb-0">
+                                            <strong>ℹ️ Consecuencias:</strong> Su eliminación cancelará el proceso de aprobación completado.
+                                        </p>
+                                    </div>
+                                {% else %}
+                                    <div class="alert alert-success">
+                                        <h6><i class="fas fa-check-circle"></i> <strong>BAJO IMPACTO - Acta en Borrador:</strong></h6>
+                                        <p>Esta acta está en estado de <strong>BORRADOR</strong> y no ha sido publicada.</p>
+                                        <p class="mb-0">
+                                            <strong>✅ Consecuencias:</strong> Su eliminación tendrá impacto mínimo en el sistema.
+                                        </p>
+                                    </div>
+                                {% endif %}
+
+                                <!-- Información del Contenido -->
+                                {% if object.contenido_final %}
+                                    <div class="alert alert-info">
+                                        <h6><i class="fas fa-file-text"></i> <strong>Contenido Disponible:</strong></h6>
+                                        <p>El acta contiene <strong>{{ object.contenido_final|length }} caracteres</strong> de contenido.</p>
+                                        <p class="mb-0">
+                                            <strong>💡 Recomendación:</strong> Considere exportar el contenido antes de eliminar.
+                                        </p>
+                                    </div>
+                                {% endif %}
+
+                                <!-- Archivos Adjuntos -->
+                                {% if object.archivo_original %}
+                                    <div class="alert alert-warning">
+                                        <h6><i class="fas fa-paperclip"></i> <strong>Archivos Adjuntos:</strong></h6>
+                                        <p>El acta tiene un archivo original adjunto: <strong>{{ object.archivo_original.name }}</strong></p>
+                                        <p class="mb-0">
+                                            <strong>⚠️ Atención:</strong> El archivo también será eliminado permanentemente.
+                                        </p>
+                                    </div>
+                                {% endif %}
+
+                                <!-- Estadísticas -->
+                                <div class="row text-center">
+                                    <div class="col-md-3">
+                                        <div class="card bg-{% if object.estado == 'publicada' %}danger{% elif object.estado == 'en_revision' %}warning{% else %}success{% endif %}">
+                                            <div class="card-body text-white">
+                                                <h5>{{ object.get_estado_display }}</h5>
+                                                <small>Estado Actual</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="card bg-info">
+                                            <div class="card-body text-white">
+                                                <h5>{{ object.contenido_final|length|default:0 }}</h5>
+                                                <small>Caracteres</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="card bg-secondary">
+                                            <div class="card-body text-white">
+                                                <h5>{{ object.fecha_sesion|date:"M Y" }}</h5>
+                                                <small>Período</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="card bg-dark">
+                                            <div class="card-body text-white">
+                                                <h5>{% if object.archivo_original %}SÍ{% else %}NO{% endif %}</h5>
+                                                <small>Archivo Adjunto</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Recomendaciones -->
+                        <div class="card card-outline card-primary">
+                            <div class="card-header">
+                                <h4 class="card-title">💡 Recomendaciones</h4>
+                            </div>
+                            <div class="card-body">
+                                {% if object.estado == 'publicada' %}
+                                    <div class="alert alert-danger">
+                                        <h6><strong>ACTA PUBLICADA - Considere alternativas:</strong></h6>
+                                        <ul class="mb-0">
+                                            <li><strong>Cambiar estado a "Archivada"</strong> en lugar de eliminar</li>
+                                            <li><strong>Exportar contenido</strong> para mantener registro histórico</li>
+                                            <li><strong>Crear nota de corrección</strong> si contiene errores</li>
+                                            <li><strong>Consultar políticas</strong> de transparencia municipal</li>
+                                        </ul>
+                                    </div>
+                                {% elif object.estado == 'en_revision' %}
+                                    <div class="alert alert-warning">
+                                        <h6><strong>ACTA EN REVISIÓN - Antes de eliminar:</strong></h6>
+                                        <ul class="mb-0">
+                                            <li><strong>Notificar al revisor</strong> sobre la eliminación</li>
+                                            <li><strong>Verificar dependencias</strong> del proceso de revisión</li>
+                                            <li><strong>Guardar trabajo parcial</strong> si es necesario</li>
+                                        </ul>
+                                    </div>
+                                {% else %}
+                                    <div class="alert alert-success">
+                                        <h6><strong>ELIMINACIÓN SEGURA:</strong></h6>
+                                        <p class="mb-0">
+                                            El acta está en borrador y puede eliminarse sin mayor impacto. 
+                                            Se recomienda exportar el contenido si contiene trabajo importante.
+                                        </p>
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Formulario de Confirmación -->
+                        <form method="post" class="mt-4">
+                            {% csrf_token %}
+                            
+                            {% if object.estado == 'publicada' %}
+                            <div class="form-group">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="confirmar_publicada" required>
+                                    <label class="form-check-label" for="confirmar_publicada">
+                                        <strong>Entiendo que eliminar un acta PUBLICADA puede afectar la transparencia municipal y el acceso público a la información.</strong>
+                                    </label>
+                                </div>
+                            </div>
+                            {% endif %}
+
+                            {% if object.archivo_original %}
+                            <div class="form-group">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="confirmar_archivo" required>
+                                    <label class="form-check-label" for="confirmar_archivo">
+                                        <strong>Acepto que el archivo adjunto "{{ object.archivo_original.name }}" también será eliminado permanentemente.</strong>
+                                    </label>
+                                </div>
+                            </div>
+                            {% endif %}
+
+                            <div class="form-group">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="confirmar_contenido" required>
+                                    <label class="form-check-label" for="confirmar_contenido">
+                                        <strong>He exportado o respaldado el contenido del acta (si es necesario).</strong>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="confirmar_eliminacion" required>
+                                    <label class="form-check-label" for="confirmar_eliminacion">
+                                        <strong>Confirmo que deseo eliminar permanentemente el acta "{{ object.titulo }}".</strong>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="text-center mt-4">
+                                <button type="submit" class="btn btn-danger btn-lg" id="btn-eliminar" disabled>
+                                    <i class="fas fa-trash"></i> Sí, Eliminar Permanentemente
+                                </button>
+                                <a href="{% url 'generador_actas:acta_detail' object.pk %}" class="btn btn-secondary btn-lg ml-3">
+                                    <i class="fas fa-arrow-left"></i> No, Cancelar
+                                </a>
+                                
+                                <!-- Botones de acción alternativa -->
+                                <div class="mt-3">
+                                    <button type="button" class="btn btn-info" onclick="exportarAntes()">
+                                        <i class="fas fa-download"></i> Exportar Antes de Decidir
+                                    </button>
+                                    {% if object.estado == 'publicada' %}
+                                    <button type="button" class="btn btn-warning" onclick="archivarEnLugar()">
+                                        <i class="fas fa-archive"></i> Archivar en su lugar
+                                    </button>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+</div>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const checkboxes = document.querySelectorAll('input[type="checkbox"][required]');
+    const btnEliminar = document.getElementById('btn-eliminar');
+    
+    function verificarCheckboxes() {
+        const todosChecked = Array.from(checkboxes).every(cb => cb.checked);
+        btnEliminar.disabled = !todosChecked;
+        
+        if (todosChecked) {
+            btnEliminar.classList.remove('btn-secondary');
+            btnEliminar.classList.add('btn-danger');
+        } else {
+            btnEliminar.classList.remove('btn-danger');
+            btnEliminar.classList.add('btn-secondary');
+        }
+    }
+    
+    checkboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', verificarCheckboxes);
+    });
+    
+    // Confirmación final
+    btnEliminar.addEventListener('click', function(e) {
+        const mensaje = `⚠️ CONFIRMACIÓN FINAL:\n\n¿Está completamente seguro de que desea eliminar el acta "${'{{ object.titulo|escapejs }}'}"\n\nEsta acción es IRREVERSIBLE.`;
+        
+        if (!confirm(mensaje)) {
+            e.preventDefault();
+        }
+    });
+});
+
+function exportarAntes() {
+    if ('{{ object.pk }}') {
+        window.open(`{% url 'generador_actas:exportar_acta' object.pk %}?formato=pdf`, '_blank');
+    }
+}
+
+function archivarEnLugar() {
+    if (confirm('¿Cambiar el estado del acta a "Archivada" en lugar de eliminarla?\nEsto la mantendrá en el sistema pero la marcará como archivada.')) {
+        fetch(`{% url 'generador_actas:acta_change_status' object.pk %}`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}',
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                'nuevo_estado': 'archivada'
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('✅ Acta archivada exitosamente.\nEsta es una alternativa más segura que la eliminación.');
+                window.location.href = `{% url 'generador_actas:acta_detail' object.pk %}`;
+            } else {
+                alert('❌ Error al archivar el acta: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('❌ Error de conexión al archivar el acta');
+        });
+    }
+}
+</script>
+
+{% endblock content %}

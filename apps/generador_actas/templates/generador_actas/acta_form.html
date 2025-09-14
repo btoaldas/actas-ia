@@ -1,0 +1,590 @@
+{% extends "layouts/base.html" %}
+{% load static %}
+
+{% block title %}{{ page_title }}{% endblock title %}
+
+{% block content %}
+<div class="content-wrapper">
+<!-- Content Header -->
+<div class="content-header">
+    <div class="container-fluid">
+        <div class="row mb-2">
+            <div class="col-sm-6">
+                <h1>📝 {{ page_title }}</h1>
+            </div>
+            <div class="col-sm-6">
+                <ol class="breadcrumb float-sm-right">
+                    <li class="breadcrumb-item"><a href="{% url 'generador_actas:dashboard' %}">Dashboard</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'generador_actas:actas_lista' %}">Actas</a></li>
+                    <li class="breadcrumb-item active">{{ form_title }}</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Main content -->
+<section class="content">
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-md-8">
+                <div class="card card-primary">
+                    <div class="card-header">
+                        <h3 class="card-title">{{ form_title }}</h3>
+                    </div>
+                    
+                    <form method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        <div class="card-body">
+                            
+                            <!-- Información Básica -->
+                            <div class="card card-outline card-info">
+                                <div class="card-header">
+                                    <h4 class="card-title">📋 Información General</h4>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="form-group">
+                                                <label for="{{ form.titulo.id_for_label }}">
+                                                    Título del Acta <span class="text-danger">*</span>
+                                                </label>
+                                                {{ form.titulo }}
+                                                {% if form.titulo.errors %}
+                                                    <div class="text-danger">{{ form.titulo.errors }}</div>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="form-group">
+                                                <label for="{{ form.numero_acta.id_for_label }}">
+                                                    Número de Acta <span class="text-danger">*</span>
+                                                </label>
+                                                {{ form.numero_acta }}
+                                                <small class="form-text text-muted">
+                                                    Número consecutivo del acta
+                                                </small>
+                                                {% if form.numero_acta.errors %}
+                                                    <div class="text-danger">{{ form.numero_acta.errors }}</div>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="form-group">
+                                                <label for="{{ form.fecha_sesion.id_for_label }}">
+                                                    Fecha de Sesión <span class="text-danger">*</span>
+                                                </label>
+                                                {{ form.fecha_sesion }}
+                                                {% if form.fecha_sesion.errors %}
+                                                    <div class="text-danger">{{ form.fecha_sesion.errors }}</div>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="form-group">
+                                                <label for="{{ form.tipo_sesion.id_for_label }}">
+                                                    Tipo de Sesión <span class="text-danger">*</span>
+                                                </label>
+                                                {{ form.tipo_sesion }}
+                                                {% if form.tipo_sesion.errors %}
+                                                    <div class="text-danger">{{ form.tipo_sesion.errors }}</div>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="form-group">
+                                                <label for="{{ form.plantilla.id_for_label }}">
+                                                    Plantilla Base <span class="text-danger">*</span>
+                                                </label>
+                                                {{ form.plantilla }}
+                                                {% if form.plantilla.errors %}
+                                                    <div class="text-danger">{{ form.plantilla.errors }}</div>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="form-group">
+                                                <label for="{{ form.estado.id_for_label }}">
+                                                    Estado <span class="text-danger">*</span>
+                                                </label>
+                                                {{ form.estado }}
+                                                {% if form.estado.errors %}
+                                                    <div class="text-danger">{{ form.estado.errors }}</div>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label for="{{ form.descripcion.id_for_label }}">
+                                            Descripción/Resumen
+                                        </label>
+                                        {{ form.descripcion }}
+                                        <small class="form-text text-muted">
+                                            Breve descripción del contenido del acta.
+                                        </small>
+                                        {% if form.descripcion.errors %}
+                                            <div class="text-danger">{{ form.descripcion.errors }}</div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Contenido del Acta -->
+                            <div class="card card-outline card-success">
+                                <div class="card-header">
+                                    <h4 class="card-title">📄 Contenido del Acta</h4>
+                                </div>
+                                <div class="card-body">
+                                    <div class="form-group">
+                                        <label for="{{ form.contenido_generado.id_for_label }}">
+                                            Contenido Generado
+                                        </label>
+                                        {{ form.contenido_generado }}
+                                        <small class="form-text text-muted">
+                                            Contenido generado automáticamente por IA.
+                                        </small>
+                                        {% if form.contenido_generado.errors %}
+                                            <div class="text-danger">{{ form.contenido_generado.errors }}</div>
+                                        {% endif %}
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label for="{{ form.contenido_final.id_for_label }}">
+                                            Contenido Final <span class="text-danger">*</span>
+                                        </label>
+                                        {{ form.contenido_final }}
+                                        <small class="form-text text-muted">
+                                            Contenido final del acta después de revisiones.
+                                        </small>
+                                        {% if form.contenido_final.errors %}
+                                            <div class="text-danger">{{ form.contenido_final.errors }}</div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Configuración de Procesamiento -->
+                            <div class="card card-outline card-warning">
+                                <div class="card-header">
+                                    <h4 class="card-title">⚙️ Configuración de Procesamiento</h4>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="form-group">
+                                                <label for="{{ form.proveedor_ia_usado.id_for_label }}">
+                                                    Proveedor IA Utilizado
+                                                </label>
+                                                {{ form.proveedor_ia_usado }}
+                                                {% if form.proveedor_ia_usado.errors %}
+                                                    <div class="text-danger">{{ form.proveedor_ia_usado.errors }}</div>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="form-group">
+                                                <label for="{{ form.prioridad.id_for_label }}">
+                                                    Prioridad
+                                                </label>
+                                                {{ form.prioridad }}
+                                                {% if form.prioridad.errors %}
+                                                    <div class="text-danger">{{ form.prioridad.errors }}</div>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label for="{{ form.metadatos_procesamiento.id_for_label }}">
+                                            Metadatos de Procesamiento (JSON)
+                                        </label>
+                                        {{ form.metadatos_procesamiento }}
+                                        <small class="form-text text-muted">
+                                            Información técnica del procesamiento en formato JSON.
+                                        </small>
+                                        {% if form.metadatos_procesamiento.errors %}
+                                            <div class="text-danger">{{ form.metadatos_procesamiento.errors }}</div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Archivos y Adjuntos -->
+                            <div class="card card-outline card-secondary">
+                                <div class="card-header">
+                                    <h4 class="card-title">📎 Archivos y Adjuntos</h4>
+                                </div>
+                                <div class="card-body">
+                                    <div class="form-group">
+                                        <label for="{{ form.archivo_original.id_for_label }}">
+                                            Archivo Original
+                                        </label>
+                                        {{ form.archivo_original }}
+                                        <small class="form-text text-muted">
+                                            Archivo fuente utilizado para generar el acta.
+                                        </small>
+                                        {% if form.archivo_original.errors %}
+                                            <div class="text-danger">{{ form.archivo_original.errors }}</div>
+                                        {% endif %}
+                                    </div>
+
+                                    {% if object and object.archivo_original %}
+                                    <div class="alert alert-info">
+                                        <h6>Archivo Actual:</h6>
+                                        <a href="{{ object.archivo_original.url }}" target="_blank" class="btn btn-sm btn-outline-primary">
+                                            <i class="fas fa-file"></i> Descargar: {{ object.archivo_original.name }}
+                                        </a>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            <!-- Observaciones y Notas -->
+                            <div class="card card-outline card-info">
+                                <div class="card-header">
+                                    <h4 class="card-title">📝 Observaciones</h4>
+                                </div>
+                                <div class="card-body">
+                                    <div class="form-group">
+                                        <label for="{{ form.observaciones.id_for_label }}">
+                                            Observaciones
+                                        </label>
+                                        {{ form.observaciones }}
+                                        <small class="form-text text-muted">
+                                            Comentarios, observaciones o notas adicionales.
+                                        </small>
+                                        {% if form.observaciones.errors %}
+                                            <div class="text-danger">{{ form.observaciones.errors }}</div>
+                                        {% endif %}
+                                    </div>
+
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="form-group">
+                                                <label for="{{ form.usuario_revisor.id_for_label }}">
+                                                    Usuario Revisor
+                                                </label>
+                                                {{ form.usuario_revisor }}
+                                                {% if form.usuario_revisor.errors %}
+                                                    <div class="text-danger">{{ form.usuario_revisor.errors }}</div>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="form-group">
+                                                <label for="{{ form.fecha_revision.id_for_label }}">
+                                                    Fecha de Revisión
+                                                </label>
+                                                {{ form.fecha_revision }}
+                                                {% if form.fecha_revision.errors %}
+                                                    <div class="text-danger">{{ form.fecha_revision.errors }}</div>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="card-footer">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> {{ submit_text }}
+                            </button>
+                            <a href="{% url 'generador_actas:actas_lista' %}" class="btn btn-secondary">
+                                <i class="fas fa-times"></i> Cancelar
+                            </a>
+                            {% if object %}
+                            <a href="{% url 'generador_actas:acta_detail' object.pk %}" class="btn btn-info">
+                                <i class="fas fa-eye"></i> Ver Detalle
+                            </a>
+                            <button type="button" class="btn btn-warning" onclick="regenerarActa()">
+                                <i class="fas fa-sync"></i> Regenerar con IA
+                            </button>
+                            <button type="button" class="btn btn-success" onclick="exportarActa()">
+                                <i class="fas fa-file-export"></i> Exportar
+                            </button>
+                            {% endif %}
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <div class="col-md-4">
+                <!-- Estado del Acta -->
+                {% if object %}
+                <div class="card card-info">
+                    <div class="card-header">
+                        <h3 class="card-title">📊 Estado del Acta</h3>
+                    </div>
+                    <div class="card-body">
+                        <dl class="row">
+                            <dt class="col-sm-6">Estado:</dt>
+                            <dd class="col-sm-6">
+                                <span class="badge badge-{% if object.estado == 'borrador' %}secondary{% elif object.estado == 'en_revision' %}warning{% elif object.estado == 'aprobada' %}success{% elif object.estado == 'publicada' %}primary{% else %}danger{% endif %}">
+                                    {{ object.get_estado_display }}
+                                </span>
+                            </dd>
+                            
+                            <dt class="col-sm-6">Creado:</dt>
+                            <dd class="col-sm-6">{{ object.fecha_creacion|date:"d/m/Y H:i" }}</dd>
+                            
+                            <dt class="col-sm-6">Actualizado:</dt>
+                            <dd class="col-sm-6">{{ object.fecha_actualizacion|date:"d/m/Y H:i" }}</dd>
+                            
+                            {% if object.fecha_revision %}
+                            <dt class="col-sm-6">Revisado:</dt>
+                            <dd class="col-sm-6">{{ object.fecha_revision|date:"d/m/Y H:i" }}</dd>
+                            {% endif %}
+                        </dl>
+                    </div>
+                </div>
+                {% endif %}
+                
+                <!-- Ayuda -->
+                <div class="card card-warning">
+                    <div class="card-header">
+                        <h3 class="card-title">💡 Guía de Actas</h3>
+                    </div>
+                    <div class="card-body">
+                        <h6><strong>Estados del Acta:</strong></h6>
+                        <ul class="list-unstyled">
+                            <li><span class="badge badge-secondary">Borrador:</span> En edición</li>
+                            <li><span class="badge badge-warning">En Revisión:</span> Pendiente aprobación</li>
+                            <li><span class="badge badge-success">Aprobada:</span> Lista para publicar</li>
+                            <li><span class="badge badge-primary">Publicada:</span> Visible públicamente</li>
+                            <li><span class="badge badge-danger">Rechazada:</span> Requiere correcciones</li>
+                        </ul>
+                        
+                        <h6><strong>Tipos de Sesión:</strong></h6>
+                        <ul class="list-unstyled">
+                            <li><strong>Ordinaria:</strong> Sesión regular programada</li>
+                            <li><strong>Extraordinaria:</strong> Sesión especial urgente</li>
+                            <li><strong>Comisión:</strong> Reunión de comisión</li>
+                            <li><strong>Directorio:</strong> Junta directiva</li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <!-- Acciones Rápidas -->
+                <div class="card card-success">
+                    <div class="card-header">
+                        <h3 class="card-title">🔧 Acciones Rápidas</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-grid gap-2">
+                            {% if object %}
+                            <button type="button" class="btn btn-info btn-block" onclick="previsualizarActa()">
+                                <i class="fas fa-eye"></i> Vista Previa
+                            </button>
+                            
+                            <button type="button" class="btn btn-warning btn-block" onclick="validarContenido()">
+                                <i class="fas fa-spell-check"></i> Validar Contenido
+                            </button>
+                            
+                            <button type="button" class="btn btn-primary btn-block" onclick="generarPDF()">
+                                <i class="fas fa-file-pdf"></i> Generar PDF
+                            </button>
+                            {% endif %}
+                            
+                            <button type="button" class="btn btn-secondary btn-block" onclick="autoguardado()">
+                                <i class="fas fa-save"></i> Autoguardar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+</div>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Autoguardado cada 5 minutos
+    let autoguardadoTimer;
+    function iniciarAutoguardado() {
+        autoguardadoTimer = setInterval(autoguardado, 5 * 60 * 1000);
+    }
+    
+    // Generar número de acta automáticamente
+    const fechaInput = document.getElementById('{{ form.fecha_sesion.id_for_label }}');
+    const numeroInput = document.getElementById('{{ form.numero_acta.id_for_label }}');
+    const tipoInput = document.getElementById('{{ form.tipo_sesion.id_for_label }}');
+    
+    if (fechaInput && numeroInput && !numeroInput.value) {
+        function generarNumeroActa() {
+            const fecha = new Date(fechaInput.value);
+            const tipo = tipoInput.value;
+            if (fecha && tipo) {
+                const año = fecha.getFullYear();
+                const mes = String(fecha.getMonth() + 1).padStart(2, '0');
+                const numero = `${tipo.toUpperCase()}-${año}${mes}-`;
+                if (!numeroInput.value.startsWith(numero)) {
+                    numeroInput.value = numero + '001';
+                }
+            }
+        }
+        
+        fechaInput.addEventListener('change', generarNumeroActa);
+        tipoInput.addEventListener('change', generarNumeroActa);
+    }
+    
+    // Validar JSON
+    const jsonField = document.getElementById('{{ form.metadatos_procesamiento.id_for_label }}');
+    if (jsonField) {
+        jsonField.addEventListener('blur', function() {
+            const value = this.value.trim();
+            if (value && value !== '{}') {
+                try {
+                    JSON.parse(value);
+                    this.classList.remove('is-invalid');
+                    this.classList.add('is-valid');
+                } catch (e) {
+                    this.classList.remove('is-valid');
+                    this.classList.add('is-invalid');
+                }
+            }
+        });
+    }
+    
+    // Contar caracteres en contenido
+    const contenidoFields = ['{{ form.contenido_generado.id_for_label }}', '{{ form.contenido_final.id_for_label }}'];
+    contenidoFields.forEach(fieldId => {
+        const field = document.getElementById(fieldId);
+        if (field) {
+            const counter = document.createElement('small');
+            counter.className = 'form-text text-muted';
+            field.parentNode.appendChild(counter);
+            
+            function updateCounter() {
+                counter.textContent = `${field.value.length} caracteres`;
+            }
+            
+            field.addEventListener('input', updateCounter);
+            updateCounter();
+        }
+    });
+    
+    iniciarAutoguardado();
+});
+
+function autoguardado() {
+    if (!window.formModificado) return;
+    
+    const form = document.querySelector('form');
+    const formData = new FormData(form);
+    formData.append('autoguardado', 'true');
+    
+    fetch(form.action, {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => {
+        if (response.ok) {
+            const indicator = document.getElementById('autoguardado-indicator') || createAutoguardadoIndicator();
+            indicator.textContent = '✅ Autoguardado: ' + new Date().toLocaleTimeString();
+            window.formModificado = false;
+        }
+    })
+    .catch(error => console.log('Error en autoguardado:', error));
+}
+
+function createAutoguardadoIndicator() {
+    const indicator = document.createElement('small');
+    indicator.id = 'autoguardado-indicator';
+    indicator.className = 'text-muted';
+    document.querySelector('.card-footer').prepend(indicator);
+    return indicator;
+}
+
+function previsualizarActa() {
+    if (!{{ object.pk|default:'null' }}) {
+        alert('Debe guardar el acta primero para ver la vista previa.');
+        return;
+    }
+    
+    window.open(`{% if object %}{% url 'generador_actas:acta_preview' object.pk %}{% else %}#{% endif %}`, '_blank');
+}
+
+function regenerarActa() {
+    if (!{{ object.pk|default:'null' }}) {
+        alert('Debe guardar el acta primero para regenerarla.');
+        return;
+    }
+    
+    if (confirm('¿Desea regenerar el contenido del acta usando IA? Esto reemplazará el contenido actual.')) {
+        fetch(`{% if object %}{% url 'generador_actas:regenerar_acta' object.pk %}{% else %}#{% endif %}`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Acta regenerada exitosamente');
+                location.reload();
+            } else {
+                alert('Error al regenerar el acta: ' + data.error);
+            }
+        });
+    }
+}
+
+function exportarActa() {
+    if (!{{ object.pk|default:'null' }}) {
+        alert('Debe guardar el acta primero para exportarla.');
+        return;
+    }
+    
+    const formatos = ['pdf', 'docx', 'html'];
+    const formato = prompt('Seleccione formato de exportación:\n1. PDF\n2. DOCX\n3. HTML\n\nIngrese el número:');
+    
+    if (formato && formato >= 1 && formato <= 3) {
+        const formatoSeleccionado = formatos[formato - 1];
+        window.open(`{% if object %}{% url 'generador_actas:exportar_acta' object.pk %}{% else %}#{% endif %}?formato=${formatoSeleccionado}`, '_blank');
+    }
+}
+
+function validarContenido() {
+    const contenido = document.getElementById('{{ form.contenido_final.id_for_label }}').value;
+    if (!contenido.trim()) {
+        alert('⚠️ El contenido final está vacío');
+        return;
+    }
+    
+    // Validaciones básicas
+    let alertas = [];
+    if (contenido.length < 100) alertas.push('Contenido muy corto');
+    if (!contenido.includes('ACTA')) alertas.push('No contiene la palabra "ACTA"');
+    if (!contenido.includes('fecha')) alertas.push('No especifica fecha');
+    
+    if (alertas.length > 0) {
+        alert('⚠️ Alertas encontradas:\n- ' + alertas.join('\n- '));
+    } else {
+        alert('✅ Contenido válido');
+    }
+}
+
+function generarPDF() {
+    if (!{{ object.pk|default:'null' }}) {
+        alert('Debe guardar el acta primero para generar PDF.');
+        return;
+    }
+    
+    window.open(`{% if object %}{% url 'generador_actas:generar_pdf' object.pk %}{% else %}#{% endif %}`, '_blank');
+}
+
+// Detectar cambios en el formulario
+document.addEventListener('input', function() {
+    window.formModificado = true;
+});
+</script>
+
+{% endblock content %}

@@ -1,0 +1,379 @@
+{% extends "layouts/base.html" %}
+{% load static %}
+
+{% block title %}Gestión de Segmentos de Plantilla{% endblock title %}
+
+{% block content %}
+<div class="content-wrapper">
+<!-- Content Header -->
+<div class="content-header">
+    <div class="container-fluid">
+        <div class="row mb-2">
+            <div class="col-sm-6">
+                <h1>📄 Segmentos de Plantilla</h1>
+            </div>
+            <div class="col-sm-6">
+                <ol class="breadcrumb float-sm-right">
+                    <li class="breadcrumb-item"><a href="{% url 'generador_actas:dashboard' %}">Dashboard</a></li>
+                    <li class="breadcrumb-item active">Segmentos</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Main content -->
+<section class="content">
+    <div class="container-fluid">
+        
+        <!-- Estadísticas -->
+        <div class="row mb-3">
+            <div class="col-lg-3 col-6">
+                <div class="small-box bg-info">
+                    <div class="inner">
+                        <h3>{{ stats.total }}</h3>
+                        <p>Total Segmentos</p>
+                    </div>
+                    <div class="icon">
+                        <i class="fas fa-puzzle-piece"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-3 col-6">
+                <div class="small-box bg-success">
+                    <div class="inner">
+                        <h3>{{ stats.activos }}</h3>
+                        <p>Segmentos Activos</p>
+                    </div>
+                    <div class="icon">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-3 col-6">
+                <div class="small-box bg-warning">
+                    <div class="inner">
+                        <h3>{{ stats.en_uso }}</h3>
+                        <p>En Uso por Plantillas</p>
+                    </div>
+                    <div class="icon">
+                        <i class="fas fa-link"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-3 col-6">
+                <div class="small-box bg-secondary">
+                    <div class="inner">
+                        <h3>{{ stats.tipos_unicos }}</h3>
+                        <p>Tipos Únicos</p>
+                    </div>
+                    <div class="icon">
+                        <i class="fas fa-tags"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filtros y Búsqueda -->
+        <div class="card collapsed-card">
+            <div class="card-header">
+                <h3 class="card-title">🔍 Filtros de Búsqueda</h3>
+                <div class="card-tools">
+                    <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                        <i class="fas fa-plus"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="card-body">
+                <form method="get" class="form-inline">
+                    <div class="form-group mr-3">
+                        <label for="search" class="mr-2">Buscar:</label>
+                        <input type="text" name="search" id="search" class="form-control" 
+                               value="{{ request.GET.search }}" placeholder="Nombre o contenido...">
+                    </div>
+                    
+                    <div class="form-group mr-3">
+                        <label for="tipo" class="mr-2">Tipo:</label>
+                        <select name="tipo" id="tipo" class="form-control">
+                            <option value="">Todos los tipos</option>
+                            <option value="encabezado" {% if request.GET.tipo == 'encabezado' %}selected{% endif %}>Encabezado</option>
+                            <option value="agenda" {% if request.GET.tipo == 'agenda' %}selected{% endif %}>Agenda</option>
+                            <option value="desarrollo" {% if request.GET.tipo == 'desarrollo' %}selected{% endif %}>Desarrollo</option>
+                            <option value="acuerdos" {% if request.GET.tipo == 'acuerdos' %}selected{% endif %}>Acuerdos</option>
+                            <option value="participantes" {% if request.GET.tipo == 'participantes' %}selected{% endif %}>Participantes</option>
+                            <option value="cierre" {% if request.GET.tipo == 'cierre' %}selected{% endif %}>Cierre</option>
+                            <option value="anexos" {% if request.GET.tipo == 'anexos' %}selected{% endif %}>Anexos</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group mr-3">
+                        <label for="activo" class="mr-2">Estado:</label>
+                        <select name="activo" id="activo" class="form-control">
+                            <option value="">Todos</option>
+                            <option value="true" {% if request.GET.activo == 'true' %}selected{% endif %}>Activos</option>
+                            <option value="false" {% if request.GET.activo == 'false' %}selected{% endif %}>Inactivos</option>
+                        </select>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary mr-2">
+                        <i class="fas fa-search"></i> Filtrar
+                    </button>
+                    <a href="{% url 'generador_actas:segmentos_lista' %}" class="btn btn-secondary">
+                        <i class="fas fa-times"></i> Limpiar
+                    </a>
+                </form>
+            </div>
+        </div>
+
+        <!-- Tabla de Segmentos -->
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">📋 Lista de Segmentos</h3>
+                <div class="card-tools">
+                    <a href="{% url 'generador_actas:crear_segmento' %}" class="btn btn-primary btn-sm">
+                        <i class="fas fa-plus"></i> Nuevo Segmento
+                    </a>
+                </div>
+            </div>
+            <div class="card-body">
+                {% if segmentos %}
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Nombre</th>
+                                    <th>Tipo</th>
+                                    <th>Orden</th>
+                                    <th>Estado</th>
+                                    <th>Plantillas que lo usan</th>
+                                    <th>Fecha Modificación</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for segmento in segmentos %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ segmento.nombre }}</strong>
+                                        <br>
+                                        <small class="text-muted">
+                                            {{ segmento.contenido_prompt|truncatechars:80 }}
+                                        </small>
+                                    </td>
+                                    <td>
+                                        <span class="badge badge-info">{{ segmento.get_tipo_display }}</span>
+                                    </td>
+                                    <td>
+                                        <span class="badge badge-secondary">{{ segmento.orden }}</span>
+                                    </td>
+                                    <td>
+                                        {% if segmento.activo %}
+                                            <span class="badge badge-success">
+                                                <i class="fas fa-check"></i> Activo
+                                            </span>
+                                        {% else %}
+                                            <span class="badge badge-danger">
+                                                <i class="fas fa-times"></i> Inactivo
+                                            </span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if segmento.plantillas_count > 0 %}
+                                            <span class="badge badge-warning">{{ segmento.plantillas_count }} plantilla{{ segmento.plantillas_count|pluralize:"s" }}</span>
+                                        {% else %}
+                                            <span class="text-muted">Sin uso</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <small>{{ segmento.fecha_actualizacion|date:"d/m/Y H:i" }}</small>
+                                    </td>
+                                    <td>
+                                        <div class="btn-group" role="group">
+                                            <a href="{% url 'generador_actas:segmento_detail' segmento.pk %}" 
+                                               class="btn btn-info btn-sm" title="Ver Detalle">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                            <a href="{% url 'generador_actas:editar_segmento' segmento.pk %}" 
+                                               class="btn btn-warning btn-sm" title="Editar">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                            <button type="button" class="btn btn-success btn-sm" 
+                                                    onclick="duplicarSegmento({{ segmento.pk }})" title="Duplicar">
+                                                <i class="fas fa-copy"></i>
+                                            </button>
+                                            {% if segmento.plantillas_count == 0 %}
+                                            <button type="button" class="btn btn-danger btn-sm" 
+                                                    onclick="confirmarEliminacion({{ segmento.pk }}, '{{ segmento.nombre }}')" 
+                                                    title="Eliminar">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                            {% else %}
+                                            <button type="button" class="btn btn-danger btn-sm" disabled 
+                                                    title="No se puede eliminar: en uso por plantillas">
+                                                <i class="fas fa-lock"></i>
+                                            </button>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Paginación -->
+                    {% if is_paginated %}
+                    <nav aria-label="Navegación de página">
+                        <ul class="pagination justify-content-center">
+                            {% if page_obj.has_previous %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page=1{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.tipo %}&tipo={{ request.GET.tipo }}{% endif %}{% if request.GET.activo %}&activo={{ request.GET.activo }}{% endif %}">Primera</a>
+                                </li>
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.tipo %}&tipo={{ request.GET.tipo }}{% endif %}{% if request.GET.activo %}&activo={{ request.GET.activo }}{% endif %}">Anterior</a>
+                                </li>
+                            {% endif %}
+
+                            <li class="page-item active">
+                                <span class="page-link">{{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span>
+                            </li>
+
+                            {% if page_obj.has_next %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.tipo %}&tipo={{ request.GET.tipo }}{% endif %}{% if request.GET.activo %}&activo={{ request.GET.activo }}{% endif %}">Siguiente</a>
+                                </li>
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.tipo %}&tipo={{ request.GET.tipo }}{% endif %}{% if request.GET.activo %}&activo={{ request.GET.activo }}{% endif %}">Última</a>
+                                </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                    {% endif %}
+
+                {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-puzzle-piece fa-3x text-muted mb-3"></i>
+                        <h4>No hay segmentos disponibles</h4>
+                        <p class="text-muted">Aún no se han creado segmentos de plantilla.</p>
+                        <a href="{% url 'generador_actas:crear_segmento' %}" class="btn btn-primary">
+                            <i class="fas fa-plus"></i> Crear Primer Segmento
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Guía Rápida -->
+        <div class="card card-info">
+            <div class="card-header">
+                <h3 class="card-title">💡 Guía Rápida</h3>
+                <div class="card-tools">
+                    <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                        <i class="fas fa-minus"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6><strong>Tipos de Segmentos:</strong></h6>
+                        <ul class="list-unstyled">
+                            <li><strong>Encabezado:</strong> Información inicial del acta</li>
+                            <li><strong>Agenda:</strong> Puntos a tratar</li>
+                            <li><strong>Desarrollo:</strong> Contenido principal</li>
+                            <li><strong>Acuerdos:</strong> Decisiones tomadas</li>
+                            <li><strong>Participantes:</strong> Asistentes y roles</li>
+                            <li><strong>Cierre:</strong> Conclusiones finales</li>
+                            <li><strong>Anexos:</strong> Documentos adicionales</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <h6><strong>Consejos:</strong></h6>
+                        <ul class="list-unstyled">
+                            <li>• Use variables en formato {variable}</li>
+                            <li>• El orden determina la secuencia en el acta</li>
+                            <li>• Los segmentos inactivos no aparecen en plantillas</li>
+                            <li>• Puede duplicar segmentos para crear variaciones</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Modal de confirmación de eliminación -->
+<div class="modal fade" id="deleteModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-danger">
+                <h5 class="modal-title text-white">⚠️ Confirmar Eliminación</h5>
+                <button type="button" class="close text-white" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p>¿Está seguro de que desea eliminar el segmento <strong id="segmentoNombre"></strong>?</p>
+                <p class="text-warning">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    Esta acción no se puede deshacer.
+                </p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+                <form method="post" id="deleteForm">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger">Eliminar</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+</div>
+<script>
+function confirmarEliminacion(segmentoId, nombre) {
+    document.getElementById('segmentoNombre').textContent = nombre;
+    document.getElementById('deleteForm').action = `/generador-actas/segmentos/${segmentoId}/eliminar/`;
+    $('#deleteModal').modal('show');
+}
+
+function duplicarSegmento(segmentoId) {
+    if (confirm('¿Desea crear una copia de este segmento?')) {
+        // TODO: Implementar endpoint de duplicación de segmento
+        toastr.warning('⚠️ Funcionalidad de duplicar segmento en desarrollo.\nContacte al administrador para duplicar segmentos.');
+        
+        /*
+        fetch(`/generador-actas/segmentos/${segmentoId}/duplicar/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}',
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                toastr.success('Segmento duplicado exitosamente');
+                location.reload();
+            } else {
+                toastr.error('Error al duplicar el segmento');
+            }
+        })
+        .catch(error => {
+            toastr.error('Error en la operación');
+        });
+        */
+    }
+}
+
+// Auto-envío del formulario al cambiar filtros
+document.getElementById('tipo').addEventListener('change', function() {
+    this.form.submit();
+});
+
+document.getElementById('activo').addEventListener('change', function() {
+    this.form.submit();
+});
+</script>
+
+{% endblock content %}

@@ -1,0 +1,407 @@
+{% extends "layouts/base.html" %}
+{% load static %}
+
+{% block title %}{{ page_title }} | Generador de Actas{% endblock %}
+
+{% block stylesheets %}
+{{ block.super }}
+<style>
+.transcripcion-card {
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 20px;
+    background: white;
+    transition: all 0.3s ease;
+}
+
+.transcripcion-card:hover {
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    border-color: #007bff;
+}
+
+.audio-info {
+    background: #f8f9fa;
+    border-radius: 5px;
+    padding: 10px;
+    margin-bottom: 15px;
+}
+
+.conversation-preview {
+    max-height: 150px;
+    overflow-y: auto;
+    background: #f8f9fa;
+    border-radius: 5px;
+    padding: 10px;
+    font-size: 0.9rem;
+    line-height: 1.5;
+}
+
+.metadata-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 5px 0;
+    border-bottom: 1px solid #eee;
+}
+
+.metadata-row:last-child {
+    border-bottom: none;
+}
+
+.search-section {
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 20px;
+}
+
+.no-transcripciones {
+    text-align: center;
+    padding: 60px 20px;
+    color: #6c757d;
+}
+
+.stats-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 20px;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="content-wrapper">
+    <!-- Content Header -->
+    <div class="content-header">
+        <div class="container-fluid">
+            <div class="row mb-2">
+                <div class="col-sm-6">
+                    <h1 class="m-0">{{ page_title }}</h1>
+                </div>
+                <div class="col-sm-6">
+                    {% if breadcrumb %}
+                    <ol class="breadcrumb float-sm-right">
+                        {% for item in breadcrumb %}
+                            {% if item.active %}
+                                <li class="breadcrumb-item active">{{ item.name }}</li>
+                            {% else %}
+                                <li class="breadcrumb-item"><a href="{{ item.url }}">{{ item.name }}</a></li>
+                            {% endif %}
+                        {% endfor %}
+                    </ol>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main content -->
+    <section class="content">
+        <div class="container-fluid">
+            
+            <!-- Header informativo -->
+            <div class="stats-header">
+                <div class="row">
+                    <div class="col-md-8">
+                        <h3 class="mb-2">
+                            <i class="fas fa-microphone"></i>
+                            Transcripciones Listas para Procesar
+                        </h3>
+                        <p class="mb-0">
+                            Selecciona una transcripción para generar un acta automáticamente con IA
+                        </p>
+                    </div>
+                    <div class="col-md-4 text-right">
+                        <div class="h4 mb-1">{{ transcripciones.paginator.count|default:0 }}</div>
+                        <small>Transcripciones disponibles</small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Búsqueda -->
+            <div class="search-section">
+                <form method="get" class="row">
+                    <div class="col-md-8">
+                        <div class="form-group">
+                            <label for="search">Buscar transcripciones</label>
+                            <input type="text" class="form-control" name="search" id="search" 
+                                   value="{{ search }}" 
+                                   placeholder="Buscar por nombre de archivo o ubicación...">
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label>&nbsp;</label>
+                            <div>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-search"></i>
+                                    Buscar
+                                </button>
+                                {% if search %}
+                                <a href="{% url 'generador_actas:transcripciones_disponibles' %}" class="btn btn-secondary">
+                                    <i class="fas fa-times"></i>
+                                    Limpiar
+                                </a>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Listado de Transcripciones -->
+            {% if transcripciones %}
+                {% for transcripcion in transcripciones %}
+                <div class="transcripcion-card">
+                    <div class="row">
+                        <div class="col-lg-8">
+                            <div class="d-flex justify-content-between align-items-start mb-3">
+                                <div>
+                                    <h5 class="mb-1">
+                                        <i class="fas fa-file-audio text-primary"></i>
+                                        {{ transcripcion.procesamiento_audio.nombre_archivo|default:"Audio sin nombre" }}
+                                    </h5>
+                                    <p class="text-muted mb-0">
+                                        Transcripción procesada el {{ transcripcion.fecha_creacion|date:"d/m/Y H:i" }}
+                                    </p>
+                                </div>
+                                <a href="{% url 'generador_actas:crear_acta' transcripcion.pk %}" 
+                                   class="btn btn-primary">
+                                    <i class="fas fa-magic"></i>
+                                    Generar Acta
+                                </a>
+                            </div>
+
+                            <!-- Información del Audio -->
+                            <div class="audio-info">
+                                <div class="metadata-row">
+                                    <span><strong>Tipo de Reunión:</strong></span>
+                                    <span>
+                                        {% if transcripcion.procesamiento_audio.tipo_reunion %}
+                                            {{ transcripcion.procesamiento_audio.tipo_reunion.nombre }}
+                                        {% else %}
+                                            No especificado
+                                        {% endif %}
+                                    </span>
+                                </div>
+                                <div class="metadata-row">
+                                    <span><strong>Duración:</strong></span>
+                                    <span>
+                                        {% if transcripcion.procesamiento_audio.duracion_segundos %}
+                                            {{ transcripcion.procesamiento_audio.duracion_segundos|floatformat:0 }} segundos
+                                            ({{ transcripcion.procesamiento_audio.duracion_segundos|floatformat:0|add:"0"|time:"H:i:s" }})
+                                        {% else %}
+                                            No especificada
+                                        {% endif %}
+                                    </span>
+                                </div>
+                                <div class="metadata-row">
+                                    <span><strong>Ubicación:</strong></span>
+                                    <span>{{ transcripcion.procesamiento_audio.ubicacion|default:"No especificada" }}</span>
+                                </div>
+                                <div class="metadata-row">
+                                    <span><strong>Segmentos:</strong></span>
+                                    <span>
+                                        {% if transcripcion.conversacion_json.conversacion %}
+                                            {{ transcripcion.conversacion_json.conversacion|length }} segmentos de conversación
+                                        {% else %}
+                                            Sin datos
+                                        {% endif %}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-lg-4">
+                            <h6 class="mb-2">
+                                <i class="fas fa-comments"></i>
+                                Vista Previa de Conversación
+                            </h6>
+                            <div class="conversation-preview">
+                                {% if transcripcion.conversacion_json.conversacion %}
+                                    {% for segmento in transcripcion.conversacion_json.conversacion|slice:":4" %}
+                                        <div class="mb-2">
+                                            <strong>{{ segmento.hablante|default:"Desconocido" }}:</strong>
+                                            <span>{{ segmento.texto|truncatechars:80 }}</span>
+                                        </div>
+                                    {% endfor %}
+                                    {% if transcripcion.conversacion_json.conversacion|length > 4 %}
+                                        <div class="text-muted">
+                                            <small>... y {{ transcripcion.conversacion_json.conversacion|length|add:"-4" }} segmentos más</small>
+                                        </div>
+                                    {% endif %}
+                                {% else %}
+                                    <div class="text-muted">
+                                        <i class="fas fa-exclamation-triangle"></i>
+                                        Sin datos de conversación disponibles
+                                    </div>
+                                {% endif %}
+                            </div>
+
+                            <!-- Calidad de la transcripción -->
+                            {% if transcripcion.conversacion_json.metadata %}
+                            <div class="mt-3">
+                                <h6 class="mb-2">
+                                    <i class="fas fa-chart-line"></i>
+                                    Calidad
+                                </h6>
+                                {% with transcripcion.conversacion_json.metadata as metadata %}
+                                {% if metadata.confianza_promedio %}
+                                <div class="progress mb-2">
+                                    <div class="progress-bar 
+                                        {% if metadata.confianza_promedio >= 0.8 %}bg-success
+                                        {% elif metadata.confianza_promedio >= 0.6 %}bg-warning
+                                        {% else %}bg-danger{% endif %}"
+                                         role="progressbar"
+                                         aria-valuenow="{{ metadata.confianza_promedio|floatformat:0 }}"
+                                         aria-valuemin="0"
+                                         aria-valuemax="100">
+                                        {{ metadata.confianza_promedio|floatformat:0 }}%
+                                    </div>
+                                </div>
+                                <small class="text-muted">Confianza de transcripción</small>
+                                {% else %}
+                                <small class="text-muted">Calidad no disponible</small>
+                                {% endif %}
+                                {% endwith %}
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+
+                <!-- Paginación -->
+                {% if transcripciones.has_other_pages %}
+                <div class="d-flex justify-content-center">
+                    <nav aria-label="Paginación de transcripciones">
+                        <ul class="pagination">
+                            {% if transcripciones.has_previous %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?{% if search %}search={{ search }}&{% endif %}page={{ transcripciones.previous_page_number }}">
+                                        <i class="fas fa-chevron-left"></i>
+                                        Anterior
+                                    </a>
+                                </li>
+                            {% endif %}
+                            
+                            {% for num in transcripciones.paginator.page_range %}
+                                {% if transcripciones.number == num %}
+                                    <li class="page-item active">
+                                        <span class="page-link">{{ num }}</span>
+                                    </li>
+                                {% elif num > transcripciones.number|add:'-3' and num < transcripciones.number|add:'3' %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?{% if search %}search={{ search }}&{% endif %}page={{ num }}">
+                                            {{ num }}
+                                        </a>
+                                    </li>
+                                {% endif %}
+                            {% endfor %}
+                            
+                            {% if transcripciones.has_next %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?{% if search %}search={{ search }}&{% endif %}page={{ transcripciones.next_page_number }}">
+                                        Siguiente
+                                        <i class="fas fa-chevron-right"></i>
+                                    </a>
+                                </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                </div>
+                {% endif %}
+
+            {% else %}
+                <!-- Sin transcripciones -->
+                <div class="card">
+                    <div class="card-body">
+                        <div class="no-transcripciones">
+                            <i class="fas fa-microphone fa-4x mb-4"></i>
+                            <h4>No hay transcripciones disponibles</h4>
+                            {% if search %}
+                                <p>No se encontraron transcripciones que coincidan con "<strong>{{ search }}</strong>"</p>
+                                <a href="{% url 'generador_actas:transcripciones_disponibles' %}" class="btn btn-primary">
+                                    <i class="fas fa-list"></i>
+                                    Ver todas las transcripciones
+                                </a>
+                            {% else %}
+                                <p>Aún no hay transcripciones procesadas disponibles para generar actas.</p>
+                                <div class="mt-4">
+                                    <p class="text-muted">
+                                        Las transcripciones aparecerán aquí después de:
+                                    </p>
+                                    <ul class="list-unstyled text-muted">
+                                        <li><i class="fas fa-check text-success"></i> Procesar archivos de audio</li>
+                                        <li><i class="fas fa-check text-success"></i> Generar transcripciones automáticas</li>
+                                        <li><i class="fas fa-check text-success"></i> Validar calidad de transcripción</li>
+                                    </ul>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+
+            <!-- Información adicional -->
+            <div class="card">
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-md-4">
+                            <div class="h5 text-primary">
+                                <i class="fas fa-robot"></i>
+                                Procesamiento IA
+                            </div>
+                            <p class="text-muted">
+                                Las actas se generan automáticamente usando inteligencia artificial
+                            </p>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="h5 text-success">
+                                <i class="fas fa-template"></i>
+                                Plantillas Personalizables
+                            </div>
+                            <p class="text-muted">
+                                Utiliza plantillas predefinidas según el tipo de reunión
+                            </p>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="h5 text-info">
+                                <i class="fas fa-download"></i>
+                                Múltiples Formatos
+                            </div>
+                            <p class="text-muted">
+                                Exporta las actas en PDF, Word o texto plano
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </section>
+</div>
+{% endblock %}
+
+{% block javascripts %}
+{{ block.super }}
+<script>
+$(document).ready(function() {
+    // Efecto hover en las tarjetas
+    $('.transcripcion-card').hover(
+        function() {
+            $(this).find('.btn-primary').addClass('btn-lg');
+        },
+        function() {
+            $(this).find('.btn-primary').removeClass('btn-lg');
+        }
+    );
+    
+    // Tooltip para información adicional
+    $('[data-toggle="tooltip"]').tooltip();
+});
+</script>
+{% endblock %}

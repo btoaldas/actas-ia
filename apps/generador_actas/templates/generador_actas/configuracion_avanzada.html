@@ -1,0 +1,453 @@
+{% extends "layouts/base.html" %}
+{% load static %}
+
+{% block title %}Configuración Avanzada - Generador IA{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/operaciones.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="content-wrapper">
+    <!-- Content Header -->
+    <div class="content-header">
+        <div class="container-fluid">
+            <div class="row mb-2">
+                <div class="col-sm-6">
+                    <h1 class="m-0">Configuración Avanzada del Sistema</h1>
+                </div>
+                <div class="col-sm-6">
+                    <ol class="breadcrumb float-sm-right">
+                        {% for item in breadcrumb %}
+                            {% if item.active %}
+                                <li class="breadcrumb-item active">{{ item.name }}</li>
+                            {% else %}
+                                <li class="breadcrumb-item">
+                                    <a href="{{ item.url }}">{{ item.name }}</a>
+                                </li>
+                            {% endif %}
+                        {% endfor %}
+                    </ol>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main content -->
+    <section class="content">
+        <div class="container-fluid">
+            
+            <!-- Información del Sistema -->
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="card card-primary">
+                        <div class="card-header">
+                            <h3 class="card-title">
+                                <i class="fas fa-info-circle mr-2"></i>
+                                Información del Sistema
+                            </h3>
+                        </div>
+                        <div class="card-body">
+                            <dl class="row">
+                                <dt class="col-sm-5">Versión Django:</dt>
+                                <dd class="col-sm-7">{{ sistema_info.django_version }}</dd>
+                                
+                                <dt class="col-sm-5">Python:</dt>
+                                <dd class="col-sm-7">{{ sistema_info.python_version }}</dd>
+                                
+                                <dt class="col-sm-5">Base de Datos:</dt>
+                                <dd class="col-sm-7">{{ sistema_info.database_info }}</dd>
+                                
+                                <dt class="col-sm-5">Configuración Activa:</dt>
+                                <dd class="col-sm-7">
+                                    {% if configuracion_activa %}
+                                        <span class="badge badge-success">v{{ configuracion_activa.version }}</span>
+                                        <small class="text-muted">({{ configuracion_activa.fecha_creacion|date:"d/m/Y H:i" }})</small>
+                                    {% else %}
+                                        <span class="badge badge-warning">No definida</span>
+                                    {% endif %}
+                                </dd>
+                                
+                                <dt class="col-sm-5">Celery Status:</dt>
+                                <dd class="col-sm-7">
+                                    <span id="celery-status" class="badge badge-secondary">Verificando...</span>
+                                </dd>
+                                
+                                <dt class="col-sm-5">Redis Status:</dt>
+                                <dd class="col-sm-7">
+                                    <span id="redis-status" class="badge badge-secondary">Verificando...</span>
+                                </dd>
+                            </dl>
+                            
+                            <div class="mt-3">
+                                <button class="btn btn-info btn-sm" onclick="verificarServicios()">
+                                    <i class="fas fa-sync-alt mr-1"></i> Verificar Servicios
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-6">
+                    <div class="card card-warning">
+                        <div class="card-header">
+                            <h3 class="card-title">
+                                <i class="fas fa-exclamation-triangle mr-2"></i>
+                                Acciones de Mantenimiento
+                            </h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-12 mb-2">
+                                    <button class="btn btn-outline-primary btn-block" onclick="iniciarOperacion('backup_sistema')">
+                                        <i class="fas fa-database mr-2"></i>
+                                        Crear Backup Completo
+                                    </button>
+                                </div>
+                                <div class="col-12 mb-2">
+                                    <button class="btn btn-outline-success btn-block" onclick="iniciarOperacion('exportar_configuraciones')">
+                                        <i class="fas fa-download mr-2"></i>
+                                        Exportar Configuraciones
+                                    </button>
+                                </div>
+                                <div class="col-12 mb-2">
+                                    <button class="btn btn-outline-warning btn-block" onclick="iniciarOperacion('reiniciar_servicios')">
+                                        <i class="fas fa-redo mr-2"></i>
+                                        Reiniciar Servicios
+                                    </button>
+                                </div>
+                                <div class="col-12 mb-2">
+                                    <button class="btn btn-outline-info btn-block" onclick="iniciarOperacion('probar_proveedores')">
+                                        <i class="fas fa-plug mr-2"></i>
+                                        Probar Proveedores IA
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Configuración Global -->
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <i class="fas fa-cogs mr-2"></i>
+                        Configuración Global del Sistema
+                    </h3>
+                    <div class="card-tools">
+                        <button class="btn btn-success btn-sm" onclick="crearNuevaConfiguracion()">
+                            <i class="fas fa-plus mr-1"></i> Nueva Configuración
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    {% if configuracion_activa %}
+                        <form method="post" action="{% url 'generador_actas:configuracion_avanzada' %}">
+                            {% csrf_token %}
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <h5>Configuración de Operaciones</h5>
+                                    
+                                    <div class="form-group">
+                                        <label for="max_operaciones_simultaneas">Máximo Operaciones Simultáneas:</label>
+                                        <input type="number" class="form-control" name="max_operaciones_simultaneas" 
+                                               value="{{ configuracion_activa.configuracion.max_operaciones_simultaneas|default:3 }}" 
+                                               min="1" max="10">
+                                        <small class="form-text text-muted">Número máximo de operaciones que pueden ejecutarse simultáneamente</small>
+                                    </div>
+                                    
+                                    <div class="form-group">
+                                        <label for="timeout_operacion">Timeout por Operación (segundos):</label>
+                                        <input type="number" class="form-control" name="timeout_operacion" 
+                                               value="{{ configuracion_activa.configuracion.timeout_operacion|default:3600 }}" 
+                                               min="60" max="7200">
+                                        <small class="form-text text-muted">Tiempo máximo para completar una operación</small>
+                                    </div>
+                                    
+                                    <div class="form-group">
+                                        <label for="retries_max">Reintentos Máximos:</label>
+                                        <input type="number" class="form-control" name="retries_max" 
+                                               value="{{ configuracion_activa.configuracion.retries_max|default:2 }}" 
+                                               min="0" max="5">
+                                        <small class="form-text text-muted">Número máximo de reintentos en caso de fallo</small>
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-6">
+                                    <h5>Configuración de Backups</h5>
+                                    
+                                    <div class="form-check">
+                                        <input type="checkbox" class="form-check-input" name="backup_incluir_media" 
+                                               {% if configuracion_activa.configuracion.backup_incluir_media %}checked{% endif %}>
+                                        <label class="form-check-label" for="backup_incluir_media">
+                                            Incluir archivos media por defecto
+                                        </label>
+                                    </div>
+                                    
+                                    <div class="form-check">
+                                        <input type="checkbox" class="form-check-input" name="backup_comprimir" 
+                                               {% if configuracion_activa.configuracion.backup_comprimir %}checked{% endif %}>
+                                        <label class="form-check-label" for="backup_comprimir">
+                                            Comprimir backups automáticamente
+                                        </label>
+                                    </div>
+                                    
+                                    <div class="form-group mt-3">
+                                        <label for="backup_retention_days">Retención de Backups (días):</label>
+                                        <input type="number" class="form-control" name="backup_retention_days" 
+                                               value="{{ configuracion_activa.configuracion.backup_retention_days|default:30 }}" 
+                                               min="1" max="365">
+                                        <small class="form-text text-muted">Días que se mantienen los backups antes de eliminarse automáticamente</small>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="row mt-4">
+                                <div class="col-12">
+                                    <h5>Configuración de Notificaciones</h5>
+                                    
+                                    <div class="row">
+                                        <div class="col-md-4">
+                                            <div class="form-check">
+                                                <input type="checkbox" class="form-check-input" name="notif_email_operaciones" 
+                                                       {% if configuracion_activa.configuracion.notif_email_operaciones %}checked{% endif %}>
+                                                <label class="form-check-label" for="notif_email_operaciones">
+                                                    Email en operaciones críticas
+                                                </label>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <div class="form-check">
+                                                <input type="checkbox" class="form-check-input" name="notif_log_detallado" 
+                                                       {% if configuracion_activa.configuracion.notif_log_detallado %}checked{% endif %}>
+                                                <label class="form-check-label" for="notif_log_detallado">
+                                                    Logging detallado
+                                                </label>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <div class="form-check">
+                                                <input type="checkbox" class="form-check-input" name="notif_auto_cleanup" 
+                                                       {% if configuracion_activa.configuracion.notif_auto_cleanup %}checked{% endif %}>
+                                                <label class="form-check-label" for="notif_auto_cleanup">
+                                                    Limpieza automática de logs
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="mt-4">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save mr-1"></i> Guardar Configuración
+                                </button>
+                                <button type="button" class="btn btn-secondary ml-2" onclick="resetearFormulario()">
+                                    <i class="fas fa-undo mr-1"></i> Resetear
+                                </button>
+                            </div>
+                        </form>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-cog fa-3x text-muted mb-3"></i>
+                            <h4>No hay configuración activa</h4>
+                            <p class="text-muted">Para comenzar, cree una nueva configuración del sistema.</p>
+                            <button class="btn btn-primary" onclick="crearNuevaConfiguracion()">
+                                <i class="fas fa-plus mr-1"></i> Crear Primera Configuración
+                            </button>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Historial de Configuraciones -->
+            {% if configuraciones_historial %}
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <i class="fas fa-history mr-2"></i>
+                        Historial de Configuraciones
+                    </h3>
+                    <div class="card-tools">
+                        <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                            <i class="fas fa-minus"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body table-responsive p-0">
+                    <table class="table table-hover text-nowrap">
+                        <thead>
+                            <tr>
+                                <th>Versión</th>
+                                <th>Fecha Creación</th>
+                                <th>Usuario</th>
+                                <th>Descripción</th>
+                                <th>Estado</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for config in configuraciones_historial %}
+                            <tr class="{% if config.activa %}table-success{% endif %}">
+                                <td>
+                                    <code>v{{ config.version }}</code>
+                                    {% if config.activa %}
+                                        <span class="badge badge-success ml-1">Activa</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ config.fecha_creacion|date:"d/m/Y H:i" }}</td>
+                                <td>
+                                    {% if config.usuario_creacion %}
+                                        {{ config.usuario_creacion.get_full_name|default:config.usuario_creacion.username }}
+                                    {% else %}
+                                        <span class="text-muted">Sistema</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ config.descripcion|default:"Sin descripción" }}</td>
+                                <td>
+                                    {% if config.activa %}
+                                        <span class="badge badge-success">Activa</span>
+                                    {% else %}
+                                        <span class="badge badge-secondary">Historial</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="btn-group btn-group-sm">
+                                        <button class="btn btn-info btn-sm" onclick="verConfiguracion('{{ config.id }}')" title="Ver detalles">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                        {% if not config.activa %}
+                                            <button class="btn btn-warning btn-sm" onclick="activarConfiguracion('{{ config.id }}')" title="Activar">
+                                                <i class="fas fa-power-off"></i>
+                                            </button>
+                                        {% endif %}
+                                        <button class="btn btn-success btn-sm" onclick="exportarConfiguracion('{{ config.id }}')" title="Exportar">
+                                            <i class="fas fa-download"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </section>
+</div>
+
+<!-- Modal Nueva Configuración -->
+<div class="modal fade" id="nuevaConfiguracionModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title">Nueva Configuración del Sistema</h4>
+                <button type="button" class="close" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <form method="post" action="{% url 'generador_actas:configuracion_avanzada' %}">
+                {% csrf_token %}
+                <input type="hidden" name="accion" value="nueva_configuracion">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="descripcion_nueva">Descripción:</label>
+                        <textarea class="form-control" name="descripcion" rows="3" 
+                                  placeholder="Descripción de los cambios o motivo de la nueva configuración..."></textarea>
+                    </div>
+                    
+                    <div class="form-check">
+                        <input type="checkbox" class="form-check-input" name="activar_inmediatamente" checked>
+                        <label class="form-check-label" for="activar_inmediatamente">
+                            Activar inmediatamente
+                        </label>
+                    </div>
+                    
+                    <div class="form-check">
+                        <input type="checkbox" class="form-check-input" name="copiar_actual">
+                        <label class="form-check-label" for="copiar_actual">
+                            Copiar configuración actual como base
+                        </label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-plus mr-1"></i> Crear Configuración
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Detalles Configuración -->
+<div class="modal fade" id="detallesConfigModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title">Detalles de Configuración</h4>
+                <button type="button" class="close" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div id="config-details-content">
+                    <!-- El contenido se carga dinámicamente -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/operaciones.js' %}"></script>
+<script>
+// Configuración específica para página de configuración
+$(document).ready(function() {
+    // Verificar servicios cada 2 minutos
+    setInterval(function() {
+        window.configuracionManager.verificarEstadoServicios();
+    }, 120000);
+});
+
+// Funciones específicas para esta página
+function crearNuevaConfiguracion() {
+    $('#nuevaConfiguracionModal').modal('show');
+}
+
+function activarConfiguracion(configId) {
+    if (confirm('¿Está seguro de activar esta configuración? Se desactivará la configuración actual.')) {
+        $.post(`/generador-actas/api/configuracion/${configId}/activar/`, {
+            csrfmiddlewaretoken: $('[name=csrfmiddlewaretoken]').val()
+        })
+        .done(function(response) {
+            if (response.success) {
+                location.reload();
+            } else {
+                alert('Error: ' + response.message);
+            }
+        })
+        .fail(function() {
+            alert('Error de conexión');
+        });
+    }
+}
+
+function exportarConfiguracion(configId) {
+    window.location.href = `/generador-actas/api/configuracion/${configId}/exportar/`;
+}
+
+function resetearFormulario() {
+    if (confirm('¿Está seguro de resetear el formulario? Se perderán los cambios no guardados.')) {
+        location.reload();
+    }
+}
+</script>
+{% endblock %}

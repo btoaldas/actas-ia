@@ -1,0 +1,423 @@
+{% extends "layouts/base.html" %}
+{% load static %}
+
+{% block title %}{{ page_title }} | Generador de Actas{% endblock %}
+
+{% block stylesheets %}
+{{ block.super }}
+<link rel="stylesheet" href="{% static 'plugins/datatables/datatables.min.css' %}">
+<link rel="stylesheet" href="{% static 'plugins/sweetalert2/sweetalert2.min.css' %}">
+<style>
+.acta-row {
+    transition: background-color 0.3s ease;
+}
+
+.acta-row:hover {
+    background-color: #f8f9fa;
+}
+
+.status-badge {
+    font-size: 0.8em;
+    padding: 4px 8px;
+    border-radius: 4px;
+}
+
+.progress-mini {
+    height: 4px;
+    margin-top: 4px;
+}
+
+.filter-section {
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 15px;
+    margin-bottom: 20px;
+}
+
+.table-actions {
+    white-space: nowrap;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="content-wrapper">
+    <!-- Content Header -->
+    <div class="content-header">
+        <div class="container-fluid">
+            <div class="row mb-2">
+                <div class="col-sm-6">
+                    <h1 class="m-0">{{ page_title }}</h1>
+                </div>
+                <div class="col-sm-6">
+                    {% if breadcrumb %}
+                    <ol class="breadcrumb float-sm-right">
+                        {% for item in breadcrumb %}
+                            {% if item.active %}
+                                <li class="breadcrumb-item active">{{ item.name }}</li>
+                            {% else %}
+                                <li class="breadcrumb-item"><a href="{{ item.url }}">{{ item.name }}</a></li>
+                            {% endif %}
+                        {% endfor %}
+                    </ol>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main content -->
+    <section class="content">
+        <div class="container-fluid">
+            
+            <!-- Filtros -->
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <i class="fas fa-filter"></i>
+                        Filtros de Búsqueda
+                    </h3>
+                    <div class="card-tools">
+                        <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                            <i class="fas fa-minus"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <form method="get" class="row">
+                        <div class="col-md-3">
+                            <div class="form-group">
+                                <label for="search">Búsqueda</label>
+                                <input type="text" class="form-control" name="search" id="search" 
+                                       value="{{ filtros_activos.search }}" 
+                                       placeholder="Número, título o plantilla...">
+                            </div>
+                        </div>
+                        <div class="col-md-2">
+                            <div class="form-group">
+                                <label for="estado">Estado</label>
+                                <select class="form-control" name="estado" id="estado">
+                                    <option value="">Todos</option>
+                                    {% for value, label in estados_choices %}
+                                    <option value="{{ value }}" {% if filtros_activos.estado == value %}selected{% endif %}>
+                                        {{ label }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-2">
+                            <div class="form-group">
+                                <label for="proveedor">Proveedor IA</label>
+                                <select class="form-control" name="proveedor" id="proveedor">
+                                    <option value="">Todos</option>
+                                    {% for prov in proveedores %}
+                                    <option value="{{ prov.id }}" {% if filtros_activos.proveedor == prov.id|stringformat:"s" %}selected{% endif %}>
+                                        {{ prov.nombre }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-2">
+                            <div class="form-group">
+                                <label for="plantilla">Plantilla</label>
+                                <select class="form-control" name="plantilla" id="plantilla">
+                                    <option value="">Todas</option>
+                                    {% for plant in plantillas %}
+                                    <option value="{{ plant.id }}" {% if filtros_activos.plantilla == plant.id|stringformat:"s" %}selected{% endif %}>
+                                        {{ plant.nombre }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-1">
+                            <div class="form-group">
+                                <label for="fecha_desde">Desde</label>
+                                <input type="date" class="form-control" name="fecha_desde" id="fecha_desde" 
+                                       value="{{ filtros_activos.fecha_desde }}">
+                            </div>
+                        </div>
+                        <div class="col-md-1">
+                            <div class="form-group">
+                                <label for="fecha_hasta">Hasta</label>
+                                <input type="date" class="form-control" name="fecha_hasta" id="fecha_hasta" 
+                                       value="{{ filtros_activos.fecha_hasta }}">
+                            </div>
+                        </div>
+                        <div class="col-md-1">
+                            <div class="form-group">
+                                <label>&nbsp;</label>
+                                <div>
+                                    <button type="submit" class="btn btn-primary btn-block">
+                                        <i class="fas fa-search"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Listado de Actas -->
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <i class="fas fa-list"></i>
+                        Actas Generadas 
+                        {% if actas.paginator.count %}
+                            ({{ actas.paginator.count }} total{{ actas.paginator.count|pluralize:"es" }})
+                        {% endif %}
+                    </h3>
+                    <div class="card-tools">
+                        <a href="{% url 'generador_actas:transcripciones_disponibles' %}" class="btn btn-primary btn-sm">
+                            <i class="fas fa-plus"></i>
+                            Nueva Acta
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body table-responsive p-0">
+                    {% if actas %}
+                    <table class="table table-hover text-nowrap">
+                        <thead>
+                            <tr>
+                                <th>Número</th>
+                                <th>Título</th>
+                                <th>Estado</th>
+                                <th>Plantilla</th>
+                                <th>Proveedor IA</th>
+                                <th>Fecha Sesión</th>
+                                <th>Creado</th>
+                                <th>Progreso</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for acta in actas %}
+                            <tr class="acta-row">
+                                <td>
+                                    <strong>{{ acta.numero_acta }}</strong>
+                                </td>
+                                <td>
+                                    <div>{{ acta.titulo|truncatechars:50 }}</div>
+                                    <small class="text-muted">
+                                        {{ acta.usuario_creacion.get_full_name|default:acta.usuario_creacion.username }}
+                                    </small>
+                                </td>
+                                <td>
+                                    <span class="badge 
+                                        {% if acta.estado == 'borrador' %}badge-secondary
+                                        {% elif acta.estado == 'en_cola' %}badge-info  
+                                        {% elif acta.estado == 'procesando' or acta.estado == 'procesando_segmentos' or acta.estado == 'unificando' %}badge-warning
+                                        {% elif acta.estado == 'revision' %}badge-primary
+                                        {% elif acta.estado == 'aprobado' %}badge-success
+                                        {% elif acta.estado == 'publicado' %}badge-success
+                                        {% elif acta.estado == 'error' %}badge-danger
+                                        {% else %}badge-secondary{% endif %}">
+                                        {{ acta.get_estado_display }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <div>{{ acta.plantilla.nombre }}</div>
+                                    <small class="text-muted">{{ acta.plantilla.get_tipo_acta_display }}</small>
+                                </td>
+                                <td>
+                                    {{ acta.proveedor_ia.nombre }}
+                                </td>
+                                <td>
+                                    {% if acta.fecha_sesion %}
+                                        {{ acta.fecha_sesion|date:"d/m/Y" }}
+                                    {% else %}
+                                        <span class="text-muted">No especificada</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {{ acta.fecha_creacion|date:"d/m/Y H:i" }}
+                                </td>
+                                <td>
+                                    {% if acta.progreso > 0 %}
+                                        <div class="progress progress-mini">
+                                            <div class="progress-bar 
+                                                {% if acta.estado == 'error' %}bg-danger
+                                                {% elif acta.progreso == 100 %}bg-success
+                                                {% else %}bg-primary{% endif %}" 
+                                                 role="progressbar" 
+                                                 aria-valuenow="{{ acta.progreso }}" 
+                                                 aria-valuemin="0" 
+                                                 aria-valuemax="100">
+                                            </div>
+                                        </div>
+                                        <small>{{ acta.progreso }}%</small>
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                <td class="table-actions">
+                                    <div class="btn-group btn-group-sm">
+                                        <a href="{% url 'generador_actas:acta_detail' acta.pk %}" 
+                                           class="btn btn-outline-primary" 
+                                           title="Ver detalles">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        {% if acta.puede_procesar %}
+                                        <button class="btn btn-outline-success procesar-btn" 
+                                                data-acta-id="{{ acta.pk }}"
+                                                title="Procesar acta">
+                                            <i class="fas fa-play"></i>
+                                        </button>
+                                        {% endif %}
+                                        {% if acta.contenido_final or acta.contenido_borrador %}
+                                        <div class="btn-group btn-group-sm">
+                                            <button type="button" class="btn btn-outline-info dropdown-toggle" 
+                                                    data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                                <i class="fas fa-download"></i>
+                                            </button>
+                                            <div class="dropdown-menu">
+                                                <a class="dropdown-item" href="{% url 'generador_actas:exportar_acta' acta.pk %}?formato=txt">
+                                                    <i class="fas fa-file-alt"></i> TXT
+                                                </a>
+                                                <a class="dropdown-item" href="{% url 'generador_actas:exportar_acta' acta.pk %}?formato=pdf">
+                                                    <i class="fas fa-file-pdf"></i> PDF
+                                                </a>
+                                                <a class="dropdown-item" href="{% url 'generador_actas:exportar_acta' acta.pk %}?formato=docx">
+                                                    <i class="fas fa-file-word"></i> DOCX
+                                                </a>
+                                            </div>
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-file-alt fa-3x text-muted mb-3"></i>
+                        <h5 class="text-muted">No se encontraron actas</h5>
+                        <p class="text-muted">
+                            {% if filtros_activos.search or filtros_activos.estado or filtros_activos.proveedor or filtros_activos.plantilla %}
+                                Prueba ajustando los filtros de búsqueda
+                            {% else %}
+                                Aún no hay actas generadas
+                            {% endif %}
+                        </p>
+                        <a href="{% url 'generador_actas:transcripciones_disponibles' %}" class="btn btn-primary">
+                            <i class="fas fa-plus"></i>
+                            Crear Primera Acta
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+                
+                <!-- Paginación -->
+                {% if actas.has_other_pages %}
+                <div class="card-footer">
+                    <nav aria-label="Page navigation">
+                        <ul class="pagination justify-content-center mb-0">
+                            {% if actas.has_previous %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?{% for key, value in filtros_activos.items %}{% if value %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ actas.previous_page_number }}">
+                                        Anterior
+                                    </a>
+                                </li>
+                            {% endif %}
+                            
+                            {% for num in actas.paginator.page_range %}
+                                {% if actas.number == num %}
+                                    <li class="page-item active">
+                                        <span class="page-link">{{ num }}</span>
+                                    </li>
+                                {% elif num > actas.number|add:'-3' and num < actas.number|add:'3' %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?{% for key, value in filtros_activos.items %}{% if value %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ num }}">
+                                            {{ num }}
+                                        </a>
+                                    </li>
+                                {% endif %}
+                            {% endfor %}
+                            
+                            {% if actas.has_next %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?{% for key, value in filtros_activos.items %}{% if value %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ actas.next_page_number }}">
+                                        Siguiente
+                                    </a>
+                                </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                </div>
+                {% endif %}
+            </div>
+
+        </div>
+    </section>
+</div>
+{% endblock %}
+
+{% block javascripts %}
+{{ block.super }}
+<script src="{% static 'plugins/sweetalert2/sweetalert2.min.js' %}"></script>
+<script>
+$(document).ready(function() {
+    // Procesar acta
+    $('.procesar-btn').click(function() {
+        const actaId = $(this).data('acta-id');
+        const btn = $(this);
+        
+        Swal.fire({
+            title: '¿Procesar acta?',
+            text: 'Esto iniciará el procesamiento automático con IA',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#3085d6',
+            cancelButtonColor: '#d33',
+            confirmButtonText: 'Sí, procesar',
+            cancelButtonText: 'Cancelar'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                btn.prop('disabled', true);
+                btn.html('<i class="fas fa-spinner fa-spin"></i>');
+                
+                $.ajax({
+                    url: `/generador-actas/actas/${actaId}/procesar/`,
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': $('[name=csrfmiddlewaretoken]').val()
+                    },
+                    success: function(response) {
+                        if (response.success) {
+                            Swal.fire({
+                                title: 'Procesamiento iniciado',
+                                text: response.message,
+                                icon: 'success'
+                            }).then(() => {
+                                location.reload();
+                            });
+                        } else {
+                            Swal.fire('Error', response.message, 'error');
+                            btn.prop('disabled', false);
+                            btn.html('<i class="fas fa-play"></i>');
+                        }
+                    },
+                    error: function() {
+                        Swal.fire('Error', 'Error comunicándose con el servidor', 'error');
+                        btn.prop('disabled', false);
+                        btn.html('<i class="fas fa-play"></i>');
+                    }
+                });
+            }
+        });
+    });
+    
+    // Auto-refresh para actas en procesamiento
+    const hasProcessingActas = $('.badge-warning').length > 0;
+    if (hasProcessingActas) {
+        setTimeout(() => {
+            location.reload();
+        }, 30000); // Refrescar cada 30 segundos
+    }
+});
+</script>
+{% endblock %}

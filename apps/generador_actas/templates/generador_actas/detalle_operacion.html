@@ -1,0 +1,351 @@
+{% extends "layouts/base.html" %}
+{% load static %}
+
+{% block title %}Detalle Operación {{ operacion.id|slice:":8" }} - Generador IA{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/operaciones.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="content-wrapper">
+    <!-- Content Header -->
+    <div class="content-header">
+        <div class="container-fluid">
+            <div class="row mb-2">
+                <div class="col-sm-6">
+                    <h1 class="m-0">
+                        Detalle de Operación
+                        <span class="badge badge-{{ operacion.estado|default:'secondary' }} ml-2">
+                            {{ operacion.get_estado_display }}
+                        </span>
+                    </h1>
+                </div>
+                <div class="col-sm-6">
+                    <ol class="breadcrumb float-sm-right">
+                        {% for item in breadcrumb %}
+                            {% if item.active %}
+                                <li class="breadcrumb-item active">{{ item.name }}</li>
+                            {% else %}
+                                <li class="breadcrumb-item">
+                                    <a href="{{ item.url }}">{{ item.name }}</a>
+                                </li>
+                            {% endif %}
+                        {% endfor %}
+                    </ol>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main content -->
+    <section class="content">
+        <div class="container-fluid">
+            
+            <!-- Información General -->
+            <div class="row">
+                <div class="col-md-8">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">
+                                <i class="fas fa-info-circle mr-2"></i>
+                                Información General
+                            </h3>
+                            <div class="card-tools">
+                                {% if operacion.estado in 'pending,queued,running' %}
+                                    <button class="btn btn-warning btn-sm" onclick="cancelarOperacion('{{ operacion.id }}')">
+                                        <i class="fas fa-stop mr-1"></i> Cancelar
+                                    </button>
+                                {% endif %}
+                                {% if operacion.tiene_archivo %}
+                                    <a href="{% url 'generador_actas:api_descargar_resultado' operacion.id %}" 
+                                       class="btn btn-success btn-sm">
+                                        <i class="fas fa-download mr-1"></i> Descargar
+                                    </a>
+                                {% endif %}
+                                <button class="btn btn-info btn-sm" onclick="refrescarPagina()">
+                                    <i class="fas fa-sync-alt mr-1"></i> Actualizar
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <dl class="row">
+                                        <dt class="col-sm-4">ID:</dt>
+                                        <dd class="col-sm-8">
+                                            <code>{{ operacion.id }}</code>
+                                            <button class="btn btn-sm btn-outline-secondary ml-1" 
+                                                    onclick="copiarTexto('{{ operacion.id }}')" 
+                                                    title="Copiar ID">
+                                                <i class="fas fa-copy"></i>
+                                            </button>
+                                        </dd>
+                                        
+                                        <dt class="col-sm-4">Tipo:</dt>
+                                        <dd class="col-sm-8">
+                                            <span class="badge badge-secondary">{{ operacion.get_tipo_display }}</span>
+                                        </dd>
+                                        
+                                        <dt class="col-sm-4">Estado:</dt>
+                                        <dd class="col-sm-8">
+                                            <span class="operation-status status-{{ operacion.estado }}">
+                                                {{ operacion.get_estado_display }}
+                                            </span>
+                                        </dd>
+                                        
+                                        <dt class="col-sm-4">Usuario:</dt>
+                                        <dd class="col-sm-8">
+                                            {% if operacion.usuario %}
+                                                {{ operacion.usuario.get_full_name|default:operacion.usuario.username }}
+                                            {% else %}
+                                                <span class="text-muted">Sistema</span>
+                                            {% endif %}
+                                        </dd>
+                                    </dl>
+                                </div>
+                                <div class="col-md-6">
+                                    <dl class="row">
+                                        <dt class="col-sm-4">Creada:</dt>
+                                        <dd class="col-sm-8">{{ operacion.fecha_creacion|date:"d/m/Y H:i:s" }}</dd>
+                                        
+                                        <dt class="col-sm-4">Iniciada:</dt>
+                                        <dd class="col-sm-8">
+                                            {% if operacion.fecha_inicio %}
+                                                {{ operacion.fecha_inicio|date:"d/m/Y H:i:s" }}
+                                            {% else %}
+                                                <span class="text-muted">No iniciada</span>
+                                            {% endif %}
+                                        </dd>
+                                        
+                                        <dt class="col-sm-4">Finalizada:</dt>
+                                        <dd class="col-sm-8">
+                                            {% if operacion.fecha_finalizacion %}
+                                                {{ operacion.fecha_finalizacion|date:"d/m/Y H:i:s" }}
+                                            {% else %}
+                                                <span class="text-muted">En progreso</span>
+                                            {% endif %}
+                                        </dd>
+                                        
+                                        <dt class="col-sm-4">Duración:</dt>
+                                        <dd class="col-sm-8">
+                                            {% if operacion.duracion_segundos %}
+                                                {{ operacion.duracion_segundos|floatformat:2 }} segundos
+                                            {% else %}
+                                                <span class="text-muted">-</span>
+                                            {% endif %}
+                                        </dd>
+                                    </dl>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Panel de Progreso -->
+                <div class="col-md-4">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">
+                                <i class="fas fa-chart-line mr-2"></i>
+                                Progreso
+                            </h3>
+                        </div>
+                        <div class="card-body text-center">
+                            <div class="progress progress-lg mb-3">
+                                <div class="progress-bar 
+                                    {% if operacion.estado == 'completed' %}bg-success
+                                    {% elif operacion.estado == 'failed' %}bg-danger
+                                    {% elif operacion.estado == 'running' %}bg-info progress-bar-striped progress-bar-animated
+                                    {% else %}bg-warning{% endif %}"
+                                    role="progressbar" 
+                                    style="width: {{ operacion.progreso }}%"
+                                    aria-valuenow="{{ operacion.progreso }}" 
+                                    aria-valuemin="0" 
+                                    aria-valuemax="100">
+                                </div>
+                            </div>
+                            <h3 class="mb-0">{{ operacion.progreso }}%</h3>
+                            <p class="text-muted">
+                                {% if operacion.estado == 'pending' %}
+                                    Esperando en cola
+                                {% elif operacion.estado == 'queued' %}
+                                    En cola de procesamiento
+                                {% elif operacion.estado == 'running' %}
+                                    Procesando...
+                                {% elif operacion.estado == 'completed' %}
+                                    Completado exitosamente
+                                {% elif operacion.estado == 'failed' %}
+                                    Error en la operación
+                                {% elif operacion.estado == 'cancelled' %}
+                                    Operación cancelada
+                                {% endif %}
+                            </p>
+                            
+                            {% if operacion.task_id %}
+                                <small class="text-muted">
+                                    Task ID: <code>{{ operacion.task_id|slice:":8" }}...</code>
+                                </small>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <!-- Archivo de Resultado -->
+                    {% if operacion.archivo_resultado %}
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">
+                                <i class="fas fa-file mr-2"></i>
+                                Archivo de Resultado
+                            </h3>
+                        </div>
+                        <div class="card-body">
+                            <p><strong>Archivo:</strong> {{ operacion.archivo_resultado.name|default:"No disponible" }}</p>
+                            {% if operacion.archivo_resultado.size %}
+                                <p><strong>Tamaño:</strong> {{ operacion.archivo_resultado.size|filesizeformat }}</p>
+                            {% endif %}
+                            <a href="{% url 'generador_actas:api_descargar_resultado' operacion.id %}" 
+                               class="btn btn-success btn-block">
+                                <i class="fas fa-download mr-1"></i> Descargar Archivo
+                            </a>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Parámetros -->
+            {% if operacion.parametros %}
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <i class="fas fa-cogs mr-2"></i>
+                        Parámetros de la Operación
+                    </h3>
+                    <div class="card-tools">
+                        <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                            <i class="fas fa-minus"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <pre class="bg-light p-3 rounded"><code>{{ operacion.parametros_json }}</code></pre>
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- Resultado -->
+            {% if operacion.resultado %}
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <i class="fas fa-check-circle mr-2"></i>
+                        Resultado de la Operación
+                    </h3>
+                    <div class="card-tools">
+                        <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                            <i class="fas fa-minus"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <pre class="bg-light p-3 rounded"><code>{{ operacion.resultado_json }}</code></pre>
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- Logs -->
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <i class="fas fa-list mr-2"></i>
+                        Logs de la Operación
+                        <span class="badge badge-info ml-1">{{ logs.count }}</span>
+                    </h3>
+                    <div class="card-tools">
+                        <button class="btn btn-sm btn-info" onclick="refrescarLogs()">
+                            <i class="fas fa-sync-alt mr-1"></i> Actualizar Logs
+                        </button>
+                        <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                            <i class="fas fa-minus"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body" id="logs-container">
+                    {% if logs %}
+                        <div class="timeline">
+                            {% for log in logs %}
+                            <div class="time-label">
+                                <span class="bg-info">{{ log.timestamp|date:"H:i:s" }}</span>
+                            </div>
+                            <div>
+                                <i class="fas fa-{{ log.nivel|default:'info' }} bg-{{ log.nivel|default:'info' }}"></i>
+                                <div class="timeline-item">
+                                    <span class="time">
+                                        <i class="fas fa-clock"></i> {{ log.timestamp|date:"d/m/Y H:i:s" }}
+                                    </span>
+                                    <h3 class="timeline-header">
+                                        <span class="badge badge-{{ log.nivel|default:'info' }}">{{ log.get_nivel_display }}</span>
+                                        {{ log.mensaje }}
+                                    </h3>
+                                    {% if log.detalles %}
+                                    <div class="timeline-body">
+                                        <pre class="small bg-light p-2 rounded">{{ log.detalles_json }}</pre>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% endfor %}
+                            <div>
+                                <i class="fas fa-clock bg-gray"></i>
+                            </div>
+                        </div>
+                    {% else %}
+                        <div class="text-center text-muted py-4">
+                            <i class="fas fa-file-alt fa-2x mb-2"></i><br>
+                            No hay logs disponibles para esta operación
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </section>
+</div>
+
+<!-- Modal de Confirmación -->
+<div class="modal fade" id="confirmacionModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title">Confirmar Acción</h4>
+                <button type="button" class="close" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p id="mensajeConfirmacion"></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-warning" id="btnConfirmar">Confirmar</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/operaciones.js' %}"></script>
+<script>
+// Configuración específica para detalle de operación
+$(document).ready(function() {
+    // Verificar si debe auto-actualizarse
+    const estadosActivos = ['pending', 'queued', 'running'];
+    const estadoActual = '{{ operacion.estado }}';
+    
+    if (estadosActivos.includes(estadoActual)) {
+        window.operacionesManager.startAutoRefresh();
+    }
+});
+</script>
+{% endblock %}

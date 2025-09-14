@@ -1,0 +1,414 @@
+{% extends "layouts/base.html" %}
+{% load static %}
+
+{% block title %}Confirmar Eliminación{% endblock title %}
+
+{% block content %}
+<div class="content-wrapper">
+<!-- Content Header -->
+<div class="content-header">
+    <div class="container-fluid">
+        <div class="row mb-2">
+            <div class="col-sm-6">
+                <h1>🗑️ Confirmar Eliminación</h1>
+            </div>
+            <div class="col-sm-6">
+                <ol class="breadcrumb float-sm-right">
+                    <li class="breadcrumb-item"><a href="{% url 'generador_actas:dashboard' %}">Dashboard</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'generador_actas:plantillas_lista' %}">Plantillas</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'generador_actas:plantilla_detail' object.pk %}">{{ object.nombre }}</a></li>
+                    <li class="breadcrumb-item active">Eliminar</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Main content -->
+<section class="content">
+    <div class="container-fluid">
+        <div class="row justify-content-center">
+            <div class="col-md-10">
+                <div class="card card-danger">
+                    <div class="card-header">
+                        <h3 class="card-title">⚠️ Confirmar Eliminación de la Plantilla</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="alert alert-danger">
+                            <h5><i class="icon fas fa-exclamation-triangle"></i> ¡Atención Crítica!</h5>
+                            Está a punto de eliminar permanentemente la plantilla <strong>"{{ object.nombre }}"</strong>.
+                            Esta acción no se puede deshacer y puede tener consecuencias importantes en el sistema.
+                        </div>
+
+                        <!-- Información de la Plantilla -->
+                        <div class="card card-outline card-secondary">
+                            <div class="card-header">
+                                <h4 class="card-title">📋 Información de la Plantilla</h4>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <dl class="row">
+                                            <dt class="col-sm-4">Nombre:</dt>
+                                            <dd class="col-sm-8">{{ object.nombre }}</dd>
+                                            
+                                            <dt class="col-sm-4">Código:</dt>
+                                            <dd class="col-sm-8"><code>{{ object.codigo }}</code></dd>
+                                            
+                                            <dt class="col-sm-4">Tipo:</dt>
+                                            <dd class="col-sm-8">
+                                                <span class="badge badge-info">{{ object.get_tipo_acta_display }}</span>
+                                            </dd>
+                                            
+                                            <dt class="col-sm-4">Versión:</dt>
+                                            <dd class="col-sm-8">{{ object.version|default:"1.0" }}</dd>
+                                        </dl>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <dl class="row">
+                                            <dt class="col-sm-4">Estado:</dt>
+                                            <dd class="col-sm-8">
+                                                <span class="badge badge-{% if object.activa %}success{% else %}secondary{% endif %}">
+                                                    {% if object.activa %}Activa{% else %}Inactiva{% endif %}
+                                                </span>
+                                            </dd>
+                                            
+                                            <dt class="col-sm-4">Creado:</dt>
+                                            <dd class="col-sm-8">{{ object.fecha_creacion|date:"d/m/Y H:i" }}</dd>
+                                            
+                                            <dt class="col-sm-4">Segmentos:</dt>
+                                            <dd class="col-sm-8">{{ object.segmentos.count }}</dd>
+                                        </dl>
+                                    </div>
+                                </div>
+
+                                {% if object.descripcion %}
+                                <div class="mt-3">
+                                    <strong>Descripción:</strong>
+                                    <p class="text-muted">{{ object.descripcion|truncatewords:50 }}</p>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Análisis de Impacto Crítico -->
+                        <div class="card card-outline card-danger">
+                            <div class="card-header">
+                                <h4 class="card-title">💥 Análisis de Impacto Crítico</h4>
+                            </div>
+                            <div class="card-body">
+                                <!-- Impacto en Actas -->
+                                {% if object.actas.exists %}
+                                    <div class="alert alert-danger">
+                                        <h6><i class="fas fa-exclamation-triangle"></i> <strong>ALTO IMPACTO - Actas Existentes:</strong></h6>
+                                        <p>Esta plantilla ha sido utilizada para generar <strong>{{ object.actas.count }} acta{{ object.actas.count|pluralize }}</strong>:</p>
+                                        
+                                        <div class="row">
+                                            {% for acta in object.actas.all|slice:":6" %}
+                                            <div class="col-md-4 mb-2">
+                                                <div class="card card-outline card-warning">
+                                                    <div class="card-body p-2">
+                                                        <h6 class="card-title mb-1">{{ acta.numero_acta }}</h6>
+                                                        <p class="card-text text-sm mb-1">{{ acta.titulo|truncatechars:40 }}</p>
+                                                        <span class="badge badge-{% if acta.estado == 'publicada' %}success{% elif acta.estado == 'en_revision' %}warning{% else %}secondary{% endif %}">
+                                                            {{ acta.get_estado_display }}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            {% endfor %}
+                                        </div>
+                                        
+                                        {% if object.actas.count > 6 %}
+                                        <p class="text-muted">... y {{ object.actas.count|add:"-6" }} actas más.</p>
+                                        {% endif %}
+                                        
+                                        <hr>
+                                        <p class="mb-0">
+                                            <strong>⚠️ CONSECUENCIA CRÍTICA:</strong> Las actas existentes mantendrán su contenido, pero ya no podrán regenerarse utilizando esta plantilla.
+                                        </p>
+                                    </div>
+                                {% endif %}
+
+                                <!-- Segmentos de la Plantilla -->
+                                {% if object.segmentos.exists %}
+                                    <div class="alert alert-warning">
+                                        <h6><i class="fas fa-puzzle-piece"></i> <strong>Segmentos Configurados:</strong></h6>
+                                        <p>Esta plantilla utiliza <strong>{{ object.segmentos.count }} segmento{{ object.segmentos.count|pluralize }}</strong>:</p>
+                                        <div class="row">
+                                            {% for segmento in object.segmentos.all %}
+                                            <div class="col-md-6 mb-1">
+                                                <span class="badge badge-info">{{ forloop.counter }}. {{ segmento.nombre }}</span>
+                                            </div>
+                                            {% endfor %}
+                                        </div>
+                                        <hr>
+                                        <p class="mb-0">
+                                            <strong>ℹ️ Nota:</strong> Los segmentos se mantendrán intactos y podrán ser reutilizados en otras plantillas.
+                                        </p>
+                                    </div>
+                                {% endif %}
+
+                                <!-- Estadísticas de Impacto -->
+                                <div class="row text-center">
+                                    <div class="col-md-3">
+                                        <div class="card {% if object.actas.count > 0 %}bg-danger{% else %}bg-success{% endif %}">
+                                            <div class="card-body text-white">
+                                                <h4>{{ object.actas.count }}</h4>
+                                                <small>Actas Afectadas</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="card bg-warning">
+                                            <div class="card-body text-white">
+                                                <h4>{{ object.segmentos.count }}</h4>
+                                                <small>Segmentos Configurados</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="card bg-info">
+                                            <div class="card-body text-white">
+                                                <h4>{{ object.actas_publicadas_count|default:0 }}</h4>
+                                                <small>Actas Publicadas</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="card bg-secondary">
+                                            <div class="card-body text-white">
+                                                <h4>v{{ object.version|default:"1.0" }}</h4>
+                                                <small>Versión Actual</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Recomendaciones de Seguridad -->
+                        <div class="card card-outline card-primary">
+                            <div class="card-header">
+                                <h4 class="card-title">🛡️ Recomendaciones de Seguridad</h4>
+                            </div>
+                            <div class="card-body">
+                                {% if object.actas.exists %}
+                                    <div class="alert alert-warning">
+                                        <h6><strong>ANTES de eliminar esta plantilla:</strong></h6>
+                                        <ul class="mb-0">
+                                            <li><strong>Exportar configuración:</strong> Crear un respaldo de la plantilla y sus segmentos</li>
+                                            <li><strong>Revisar actas activas:</strong> Verificar si hay actas en proceso que dependan de esta plantilla</li>
+                                            <li><strong>Notificar usuarios:</strong> Informar a los usuarios que trabajan con esta plantilla</li>
+                                            <li><strong>Crear plantilla de reemplazo:</strong> Si es necesario mantener la funcionalidad</li>
+                                            <li><strong>Actualizar flujos de trabajo:</strong> Revisar procesos que dependan de esta plantilla</li>
+                                        </ul>
+                                    </div>
+                                {% else %}
+                                    <div class="alert alert-success">
+                                        <h6><strong>Eliminación de Bajo Riesgo:</strong></h6>
+                                        <p class="mb-0">
+                                            Esta plantilla no ha sido utilizada para generar actas, por lo que su eliminación no afectará datos existentes.
+                                            Sin embargo, se recomienda exportar la configuración por si se necesita en el futuro.
+                                        </p>
+                                    </div>
+                                {% endif %}
+
+                                <!-- Acciones Preventivas -->
+                                <div class="mt-3">
+                                    <h6><strong>🔧 Acciones Recomendadas:</strong></h6>
+                                    <div class="btn-group" role="group">
+                                        <button type="button" class="btn btn-info btn-sm" onclick="exportarAntesEliminar()">
+                                            <i class="fas fa-download"></i> Exportar Plantilla
+                                        </button>
+                                        <button type="button" class="btn btn-warning btn-sm" onclick="duplicarAntesEliminar()">
+                                            <i class="fas fa-copy"></i> Crear Copia de Seguridad
+                                        </button>
+                                        <button type="button" class="btn btn-secondary btn-sm" onclick="desactivarEnLugar()">
+                                            <i class="fas fa-pause"></i> Desactivar en su lugar
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Formulario de Confirmación -->
+                        <form method="post" class="mt-4">
+                            {% csrf_token %}
+                            
+                            <!-- Confirmaciones Escalonadas -->
+                            {% if object.actas.exists %}
+                            <div class="form-group">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="confirmar_actas" required>
+                                    <label class="form-check-label" for="confirmar_actas">
+                                        <strong>He revisado las {{ object.actas.count }} acta{{ object.actas.count|pluralize }} existentes y entiendo que ya no podrán regenerarse con esta plantilla.</strong>
+                                    </label>
+                                </div>
+                            </div>
+                            {% endif %}
+
+                            {% if object.activa %}
+                            <div class="form-group">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="confirmar_activa" required>
+                                    <label class="form-check-label" for="confirmar_activa">
+                                        <strong>Entiendo que esta plantilla está ACTIVA y puede estar siendo utilizada actualmente por otros usuarios.</strong>
+                                    </label>
+                                </div>
+                            </div>
+                            {% endif %}
+
+                            <div class="form-group">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="confirmar_backup" required>
+                                    <label class="form-check-label" for="confirmar_backup">
+                                        <strong>He exportado o creado un respaldo de esta plantilla (si es necesario).</strong>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="confirmar_final" required>
+                                    <label class="form-check-label" for="confirmar_final">
+                                        <strong>Confirmo que deseo eliminar permanentemente la plantilla "{{ object.nombre }}" y acepto todas las consecuencias.</strong>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <!-- Campo de verificación de nombre -->
+                            <div class="form-group">
+                                <label for="verificar_nombre">
+                                    <strong>Para confirmar, escriba el nombre de la plantilla:</strong>
+                                </label>
+                                <input type="text" class="form-control" id="verificar_nombre" placeholder="Escriba: {{ object.nombre }}" required>
+                                <small class="form-text text-muted">Debe escribir exactamente: <code>{{ object.nombre }}</code></small>
+                            </div>
+
+                            <div class="text-center mt-4">
+                                <button type="submit" class="btn btn-danger btn-lg" id="btn-eliminar" disabled>
+                                    <i class="fas fa-skull-crossbones"></i> SÍ, ELIMINAR PERMANENTEMENTE
+                                </button>
+                                <a href="{% url 'generador_actas:plantilla_detail' object.pk %}" class="btn btn-success btn-lg ml-3">
+                                    <i class="fas fa-shield-alt"></i> No, Mantener Segura
+                                </a>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+</div>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const checkboxes = document.querySelectorAll('input[type="checkbox"][required]');
+    const nombreInput = document.getElementById('verificar_nombre');
+    const btnEliminar = document.getElementById('btn-eliminar');
+    const nombreEsperado = '{{ object.nombre|escapejs }}';
+    
+    function verificarCondiciones() {
+        const todosChecked = Array.from(checkboxes).every(cb => cb.checked);
+        const nombreCorrecto = nombreInput.value.trim() === nombreEsperado;
+        const puedeEliminar = todosChecked && nombreCorrecto;
+        
+        btnEliminar.disabled = !puedeEliminar;
+        
+        if (puedeEliminar) {
+            btnEliminar.classList.remove('btn-secondary');
+            btnEliminar.classList.add('btn-danger');
+        } else {
+            btnEliminar.classList.remove('btn-danger');
+            btnEliminar.classList.add('btn-secondary');
+        }
+    }
+    
+    checkboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', verificarCondiciones);
+    });
+    
+    nombreInput.addEventListener('input', verificarCondiciones);
+    
+    // Confirmación final con contador
+    btnEliminar.addEventListener('click', function(e) {
+        e.preventDefault();
+        
+        let contador = 5;
+        const btnTextoOriginal = this.innerHTML;
+        
+        const intervalo = setInterval(() => {
+            this.innerHTML = `<i class="fas fa-clock"></i> Eliminando en ${contador}s... (Cancelar)`;
+            contador--;
+            
+            if (contador < 0) {
+                clearInterval(intervalo);
+                
+                if (confirm('⚠️ CONFIRMACIÓN FINAL:\n\n¿Está ABSOLUTAMENTE SEGURO de eliminar la plantilla "' + nombreEsperado + '"?\n\nEsta acción es IRREVERSIBLE y puede afectar ' + {{ object.actas.count }} + ' actas existentes.')) {
+                    document.querySelector('form').submit();
+                } else {
+                    this.innerHTML = btnTextoOriginal;
+                }
+            }
+        }, 1000);
+        
+        // Permitir cancelar haciendo clic durante la cuenta regresiva
+        const cancelarConteo = () => {
+            clearInterval(intervalo);
+            this.innerHTML = btnTextoOriginal;
+            this.removeEventListener('click', cancelarConteo);
+        };
+        
+        this.addEventListener('click', cancelarConteo);
+    });
+});
+
+function exportarAntesEliminar() {
+    // TODO: Implementar endpoint de exportación de plantilla
+    alert('⚠️ Exportación de plantilla en desarrollo.\nContacte al administrador para exportar la plantilla.');
+    // window.open(`{# % url 'generador_actas:exportar_plantilla' object.pk % #}`, '_blank');
+}
+
+function duplicarAntesEliminar() {
+    if (confirm('¿Crear una copia de seguridad de esta plantilla antes de eliminarla?')) {
+        fetch(`{% url 'generador_actas:duplicar_plantilla' object.pk %}`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('✅ Copia de seguridad creada exitosamente.\nPuede proceder con la eliminación si es necesario.');
+            } else {
+                alert('❌ Error al crear la copia de seguridad: ' + data.error);
+            }
+        });
+    }
+}
+
+function desactivarEnLugar() {
+    if (confirm('¿Desactivar la plantilla en lugar de eliminarla?\nEsto la mantendrá en el sistema pero no estará disponible para crear nuevas actas.')) {
+        fetch(`{% url 'generador_actas:plantilla_toggle' object.pk %}`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}',
+            },
+            body: JSON.stringify({action: 'deactivate'})
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('✅ Plantilla desactivada exitosamente.\nEsta es una alternativa más segura que la eliminación.');
+                window.location.href = `{% url 'generador_actas:plantilla_detail' object.pk %}`;
+            } else {
+                alert('❌ Error al desactivar la plantilla: ' + data.error);
+            }
+        });
+    }
+}
+</script>
+
+{% endblock content %}

@@ -1,0 +1,428 @@
+{% extends "layouts/base.html" %}
+{% load static %}
+
+{% block title %}Detalle de la Plantilla{% endblock title %}
+
+{% block content %}
++<div class="content-wrapper">
+<!-- Content Header -->
+<div class="content-header">
+    <div class="container-fluid">
+        <div class="row mb-2">
+            <div class="col-sm-6">
+                <h1>📄 Detalle de la Plantilla</h1>
+            </div>
+            <div class="col-sm-6">
+                <ol class="breadcrumb float-sm-right">
+                    <li class="breadcrumb-item"><a href="{% url 'generador_actas:dashboard' %}">Dashboard</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'generador_actas:plantillas_lista' %}">Plantillas</a></li>
+                    <li class="breadcrumb-item active">{{ object.nombre }}</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Main content -->
+<section class="content">
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-md-8">
+                <!-- Información Principal -->
+                <div class="card card-primary">
+                    <div class="card-header">
+                        <h3 class="card-title">📋 {{ object.nombre }}</h3>
+                        <div class="card-tools">
+                            <span class="badge badge-{% if object.activa %}success{% else %}secondary{% endif %}">
+                                {% if object.activa %}Activa{% else %}Inactiva{% endif %}
+                            </span>
+                            <span class="badge badge-info ml-1">v{{ object.version|default:"1.0" }}</span>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <dl class="row">
+                                    <dt class="col-sm-4">Nombre:</dt>
+                                    <dd class="col-sm-8">{{ object.nombre }}</dd>
+                                    
+                                    <dt class="col-sm-4">Código:</dt>
+                                    <dd class="col-sm-8"><code>{{ object.codigo }}</code></dd>
+                                    
+                                    <dt class="col-sm-4">Tipo de Acta:</dt>
+                                    <dd class="col-sm-8">
+                                        <span class="badge badge-info">{{ object.get_tipo_acta_display }}</span>
+                                    </dd>
+                                    
+                                    <dt class="col-sm-4">Versión:</dt>
+                                    <dd class="col-sm-8">{{ object.version|default:"1.0" }}</dd>
+                                    
+                                    <dt class="col-sm-4">Estado:</dt>
+                                    <dd class="col-sm-8">
+                                        <span class="badge badge-{% if object.activa %}success{% else %}secondary{% endif %}">
+                                            {% if object.activa %}Activa{% else %}Inactiva{% endif %}
+                                        </span>
+                                    </dd>
+                                </dl>
+                            </div>
+                            <div class="col-md-6">
+                                <dl class="row">
+                                    <dt class="col-sm-4">Creado:</dt>
+                                    <dd class="col-sm-8">{{ object.fecha_creacion|date:"d/m/Y H:i" }}</dd>
+                                    
+                                    <dt class="col-sm-4">Actualizado:</dt>
+                                    <dd class="col-sm-8">{{ object.fecha_actualizacion|date:"d/m/Y H:i" }}</dd>
+                                    
+                                    <dt class="col-sm-4">Actas Generadas:</dt>
+                                    <dd class="col-sm-8">
+                                        <span class="badge badge-primary">{{ object.actas_count|default:0 }}</span>
+                                    </dd>
+                                    
+                                    <dt class="col-sm-4">Proveedor IA:</dt>
+                                    <dd class="col-sm-8">
+                                        {% if object.proveedor_ia_defecto %}
+                                            <span class="badge badge-success">{{ object.proveedor_ia_defecto.nombre }}</span>
+                                        {% else %}
+                                            <span class="text-muted">No configurado</span>
+                                        {% endif %}
+                                    </dd>
+                                </dl>
+                            </div>
+                        </div>
+
+                        {% if object.descripcion %}
+                        <div class="mt-3">
+                            <h5>📝 Descripción:</h5>
+                            <p class="text-muted">{{ object.descripcion }}</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Segmentos de la Plantilla -->
+                <div class="card card-success">
+                    <div class="card-header">
+                        <h3 class="card-title">🧩 Segmentos de la Plantilla</h3>
+                        <div class="card-tools">
+                            <span class="badge badge-info">{{ object.segmentos.count }} segmentos</span>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        {% if object.segmentos.exists %}
+                            <div class="table-responsive">
+                                <table class="table table-sm table-striped">
+                                    <thead>
+                                        <tr>
+                                            <th width="50">#</th>
+                                            <th>Segmento</th>
+                                            <th>Tipo</th>
+                                            <th>Estado</th>
+                                            <th width="120">Acciones</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="segmentos-tbody">
+                                        {% for segmento in object.segmentos.all %}
+                                        <tr>
+                                            <td>
+                                                <span class="badge badge-secondary">{{ forloop.counter }}</span>
+                                            </td>
+                                            <td>
+                                                <a href="{% url 'generador_actas:segmento_detail' segmento.pk %}" class="text-decoration-none">
+                                                    {{ segmento.nombre }}
+                                                </a>
+                                                {% if segmento.descripcion %}
+                                                <br><small class="text-muted">{{ segmento.descripcion|truncatewords:10 }}</small>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                <span class="badge badge-secondary">{{ segmento.get_tipo_display }}</span>
+                                            </td>
+                                            <td>
+                                                <span class="badge badge-{% if segmento.activo %}success{% else %}warning{% endif %}">
+                                                    {% if segmento.activo %}Activo{% else %}Inactivo{% endif %}
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <a href="{% url 'generador_actas:segmento_detail' segmento.pk %}" class="btn btn-sm btn-outline-primary" title="Ver detalle">
+                                                    <i class="fas fa-eye"></i>
+                                                </a>
+                                                <a href="{% url 'generador_actas:editar_segmento' segmento.pk %}" class="btn btn-sm btn-outline-warning" title="Editar">
+                                                    <i class="fas fa-edit"></i>
+                                                </a>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        {% else %}
+                            <div class="alert alert-warning">
+                                <i class="fas fa-exclamation-triangle"></i>
+                                Esta plantilla no tiene segmentos configurados. Agregue segmentos para poder generar actas.
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Prompt Global -->
+                <div class="card card-warning">
+                    <div class="card-header">
+                        <h3 class="card-title">🤖 Prompt Global de Unificación</h3>
+                    </div>
+                    <div class="card-body">
+                        {% if object.prompt_global %}
+                            <div class="bg-light p-3 rounded">
+                                <pre style="white-space: pre-wrap; font-family: 'Courier New', monospace; margin: 0;">{{ object.prompt_global }}</pre>
+                            </div>
+                        {% else %}
+                            <p class="text-muted">No se ha configurado un prompt global para esta plantilla.</p>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Configuración de Procesamiento -->
+                {% if object.configuracion_procesamiento %}
+                <div class="card card-info">
+                    <div class="card-header">
+                        <h3 class="card-title">⚙️ Configuración de Procesamiento</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="bg-light p-3 rounded">
+                            <pre style="white-space: pre-wrap; font-family: 'Courier New', monospace; margin: 0;">{{ object.configuracion_procesamiento|default:"{}"|pprint }}</pre>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Actas Generadas -->
+                <div class="card card-primary">
+                    <div class="card-header">
+                        <h3 class="card-title">📝 Actas Generadas con esta Plantilla</h3>
+                        <div class="card-tools">
+                            <span class="badge badge-primary">{{ object.actas.count }} actas</span>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        {% if object.actas.exists %}
+                            <div class="table-responsive">
+                                <table class="table table-sm table-striped">
+                                    <thead>
+                                        <tr>
+                                            <th>Acta</th>
+                                            <th>Fecha Sesión</th>
+                                            <th>Estado</th>
+                                            <th>Creado</th>
+                                            <th>Acciones</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for acta in object.actas.all|slice:":10" %}
+                                        <tr>
+                                            <td>
+                                                <a href="{% url 'generador_actas:acta_detail' acta.pk %}" class="text-decoration-none">
+                                                    {{ acta.titulo|truncatechars:50 }}
+                                                </a>
+                                                <br><small class="text-muted">{{ acta.numero_acta }}</small>
+                                            </td>
+                                            <td>{{ acta.fecha_sesion|date:"d/m/Y" }}</td>
+                                            <td>
+                                                <span class="badge badge-{% if acta.estado == 'publicada' %}success{% elif acta.estado == 'borrador' %}secondary{% elif acta.estado == 'en_revision' %}warning{% else %}info{% endif %}">
+                                                    {{ acta.get_estado_display }}
+                                                </span>
+                                            </td>
+                                            <td>{{ acta.fecha_creacion|date:"d/m/Y" }}</td>
+                                            <td>
+                                                <a href="{% url 'generador_actas:acta_detail' acta.pk %}" class="btn btn-sm btn-outline-primary" title="Ver acta">
+                                                    <i class="fas fa-eye"></i>
+                                                </a>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                            {% if object.actas.count > 10 %}
+                            <div class="text-center mt-3">
+                                <a href="{% url 'generador_actas:actas_lista' %}?plantilla={{ object.pk }}" class="btn btn-outline-primary">
+                                    Ver todas las {{ object.actas.count }} actas →
+                                </a>
+                            </div>
+                            {% endif %}
+                        {% else %}
+                            <div class="alert alert-info">
+                                <i class="fas fa-info-circle"></i>
+                                No se han generado actas con esta plantilla aún.
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-4">
+                <!-- Acciones -->
+                <div class="card card-primary">
+                    <div class="card-header">
+                        <h3 class="card-title">🔧 Acciones</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-grid gap-2">
+                            <a href="{% url 'generador_actas:editar_plantilla' object.pk %}" class="btn btn-warning btn-block">
+                                <i class="fas fa-edit"></i> Editar Plantilla
+                            </a>
+                            
+                            <button type="button" class="btn btn-success btn-block" onclick="crearActa()">
+                                <i class="fas fa-plus"></i> Crear Acta
+                            </button>
+                            
+                            <button type="button" class="btn btn-info btn-block" onclick="previsualizarPlantilla()">
+                                <i class="fas fa-eye"></i> Vista Previa
+                            </button>
+                            
+                            <button type="button" class="btn btn-secondary btn-block" onclick="duplicarPlantilla()">
+                                <i class="fas fa-copy"></i> Duplicar Plantilla
+                            </button>
+                            
+                            <button type="button" class="btn btn-dark btn-block" onclick="exportarPlantilla()">
+                                <i class="fas fa-download"></i> Exportar Configuración
+                            </button>
+                            
+                            <a href="{% url 'generador_actas:eliminar_plantilla' object.pk %}" class="btn btn-danger btn-block">
+                                <i class="fas fa-trash"></i> Eliminar Plantilla
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Estadísticas -->
+                <div class="card card-info">
+                    <div class="card-header">
+                        <h3 class="card-title">📊 Estadísticas</h3>
+                    </div>
+                    <div class="card-body">
+                        <dl class="row">
+                            <dt class="col-sm-8">Total Segmentos:</dt>
+                            <dd class="col-sm-4">{{ object.segmentos.count }}</dd>
+                            
+                            <dt class="col-sm-8">Actas Generadas:</dt>
+                            <dd class="col-sm-4">{{ object.actas.count }}</dd>
+                            
+                            <dt class="col-sm-8">Actas Publicadas:</dt>
+                            <dd class="col-sm-4">{{ object.actas_publicadas_count|default:0 }}</dd>
+                            
+                            <dt class="col-sm-8">Segmentos Activos:</dt>
+                            <dd class="col-sm-4">{{ object.segmentos_activos_count|default:0 }}</dd>
+                            
+                            <dt class="col-sm-8">Uso Promedio:</dt>
+                            <dd class="col-sm-4">
+                                {% if object.actas.count > 0 %}
+                                    {{ object.uso_frecuencia|default:"Normal" }}
+                                {% else %}
+                                    <span class="text-muted">Sin uso</span>
+                                {% endif %}
+                            </dd>
+                        </dl>
+                    </div>
+                </div>
+
+                <!-- Información Técnica -->
+                <div class="card card-secondary">
+                    <div class="card-header">
+                        <h3 class="card-title">🔧 Información Técnica</h3>
+                    </div>
+                    <div class="card-body">
+                        <dl class="row">
+                            <dt class="col-sm-6">ID:</dt>
+                            <dd class="col-sm-6">{{ object.pk }}</dd>
+                            
+                            <dt class="col-sm-6">Código:</dt>
+                            <dd class="col-sm-6"><code>{{ object.codigo }}</code></dd>
+                            
+                            <dt class="col-sm-6">Versión:</dt>
+                            <dd class="col-sm-6">{{ object.version|default:"1.0" }}</dd>
+                            
+                            <dt class="col-sm-6">Estado:</dt>
+                            <dd class="col-sm-6">
+                                <span class="badge badge-{% if object.activa %}success{% else %}danger{% endif %}">
+                                    {{ object.activa|yesno:"Activa,Inactiva" }}
+                                </span>
+                            </dd>
+                        </dl>
+                    </div>
+                </div>
+
+                <!-- Configuración IA -->
+                <div class="card card-warning">
+                    <div class="card-header">
+                        <h3 class="card-title">🤖 Configuración IA</h3>
+                    </div>
+                    <div class="card-body">
+                        <dl class="row">
+                            <dt class="col-sm-8">Proveedor:</dt>
+                            <dd class="col-sm-4">
+                                {% if object.proveedor_ia_defecto %}
+                                    <span class="badge badge-success">{{ object.proveedor_ia_defecto.nombre }}</span>
+                                {% else %}
+                                    <span class="text-muted">No configurado</span>
+                                {% endif %}
+                            </dd>
+                            
+                            <dt class="col-sm-8">Prompt Global:</dt>
+                            <dd class="col-sm-4">
+                                {% if object.prompt_global %}
+                                    <span class="badge badge-success">{{ object.prompt_global|length }} chars</span>
+                                {% else %}
+                                    <span class="badge badge-warning">Sin configurar</span>
+                                {% endif %}
+                            </dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+</div>
+<script>
+function crearActa() {
+    window.location.href = `{% url 'generador_actas:crear_acta' %}?plantilla={{ object.pk }}`;
+}
+
+function previsualizarPlantilla() {
+    // Abrir vista previa en nueva ventana
+    // TODO: Implementar endpoint de preview de plantilla
+    alert('⚠️ Vista previa en desarrollo.\nContacte al administrador para obtener una vista previa de la plantilla.');
+    // window.open(`{# % url 'generador_actas:plantilla_preview' object.pk % #}`, '_blank');
+}
+
+function duplicarPlantilla() {
+    if (confirm('¿Desea crear una copia de esta plantilla?')) {
+        fetch(`{% url 'generador_actas:duplicar_plantilla' object.pk %}`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('✅ Plantilla duplicada exitosamente');
+                window.location.href = data.redirect_url;
+            } else {
+                alert('❌ Error al duplicar la plantilla: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('❌ Error de conexión al duplicar la plantilla');
+        });
+    }
+}
+
+function exportarPlantilla() {
+    // TODO: Implementar endpoint de exportación de plantilla
+    alert('⚠️ Exportación de plantilla en desarrollo.\nContacte al administrador para exportar la plantilla.');
+    // window.open(`{# % url 'generador_actas:exportar_plantilla' object.pk % #}`, '_blank');
+}
+</script>
+
+{% endblock content %}

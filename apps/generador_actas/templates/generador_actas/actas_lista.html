@@ -1,0 +1,521 @@
+{% extends "layouts/base.html" %}
+{% load static %}
+
+{% block title %}Gestión de Actas Generadas{% endblock title %}
+
+{% block content %}
+<div class="content-wrapper">
+<!-- Content Header -->
+<div class="content-header">
+    <div class="container-fluid">
+        <div class="row mb-2">
+            <div class="col-sm-6">
+                <h1>📋 Actas Generadas</h1>
+            </div>
+            <div class="col-sm-6">
+                <ol class="breadcrumb float-sm-right">
+                    <li class="breadcrumb-item"><a href="{% url 'generador_actas:dashboard' %}">Dashboard</a></li>
+                    <li class="breadcrumb-item active">Actas</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Main content -->
+<section class="content">
+    <div class="container-fluid">
+        
+        <!-- Estadísticas -->
+        <div class="row mb-3">
+            <div class="col-lg-3 col-6">
+                <div class="small-box bg-primary">
+                    <div class="inner">
+                        <h3>{{ stats.total }}</h3>
+                        <p>Total Actas</p>
+                    </div>
+                    <div class="icon">
+                        <i class="fas fa-file-alt"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-3 col-6">
+                <div class="small-box bg-success">
+                    <div class="inner">
+                        <h3>{{ stats.completadas }}</h3>
+                        <p>Completadas</p>
+                    </div>
+                    <div class="icon">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-3 col-6">
+                <div class="small-box bg-warning">
+                    <div class="inner">
+                        <h3>{{ stats.en_proceso }}</h3>
+                        <p>En Proceso</p>
+                    </div>
+                    <div class="icon">
+                        <i class="fas fa-clock"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-3 col-6">
+                <div class="small-box bg-danger">
+                    <div class="inner">
+                        <h3>{{ stats.con_errores }}</h3>
+                        <p>Con Errores</p>
+                    </div>
+                    <div class="icon">
+                        <i class="fas fa-exclamation-triangle"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filtros y Búsqueda -->
+        <div class="card collapsed-card">
+            <div class="card-header">
+                <h3 class="card-title">🔍 Filtros de Búsqueda</h3>
+                <div class="card-tools">
+                    <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                        <i class="fas fa-plus"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="card-body">
+                <form method="get" class="form-inline">
+                    <div class="form-group mr-3">
+                        <label for="search" class="mr-2">Buscar:</label>
+                        <input type="text" name="search" id="search" class="form-control" 
+                               value="{{ request.GET.search }}" placeholder="Título o contenido...">
+                    </div>
+                    
+                    <div class="form-group mr-3">
+                        <label for="estado" class="mr-2">Estado:</label>
+                        <select name="estado" id="estado" class="form-control">
+                            <option value="">Todos los estados</option>
+                            <option value="borrador" {% if request.GET.estado == 'borrador' %}selected{% endif %}>Borrador</option>
+                            <option value="en_proceso" {% if request.GET.estado == 'en_proceso' %}selected{% endif %}>En Proceso</option>
+                            <option value="completado" {% if request.GET.estado == 'completado' %}selected{% endif %}>Completado</option>
+                            <option value="error" {% if request.GET.estado == 'error' %}selected{% endif %}>Error</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group mr-3">
+                        <label for="plantilla" class="mr-2">Plantilla:</label>
+                        <select name="plantilla" id="plantilla" class="form-control">
+                            <option value="">Todas las plantillas</option>
+                            {% for plantilla in plantillas_disponibles %}
+                                <option value="{{ plantilla.pk }}" {% if request.GET.plantilla == plantilla.pk|stringformat:"s" %}selected{% endif %}>
+                                    {{ plantilla.nombre }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div class="form-group mr-3">
+                        <label for="fecha_desde" class="mr-2">Desde:</label>
+                        <input type="date" name="fecha_desde" id="fecha_desde" class="form-control" 
+                               value="{{ request.GET.fecha_desde }}">
+                    </div>
+                    
+                    <div class="form-group mr-3">
+                        <label for="fecha_hasta" class="mr-2">Hasta:</label>
+                        <input type="date" name="fecha_hasta" id="fecha_hasta" class="form-control" 
+                               value="{{ request.GET.fecha_hasta }}">
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary mr-2">
+                        <i class="fas fa-search"></i> Filtrar
+                    </button>
+                    <a href="{% url 'generador_actas:actas_lista' %}" class="btn btn-secondary">
+                        <i class="fas fa-times"></i> Limpiar
+                    </a>
+                </form>
+            </div>
+        </div>
+
+        <!-- Tabla de Actas -->
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">📋 Lista de Actas</h3>
+                <div class="card-tools">
+                    <a href="{% url 'generador_actas:crear_acta' %}" class="btn btn-primary btn-sm">
+                        <i class="fas fa-plus"></i> Nueva Acta
+                    </a>
+                    <button type="button" class="btn btn-info btn-sm" onclick="exportarActas()">
+                        <i class="fas fa-download"></i> Exportar
+                    </button>
+                </div>
+            </div>
+            <div class="card-body">
+                {% if actas %}
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Título</th>
+                                    <th>Estado</th>
+                                    <th>Plantilla</th>
+                                    <th>Proveedor IA</th>
+                                    <th>Fecha Generación</th>
+                                    <th>Progreso</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for acta in actas %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ acta.titulo }}</strong>
+                                        {% if acta.descripcion %}
+                                            <br>
+                                            <small class="text-muted">{{ acta.descripcion|truncatechars:60 }}</small>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if acta.estado == 'borrador' %}
+                                            <span class="badge badge-secondary">
+                                                <i class="fas fa-edit"></i> Borrador
+                                            </span>
+                                        {% elif acta.estado == 'en_proceso' %}
+                                            <span class="badge badge-warning">
+                                                <i class="fas fa-clock fa-spin"></i> En Proceso
+                                            </span>
+                                        {% elif acta.estado == 'completado' %}
+                                            <span class="badge badge-success">
+                                                <i class="fas fa-check"></i> Completado
+                                            </span>
+                                        {% elif acta.estado == 'error' %}
+                                            <span class="badge badge-danger">
+                                                <i class="fas fa-exclamation-triangle"></i> Error
+                                            </span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if acta.plantilla %}
+                                            <span class="badge badge-info">{{ acta.plantilla.nombre }}</span>
+                                        {% else %}
+                                            <span class="text-muted">Manual</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if acta.proveedor_ia %}
+                                            <small>{{ acta.proveedor_ia.nombre }}</small>
+                                            <br>
+                                            <span class="badge badge-light">{{ acta.proveedor_ia.get_tipo_display }}</span>
+                                        {% else %}
+                                            <span class="text-muted">No especificado</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <small>{{ acta.fecha_creacion|date:"d/m/Y H:i" }}</small>
+                                        {% if acta.fecha_actualizacion != acta.fecha_creacion %}
+                                            <br>
+                                            <small class="text-muted">Actualizado: {{ acta.fecha_actualizacion|date:"d/m H:i" }}</small>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if acta.estado == 'en_proceso' %}
+                                            <div class="progress">
+                                                <div class="progress-bar progress-bar-striped progress-bar-animated bg-warning" 
+                                                     role="progressbar" style="width: {{ acta.progreso|default:25 }}%">
+                                                    {{ acta.progreso|default:25 }}%
+                                                </div>
+                                            </div>
+                                        {% elif acta.estado == 'completado' %}
+                                            <div class="progress">
+                                                <div class="progress-bar bg-success" role="progressbar" style="width: 100%">
+                                                    100%
+                                                </div>
+                                            </div>
+                                        {% elif acta.estado == 'error' %}
+                                            <div class="progress">
+                                                <div class="progress-bar bg-danger" role="progressbar" style="width: 100%">
+                                                    Error
+                                                </div>
+                                            </div>
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="btn-group" role="group">
+                                            <a href="{% url 'generador_actas:acta_detail' acta.pk %}" 
+                                               class="btn btn-info btn-sm" title="Ver Detalle">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                            
+                                            {% if acta.estado == 'borrador' or acta.estado == 'error' %}
+                                                <a href="{% url 'generador_actas:editar_acta' acta.pk %}" 
+                                                   class="btn btn-warning btn-sm" title="Editar">
+                                                    <i class="fas fa-edit"></i>
+                                                </a>
+                                            {% endif %}
+                                            
+                                            {% if acta.estado == 'completado' %}
+                                                <button type="button" class="btn btn-primary btn-sm" 
+                                                        onclick="descargarActa({{ acta.pk }})" title="Descargar PDF">
+                                                    <i class="fas fa-download"></i>
+                                                </button>
+                                                <button type="button" class="btn btn-secondary btn-sm" 
+                                                        onclick="compartirActa({{ acta.pk }})" title="Compartir">
+                                                    <i class="fas fa-share"></i>
+                                                </button>
+                                            {% endif %}
+                                            
+                                            {% if acta.estado == 'borrador' %}
+                                                <button type="button" class="btn btn-success btn-sm" 
+                                                        onclick="generarActa({{ acta.pk }})" title="Generar">
+                                                    <i class="fas fa-cog"></i>
+                                                </button>
+                                            {% endif %}
+                                            
+                                            {% if acta.estado == 'en_proceso' %}
+                                                <button type="button" class="btn btn-danger btn-sm" 
+                                                        onclick="cancelarGeneracion({{ acta.pk }})" title="Cancelar">
+                                                    <i class="fas fa-stop"></i>
+                                                </button>
+                                            {% endif %}
+                                            
+                                            <button type="button" class="btn btn-danger btn-sm" 
+                                                    onclick="confirmarEliminacion({{ acta.pk }}, '{{ acta.titulo }}')" 
+                                                    title="Eliminar">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Paginación -->
+                    {% if is_paginated %}
+                    <nav aria-label="Navegación de página">
+                        <ul class="pagination justify-content-center">
+                            {% if page_obj.has_previous %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page=1{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">Primera</a>
+                                </li>
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">Anterior</a>
+                                </li>
+                            {% endif %}
+
+                            <li class="page-item active">
+                                <span class="page-link">{{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span>
+                            </li>
+
+                            {% if page_obj.has_next %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ page_obj.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">Siguiente</a>
+                                </li>
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">Última</a>
+                                </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                    {% endif %}
+
+                {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-file-alt fa-3x text-muted mb-3"></i>
+                        <h4>No hay actas disponibles</h4>
+                        <p class="text-muted">Aún no se han generado actas.</p>
+                        <a href="{% url 'generador_actas:crear_acta' %}" class="btn btn-primary">
+                            <i class="fas fa-plus"></i> Generar Primera Acta
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Panel de Operaciones Masivas -->
+        {% if actas %}
+        <div class="card card-secondary">
+            <div class="card-header">
+                <h3 class="card-title">⚡ Operaciones Masivas</h3>
+                <div class="card-tools">
+                    <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                        <i class="fas fa-minus"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3">
+                        <button type="button" class="btn btn-info btn-block" onclick="seleccionarTodas()">
+                            <i class="fas fa-check-square"></i> Seleccionar Todas
+                        </button>
+                    </div>
+                    <div class="col-md-3">
+                        <button type="button" class="btn btn-primary btn-block" onclick="exportarSeleccionadas()">
+                            <i class="fas fa-download"></i> Exportar Seleccionadas
+                        </button>
+                    </div>
+                    <div class="col-md-3">
+                        <button type="button" class="btn btn-warning btn-block" onclick="archivarSeleccionadas()">
+                            <i class="fas fa-archive"></i> Archivar Seleccionadas
+                        </button>
+                    </div>
+                    <div class="col-md-3">
+                        <button type="button" class="btn btn-danger btn-block" onclick="eliminarSeleccionadas()">
+                            <i class="fas fa-trash"></i> Eliminar Seleccionadas
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</section>
+
+<!-- Modal de confirmación de eliminación -->
+<div class="modal fade" id="deleteModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-danger">
+                <h5 class="modal-title text-white">⚠️ Confirmar Eliminación</h5>
+                <button type="button" class="close text-white" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p>¿Está seguro de que desea eliminar el acta <strong id="actaNombre"></strong>?</p>
+                <p class="text-warning">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    Esta acción no se puede deshacer.
+                </p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+                <form method="post" id="deleteForm">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger">Eliminar</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+</div>
+<script>
+function confirmarEliminacion(actaId, titulo) {
+    document.getElementById('actaNombre').textContent = titulo;
+    document.getElementById('deleteForm').action = `/generador-actas/actas/${actaId}/eliminar/`;
+    $('#deleteModal').modal('show');
+}
+
+function generarActa(actaId) {
+    if (confirm('¿Desea iniciar la generación de esta acta?')) {
+        // Mostrar indicador de carga
+        const btn = event.target.closest('button');
+        const originalContent = btn.innerHTML;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+        btn.disabled = true;
+        
+        fetch(`/generador-actas/actas/${actaId}/generar/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}',
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                toastr.success('Generación iniciada exitosamente');
+                setTimeout(() => location.reload(), 2000);
+            } else {
+                toastr.error('Error al iniciar la generación: ' + data.error);
+            }
+        })
+        .catch(error => {
+            toastr.error('Error en la operación');
+        })
+        .finally(() => {
+            btn.innerHTML = originalContent;
+            btn.disabled = false;
+        });
+    }
+}
+
+function cancelarGeneracion(actaId) {
+    if (confirm('¿Desea cancelar la generación en proceso?')) {
+        fetch(`/generador-actas/actas/${actaId}/cancelar/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                toastr.success('Generación cancelada');
+                location.reload();
+            } else {
+                toastr.error('Error al cancelar la generación');
+            }
+        });
+    }
+}
+
+function descargarActa(actaId) {
+    window.open(`/generador-actas/actas/${actaId}/descargar/`, '_blank');
+}
+
+function compartirActa(actaId) {
+    fetch(`/generador-actas/actas/${actaId}/compartir/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': '{{ csrf_token }}',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            navigator.clipboard.writeText(data.url);
+            toastr.success('Enlace copiado al portapapeles');
+        } else {
+            toastr.error('Error al generar enlace de compartir');
+        }
+    });
+}
+
+function exportarActas() {
+    window.open('/generador-actas/actas/exportar/', '_blank');
+}
+
+// Auto-envío del formulario al cambiar filtros
+document.getElementById('estado').addEventListener('change', function() {
+    this.form.submit();
+});
+
+document.getElementById('plantilla').addEventListener('change', function() {
+    this.form.submit();
+});
+
+// Actualización automática para actas en proceso
+function actualizarEstados() {
+    const actasEnProceso = document.querySelectorAll('.badge-warning');
+    if (actasEnProceso.length > 0) {
+        fetch('/generador-actas/actas/estados/')
+            .then(response => response.json())
+            .then(data => {
+                // Actualizar estados si hay cambios
+                if (data.cambios) {
+                    location.reload();
+                }
+            });
+    }
+}
+
+// Verificar estados cada 30 segundos
+setInterval(actualizarEstados, 30000);
+</script>
+
+{% endblock content %}

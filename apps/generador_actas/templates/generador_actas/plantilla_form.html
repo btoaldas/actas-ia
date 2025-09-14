@@ -1,0 +1,437 @@
+{% extends "layouts/base.html" %}
+{% load static %}
+
+{% block title %}{{ page_title }}{% endblock title %}
+
+{% block content %}
+<div class="content-wrapper">
+<!-- Content Header -->
+<div class="content-header">
+    <div class="container-fluid">
+        <div class="row mb-2">
+            <div class="col-sm-6">
+                <h1>📄 {{ page_title }}</h1>
+            </div>
+            <div class="col-sm-6">
+                <ol class="breadcrumb float-sm-right">
+                    <li class="breadcrumb-item"><a href="{% url 'generador_actas:dashboard' %}">Dashboard</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'generador_actas:plantillas_lista' %}">Plantillas</a></li>
+                    <li class="breadcrumb-item active">{{ form_title }}</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Main content -->
+<section class="content">
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-md-8">
+                <div class="card card-primary">
+                    <div class="card-header">
+                        <h3 class="card-title">{{ form_title }}</h3>
+                    </div>
+                    
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="card-body">
+                            
+                            <!-- Información Básica -->
+                            <div class="card card-outline card-info">
+                                <div class="card-header">
+                                    <h4 class="card-title">📋 Información Básica</h4>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="form-group">
+                                                <label for="{{ form.nombre.id_for_label }}">
+                                                    Nombre de la Plantilla <span class="text-danger">*</span>
+                                                </label>
+                                                {{ form.nombre }}
+                                                {% if form.nombre.errors %}
+                                                    <div class="text-danger">{{ form.nombre.errors }}</div>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="form-group">
+                                                <label for="{{ form.codigo.id_for_label }}">
+                                                    Código Único <span class="text-danger">*</span>
+                                                </label>
+                                                {{ form.codigo }}
+                                                <small class="form-text text-muted">
+                                                    Identificador único (ej: ACTA_CONCEJO_V1)
+                                                </small>
+                                                {% if form.codigo.errors %}
+                                                    <div class="text-danger">{{ form.codigo.errors }}</div>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="form-group">
+                                                <label for="{{ form.tipo_acta.id_for_label }}">
+                                                    Tipo de Acta <span class="text-danger">*</span>
+                                                </label>
+                                                {{ form.tipo_acta }}
+                                                {% if form.tipo_acta.errors %}
+                                                    <div class="text-danger">{{ form.tipo_acta.errors }}</div>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="form-group">
+                                                <label for="{{ form.version.id_for_label }}">
+                                                    Versión
+                                                </label>
+                                                {{ form.version }}
+                                                <small class="form-text text-muted">
+                                                    Versión de la plantilla (ej: 1.0, 2.1)
+                                                </small>
+                                                {% if form.version.errors %}
+                                                    <div class="text-danger">{{ form.version.errors }}</div>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label for="{{ form.descripcion.id_for_label }}">
+                                            Descripción <span class="text-danger">*</span>
+                                        </label>
+                                        {{ form.descripcion }}
+                                        <small class="form-text text-muted">
+                                            Describe el propósito y uso de esta plantilla.
+                                        </small>
+                                        {% if form.descripcion.errors %}
+                                            <div class="text-danger">{{ form.descripcion.errors }}</div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Configuración de Segmentos -->
+                            <div class="card card-outline card-success">
+                                <div class="card-header">
+                                    <h4 class="card-title">🧩 Segmentos de la Plantilla</h4>
+                                </div>
+                                <div class="card-body">
+                                    <div class="form-group">
+                                        <label for="{{ form.segmentos.id_for_label }}">
+                                            Seleccionar Segmentos <span class="text-danger">*</span>
+                                        </label>
+                                        {{ form.segmentos }}
+                                        <small class="form-text text-muted">
+                                            Mantenga presionado Ctrl para seleccionar múltiples segmentos.
+                                        </small>
+                                        {% if form.segmentos.errors %}
+                                            <div class="text-danger">{{ form.segmentos.errors }}</div>
+                                        {% endif %}
+                                    </div>
+                                    
+                                    <!-- Lista de segmentos seleccionados -->
+                                    <div id="segmentos-preview" class="mt-3">
+                                        <h6>Vista Previa de Segmentos:</h6>
+                                        <div id="segmentos-list" class="d-none">
+                                            <!-- Se llenará dinámicamente -->
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Configuración de IA -->
+                            <div class="card card-outline card-warning">
+                                <div class="card-header">
+                                    <h4 class="card-title">🤖 Configuración de IA</h4>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="form-group">
+                                                <label for="{{ form.proveedor_ia_defecto.id_for_label }}">
+                                                    Proveedor IA por Defecto
+                                                </label>
+                                                {{ form.proveedor_ia_defecto }}
+                                                <small class="form-text text-muted">
+                                                    Proveedor que se usará para generar actas con esta plantilla.
+                                                </small>
+                                                {% if form.proveedor_ia_defecto.errors %}
+                                                    <div class="text-danger">{{ form.proveedor_ia_defecto.errors }}</div>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="form-group">
+                                                <label for="{{ form.activa.id_for_label }}">
+                                                    Estado
+                                                </label>
+                                                <div class="form-check">
+                                                    {{ form.activa }}
+                                                    <label class="form-check-label" for="{{ form.activa.id_for_label }}">
+                                                        Plantilla Activa
+                                                    </label>
+                                                </div>
+                                                {% if form.activa.errors %}
+                                                    <div class="text-danger">{{ form.activa.errors }}</div>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label for="{{ form.prompt_global.id_for_label }}">
+                                            Prompt Global de Unificación <span class="text-danger">*</span>
+                                        </label>
+                                        {{ form.prompt_global }}
+                                        <small class="form-text text-muted">
+                                            Instrucciones para unificar todos los segmentos en un acta coherente.
+                                        </small>
+                                        {% if form.prompt_global.errors %}
+                                            <div class="text-danger">{{ form.prompt_global.errors }}</div>
+                                        {% endif %}
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label for="{{ form.configuracion_procesamiento.id_for_label }}">
+                                            Configuración Adicional (JSON)
+                                        </label>
+                                        {{ form.configuracion_procesamiento }}
+                                        <small class="form-text text-muted">
+                                            Parámetros adicionales en formato JSON.
+                                        </small>
+                                        {% if form.configuracion_procesamiento.errors %}
+                                            <div class="text-danger">{{ form.configuracion_procesamiento.errors }}</div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="card-footer">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> {{ submit_text }}
+                            </button>
+                            <a href="{% url 'generador_actas:plantillas_lista' %}" class="btn btn-secondary">
+                                <i class="fas fa-times"></i> Cancelar
+                            </a>
+                            {% if object %}
+                            <a href="{% url 'generador_actas:plantilla_detail' object.pk %}" class="btn btn-info">
+                                <i class="fas fa-eye"></i> Ver Detalle
+                            </a>
+                            <button type="button" class="btn btn-success" onclick="previsualizarPlantilla()">
+                                <i class="fas fa-eye"></i> Vista Previa
+                            </button>
+                            {% endif %}
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <div class="col-md-4">
+                <!-- Ayuda -->
+                <div class="card card-info">
+                    <div class="card-header">
+                        <h3 class="card-title">💡 Guía de Plantillas</h3>
+                    </div>
+                    <div class="card-body">
+                        <h6><strong>Tipos de Acta:</strong></h6>
+                        <ul class="list-unstyled">
+                            <li><strong>Concejo:</strong> Sesiones del concejo municipal</li>
+                            <li><strong>Comisión:</strong> Reuniones de comisiones</li>
+                            <li><strong>Directorio:</strong> Juntas directivas</li>
+                            <li><strong>Técnica:</strong> Reuniones técnicas y operativas</li>
+                            <li><strong>Extraordinaria:</strong> Sesiones especiales</li>
+                        </ul>
+                        
+                        <h6><strong>Orden Recomendado:</strong></h6>
+                        <ol>
+                            <li>Encabezado</li>
+                            <li>Participantes</li>
+                            <li>Agenda</li>
+                            <li>Desarrollo</li>
+                            <li>Acuerdos</li>
+                            <li>Cierre</li>
+                            <li>Anexos</li>
+                        </ol>
+                    </div>
+                </div>
+                
+                <!-- Estadísticas -->
+                {% if object %}
+                <div class="card card-success">
+                    <div class="card-header">
+                        <h3 class="card-title">📊 Estadísticas</h3>
+                    </div>
+                    <div class="card-body">
+                        <dl class="row">
+                            <dt class="col-sm-8">Actas Generadas:</dt>
+                            <dd class="col-sm-4">{{ object.actas_count|default:0 }}</dd>
+                            
+                            <dt class="col-sm-8">Total Segmentos:</dt>
+                            <dd class="col-sm-4">{{ object.total_segmentos|default:0 }}</dd>
+                            
+                            <dt class="col-sm-8">Fecha Creación:</dt>
+                            <dd class="col-sm-4">{{ object.fecha_creacion|date:"d/m/Y" }}</dd>
+                            
+                            <dt class="col-sm-8">Última Actualización:</dt>
+                            <dd class="col-sm-4">{{ object.fecha_actualizacion|date:"d/m/Y H:i" }}</dd>
+                        </dl>
+                    </div>
+                </div>
+                {% endif %}
+                
+                <!-- Acciones Rápidas -->
+                <div class="card card-warning">
+                    <div class="card-header">
+                        <h3 class="card-title">🔧 Acciones Rápidas</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-grid gap-2">
+                            <button type="button" class="btn btn-info btn-block" onclick="validarPlantilla()">
+                                <i class="fas fa-check"></i> Validar Plantilla
+                            </button>
+                            
+                            {% if object %}
+                            <button type="button" class="btn btn-success btn-block" onclick="duplicarPlantilla()">
+                                <i class="fas fa-copy"></i> Duplicar Plantilla
+                            </button>
+                            
+                            <button type="button" class="btn btn-warning btn-block" onclick="exportarPlantilla()">
+                                <i class="fas fa-download"></i> Exportar Configuración
+                            </button>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+</div>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Generar código automáticamente desde el nombre
+    const nombreInput = document.getElementById('{{ form.nombre.id_for_label }}');
+    const codigoInput = document.getElementById('{{ form.codigo.id_for_label }}');
+    
+    if (nombreInput && codigoInput && !codigoInput.value) {
+        nombreInput.addEventListener('blur', function() {
+            if (!codigoInput.value) {
+                const codigo = this.value
+                    .toUpperCase()
+                    .replace(/[^A-Z0-9\s]/g, '')
+                    .replace(/\s+/g, '_')
+                    .substring(0, 30);
+                codigoInput.value = codigo;
+            }
+        });
+    }
+    
+    // Preview de segmentos seleccionados
+    const segmentosSelect = document.getElementById('{{ form.segmentos.id_for_label }}');
+    const segmentosList = document.getElementById('segmentos-list');
+    
+    if (segmentosSelect && segmentosList) {
+        segmentosSelect.addEventListener('change', function() {
+            const selected = Array.from(this.selectedOptions);
+            if (selected.length > 0) {
+                segmentosList.innerHTML = selected.map((option, index) => 
+                    `<span class="badge badge-info mr-1 mb-1">${index + 1}. ${option.text}</span>`
+                ).join('');
+                segmentosList.parentElement.classList.remove('d-none');
+            } else {
+                segmentosList.parentElement.classList.add('d-none');
+            }
+        });
+    }
+    
+    // Validar JSON
+    const jsonField = document.getElementById('{{ form.configuracion_procesamiento.id_for_label }}');
+    if (jsonField) {
+        jsonField.addEventListener('blur', function() {
+            const value = this.value.trim();
+            if (value && value !== '{}') {
+                try {
+                    JSON.parse(value);
+                    this.classList.remove('is-invalid');
+                    this.classList.add('is-valid');
+                } catch (e) {
+                    this.classList.remove('is-valid');
+                    this.classList.add('is-invalid');
+                }
+            }
+        });
+    }
+});
+
+function validarPlantilla() {
+    // Validaciones básicas
+    const nombre = document.getElementById('{{ form.nombre.id_for_label }}').value;
+    const segmentos = document.getElementById('{{ form.segmentos.id_for_label }}').selectedOptions.length;
+    const prompt = document.getElementById('{{ form.prompt_global.id_for_label }}').value;
+    
+    let errores = [];
+    if (!nombre.trim()) errores.push('El nombre es requerido');
+    if (segmentos === 0) errores.push('Debe seleccionar al menos un segmento');
+    if (!prompt.trim()) errores.push('El prompt global es requerido');
+    
+    if (errores.length > 0) {
+        alert('Errores encontrados:\n- ' + errores.join('\n- '));
+    } else {
+        alert('✅ Plantilla válida. Puede guardarla.');
+    }
+}
+
+function previsualizarPlantilla() {
+    if (!{{ object.pk|default:'null' }}) {
+        alert('Debe guardar la plantilla primero para ver la vista previa.');
+        return;
+    }
+    
+    // TODO: Implementar endpoint de preview de plantilla
+    alert('⚠️ Vista previa en desarrollo.\nContacte al administrador para obtener una vista previa de la plantilla.');
+    // window.open(`{# % if object % #}{# % url 'generador_actas:plantilla_preview' object.pk % #}{# % else % #}#{# % endif % #}`, '_blank');
+}
+
+function duplicarPlantilla() {
+    if (!{{ object.pk|default:'null' }}) {
+        alert('Debe guardar la plantilla primero para duplicarla.');
+        return;
+    }
+    
+    if (confirm('¿Desea crear una copia de esta plantilla?')) {
+        fetch(`{% if object %}{% url 'generador_actas:duplicar_plantilla' object.pk %}{% else %}#{% endif %}`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Plantilla duplicada exitosamente');
+                window.location.href = data.redirect_url;
+            } else {
+                alert('Error al duplicar la plantilla');
+            }
+        });
+    }
+}
+
+function exportarPlantilla() {
+    if (!{{ object.pk|default:'null' }}) {
+        alert('Debe guardar la plantilla primero para exportarla.');
+        return;
+    }
+    
+    // TODO: Implementar endpoint de exportación de plantilla
+    alert('⚠️ Exportación de plantilla en desarrollo.\nContacte al administrador para exportar la plantilla.');
+    // window.open(`{# % if object % #}{# % url 'generador_actas:exportar_plantilla' object.pk % #}{# % else % #}#{# % endif % #}`, '_blank');
+}
+</script>
+
+{% endblock content %}

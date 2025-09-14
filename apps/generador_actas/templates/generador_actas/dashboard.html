@@ -1,0 +1,443 @@
+{% extends "layouts/base.html" %}
+{% load static %}
+
+{% block title %}{{ page_title }} | Generador de Actas{% endblock %}
+
+{% block stylesheets %}
+{{ block.super }}
+<link rel="stylesheet" href="{% static 'plugins/datatables/datatables.min.css' %}">
+<link rel="stylesheet" href="{% static 'plugins/sweetalert2/sweetalert2.min.css' %}">
+<style>
+.stats-box {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 20px;
+    transition: transform 0.3s ease;
+}
+
+.stats-box:hover {
+    transform: translateY(-5px);
+}
+
+.stats-number {
+    font-size: 2.5rem;
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+
+.stats-label {
+    font-size: 0.9rem;
+    opacity: 0.9;
+}
+
+.progress-card {
+    border-left: 4px solid #28a745;
+    background: #f8f9fa;
+}
+
+.processing-indicator {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    margin-right: 8px;
+}
+
+.status-borrador { background-color: #6c757d; }
+.status-en_cola { background-color: #17a2b8; }
+.status-procesando { background-color: #ffc107; }
+.status-procesando_segmentos { background-color: #fd7e14; }
+.status-unificando { background-color: #6f42c1; }
+.status-revision { background-color: #20c997; }
+.status-aprobado { background-color: #28a745; }
+.status-publicado { background-color: #007bff; }
+.status-error { background-color: #dc3545; }
+
+.acta-card {
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 15px;
+    margin-bottom: 15px;
+    background: white;
+    transition: box-shadow 0.3s ease;
+}
+
+.acta-card:hover {
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.transcripcion-card {
+    border: 1px solid #e3f2fd;
+    border-radius: 8px;
+    padding: 15px;
+    margin-bottom: 10px;
+    background: #f8f9fa;
+}
+
+.quick-actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.metric-icon {
+    font-size: 1.5rem;
+    margin-right: 10px;
+    opacity: 0.7;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="content-wrapper">
+    <!-- Content Header -->
+    <div class="content-header">
+        <div class="container-fluid">
+            <div class="row mb-2">
+                <div class="col-sm-6">
+                    <h1 class="m-0">{{ page_title }}</h1>
+                </div>
+                <div class="col-sm-6">
+                    {% if breadcrumb %}
+                    <ol class="breadcrumb float-sm-right">
+                        {% for item in breadcrumb %}
+                            {% if item.active %}
+                                <li class="breadcrumb-item active">{{ item.name }}</li>
+                            {% else %}
+                                <li class="breadcrumb-item"><a href="{{ item.url }}">{{ item.name }}</a></li>
+                            {% endif %}
+                        {% endfor %}
+                    </ol>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main content -->
+    <section class="content">
+        <div class="container-fluid">
+            
+            <!-- Stats Row -->
+            <div class="row">
+                <div class="col-lg-3 col-6">
+                    <div class="stats-box">
+                        <div class="stats-number">
+                            {{ stats.totales.actas|default:0 }}
+                        </div>
+                        <div class="stats-label">
+                            <i class="fas fa-file-alt metric-icon"></i>
+                            Actas Generadas
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-6">
+                    <div class="stats-box" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+                        <div class="stats-number">
+                            {{ stats.totales.procesando|default:0 }}
+                        </div>
+                        <div class="stats-label">
+                            <i class="fas fa-cog fa-spin metric-icon"></i>
+                            En Procesamiento
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-6">
+                    <div class="stats-box" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+                        <div class="stats-number">
+                            {{ stats.totales.revision|default:0 }}
+                        </div>
+                        <div class="stats-label">
+                            <i class="fas fa-eye metric-icon"></i>
+                            En Revisión
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-6">
+                    <div class="stats-box" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);">
+                        <div class="stats-number">
+                            {{ stats.totales.publicadas|default:0 }}
+                        </div>
+                        <div class="stats-label">
+                            <i class="fas fa-check-circle metric-icon"></i>
+                            Publicadas
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="row">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">
+                                <i class="fas fa-bolt"></i>
+                                Acciones Rápidas
+                            </h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="quick-actions">
+                                <a href="{% url 'generador_actas:transcripciones_disponibles' %}" class="btn btn-primary">
+                                    <i class="fas fa-plus"></i>
+                                    Nueva Acta desde Transcripción
+                                </a>
+                                <a href="{% url 'generador_actas:plantillas_lista' %}" class="btn btn-info">
+                                    <i class="fas fa-template"></i>
+                                    Gestionar Plantillas
+                                </a>
+                                <a href="{% url 'generador_actas:actas_lista' %}" class="btn btn-success">
+                                    <i class="fas fa-list"></i>
+                                    Ver Todas las Actas
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <!-- Actas Recientes -->
+                <div class="col-lg-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">
+                                <i class="fas fa-history"></i>
+                                Actas Recientes
+                            </h3>
+                            <div class="card-tools">
+                                <a href="{% url 'generador_actas:actas_lista' %}" class="btn btn-tool">
+                                    <i class="fas fa-external-link-alt"></i>
+                                </a>
+                            </div>
+                        </div>
+                        <div class="card-body" style="max-height: 400px; overflow-y: auto;">
+                            {% for acta in actas_recientes %}
+                            <div class="acta-card">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div class="flex-grow-1">
+                                        <h6 class="mb-1">
+                                            <span class="processing-indicator status-{{ acta.estado }}"></span>
+                                            <a href="{% url 'generador_actas:acta_detail' acta.pk %}">
+                                                {{ acta.numero_acta }}
+                                            </a>
+                                        </h6>
+                                        <p class="mb-1 text-muted">{{ acta.titulo|truncatechars:60 }}</p>
+                                        <small class="text-muted">
+                                            <i class="fas fa-calendar"></i>
+                                            {{ acta.fecha_creacion|date:"d/m/Y H:i" }} |
+                                            <i class="fas fa-user"></i>
+                                            {{ acta.usuario_creacion.get_full_name|default:acta.usuario_creacion.username }}
+                                        </small>
+                                    </div>
+                                    <span class="badge badge-{{ acta.estado|default:'secondary' }}">
+                                        {{ acta.get_estado_display }}
+                                    </span>
+                                </div>
+                                {% if acta.progreso > 0 and acta.estado != 'revision' and acta.estado != 'aprobado' and acta.estado != 'publicado' %}
+                                <div class="progress mt-2" style="height: 5px;">
+                                    <div class="progress-bar" role="progressbar" 
+                                         style="width: {{ acta.progreso }}%"
+                                         aria-valuenow="{{ acta.progreso }}" 
+                                         aria-valuemin="0" 
+                                         aria-valuemax="100">
+                                    </div>
+                                </div>
+                                {% endif %}
+                            </div>
+                            {% empty %}
+                            <div class="text-center text-muted py-3">
+                                <i class="fas fa-file-alt fa-3x mb-3"></i>
+                                <p>No hay actas recientes</p>
+                                <a href="{% url 'generador_actas:transcripciones_disponibles' %}" class="btn btn-primary btn-sm">
+                                    Crear Primera Acta
+                                </a>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Transcripciones Disponibles -->
+                <div class="col-lg-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">
+                                <i class="fas fa-microphone"></i>
+                                Transcripciones Disponibles
+                            </h3>
+                            <div class="card-tools">
+                                <a href="{% url 'generador_actas:transcripciones_disponibles' %}" class="btn btn-tool">
+                                    <i class="fas fa-external-link-alt"></i>
+                                </a>
+                            </div>
+                        </div>
+                        <div class="card-body" style="max-height: 400px; overflow-y: auto;">
+                            {% for transcripcion in transcripciones_disponibles %}
+                            <div class="transcripcion-card">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div class="flex-grow-1">
+                                        <h6 class="mb-1">
+                                            {{ transcripcion.procesamiento_audio.nombre_archivo|default:"Audio sin nombre" }}
+                                        </h6>
+                                        <p class="mb-1 text-muted">
+                                            {% if transcripcion.procesamiento_audio.tipo_reunion %}
+                                                {{ transcripcion.procesamiento_audio.tipo_reunion.nombre }}
+                                            {% else %}
+                                                Reunión
+                                            {% endif %}
+                                        </p>
+                                        <small class="text-muted">
+                                            <i class="fas fa-clock"></i>
+                                            {% if transcripcion.procesamiento_audio.duracion_segundos %}
+                                                {{ transcripcion.procesamiento_audio.duracion_segundos|floatformat:0 }}s
+                                            {% endif %}
+                                            |
+                                            <i class="fas fa-calendar"></i>
+                                            {{ transcripcion.fecha_creacion|date:"d/m/Y" }}
+                                        </small>
+                                    </div>
+                                    <a href="{% url 'generador_actas:crear_acta' transcripcion.pk %}" 
+                                       class="btn btn-primary btn-sm">
+                                        <i class="fas fa-magic"></i>
+                                        Generar Acta
+                                    </a>
+                                </div>
+                            </div>
+                            {% empty %}
+                            <div class="text-center text-muted py-3">
+                                <i class="fas fa-microphone fa-3x mb-3"></i>
+                                <p>No hay transcripciones disponibles</p>
+                                <small>Las transcripciones procesadas aparecerán aquí</small>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Actas en Procesamiento -->
+            {% if actas_procesando %}
+            <div class="row">
+                <div class="col-12">
+                    <div class="card progress-card">
+                        <div class="card-header">
+                            <h3 class="card-title">
+                                <i class="fas fa-cog fa-spin"></i>
+                                Actas en Procesamiento
+                            </h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                {% for acta in actas_procesando %}
+                                <div class="col-md-6 col-lg-4">
+                                    <div class="card border-left-warning">
+                                        <div class="card-body">
+                                            <h6 class="card-title">
+                                                <a href="{% url 'generador_actas:acta_detail' acta.pk %}">
+                                                    {{ acta.numero_acta }}
+                                                </a>
+                                            </h6>
+                                            <p class="card-text small text-muted">
+                                                {{ acta.titulo|truncatechars:40 }}
+                                            </p>
+                                            <div class="progress mb-2" style="height: 8px;">
+                                                <div class="progress-bar progress-bar-striped progress-bar-animated" 
+                                                     role="progressbar" 
+                                                     style="width: {{ acta.progreso }}%"
+                                                     aria-valuenow="{{ acta.progreso }}" 
+                                                     aria-valuemin="0" 
+                                                     aria-valuemax="100">
+                                                </div>
+                                            </div>
+                                            <small class="text-muted">
+                                                {{ acta.get_estado_display }} - {{ acta.progreso }}%
+                                            </small>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Estadísticas por Proveedor -->
+            {% if stats.proveedores %}
+            <div class="row">
+                <div class="col-lg-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">
+                                <i class="fas fa-brain"></i>
+                                Uso por Proveedor IA
+                            </h3>
+                        </div>
+                        <div class="card-body">
+                            {% for proveedor in stats.proveedores %}
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span>{{ proveedor.proveedor_ia__nombre|default:"Sin nombre" }}</span>
+                                <span class="badge badge-primary">{{ proveedor.count }}</span>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-lg-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">
+                                <i class="fas fa-chart-bar"></i>
+                                Actividad Reciente
+                            </h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="text-center">
+                                <h3 class="text-primary">{{ stats.actividad_reciente|default:0 }}</h3>
+                                <p class="text-muted">Actas creadas en los últimos 7 días</p>
+                            </div>
+                            
+                            {% if stats.plantillas_populares %}
+                            <hr>
+                            <h6>Plantillas más utilizadas:</h6>
+                            {% for plantilla in stats.plantillas_populares %}
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <small>{{ plantilla.plantilla__nombre|default:"Sin nombre" }}</small>
+                                <span class="badge badge-secondary">{{ plantilla.count }}</span>
+                            </div>
+                            {% endfor %}
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+        </div>
+    </section>
+</div>
+{% endblock %}
+
+{% block javascripts %}
+{{ block.super }}
+<script src="{% static 'plugins/sweetalert2/sweetalert2.min.js' %}"></script>
+<script>
+// Auto-refresh para actas en procesamiento
+$(document).ready(function() {
+    {% if actas_procesando %}
+    setInterval(function() {
+        // Refrescar solo si hay actas en procesamiento
+        location.reload();
+    }, 30000); // Cada 30 segundos
+    {% endif %}
+    
+    // Tooltip initialization
+    $('[data-toggle="tooltip"]').tooltip();
+});
+</script>
+{% endblock %}

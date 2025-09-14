@@ -80,6 +80,7 @@ INSTALLED_APPS = [
     'apps.file_manager',
     'apps.audio_processing',
     'apps.transcripcion',
+    'apps.generador_actas',  # Nuevo módulo para generación de actas con IA
     'apps.tasks',
     'apps.users',
     'apps.react',

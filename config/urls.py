@@ -48,6 +48,7 @@ urlpatterns = [
     path("config-system/", include("apps.config_system.urls")),
     path("audio/", include("apps.audio_processing.urls")),
     path("transcripcion/", include("apps.transcripcion.urls")),
+    path("generador-actas/", include("apps.generador_actas.urls")),
 
     # Archivos estáticos y media
     re_path(r'^media/(?P<path>.*)$', serve,{'document_root': settings.MEDIA_ROOT}), 
