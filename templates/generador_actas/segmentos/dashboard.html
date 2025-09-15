@@ -1,0 +1,437 @@
+{% extends "layouts/base.html" %}
+{% load static %}
+
+{% block title %}{{ page_title }}{% endblock title %}
+
+{% block stylesheets %}
+    <link rel="stylesheet" href="{% static 'generador_actas/css/segmentos.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="content-wrapper">
+    <!-- Content Header -->
+    <div class="content-header">
+        <div class="container-fluid">
+            <div class="row mb-2">
+                <div class="col-sm-6">
+                    <h1>🧩 {{ page_title }}</h1>
+                </div>
+                <div class="col-sm-6">
+                    <ol class="breadcrumb float-sm-right">
+                        {% for item in breadcrumbs %}
+                            {% if item.url %}
+                                <li class="breadcrumb-item">
+                                    <a href="{{ item.url }}">{{ item.title }}</a>
+                                </li>
+                            {% else %}
+                                <li class="breadcrumb-item active">{{ item.title }}</li>
+                            {% endif %}
+                        {% endfor %}
+                    </ol>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main content -->
+    <section class="content">
+        <div class="container-fluid">
+            
+            <!-- Botones de Acción Rápida -->
+            <div class="row mb-3">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-body">
+                            <a href="{% url 'generador_actas:crear_segmento' %}" class="btn btn-primary mr-2">
+                                <i class="fas fa-plus"></i> Crear Segmento
+                            </a>
+                            <a href="{% url 'generador_actas:lista_segmentos' %}" class="btn btn-info mr-2">
+                                <i class="fas fa-list"></i> Ver Lista
+                            </a>
+                            <a href="{% url 'generador_actas:probar_segmento' %}" class="btn btn-success mr-2">
+                                <i class="fas fa-vial"></i> Probar Segmentos
+                            </a>
+                            <a href="{% url 'generador_actas:asistente_variables' %}" class="btn btn-warning">
+                                <i class="fas fa-magic"></i> Asistente Variables
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Métricas Principales -->
+            <div class="row mb-3">
+                <div class="col-lg-3 col-6">
+                    <div class="small-box bg-info">
+                        <div class="inner">
+                            <h3>{{ metricas.total_segmentos }}</h3>
+                            <p>Total Segmentos</p>
+                        </div>
+                        <div class="icon">
+                            <i class="fas fa-puzzle-piece"></i>
+                        </div>
+                        <a href="{% url 'generador_actas:lista_segmentos' %}" class="small-box-footer">
+                            Ver todos <i class="fas fa-arrow-circle-right"></i>
+                        </a>
+                    </div>
+                </div>
+                
+                <div class="col-lg-3 col-6">
+                    <div class="small-box bg-success">
+                        <div class="inner">
+                            <h3>{{ metricas.segmentos_activos }}</h3>
+                            <p>Segmentos Activos</p>
+                        </div>
+                        <div class="icon">
+                            <i class="fas fa-check-circle"></i>
+                        </div>
+                        <a href="{% url 'generador_actas:lista_segmentos' %}?activo=true" class="small-box-footer">
+                            Ver activos <i class="fas fa-arrow-circle-right"></i>
+                        </a>
+                    </div>
+                </div>
+                
+                <div class="col-lg-3 col-6">
+                    <div class="small-box bg-warning">
+                        <div class="inner">
+                            <h3>{{ metricas.segmentos_dinamicos }}</h3>
+                            <p>Segmentos Dinámicos</p>
+                        </div>
+                        <div class="icon">
+                            <i class="fas fa-cog"></i>
+                        </div>
+                        <a href="{% url 'generador_actas:lista_segmentos' %}?tipo=dinamico" class="small-box-footer">
+                            Ver dinámicos <i class="fas fa-arrow-circle-right"></i>
+                        </a>
+                    </div>
+                </div>
+                
+                <div class="col-lg-3 col-6">
+                    <div class="small-box bg-secondary">
+                        <div class="inner">
+                            <h3>{{ metricas.segmentos_estaticos }}</h3>
+                            <p>Segmentos Estáticos</p>
+                        </div>
+                        <div class="icon">
+                            <i class="fas fa-file-alt"></i>
+                        </div>
+                        <a href="{% url 'generador_actas:lista_segmentos' %}?tipo=estatico" class="small-box-footer">
+                            Ver estáticos <i class="fas fa-arrow-circle-right"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Métricas de Uso -->
+            <div class="row mb-3">
+                <div class="col-lg-3 col-6">
+                    <div class="small-box bg-primary">
+                        <div class="inner">
+                            <h3>{{ metricas.total_usos|floatformat:0 }}</h3>
+                            <p>Total de Usos</p>
+                        </div>
+                        <div class="icon">
+                            <i class="fas fa-chart-line"></i>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-lg-3 col-6">
+                    <div class="small-box bg-success">
+                        <div class="inner">
+                            <h3>{{ metricas.segmentos_con_uso }}</h3>
+                            <p>Con Uso</p>
+                        </div>
+                        <div class="icon">
+                            <i class="fas fa-thumbs-up"></i>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-lg-3 col-6">
+                    <div class="small-box bg-danger">
+                        <div class="inner">
+                            <h3>{{ metricas.segmentos_sin_uso }}</h3>
+                            <p>Sin Uso</p>
+                        </div>
+                        <div class="icon">
+                            <i class="fas fa-exclamation-triangle"></i>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-lg-3 col-6">
+                    <div class="small-box bg-info">
+                        <div class="inner">
+                            <h3>{{ metricas.tiempo_promedio_global }}s</h3>
+                            <p>Tiempo Promedio</p>
+                        </div>
+                        <div class="icon">
+                            <i class="fas fa-clock"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <!-- Distribución por Categoría -->
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">
+                                <i class="fas fa-tags mr-1"></i>
+                                Distribución por Categoría
+                            </h3>
+                        </div>
+                        <div class="card-body">
+                            {% for categoria in distribucion_categoria %}
+                            <div class="progress-group mb-3">
+                                <div class="row">
+                                    <div class="col-8">
+                                        <span class="progress-text">{{ categoria.categoria|capfirst }}</span>
+                                    </div>
+                                    <div class="col-4 text-right">
+                                        <span class="progress-number">
+                                            <b>{{ categoria.total }}</b>/{{ metricas.total_segmentos }}
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="progress progress-sm">
+                                    <div class="progress-bar bg-primary" style="width: {% widthratio categoria.total metricas.total_segmentos 100 %}%"></div>
+                                </div>
+                                <small class="text-muted">
+                                    {{ categoria.activos }} activos | {{ categoria.usos|default:0 }} usos
+                                </small>
+                            </div>
+                            {% empty %}
+                            <p class="text-muted">No hay segmentos creados aún.</p>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Distribución por Tipo -->
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">
+                                <i class="fas fa-layer-group mr-1"></i>
+                                Distribución por Tipo
+                            </h3>
+                        </div>
+                        <div class="card-body">
+                            {% for tipo in distribucion_tipo %}
+                            <div class="progress-group mb-3">
+                                <div class="row">
+                                    <div class="col-8">
+                                        <span class="progress-text">{{ tipo.tipo|capfirst }}</span>
+                                    </div>
+                                    <div class="col-4 text-right">
+                                        <span class="progress-number">
+                                            <b>{{ tipo.total }}</b>/{{ metricas.total_segmentos }}
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="progress progress-sm">
+                                    {% if tipo.tipo == 'dinamico' %}
+                                        <div class="progress-bar bg-warning" style="width: {% widthratio tipo.total metricas.total_segmentos 100 %}%"></div>
+                                    {% elif tipo.tipo == 'estatico' %}
+                                        <div class="progress-bar bg-info" style="width: {% widthratio tipo.total metricas.total_segmentos 100 %}%"></div>
+                                    {% else %}
+                                        <div class="progress-bar bg-purple" style="width: {% widthratio tipo.total metricas.total_segmentos 100 %}%"></div>
+                                    {% endif %}
+                                </div>
+                                <small class="text-muted">
+                                    {{ tipo.activos }} activos | {{ tipo.usos|default:0 }} usos
+                                </small>
+                            </div>
+                            {% empty %}
+                            <p class="text-muted">No hay segmentos creados aún.</p>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <!-- Segmentos Más Usados -->
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">
+                                <i class="fas fa-fire mr-1"></i>
+                                Segmentos Más Populares
+                            </h3>
+                        </div>
+                        <div class="card-body p-0">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Segmento</th>
+                                        <th>Categoría</th>
+                                        <th>Usos</th>
+                                        <th>Tiempo</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for segmento in segmentos_populares %}
+                                    <tr>
+                                        <td>
+                                            <a href="{% url 'generador_actas:detalle_segmento' segmento.pk %}">
+                                                {{ segmento.nombre|truncatechars:30 }}
+                                            </a>
+                                        </td>
+                                        <td>
+                                            <span class="badge badge-info">{{ segmento.get_categoria_display }}</span>
+                                        </td>
+                                        <td>
+                                            <span class="badge badge-success">{{ segmento.total_usos }}</span>
+                                        </td>
+                                        <td>
+                                            <small class="text-muted">{{ segmento.tiempo_promedio_procesamiento|floatformat:2 }}s</small>
+                                        </td>
+                                    </tr>
+                                    {% empty %}
+                                    <tr>
+                                        <td colspan="4" class="text-center text-muted">
+                                            No hay segmentos con uso registrado
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Segmentos Recientes -->
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">
+                                <i class="fas fa-clock mr-1"></i>
+                                Segmentos Recientes
+                            </h3>
+                        </div>
+                        <div class="card-body p-0">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Segmento</th>
+                                        <th>Tipo</th>
+                                        <th>Creado</th>
+                                        <th>Estado</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for segmento in segmentos_recientes %}
+                                    <tr>
+                                        <td>
+                                            <a href="{% url 'generador_actas:detalle_segmento' segmento.pk %}">
+                                                {{ segmento.nombre|truncatechars:25 }}
+                                            </a>
+                                        </td>
+                                        <td>
+                                            {% if segmento.tipo == 'dinamico' %}
+                                                <span class="badge badge-warning">{{ segmento.get_tipo_display }}</span>
+                                            {% elif segmento.tipo == 'estatico' %}
+                                                <span class="badge badge-info">{{ segmento.get_tipo_display }}</span>
+                                            {% else %}
+                                                <span class="badge badge-purple">{{ segmento.get_tipo_display }}</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <small class="text-muted">{{ segmento.fecha_creacion|timesince }} ago</small>
+                                        </td>
+                                        <td>
+                                            {% if segmento.activo %}
+                                                <span class="badge badge-success">Activo</span>
+                                            {% else %}
+                                                <span class="badge badge-secondary">Inactivo</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% empty %}
+                                    <tr>
+                                        <td colspan="4" class="text-center text-muted">
+                                            No hay segmentos creados aún
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Alertas de Segmentos con Problemas -->
+            {% if segmentos_con_errores %}
+            <div class="row">
+                <div class="col-12">
+                    <div class="card card-warning">
+                        <div class="card-header">
+                            <h3 class="card-title">
+                                <i class="fas fa-exclamation-triangle mr-1"></i>
+                                Segmentos con Errores Recientes
+                            </h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-sm">
+                                    <thead>
+                                        <tr>
+                                            <th>Segmento</th>
+                                            <th>Última Prueba</th>
+                                            <th>Error</th>
+                                            <th>Acciones</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for segmento in segmentos_con_errores %}
+                                        <tr>
+                                            <td>
+                                                <a href="{% url 'generador_actas:detalle_segmento' segmento.pk %}">
+                                                    {{ segmento.nombre }}
+                                                </a>
+                                            </td>
+                                            <td>
+                                                <small>{{ segmento.ultima_prueba|timesince }} ago</small>
+                                            </td>
+                                            <td>
+                                                <small class="text-danger">
+                                                    {{ segmento.ultimo_resultado_prueba|truncatechars:50 }}
+                                                </small>
+                                            </td>
+                                            <td>
+                                                <a href="{% url 'generador_actas:editar_segmento' segmento.pk %}" 
+                                                   class="btn btn-sm btn-warning">
+                                                    <i class="fas fa-edit"></i> Revisar
+                                                </a>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+        </div>
+    </section>
+</div>
+{% endblock content %}
+
+{% block javascripts %}
+<script>
+$(document).ready(function() {
+    // Auto-refresh cada 5 minutos
+    setTimeout(function() {
+        location.reload();
+    }, 300000);
+});
+</script>
+{% endblock %}

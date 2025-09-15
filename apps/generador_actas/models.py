@@ -255,14 +255,27 @@ class SegmentoPlantilla(models.Model):
     
     # Configuración de procesamiento IA
     prompt_ia = models.TextField(blank=True, help_text="Prompt para segmentos dinámicos")
+    proveedor_ia = models.ForeignKey('ProveedorIA', on_delete=models.SET_NULL, null=True, blank=True, 
+                                   help_text="Proveedor IA para procesamiento (solo segmentos dinámicos)")
     estructura_json = models.JSONField(default=dict, blank=True, help_text="Estructura esperada del resultado")
     componentes = models.JSONField(default=dict, blank=True, help_text="Componentes del segmento")
     parametros_entrada = models.JSONField(default=list, blank=True, help_text="Parámetros requeridos del contexto")
+    
+    # Variables personalizables del usuario
+    variables_personalizadas = models.JSONField(default=dict, blank=True, 
+                                               help_text="Variables JSON personalizables (fecha, participantes, etc.)")
     
     # Configuración visual y comportamiento
     orden_defecto = models.IntegerField(default=0, help_text="Orden por defecto en plantillas")
     reutilizable = models.BooleanField(default=True, help_text="Si puede ser usado en múltiples plantillas")
     obligatorio = models.BooleanField(default=False, help_text="Si es obligatorio en todas las plantillas")
+    activo = models.BooleanField(default=True, help_text="Si está disponible para uso")
+    
+    # Métricas de uso
+    total_usos = models.IntegerField(default=0, help_text="Total de veces que se ha usado")
+    ultima_prueba = models.DateTimeField(null=True, blank=True, help_text="Última vez que se probó")
+    ultimo_resultado_prueba = models.TextField(blank=True, help_text="Resultado de la última prueba")
+    tiempo_promedio_procesamiento = models.FloatField(default=0.0, help_text="Tiempo promedio de procesamiento en segundos")
     
     # Auditoría
     usuario_creacion = models.ForeignKey(User, on_delete=models.PROTECT, related_name='segmentos_creados')
@@ -289,6 +302,83 @@ class SegmentoPlantilla(models.Model):
     def tiene_prompt(self):
         """Verifica si tiene prompt configurado"""
         return bool(self.prompt_ia.strip())
+    
+    @property
+    def esta_configurado(self):
+        """Verifica si el segmento está correctamente configurado"""
+        if self.es_dinamico:
+            return bool(self.prompt_ia.strip() and self.proveedor_ia)
+        return True
+    
+    @property
+    def variables_disponibles(self):
+        """Obtiene lista de variables disponibles para el segmento"""
+        variables_base = [
+            'fecha_actual', 'hora_actual', 'fecha_reunion', 'tipo_reunion',
+            'numero_acta', 'lugar_reunion', 'participantes'
+        ]
+        variables_custom = list(self.variables_personalizadas.keys()) if self.variables_personalizadas else []
+        return variables_base + variables_custom
+    
+    def generar_json_completo(self, datos_contexto=None):
+        """Genera el JSON completo para enviar a la IA"""
+        if datos_contexto is None:
+            datos_contexto = {}
+            
+        json_segmento = {
+            'segmento_info': {
+                'nombre': self.nombre,
+                'codigo': self.codigo,
+                'tipo': self.tipo,
+                'categoria': self.categoria,
+                'descripcion': self.descripcion
+            },
+            'prompt': self.prompt_ia,
+            'variables_personalizadas': self.variables_personalizadas,
+            'parametros_entrada': self.parametros_entrada,
+            'estructura_esperada': self.estructura_json,
+            'datos_contexto': datos_contexto,
+            'configuracion_ia': {
+                'proveedor': self.proveedor_ia.nombre if self.proveedor_ia else None,
+                'modelo': self.proveedor_ia.modelo if self.proveedor_ia else None
+            }
+        }
+        return json_segmento
+    
+    def actualizar_metricas_uso(self, tiempo_procesamiento=None, resultado_prueba=None):
+        """Actualiza las métricas de uso del segmento"""
+        self.total_usos += 1
+        self.ultima_prueba = timezone.now()
+        
+        if tiempo_procesamiento is not None:
+            # Calcular promedio móvil
+            if self.tiempo_promedio_procesamiento == 0:
+                self.tiempo_promedio_procesamiento = tiempo_procesamiento
+            else:
+                self.tiempo_promedio_procesamiento = (
+                    (self.tiempo_promedio_procesamiento * (self.total_usos - 1) + tiempo_procesamiento) / self.total_usos
+                )
+        
+        if resultado_prueba is not None:
+            self.ultimo_resultado_prueba = resultado_prueba[:1000]  # Limitar tamaño
+        
+        self.save(update_fields=['total_usos', 'ultima_prueba', 'ultimo_resultado_prueba', 'tiempo_promedio_procesamiento'])
+    
+    @classmethod
+    def obtener_variables_comunes(cls):
+        """Obtiene variables comunes sugeridas para segmentos"""
+        return {
+            'fecha': {'tipo': 'date', 'descripcion': 'Fecha de la reunión', 'ejemplo': '2025-09-14'},
+            'participantes': {'tipo': 'array', 'descripcion': 'Lista de participantes', 'ejemplo': ['Juan Pérez', 'María García']},
+            'lugar': {'tipo': 'string', 'descripcion': 'Lugar de la reunión', 'ejemplo': 'Sala de Juntas Principal'},
+            'hora_inicio': {'tipo': 'time', 'descripcion': 'Hora de inicio', 'ejemplo': '09:00'},
+            'hora_fin': {'tipo': 'time', 'descripcion': 'Hora de finalización', 'ejemplo': '11:30'},
+            'numero_acta': {'tipo': 'string', 'descripcion': 'Número del acta', 'ejemplo': 'ACTA-2025-001'},
+            'tipo_reunion': {'tipo': 'string', 'descripcion': 'Tipo de reunión', 'ejemplo': 'Ordinaria'},
+            'temas_tratados': {'tipo': 'array', 'descripcion': 'Temas principales', 'ejemplo': ['Presupuesto', 'Proyectos']},
+            'decisiones': {'tipo': 'array', 'descripcion': 'Decisiones tomadas', 'ejemplo': ['Aprobar presupuesto', 'Iniciar proyecto']},
+            'proxima_reunion': {'tipo': 'date', 'descripcion': 'Fecha próxima reunión', 'ejemplo': '2025-09-21'}
+        }
 
 
 class PlantillaActa(models.Model):

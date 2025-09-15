@@ -1,119 +1,233 @@
 ---
 applyTo: '**'
 ---
-Cuando tengas que compilar migraciones, siempre hazlo dentro del entorno Docker, porque este proyecto está trabajando y ejecutándose en Docker, tanto la base de datos como el sistema. Específicamente, cuando debas ejecutar comandos de migrate o de actualización de base de datos.
-Nunca debes cambiar a otra base de datos que no sea la que ya se está utilizando, que es PostgreSQL. Por más que haya equivocaciones, nunca intentes pasar a otra tecnología de base de datos, como por ejemplo SQLite. Indícame qué hacer en esos casos.
-Espera el tiempo prudente cuando envíes a levantar el Docker, porque puede demorar hasta 300 segundos para continuar con las interacciones de comandos.
-Cuando tengas que probar algo y quieras abrir la web y el puerto para explorar, no abras el explorador de contenido simple en VSCode. Mejor consulta con curl en la línea de comandos y envía ahí los parámetros o la URL necesarios para que responda. Es preferible hacerlo tanto para el frontend como para el backend cuando sientas necesidad de verificar si está levantado el sitio o algo así.
-Si solo cambias codigo del framework o de backend o apis y nada de infraestructura, no es necesario que vuelvas a reinicializar o iniciar o indiques que levante el Docker. Solo indícame que ejecute el comando que necesites.
-Cuando hagas cualquier modificación en el código por favor revisa los logs de los contenedores para verificar si no existe algun problema en lo realizado al menos los 20 últimos, pero utiliza un timer para espera antes de ver de al menos 60 segundos.
-No intentes verificar por web ni por comando si una funcion esta activa en vista de que no tienes la posibilidad de interactuar con la web y no vas a saber, en cambio preguntame a mi que yo si veo y si funciona o no funciona la funcionalidad que asumes que deberia valer o no.
-En lo psoible en la visata html y demas siempre seccioanr los javascript y css en otros archvios aparte conetados a eso para poder ser mas efectivo en el codigo y los cambios, es decir crear archvios. css y .js recuerda siempre copupar el modelo de css del template del sistema que es AdminLTE
-Si vas a eliminar cualquier codigo o archvio completo o reemplazar con otro porfavor muy importante saca un backup de lo que vas a eliminar o reemplazar por si hay algun problema despues y guardalo en la carpeta de scripts con un nombre que indique que es un back up y la fecha y hora, por ejemplo scripts/backup/2024-09-06_backup_nombrearchivo.ext
-No reinicies el docker a menos que sea estrictamente necesario, por ejemplo si hay cambios en la infraestructura o en la base de datos, si solo son cambios de codigo no es necesario reiniciar el docker.
-Nunca expongas credenciales en el codigo, si necesitas usarlas siempre usa las variables de entorno que estan en el archivo .env
-Al reiniciar un contenedor docker espera al menos 60 segundos antes de verificar los logs o intentar acceder a la web o api, no lo reinicies y de inmediato intentes acceder, espera el tiempo prudente no reinicies a menos que sea estrictamente necesario.
-Cuando debas ejecutar comandos de manage.py como migrate, createsuperuser, etc, siempre hazlo dentro del contenedor docker, nunca lo hagas fuera del contenedor.
-No abir el navegador para probar es muy basico todo por curl y registra crf y claves y demas tod por curl
-utiliza siempre docker-compose.yml por que el docker-compose.simple.yml no existe
-Despeus de un proceso exitoso, es necesario que me preguntes si tienes que hacer el add commit y push en un solo comando para subir lo que se a echo al github, siempre, y yo te conetsatre si o no y aplicas el comando global
+# 📋 Instrucciones para GitHub Copilot - Proyecto Actas IA
 
-# Copilot Instructions – Actas IA (Django + Docker + AdminLTE)
+## 🎯 Contexto del Proyecto
+Sistema de gestión de actas municipales con Django + Docker + AdminLTE que procesa audio, transcribe, genera actas y las publica en un portal ciudadano.
 
-Estas instrucciones guían a agentes IA para trabajar productivamente en este repositorio. NO inventes estructuras nuevas: sigue lo que ya existe.
+## 🚨 REGLAS CRÍTICAS - NUNCA VIOLAR
 
-## 1. Principios Operativos
-1. Siempre trabajar DENTRO de Docker. Nunca ejecutes migrate, createsuperuser, ni accesos directos fuera del contenedor.
-2. Base de datos: PostgreSQL (actas_municipales_pastaza). Prohibido cambiar a SQLite u otra.
-3. Espera prudencial: tras cambios de backend significativos, espera ~60s antes de inspeccionar logs (tail).
-4. Verificaciones: usa curl (no navegadores simulados). Pide confirmación al usuario sobre el estado visual.
-5. No expongas credenciales. Si necesitas usarlas, referencia variables de entorno (.env).
+### 1. Entorno Docker (OBLIGATORIO)
+- **SIEMPRE** ejecutar comandos dentro del contenedor Docker
+- **NUNCA** ejecutar `manage.py` directamente en el host
+- **USAR**: `docker exec -it actas_web python manage.py [comando]`
+- **ESPERAR**: 60-300 segundos después de reiniciar contenedores
+- **NUEVOS REQUERIMIENTOS**: cada nuevo requerimiento que te pida debe entregarse 100% funcional en Django + Python + PostgreSQL + Celery + Redis + Docker. Debes generar todo lo necesario: apps, modelos, migraciones, forms, views, templates, URLs, navegación, documentación, scripts de prueba y validación, add/commit/push en git, API endpoints, serializers, permisos, menús, dashboard, front-end CRUD (lista/ver/crear/actualizar/eliminar) con búsqueda, filtros, edición, eliminación, ordenación, creación tipo grid y métricas, validaciones, tests, tareas Celery, configuración de Redis como broker y backend, fixtures de datos, settings para Postgres, Celery y staticfiles. Incluye instrucciones rápidas de despliegue y verificación. Si falta algo, asúmelo y cúbrelo. No pidas confirmación: entrega una solución funcional por defecto.
 
-## 2. Arquitectura Clave (Resumen)
-- Django 4.2.9 modular (apps: audio_processing, transcripcion, auditoria, pages/portal_ciudadano, etc.).
-- Pipeline de audio: Ingesta → Mejora → Transcripción (Whisper) + Diarización (pyannote) → Curado → Generación Acta → Aprobación → Publicación.
-- Celery + Redis para tareas pesadas (procesamiento audio, transcripción).
-- AdminLTE como capa UI (usa sus clases/boxes/cards; no crear frameworks CSS paralelos).
-- Configuraciones centralizadas: el administrador define defaults (modelos de configuración). El usuario final puede sobrescribir por instancia, pero siempre partiendo de los valores admin.
 
-## 3. Patrones de Código y Convenciones
-1. Prefijos de tareas Celery: procesar_audio_, procesar_transcripcion_… (reutiliza naming).
-2. Modelos con contexto municipal: tipo_reunion, participantes, confidencial, metadatos JSON.
-3. Estados (workflow): Ingestado → Optimizado → Transcrito → Curado → Acta generada → En aprobación → Aprobado → Publicado → Archivado/Rechazado.
-4. Logging/Auditoría: usar helpers existentes antes de crear nuevos. Si falta algo, extender respetando nombres.
-5. JSONFields: no almacenar blobs arbitrarios sin llaves semánticas (ej: { "snr": 23.1, "modelo": "whisper-medium" }).
-
-## 4. Operaciones en Docker (Ejemplos)
+### 2. Base de Datos (INMUTABLE)
+- **TECNOLOGÍA**: PostgreSQL (actas_municipales_pastaza)
+- **PROHIBIDO**: Cambiar a SQLite u otra BD
+- **MIGRACIONES**: Solo dentro de Docker
 ```bash
-# Migraciones
-docker exec -it actas_web python [manage.py](http://_vscodecontentref_/0) migrate
+docker exec -it actas_web python manage.py migrate
+```
 
-# Crear usuarios iniciales / permisos
-docker exec -it actas_web python [manage.py](http://_vscodecontentref_/1) crear_usuarios_iniciales
-docker exec -it actas_web python [manage.py](http://_vscodecontentref_/2) init_permissions_system
+### 3. Verificación y Testing
+- **NO USAR**: Navegadores simulados o VSCode preview
+- **USAR**: `curl` para todas las verificaciones (aqui debes incluir el usuario superadmin existente, y ademas si no vale poner el cookie con su llabve ida, debes poner el comando para obtener la cookie y luego usarla en el curl)
+- **PREGUNTAR**: Al usuario sobre el estado visual de la UI
+- **AUTENTICACIÓN**: Usar credenciales del superadmin para endpoints protegidos
 
-# Revisar últimos logs (ejecutar tras esperar ~60s)
-docker logs --tail=50 actas_web
-docker logs --tail=50 actas_celery_worker
+## 🔐 Credenciales del Sistema
 
-5. Validaciones con curl (Patrón)
-# Ver portal ciudadano
+### Administrador Principal
+```
+Usuario: superadmin
+Clave: AdminPuyo2025!
+URL Admin: http://localhost:8000/admin/
+```
+
+### Base de Datos PostgreSQL
+```
+Host: localhost
+Puerto: 5432
+BD: actas_municipales_pastaza
+Usuario: admin_actas
+Clave: actas_pastaza_2025
+```
+
+## 🏗️ Arquitectura del Sistema
+
+### Stack Tecnológico
+- **Backend**: Django 4.2.9 (modular)
+- **Task Queue**: Celery + Redis
+- **UI Framework**: AdminLTE (usar sus clases/componentes)
+- **Audio Processing**: Whisper + pyannote
+- **Database**: PostgreSQL
+- **Container**: Docker Compose
+
+- para cualquier cambio se debe trabakar con todos los entornocs y coenxiones posibles 
+
+### Apps Principales
+- `audio_processing` - Procesamiento de audio
+- `transcripcion` - Transcripción y diarización
+- `auditoria` - Logging y auditoría
+- `pages/portal_ciudadano` - Portal público
+
+### Pipeline de Procesamiento
+```
+Ingesta → Mejora Audio → Transcripción (Whisper) → 
+Diarización (pyannote) → Curado → Generación Acta → 
+Aprobación → Publicación → Archivo
+```
+
+## 📝 Flujo de Trabajo Operativo
+
+### 1. Antes de Modificar Código
+```bash
+# Verificar estado actual
+docker logs --tail=20 actas_web
+docker logs --tail=20 actas_celery_worker
+```
+
+### 2. Al Modificar Código
+
+#### Cambios de Backend/API
+- NO reiniciar Docker si solo son cambios de código
+- Esperar 60 segundos después de cambios significativos
+- Verificar logs después de esperar
+
+#### Cambios de Infraestructura
+- Reiniciar Docker SOLO si hay cambios en:
+  - Configuración de contenedores
+  - Variables de entorno
+  - Dependencias del sistema
+
+### 3. Verificación con curl
+
+#### Autenticación
+```bash
+# Obtener CSRF token
+curl -c cookies.txt http://localhost:8000/admin/login/ | grep csrfmiddlewaretoken
+
+# Login
+curl -b cookies.txt -c cookies.txt -X POST \
+  -d "username=superadmin&password=AdminPuyo2025!&csrfmiddlewaretoken=[TOKEN]" \
+  http://localhost:8000/admin/login/
+```
+
+#### Verificar Endpoints
+```bash
+# Portal ciudadano
 curl -I http://localhost:8000/portal-ciudadano/
 
-# Probar API (ejemplo, adaptar a endpoint real)
-curl -X POST http://localhost:8000/api/audio/procesar/ -F "archivo=@sample.wav"
+# API (autenticado)
+curl -b cookies.txt http://localhost:8000/api/[endpoint]/
+```
 
-Para endpoints protegidos: autenticar primero (login form) o usar token/session ya existente (pedir al usuario si es necesario).
+## 🎨 Convenciones de Código
 
-6. Transcripción & Diarización
-Parámetros (Whisper / pyannote) salen de modelos de configuración (ej: ConfiguracionTranscripcion).
-Si falla modelo premium (pyannote), hacer fallback a uno básico sin token.
-Guardar: texto plano, segmentos con timestamps, hablante, confianza, métricas (duración procesada, latencia).
-7. Portal Ciudadano
-Ordenación soportada: -fecha_sesion (default), fecha_publicacion, -fecha_publicacion, titulo, -titulo, tipo_sesion__nombre, prioridad…
-UI: secciones colapsables (filtros y métricas) deben respetar estado (localStorage).
-Resultados: grid de tarjetas AdminLTE (card-outline) – no revertir a listas planas.
-8. Al Añadir / Modificar Código
-Reutiliza estilos/clases AdminLTE.
-Antes de crear un helper nuevo, busca en /helpers, /apps//utils, /apps//logging_helper.py.
-Si agregas campo a un modelo:
-Crea migración dentro de Docker.
-No forzar default incoherente; usar null=True si la data histórica no lo posee.
-Mantén consistencia i18n: textos en español neutro administrativo.
-9. Errores Frecuentes a Evitar
-Usar .url / .path en FileField sin verificar existencia física (envolver con if campo).
-Duplicar nombres de vistas (ej: configurar_transcripcion) → causa TypeError (args no coinciden).
-Hardcodear rutas de media → usar settings.MEDIA_URL / MEDIA_ROOT.
-Hacer consultas costosas en templates (prefetch/select_related en vistas).
-10. Checklist al Cerrar una Tarea
-¿Migraciones aplicadas en Docker?
-¿Logs limpios (sin stacktrace nuevo)?
-¿Fallbacks implementados si Celery o modelos IA fallan?
-¿Configuraciones respetan defaults de administrador?
-¿Sin estilos custom fuera de AdminLTE innecesarios?
-¿Endpoints probados con curl?
-11. Solicitar Confirmación al Usuario
-Cuando la acción implique UI (grid, botón, colapso, etc.), pedir al usuario que confirme visualmente (el agente no navega). No asumir éxito sin esa confirmación.
+### Estructura de Archivos
+- **JavaScript/CSS**: Separar en archivos `.js` y `.css` independientes
+- **Templates**: Usar estructura de AdminLTE
+- **Backups**: Guardar en `scripts/backup/YYYY-MM-DD_backup_[nombre].ext`
 
+### Naming Conventions
+- **Tareas Celery**: `procesar_audio_*`, `procesar_transcripcion_*`
+- **Estados Workflow**: Ingestado → Optimizado → Transcrito → Curado → etc.
+- **JSONFields**: Usar llaves semánticas `{"snr": 23.1, "modelo": "whisper-medium"}`
 
-usario administrador  Super Administrador:
-   Usuario: superadmin
-   Clave:   AdminPuyo2025!
-para enviar por culr siempre autenticarte con este suario para poder ver y acceder a los vistas que necesitan auteticacion
+### Mejores Prácticas
+1. **NO exponer credenciales** - Usar variables de entorno (.env)
+2. **Reutilizar helpers existentes** antes de crear nuevos
+3. **Usar clases AdminLTE** - No crear CSS personalizado innecesario
+4. **Verificar FileFields** antes de usar `.url` o `.path`
+5. **Optimizar queries** - usar `prefetch_related`/`select_related`
 
-usuarios y coenxion base dedatos
+## 🔄 Proceso de Cambios
 
+### 1. Desarrollo
+```bash
+# Hacer cambios en el código
+# Esperar 60 segundos si son cambios significativos
+docker logs --tail=50 actas_web
+```
 
-🌐 URL de acceso: http://localhost:8000
-🔧 Panel admin: http://localhost:8000/admin/
+### 2. Migraciones (si aplica)
+```bash
+docker exec -it actas_web python manage.py makemigrations
+docker exec -it actas_web python manage.py migrate
+```
 
-📊 BASE DE DATOS:
-   Host: localhost
-   Puerto: 5432
-   BD: actas_municipales_pastaza
-   Usuario: admin_actas
-   Clave: actas_pastaza_2025
+### 3. Verificación
+```bash
+# Verificar con curl
+curl -b cookies.txt http://localhost:8000/[endpoint]/
 
-🔄 Usuario adicional para BD:
-   Usuario: desarrollador_actas
-   Clave: dev_actas_2025
+# Revisar logs
+docker logs --tail=20 actas_web
+```
+
+### 4. Git (Preguntar al usuario)
+```bash
+# SIEMPRE preguntar: "¿Deseas hacer add, commit y push?"
+# Si responde SÍ:
+git add .
+git commit -m "[descripción del cambio]"
+git push
+```
+
+## ⚠️ Comandos Docker Esenciales
+
+```bash
+# Ver logs en tiempo real
+docker logs -f actas_web
+
+# Ejecutar comandos Django
+docker exec -it actas_web python manage.py [comando]
+
+# Crear usuarios iniciales
+docker exec -it actas_web python manage.py crear_usuarios_iniciales
+
+# Inicializar permisos
+docker exec -it actas_web python manage.py init_permissions_system
+
+# Reiniciar contenedor (SOLO si necesario)
+docker-compose restart actas_web
+```
+
+## 🚫 Errores Comunes a Evitar
+
+1. **NO** usar `docker-compose.simple.yml` (no existe)
+2. **NO** cambiar la BD a SQLite
+3. **NO** ejecutar comandos fuera de Docker
+4. **NO** abrir navegadores para probar
+5. **NO** reiniciar Docker innecesariamente
+6. **NO** verificar inmediatamente después de reiniciar (esperar 60s)
+7. **NO** duplicar nombres de vistas
+8. **NO** hardcodear rutas de media
+
+## ✅ Checklist Final
+
+Antes de terminar cualquier tarea, verificar:
+
+- [ ] ¿Migraciones aplicadas en Docker?
+- [ ] ¿Logs limpios sin errores nuevos?
+- [ ] ¿Fallbacks implementados para servicios externos?
+- [ ] ¿Respetadas las configuraciones del administrador?
+- [ ] ¿Usadas clases AdminLTE existentes?
+- [ ] ¿Endpoints probados con curl?
+- [ ] ¿Celery probado conectado con requerimiento actual?
+- [ ] Backend correctamente conectado a las APIs, frontend, Celery y base de datos?
+- [ ] ¿Usuario confirmó funcionamiento visual?
+- [ ] ¿Preguntar si hacer git add/commit/push?
+
+## 📌 Recordatorio Final
+
+**SIEMPRE**:
+- Trabajar dentro de Docker
+- Esperar tiempos prudenciales
+- Verificar con curl
+- Preguntar al usuario sobre el estado visual
+- Solicitar confirmación para git push
+
+**NUNCA**:
+- Cambiar la base de datos
+- Exponer credenciales
+- Usar navegadores simulados
+- Reiniciar Docker sin necesidad
+
+---
+*Estas instrucciones son críticas para el funcionamiento correcto del sistema. Seguirlas al pie de la letra garantiza estabilidad y productividad.*

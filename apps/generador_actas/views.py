@@ -724,7 +724,7 @@ class EliminarProveedorView(LoginRequiredMixin, DeleteView):
 class SegmentosListView(LoginRequiredMixin, ListView):
     """Vista de listado de segmentos de plantillas"""
     model = SegmentoPlantilla
-    template_name = 'generador_actas/segmentos_lista.html'
+    template_name = 'generador_actas/lista_segmentos.html'
     context_object_name = 'segmentos'
     paginate_by = 20
     
@@ -778,7 +778,7 @@ class SegmentosListView(LoginRequiredMixin, ListView):
 class SegmentoDetailView(LoginRequiredMixin, DetailView):
     """Vista de detalle de segmento"""
     model = SegmentoPlantilla
-    template_name = 'generador_actas/segmento_detail.html'
+    template_name = 'generador_actas/segmentos/detalle.html'
     context_object_name = 'segmento'
     
     def get_context_data(self, **kwargs):
@@ -790,7 +790,7 @@ class SegmentoDetailView(LoginRequiredMixin, DetailView):
             'breadcrumb': [
                 {'name': 'Inicio', 'url': '/'},
                 {'name': 'Generador IA', 'url': reverse('generador_actas:dashboard')},
-                {'name': 'Segmentos', 'url': reverse('generador_actas:segmentos_lista')},
+                {'name': 'Segmentos', 'url': reverse('generador_actas:lista_segmentos')},
                 {'name': segmento.nombre, 'active': True}
             ],
             'plantillas_usando': ConfiguracionSegmento.objects.filter(segmento=segmento).count()
@@ -801,9 +801,9 @@ class SegmentoDetailView(LoginRequiredMixin, DetailView):
 class CrearSegmentoView(LoginRequiredMixin, CreateView):
     """Vista para crear un nuevo segmento"""
     model = SegmentoPlantilla
-    template_name = 'generador_actas/segmento_form.html'
+    template_name = 'generador_actas/segmentos/crear.html'
     fields = ['codigo', 'nombre', 'descripcion', 'categoria', 'tipo', 'prompt_ia', 'estructura_json', 'componentes', 'parametros_entrada']
-    success_url = reverse_lazy('generador_actas:segmentos_lista')
+    success_url = reverse_lazy('generador_actas:lista_segmentos')
     
     def form_valid(self, form):
         form.instance.usuario_creacion = self.request.user
@@ -817,7 +817,7 @@ class CrearSegmentoView(LoginRequiredMixin, CreateView):
             'breadcrumb': [
                 {'name': 'Inicio', 'url': '/'},
                 {'name': 'Generador IA', 'url': reverse('generador_actas:dashboard')},
-                {'name': 'Segmentos', 'url': reverse('generador_actas:segmentos_lista')},
+                {'name': 'Segmentos', 'url': reverse('generador_actas:lista_segmentos')},
                 {'name': 'Crear', 'active': True}
             ],
             'form_title': 'Crear Nuevo Segmento',
@@ -829,9 +829,9 @@ class CrearSegmentoView(LoginRequiredMixin, CreateView):
 class EditarSegmentoView(LoginRequiredMixin, UpdateView):
     """Vista para editar un segmento"""
     model = SegmentoPlantilla
-    template_name = 'generador_actas/segmento_form.html'
+    template_name = 'generador_actas/segmentos/crear.html'
     fields = ['codigo', 'nombre', 'descripcion', 'categoria', 'tipo', 'prompt_ia', 'estructura_json', 'componentes', 'parametros_entrada']
-    success_url = reverse_lazy('generador_actas:segmentos_lista')
+    success_url = reverse_lazy('generador_actas:lista_segmentos')
     
     def form_valid(self, form):
         messages.success(self.request, f'Segmento "{form.instance.nombre}" actualizado exitosamente.')
@@ -845,7 +845,7 @@ class EditarSegmentoView(LoginRequiredMixin, UpdateView):
             'breadcrumb': [
                 {'name': 'Inicio', 'url': '/'},
                 {'name': 'Generador IA', 'url': reverse('generador_actas:dashboard')},
-                {'name': 'Segmentos', 'url': reverse('generador_actas:segmentos_lista')},
+                {'name': 'Segmentos', 'url': reverse('generador_actas:lista_segmentos')},
                 {'name': 'Editar', 'active': True}
             ],
             'form_title': f'Editar Segmento: {segmento.nombre}',
@@ -858,7 +858,7 @@ class EliminarSegmentoView(LoginRequiredMixin, DeleteView):
     """Vista para eliminar un segmento"""
     model = SegmentoPlantilla
     template_name = 'generador_actas/segmento_confirm_delete.html'
-    success_url = reverse_lazy('generador_actas:segmentos_lista')
+    success_url = reverse_lazy('generador_actas:lista_segmentos')
     
     def delete(self, request, *args, **kwargs):
         segmento = self.get_object()
@@ -1980,3 +1980,499 @@ def test_proveedor_ia(request):
     }
     
     return render(request, 'generador_actas/proveedores_ia/test.html', context)
+
+
+# ================== VISTAS PARA SEGMENTOS DE PLANTILLA ==================
+
+@login_required
+def segmentos_dashboard(request):
+    """Dashboard principal de segmentos de plantilla"""
+    try:
+        # Métricas básicas
+        total_segmentos = SegmentoPlantilla.objects.count()
+        segmentos_activos = SegmentoPlantilla.objects.filter(activo=True).count()
+        segmentos_dinamicos = SegmentoPlantilla.objects.filter(tipo__in=['dinamico', 'hibrido']).count()
+        segmentos_estaticos = SegmentoPlantilla.objects.filter(tipo='estatico').count()
+        
+        # Métricas de uso
+        total_usos = SegmentoPlantilla.objects.aggregate(
+            total=Sum('total_usos')
+        )['total'] or 0
+        
+        segmentos_con_uso = SegmentoPlantilla.objects.filter(total_usos__gt=0).count()
+        segmentos_sin_uso = total_segmentos - segmentos_con_uso
+        
+        # Promedio de tiempo de procesamiento
+        tiempo_promedio_global = SegmentoPlantilla.objects.filter(
+            tiempo_promedio_procesamiento__gt=0
+        ).aggregate(
+            promedio=Sum('tiempo_promedio_procesamiento') / Count('id')
+        )['promedio'] or 0
+        
+        # Distribución por categoría
+        distribucion_categoria = SegmentoPlantilla.objects.values('categoria').annotate(
+            total=Count('id'),
+            activos=Count('id', filter=Q(activo=True)),
+            usos=Sum('total_usos')
+        ).order_by('-total')
+        
+        # Distribución por tipo
+        distribucion_tipo = SegmentoPlantilla.objects.values('tipo').annotate(
+            total=Count('id'),
+            activos=Count('id', filter=Q(activo=True)),
+            usos=Sum('total_usos')
+        ).order_by('-total')
+        
+        # Segmentos más usados
+        segmentos_populares = SegmentoPlantilla.objects.filter(
+            total_usos__gt=0
+        ).order_by('-total_usos')[:10]
+        
+        # Segmentos recientes
+        segmentos_recientes = SegmentoPlantilla.objects.select_related(
+            'proveedor_ia', 'usuario_creacion'
+        ).order_by('-fecha_creacion')[:10]
+        
+        # Segmentos problemáticos (con errores recientes)
+        segmentos_con_errores = SegmentoPlantilla.objects.filter(
+            ultimo_resultado_prueba__icontains='error'
+        ).order_by('-ultima_prueba')[:5]
+        
+        context = {
+            'metricas': {
+                'total_segmentos': total_segmentos,
+                'segmentos_activos': segmentos_activos,
+                'segmentos_dinamicos': segmentos_dinamicos,
+                'segmentos_estaticos': segmentos_estaticos,
+                'total_usos': total_usos,
+                'segmentos_con_uso': segmentos_con_uso,
+                'segmentos_sin_uso': segmentos_sin_uso,
+                'tiempo_promedio_global': round(tiempo_promedio_global, 2),
+            },
+            'distribucion_categoria': distribucion_categoria,
+            'distribucion_tipo': distribucion_tipo,
+            'segmentos_populares': segmentos_populares,
+            'segmentos_recientes': segmentos_recientes,
+            'segmentos_con_errores': segmentos_con_errores,
+            'page_title': 'Dashboard de Segmentos',
+            'breadcrumbs': [
+                {'title': 'Generador Actas', 'url': reverse('generador_actas:dashboard')},
+                {'title': 'Segmentos', 'url': ''}
+            ]
+        }
+        
+        return render(request, 'generador_actas/segmentos/dashboard.html', context)
+        
+    except Exception as e:
+        logger.error(f"Error en dashboard_segmentos: {str(e)}")
+        messages.error(request, "Error al cargar el dashboard de segmentos")
+        return redirect('generador_actas:dashboard')
+
+
+@login_required 
+def lista_segmentos(request):
+    """Lista de segmentos con filtros y paginación"""
+    from .forms import SegmentoFiltroForm
+    
+    try:
+        form = SegmentoFiltroForm(request.GET)
+        segmentos_qs = SegmentoPlantilla.objects.select_related(
+            'proveedor_ia', 'usuario_creacion'
+        )
+        
+        # Aplicar filtros si el formulario es válido
+        if form.is_valid():
+            # Filtro de búsqueda
+            buscar = form.cleaned_data.get('buscar')
+            if buscar:
+                buscar_normalizado = normalizar_busqueda(buscar)
+                segmentos_qs = segmentos_qs.filter(
+                    Q(nombre__icontains=buscar_normalizado) |
+                    Q(codigo__icontains=buscar_normalizado) |
+                    Q(descripcion__icontains=buscar_normalizado)
+                )
+            
+            # Filtro por categoría
+            categoria = form.cleaned_data.get('categoria')
+            if categoria:
+                segmentos_qs = segmentos_qs.filter(categoria=categoria)
+            
+            # Filtro por tipo
+            tipo = form.cleaned_data.get('tipo')
+            if tipo:
+                segmentos_qs = segmentos_qs.filter(tipo=tipo)
+            
+            # Filtro por proveedor IA
+            proveedor_ia = form.cleaned_data.get('proveedor_ia')
+            if proveedor_ia:
+                segmentos_qs = segmentos_qs.filter(proveedor_ia=proveedor_ia)
+            
+            # Filtro por estado activo
+            activo = form.cleaned_data.get('activo')
+            if activo == 'true':
+                segmentos_qs = segmentos_qs.filter(activo=True)
+            elif activo == 'false':
+                segmentos_qs = segmentos_qs.filter(activo=False)
+            
+            # Filtro por reutilizable
+            reutilizable = form.cleaned_data.get('reutilizable')
+            if reutilizable == 'true':
+                segmentos_qs = segmentos_qs.filter(reutilizable=True)
+            elif reutilizable == 'false':
+                segmentos_qs = segmentos_qs.filter(reutilizable=False)
+            
+            # Filtro por obligatorio
+            obligatorio = form.cleaned_data.get('obligatorio')
+            if obligatorio == 'true':
+                segmentos_qs = segmentos_qs.filter(obligatorio=True)
+            elif obligatorio == 'false':
+                segmentos_qs = segmentos_qs.filter(obligatorio=False)
+            
+            # Ordenamiento
+            ordenar_por = form.cleaned_data.get('ordenar_por', '-fecha_actualizacion')
+            segmentos_qs = segmentos_qs.order_by(ordenar_por)
+        else:
+            segmentos_qs = segmentos_qs.order_by('-fecha_actualizacion')
+        
+        # Paginación
+        paginator = Paginator(segmentos_qs, 20)
+        page = request.GET.get('page')
+        
+        try:
+            segmentos = paginator.page(page)
+        except PageNotAnInteger:
+            segmentos = paginator.page(1)
+        except EmptyPage:
+            segmentos = paginator.page(paginator.num_pages)
+        
+        # Estadísticas rápidas para la vista
+        total_filtrados = segmentos_qs.count()
+        
+        context = {
+            'segmentos': segmentos,
+            'form': form,
+            'total_filtrados': total_filtrados,
+            'page_title': 'Segmentos de Plantilla',
+            'breadcrumbs': [
+                {'title': 'Generador Actas', 'url': reverse('generador_actas:dashboard')},
+                {'title': 'Segmentos', 'url': reverse('generador_actas:segmentos_dashboard')},
+                {'title': 'Lista', 'url': ''}
+            ]
+        }
+        
+        return render(request, 'generador_actas/segmentos/lista.html', context)
+        
+    except Exception as e:
+        logger.error(f"Error en lista_segmentos: {str(e)}")
+        messages.error(request, "Error al cargar la lista de segmentos")
+        return redirect('generador_actas:segmentos_dashboard')
+
+
+@login_required
+def crear_segmento(request):
+    """Crear nuevo segmento de plantilla"""
+    from .forms import SegmentoPlantillaForm
+    
+    if request.method == 'POST':
+        form = SegmentoPlantillaForm(request.POST)
+        if form.is_valid():
+            try:
+                with transaction.atomic():
+                    segmento = form.save(commit=False)
+                    segmento.usuario_creacion = request.user
+                    segmento.save()
+                    
+                    messages.success(request, f"Segmento '{segmento.nombre}' creado exitosamente")
+                    return redirect('generador_actas:detalle_segmento', pk=segmento.pk)
+                    
+            except Exception as e:
+                logger.error(f"Error al crear segmento: {str(e)}")
+                messages.error(request, f"Error al crear el segmento: {str(e)}")
+    else:
+        form = SegmentoPlantillaForm()
+    
+    context = {
+        'form': form,
+        'page_title': 'Crear Segmento',
+        'breadcrumbs': [
+            {'title': 'Generador Actas', 'url': reverse('generador_actas:dashboard')},
+            {'title': 'Segmentos', 'url': reverse('generador_actas:segmentos_dashboard')},
+            {'title': 'Crear', 'url': ''}
+        ]
+    }
+    
+    return render(request, 'generador_actas/segmentos/crear.html', context)
+
+
+@login_required
+def detalle_segmento(request, pk):
+    """Ver detalles de un segmento"""
+    segmento = get_object_or_404(SegmentoPlantilla, pk=pk)
+    
+    # Historial de uso reciente (simulado - en el futuro se podría tener una tabla de logs)
+    historial_uso = []
+    
+    context = {
+        'segmento': segmento,
+        'historial_uso': historial_uso,
+        'page_title': f'Segmento: {segmento.nombre}',
+        'breadcrumbs': [
+            {'title': 'Generador Actas', 'url': reverse('generador_actas:dashboard')},
+            {'title': 'Segmentos', 'url': reverse('generador_actas:segmentos_dashboard')},
+            {'title': segmento.nombre, 'url': ''}
+        ]
+    }
+    
+    return render(request, 'generador_actas/segmentos/detalle.html', context)
+
+
+@login_required
+def editar_segmento(request, pk):
+    """Editar segmento existente"""
+    from .forms import SegmentoPlantillaForm
+    
+    segmento = get_object_or_404(SegmentoPlantilla, pk=pk)
+    
+    if request.method == 'POST':
+        form = SegmentoPlantillaForm(request.POST, instance=segmento)
+        if form.is_valid():
+            try:
+                with transaction.atomic():
+                    segmento = form.save()
+                    messages.success(request, f"Segmento '{segmento.nombre}' actualizado exitosamente")
+                    return redirect('generador_actas:detalle_segmento', pk=segmento.pk)
+                    
+            except Exception as e:
+                logger.error(f"Error al actualizar segmento: {str(e)}")
+                messages.error(request, f"Error al actualizar el segmento: {str(e)}")
+    else:
+        form = SegmentoPlantillaForm(instance=segmento)
+    
+    context = {
+        'form': form,
+        'segmento': segmento,
+        'page_title': f'Editar: {segmento.nombre}',
+        'breadcrumbs': [
+            {'title': 'Generador Actas', 'url': reverse('generador_actas:dashboard')},
+            {'title': 'Segmentos', 'url': reverse('generador_actas:segmentos_dashboard')},
+            {'title': segmento.nombre, 'url': reverse('generador_actas:detalle_segmento', kwargs={'pk': segmento.pk})},
+            {'title': 'Editar', 'url': ''}
+        ]
+    }
+    
+    return render(request, 'generador_actas/segmentos/editar.html', context)
+
+
+@login_required
+def eliminar_segmento(request, pk):
+    """Eliminar segmento (con confirmación)"""
+    segmento = get_object_or_404(SegmentoPlantilla, pk=pk)
+    
+    if request.method == 'POST':
+        try:
+            nombre = segmento.nombre
+            segmento.delete()
+            messages.success(request, f"Segmento '{nombre}' eliminado exitosamente")
+            return redirect('generador_actas:lista_segmentos')
+            
+        except Exception as e:
+            logger.error(f"Error al eliminar segmento: {str(e)}")
+            messages.error(request, f"Error al eliminar el segmento: {str(e)}")
+            return redirect('generador_actas:detalle_segmento', pk=pk)
+    
+    context = {
+        'segmento': segmento,
+        'page_title': f'Eliminar: {segmento.nombre}',
+        'breadcrumbs': [
+            {'title': 'Generador Actas', 'url': reverse('generador_actas:dashboard')},
+            {'title': 'Segmentos', 'url': reverse('generador_actas:segmentos_dashboard')},
+            {'title': segmento.nombre, 'url': reverse('generador_actas:detalle_segmento', kwargs={'pk': segmento.pk})},
+            {'title': 'Eliminar', 'url': ''}
+        ]
+    }
+    
+    return render(request, 'generador_actas/segmentos/eliminar.html', context)
+
+
+@login_required
+def probar_segmento(request):
+    """Interface para probar segmentos"""
+    from .forms import PruebaSegmentoForm
+    
+    resultado = None
+    
+    if request.method == 'POST':
+        form = PruebaSegmentoForm(request.POST)
+        if form.is_valid():
+            try:
+                segmento = form.cleaned_data['segmento']
+                datos_contexto = form.cleaned_data['datos_contexto']
+                usar_celery = form.cleaned_data['usar_celery']
+                incluir_metricas = form.cleaned_data['incluir_metricas']
+                
+                # Simular procesamiento del segmento
+                import time
+                tiempo_inicio = time.time()
+                
+                if segmento.es_dinamico:
+                    # Para segmentos dinámicos, simular llamada a IA
+                    json_completo = segmento.generar_json_completo(datos_contexto)
+                    
+                    if usar_celery:
+                        # TODO: Implementar tarea Celery
+                        resultado = {
+                            'tipo': 'celery',
+                            'mensaje': 'Tarea enviada a Celery para procesamiento asíncrono',
+                            'task_id': 'simulated-task-id-123'
+                        }
+                    else:
+                        # Procesamiento directo simulado
+                        resultado = {
+                            'tipo': 'directo',
+                            'segmento': segmento.nombre,
+                            'json_enviado': json_completo,
+                            'respuesta_simulada': f"Contenido generado para {segmento.categoria}: Lorem ipsum content...",
+                            'tiempo_procesamiento': round(time.time() - tiempo_inicio, 3)
+                        }
+                else:
+                    # Para segmentos estáticos, usar las variables directamente
+                    resultado = {
+                        'tipo': 'estatico',
+                        'segmento': segmento.nombre,
+                        'variables_aplicadas': datos_contexto,
+                        'contenido_final': f"Contenido estático con variables: {datos_contexto}",
+                        'tiempo_procesamiento': round(time.time() - tiempo_inicio, 3)
+                    }
+                
+                # Actualizar métricas si está habilitado
+                if incluir_metricas and 'tiempo_procesamiento' in resultado:
+                    segmento.actualizar_metricas_uso(
+                        tiempo_procesamiento=resultado['tiempo_procesamiento'],
+                        resultado_prueba=json.dumps(resultado, default=str)
+                    )
+                
+                messages.success(request, "Prueba de segmento completada exitosamente")
+                
+            except Exception as e:
+                logger.error(f"Error al probar segmento: {str(e)}")
+                messages.error(request, f"Error al probar el segmento: {str(e)}")
+                resultado = {
+                    'tipo': 'error',
+                    'error': str(e)
+                }
+    else:
+        form = PruebaSegmentoForm()
+    
+    context = {
+        'form': form,
+        'resultado': resultado,
+        'page_title': 'Probar Segmentos',
+        'breadcrumbs': [
+            {'title': 'Generador Actas', 'url': reverse('generador_actas:dashboard')},
+            {'title': 'Segmentos', 'url': reverse('generador_actas:segmentos_dashboard')},
+            {'title': 'Probar', 'url': ''}
+        ]
+    }
+    
+    return render(request, 'generador_actas/segmentos/probar.html', context)
+
+
+@require_http_methods(["POST"])
+@csrf_exempt
+@login_required
+def api_probar_segmento(request):
+    """API endpoint para probar segmentos vía AJAX"""
+    try:
+        data = json.loads(request.body)
+        segmento_id = data.get('segmento_id')
+        datos_contexto = data.get('datos_contexto', {})
+        usar_celery = data.get('usar_celery', False)
+        
+        if not segmento_id:
+            return JsonResponse({'error': 'ID de segmento requerido'}, status=400)
+        
+        segmento = SegmentoPlantilla.objects.get(pk=segmento_id, activo=True)
+        
+        # Procesamiento simulado
+        import time
+        tiempo_inicio = time.time()
+        
+        if segmento.es_dinamico:
+            json_completo = segmento.generar_json_completo(datos_contexto)
+            
+            if usar_celery:
+                # Usar tarea Celery real
+                from .tasks import procesar_segmento_dinamico
+                task = procesar_segmento_dinamico.apply_async(
+                    args=[segmento.id, datos_contexto, {'usar_celery': True}]
+                )
+                resultado = {
+                    'success': True,
+                    'tipo': 'celery',
+                    'task_id': task.id,
+                    'mensaje': 'Procesamiento iniciado en segundo plano',
+                    'status_url': f'/api/segmentos/task-status/{task.id}/'
+                }
+            else:
+                resultado = {
+                    'success': True,
+                    'tipo': 'directo',
+                    'contenido': f"Contenido dinámico generado para {segmento.nombre}",
+                    'tiempo_procesamiento': round(time.time() - tiempo_inicio, 3),
+                    'json_usado': json_completo
+                }
+        else:
+            resultado = {
+                'success': True,
+                'tipo': 'estatico',
+                'contenido': f"Contenido estático de {segmento.nombre}",
+                'variables_aplicadas': datos_contexto,
+                'tiempo_procesamiento': round(time.time() - tiempo_inicio, 3)
+            }
+        
+        # Actualizar métricas
+        if 'tiempo_procesamiento' in resultado:
+            segmento.actualizar_metricas_uso(
+                tiempo_procesamiento=resultado['tiempo_procesamiento'],
+                resultado_prueba=json.dumps(resultado, default=str)
+            )
+        
+        return JsonResponse(resultado)
+        
+    except SegmentoPlantilla.DoesNotExist:
+        return JsonResponse({'error': 'Segmento no encontrado'}, status=404)
+    except json.JSONDecodeError:
+        return JsonResponse({'error': 'JSON inválido'}, status=400)
+    except Exception as e:
+        logger.error(f"Error en api_probar_segmento: {str(e)}")
+        return JsonResponse({'error': str(e)}, status=500)
+
+
+@login_required
+def asistente_variables(request):
+    """Asistente para configurar variables de segmentos"""
+    from .forms import VariablesSegmentoForm
+    
+    variables_json = None
+    
+    if request.method == 'POST':
+        form = VariablesSegmentoForm(request.POST)
+        if form.is_valid():
+            variables_json = form.get_variables_json()
+            messages.success(request, "Variables configuradas exitosamente")
+    else:
+        form = VariablesSegmentoForm()
+    
+    context = {
+        'form': form,
+        'variables_json': variables_json,
+        'variables_comunes': SegmentoPlantilla.obtener_variables_comunes(),
+        'page_title': 'Asistente de Variables',
+        'breadcrumbs': [
+            {'title': 'Generador Actas', 'url': reverse('generador_actas:dashboard')},
+            {'title': 'Segmentos', 'url': reverse('generador_actas:segmentos_dashboard')},
+            {'title': 'Asistente Variables', 'url': ''}
+        ]
+    }
+    
+    return render(request, 'generador_actas/segmentos/asistente_variables.html', context)

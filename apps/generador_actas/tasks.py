@@ -739,3 +739,354 @@ def procesar_resumen_acta_task(self, proveedor_id: int, acta_contenido: str, tip
     """
     # TODO: Implementar para módulos futuros de resúmenes
     pass
+
+
+# ==================== TAREAS DE SEGMENTOS ====================
+
+@shared_task(bind=True, max_retries=3, default_retry_delay=60)
+def procesar_segmento_dinamico(self, segmento_id: int, datos_contexto: dict, 
+                              configuracion: dict = None) -> dict:
+    """
+    Procesa un segmento dinámico usando IA de forma asíncrona
+    
+    Args:
+        segmento_id: ID del segmento a procesar
+        datos_contexto: Datos de contexto para el procesamiento
+        configuracion: Configuración adicional para el procesamiento
+        
+    Returns:
+        Dict con el resultado del procesamiento
+    """
+    import time
+    import logging
+    from apps.generador_actas.services import GeneradorActasService
+    
+    logger = logging.getLogger(__name__)
+    tiempo_inicio = time.time()
+    
+    try:
+        # Obtener el segmento
+        segmento = SegmentoPlantilla.objects.select_related('proveedor_ia').get(
+            id=segmento_id
+        )
+        
+        if not segmento.activo:
+            raise Exception(f"El segmento {segmento.nombre} está inactivo")
+        
+        if not segmento.es_dinamico:
+            raise Exception(f"El segmento {segmento.nombre} no es dinámico")
+        
+        if not segmento.proveedor_ia:
+            raise Exception(f"El segmento {segmento.nombre} no tiene proveedor IA configurado")
+        
+        logger.info(f"Iniciando procesamiento de segmento {segmento.nombre} (ID: {segmento_id})")
+        
+        # Generar JSON completo con variables
+        json_completo = segmento.generar_json_completo(datos_contexto)
+        
+        # Configurar parámetros del proveedor
+        proveedor = segmento.proveedor_ia
+        if not proveedor.activo:
+            raise Exception(f"El proveedor IA {proveedor.nombre} está inactivo")
+        
+        # Preparar el prompt
+        prompt_final = segmento.prompt_ia
+        if segmento.variables_personalizadas:
+            # Aplicar variables personalizadas al prompt
+            for variable, valor in segmento.variables_personalizadas.items():
+                if isinstance(valor, dict) and 'valor' in valor:
+                    prompt_final = prompt_final.replace(f"{{{{{variable}}}}}", str(valor['valor']))
+                else:
+                    prompt_final = prompt_final.replace(f"{{{{{variable}}}}}", str(valor))
+        
+        # Aplicar variables de contexto
+        for variable, valor in datos_contexto.items():
+            prompt_final = prompt_final.replace(f"{{{{{variable}}}}}", str(valor))
+        
+        # Configurar parámetros de la llamada IA
+        parametros_ia = {
+            'prompt': prompt_final,
+            'max_tokens': configuracion.get('max_tokens', 1500) if configuracion else 1500,
+            'temperature': configuracion.get('temperature', 0.7) if configuracion else 0.7,
+        }
+        
+        # Procesar con el proveedor IA (simulado por ahora)
+        resultado_ia = _simular_procesamiento_ia(proveedor, parametros_ia, segmento)
+        
+        # Procesar el resultado
+        contenido_generado = resultado_ia.get('contenido', '')
+        tokens_usados = resultado_ia.get('tokens_usados', 0)
+        costo_aproximado = resultado_ia.get('costo', 0)
+        
+        tiempo_procesamiento = time.time() - tiempo_inicio
+        
+        # Actualizar métricas del segmento
+        with transaction.atomic():
+            segmento.actualizar_metricas_uso(
+                tiempo_procesamiento=tiempo_procesamiento,
+                resultado_prueba=json.dumps({
+                    'success': True,
+                    'tokens_usados': tokens_usados,
+                    'costo': costo_aproximado,
+                    'timestamp': timezone.now().isoformat()
+                }, default=str)
+            )
+        
+        resultado = {
+            'success': True,
+            'segmento_id': segmento_id,
+            'segmento_nombre': segmento.nombre,
+            'contenido': contenido_generado,
+            'tiempo_procesamiento': tiempo_procesamiento,
+            'tokens_usados': tokens_usados,
+            'costo_aproximado': costo_aproximado,
+            'proveedor_usado': proveedor.nombre,
+            'json_usado': json_completo,
+            'task_id': self.request.id,
+            'timestamp': timezone.now().isoformat()
+        }
+        
+        logger.info(f"Segmento {segmento.nombre} procesado exitosamente en {tiempo_procesamiento:.2f}s")
+        return resultado
+        
+    except SegmentoPlantilla.DoesNotExist:
+        error_msg = f"Segmento con ID {segmento_id} no encontrado"
+        logger.error(error_msg)
+        return {
+            'success': False,
+            'error': error_msg,
+            'error_type': 'segmento_not_found',
+            'task_id': self.request.id
+        }
+        
+    except Exception as exc:
+        error_msg = f"Error procesando segmento {segmento_id}: {str(exc)}"
+        logger.error(error_msg)
+        
+        # Intentar retry si no hemos agotado los intentos
+        if self.request.retries < self.max_retries:
+            logger.info(f"Reintentando procesamiento de segmento {segmento_id} (intento {self.request.retries + 1})")
+            raise self.retry(exc=exc, countdown=60 * (self.request.retries + 1))
+        
+        # Actualizar métricas con el error
+        try:
+            segmento = SegmentoPlantilla.objects.get(id=segmento_id)
+            segmento.actualizar_metricas_uso(
+                tiempo_procesamiento=time.time() - tiempo_inicio,
+                resultado_prueba=json.dumps({
+                    'success': False,
+                    'error': error_msg,
+                    'retries': self.request.retries,
+                    'timestamp': timezone.now().isoformat()
+                }, default=str)
+            )
+        except:
+            pass
+        
+        return {
+            'success': False,
+            'error': error_msg,
+            'error_type': 'processing_error',
+            'retries': self.request.retries,
+            'task_id': self.request.id
+        }
+
+
+def _simular_procesamiento_ia(proveedor: ProveedorIA, parametros: dict, 
+                             segmento: SegmentoPlantilla) -> dict:
+    """
+    Simula el procesamiento con IA mientras se implementa la integración real
+    """
+    import time
+    import random
+    
+    # Simular tiempo de procesamiento
+    time.sleep(random.uniform(2, 5))
+    
+    contenido_simulado = f"""
+[CONTENIDO GENERADO POR IA PARA: {segmento.nombre}]
+
+Proveedor: {proveedor.nombre} ({proveedor.tipo})
+Prompt procesado: {parametros['prompt'][:150]}...
+
+Este es contenido generado para el segmento '{segmento.nombre}' 
+usando el proveedor {proveedor.nombre}.
+
+Variables de contexto aplicadas correctamente.
+Estructura JSON respetada.
+Parámetros de configuración utilizados.
+
+[Contenido real sería generado por {proveedor.tipo.upper()}]
+"""
+    
+    tokens_simulados = random.randint(100, 800)
+    costo_simulado = tokens_simulados * 0.002 / 1000  # Precio simulado
+    
+    return {
+        'contenido': contenido_simulado,
+        'tokens_usados': tokens_simulados,
+        'costo': costo_simulado
+    }
+
+
+@shared_task(bind=True)
+def batch_procesar_segmentos(self, configuracion_batch: dict) -> dict:
+    """
+    Procesa múltiples segmentos en lote
+    
+    Args:
+        configuracion_batch: Configuración del lote con segmentos y datos
+        
+    Returns:
+        Dict con resultados del lote
+    """
+    import time
+    import logging
+    
+    logger = logging.getLogger(__name__)
+    tiempo_inicio = time.time()
+    segmentos_config = configuracion_batch.get('segmentos', [])
+    datos_globales = configuracion_batch.get('datos_contexto', {})
+    
+    resultados = []
+    errores = []
+    
+    logger.info(f"Iniciando procesamiento en lote de {len(segmentos_config)} segmentos")
+    
+    for i, config_segmento in enumerate(segmentos_config):
+        try:
+            segmento_id = config_segmento['segmento_id']
+            datos_contexto = {**datos_globales, **config_segmento.get('datos_contexto', {})}
+            configuracion = config_segmento.get('configuracion', {})
+            
+            # Procesar segmento individual
+            resultado = procesar_segmento_dinamico.apply_async(
+                args=[segmento_id, datos_contexto, configuracion]
+            ).get(timeout=300)  # 5 minutos de timeout
+            
+            resultados.append({
+                'segmento_id': segmento_id,
+                'resultado': resultado,
+                'orden': i
+            })
+            
+        except Exception as e:
+            error_info = {
+                'segmento_id': config_segmento.get('segmento_id', 'unknown'),
+                'error': str(e),
+                'orden': i
+            }
+            errores.append(error_info)
+            logger.error(f"Error en segmento {error_info['segmento_id']}: {str(e)}")
+    
+    tiempo_total = time.time() - tiempo_inicio
+    
+    resultado_batch = {
+        'success': len(errores) == 0,
+        'total_segmentos': len(segmentos_config),
+        'exitosos': len(resultados),
+        'fallidos': len(errores),
+        'tiempo_total': tiempo_total,
+        'resultados': resultados,
+        'errores': errores,
+        'task_id': self.request.id,
+        'timestamp': timezone.now().isoformat()
+    }
+    
+    logger.info(f"Lote completado: {len(resultados)} exitosos, {len(errores)} fallidos en {tiempo_total:.2f}s")
+    return resultado_batch
+
+
+@shared_task
+def limpiar_metricas_antiguas_segmentos():
+    """
+    Tarea de mantenimiento para limpiar métricas antiguas de segmentos
+    """
+    import logging
+    
+    logger = logging.getLogger(__name__)
+    
+    try:
+        fecha_limite = timezone.now() - timedelta(days=90)  # 90 días atrás
+        
+        segmentos_actualizados = 0
+        for segmento in SegmentoPlantilla.objects.filter(ultima_prueba__lt=fecha_limite):
+            # Resetear métricas muy antiguas
+            segmento.total_usos = 0
+            segmento.tiempo_promedio_procesamiento = None
+            segmento.ultimo_resultado_prueba = None
+            segmento.save(update_fields=[
+                'total_usos', 'tiempo_promedio_procesamiento', 'ultimo_resultado_prueba'
+            ])
+            segmentos_actualizados += 1
+        
+        logger.info(f"Limpieza de métricas completada: {segmentos_actualizados} segmentos actualizados")
+        
+        return {
+            'success': True,
+            'segmentos_actualizados': segmentos_actualizados,
+            'fecha_limite': fecha_limite.isoformat()
+        }
+        
+    except Exception as e:
+        logger.error(f"Error en limpieza de métricas: {str(e)}")
+        return {
+            'success': False,
+            'error': str(e)
+        }
+
+
+@shared_task
+def generar_reporte_uso_segmentos():
+    """
+    Genera reporte de uso de segmentos para análisis
+    """
+    import logging
+    from django.db.models import Count, Avg, Sum
+    
+    logger = logging.getLogger(__name__)
+    
+    try:
+        # Estadísticas generales
+        stats = SegmentoPlantilla.objects.aggregate(
+            total_segmentos=Count('id'),
+            segmentos_activos=Count('id', filter={'activo': True}),
+            total_usos=Sum('total_usos'),
+            tiempo_promedio_global=Avg('tiempo_promedio_procesamiento')
+        )
+        
+        # Top 10 segmentos más usados
+        top_segmentos = list(SegmentoPlantilla.objects.order_by('-total_usos')[:10].values(
+            'id', 'nombre', 'total_usos', 'tiempo_promedio_procesamiento'
+        ))
+        
+        # Distribución por tipo
+        distribucion_tipo = list(SegmentoPlantilla.objects.values('tipo').annotate(
+            cantidad=Count('id'),
+            usos_totales=Sum('total_usos')
+        ))
+        
+        # Distribución por categoría
+        distribucion_categoria = list(SegmentoPlantilla.objects.values('categoria').annotate(
+            cantidad=Count('id'),
+            usos_totales=Sum('total_usos')
+        ))
+        
+        reporte = {
+            'timestamp': timezone.now().isoformat(),
+            'estadisticas_generales': stats,
+            'top_segmentos': top_segmentos,
+            'distribucion_tipo': distribucion_tipo,
+            'distribucion_categoria': distribucion_categoria,
+            'periodo_analisis': '90_dias'
+        }
+        
+        logger.info("Reporte de uso de segmentos generado exitosamente")
+        return reporte
+        
+    except Exception as e:
+        logger.error(f"Error generando reporte: {str(e)}")
+        return {
+            'success': False,
+            'error': str(e)
+        }

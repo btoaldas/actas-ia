@@ -18,12 +18,15 @@ urlpatterns = [
     path('proveedores/<int:pk>/eliminar/', views.eliminar_proveedor_ia, name='eliminar_proveedor_ia'),
     path('proveedores/test/', views.test_proveedor_ia, name='test_proveedor_ia'),
     
-    # === SEGMENTOS ===
-    path('segmentos/', views.SegmentosListView.as_view(), name='segmentos_lista'),
-    path('segmentos/crear/', views.CrearSegmentoView.as_view(), name='crear_segmento'),
-    path('segmentos/<int:pk>/', views.SegmentoDetailView.as_view(), name='segmento_detail'),
-    path('segmentos/<int:pk>/editar/', views.EditarSegmentoView.as_view(), name='editar_segmento'),
-    path('segmentos/<int:pk>/eliminar/', views.EliminarSegmentoView.as_view(), name='eliminar_segmento'),
+    # === SEGMENTOS DE PLANTILLA ===
+    path('segmentos/', views.segmentos_dashboard, name='segmentos_dashboard'),
+    path('segmentos/lista/', views.lista_segmentos, name='lista_segmentos'),
+    path('segmentos/crear/', views.crear_segmento, name='crear_segmento'),
+    path('segmentos/<int:pk>/', views.detalle_segmento, name='detalle_segmento'),
+    path('segmentos/<int:pk>/editar/', views.editar_segmento, name='editar_segmento'),
+    path('segmentos/<int:pk>/eliminar/', views.eliminar_segmento, name='eliminar_segmento'),
+    path('segmentos/probar/', views.probar_segmento, name='probar_segmento'),
+    path('segmentos/asistente-variables/', views.asistente_variables, name='asistente_variables'),
     
     # === PLANTILLAS ===
     path('plantillas/', views.PlantillasListView.as_view(), name='plantillas_lista'),
@@ -79,6 +82,9 @@ urlpatterns = [
         path('proveedores/progreso-prueba/<str:task_id>/', views.obtener_progreso_prueba, name='api_progreso_prueba'),
         path('proveedores/modelos/<str:tipo_proveedor>/', views.obtener_modelos_proveedor, name='api_modelos_proveedor'),
         path('proveedores/configuracion/<str:tipo_proveedor>/', views.obtener_configuracion_defecto, name='api_configuracion_defecto'),
+        
+        # APIs de segmentos
+        path('segmentos/probar/', views.api_probar_segmento, name='api_probar_segmento'),
         
         # APIs de estadísticas y monitoreo
         path('dashboard/stats/', api_views.api_dashboard_stats, name='api_dashboard_stats'),

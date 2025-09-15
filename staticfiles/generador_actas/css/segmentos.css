@@ -1,0 +1,277 @@
+/* Estilos para el módulo de Segmentos de Actas */
+
+/* Dashboard de Segmentos */
+.segment-metric-card {
+    transition: transform 0.2s ease;
+}
+
+.segment-metric-card:hover {
+    transform: translateY(-2px);
+}
+
+.metric-number {
+    font-size: 2.5rem;
+    font-weight: bold;
+}
+
+.metric-label {
+    font-size: 0.9rem;
+    color: #6c757d;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Lista de Segmentos */
+.segment-type-badge.dinamico {
+    background-color: #007bff;
+    color: white;
+}
+
+.segment-type-badge.estatico {
+    background-color: #6c757d;
+    color: white;
+}
+
+.segment-status.activo {
+    color: #28a745;
+}
+
+.segment-status.inactivo {
+    color: #dc3545;
+}
+
+.segment-usage-stats {
+    font-size: 0.85rem;
+    color: #6c757d;
+}
+
+/* Formularios de Segmentos */
+.campo-default {
+    display: none;
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 0.25rem;
+    padding: 0.75rem;
+    margin-top: 0.5rem;
+}
+
+.campo-default.visible {
+    display: block;
+}
+
+.json-editor {
+    font-family: 'Courier New', monospace;
+    font-size: 0.9rem;
+}
+
+/* Validación de JSON */
+.json-valid {
+    border-color: #28a745;
+    background-color: #f8fff9;
+}
+
+.json-invalid {
+    border-color: #dc3545;
+    background-color: #fff8f8;
+}
+
+/* Botones de Acción */
+.btn-copy-json {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    border: none;
+    background: rgba(255, 255, 255, 0.8);
+    backdrop-filter: blur(2px);
+}
+
+.btn-copy-json:hover {
+    background: rgba(255, 255, 255, 1);
+}
+
+/* Prueba de Segmentos */
+.test-result-success {
+    background-color: #d4edda;
+    border-color: #c3e6cb;
+    color: #155724;
+    padding: 1rem;
+    border-radius: 0.25rem;
+    border: 1px solid;
+}
+
+.test-result-error {
+    background-color: #f8d7da;
+    border-color: #f5c6cb;
+    color: #721c24;
+    padding: 1rem;
+    border-radius: 0.25rem;
+    border: 1px solid;
+}
+
+.test-result-warning {
+    background-color: #fff3cd;
+    border-color: #ffeaa7;
+    color: #856404;
+    padding: 1rem;
+    border-radius: 0.25rem;
+    border: 1px solid;
+}
+
+/* Variables del Segmento */
+.variable-item {
+    background-color: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 0.25rem;
+    padding: 0.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.variable-name {
+    font-weight: bold;
+    color: #495057;
+}
+
+.variable-value {
+    color: #6c757d;
+    font-style: italic;
+}
+
+/* Asistente de Variables */
+.border-left-primary {
+    border-left: 3px solid #007bff !important;
+}
+
+.variable-config-card {
+    transition: all 0.3s ease;
+}
+
+.variable-config-card.selected {
+    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+    border-color: #007bff;
+}
+
+/* Filtros */
+.filter-section {
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 0.25rem;
+    padding: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.filter-title {
+    margin-bottom: 1rem;
+    color: #495057;
+    font-weight: 600;
+}
+
+.filter-clear-btn {
+    font-size: 0.85rem;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .metric-number {
+        font-size: 1.8rem;
+    }
+    
+    .segment-actions {
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
+    }
+    
+    .btn-copy-json {
+        position: relative;
+        top: auto;
+        right: auto;
+        margin-top: 0.5rem;
+    }
+}
+
+/* Estados de Carga */
+.loading-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(255, 255, 255, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.spinner-segment {
+    width: 3rem;
+    height: 3rem;
+    border: 0.3em solid rgba(0, 123, 255, 0.2);
+    border-radius: 50%;
+    border-top-color: #007bff;
+    animation: spin 1s ease-in-out infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* Collapse/Expand Icons */
+.card-tools .btn-tool {
+    background: transparent;
+    border: none;
+    color: #6c757d;
+    padding: 0.25rem 0.5rem;
+}
+
+.card-tools .btn-tool:hover {
+    color: #495057;
+}
+
+/* JSON Preview */
+.json-preview {
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 0.25rem;
+    padding: 1rem;
+    font-family: 'Courier New', monospace;
+    font-size: 0.85rem;
+    white-space: pre-wrap;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+/* Breadcrumbs Fix */
+.breadcrumb {
+    display: flex;
+    flex-wrap: wrap;
+    padding: 0.75rem 1rem;
+    margin-bottom: 1rem;
+    list-style: none;
+    background-color: #e9ecef;
+    border-radius: 0.25rem;
+}
+
+.breadcrumb-item + .breadcrumb-item {
+    padding-left: 0.5rem;
+}
+
+.breadcrumb-item + .breadcrumb-item::before {
+    display: inline-block;
+    padding-right: 0.5rem;
+    color: #6c757d;
+    content: "/";
+}
+
+/* Accesibilidad */
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}

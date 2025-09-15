@@ -1,0 +1,357 @@
+{% extends "layouts/base.html" %}
+{% load static %}
+
+{% block title %}{{ page_title }}{% endblock title %}
+
+{% block stylesheets %}
+    <link rel="stylesheet" href="{% static 'generador_actas/css/segmentos.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="content-wrapper">
+    <!-- Content Header -->
+    <div class="content-header">
+        <div class="container-fluid">
+            <div class="row mb-2">
+                <div class="col-sm-6">
+                    <h1>🪄 {{ page_title }}</h1>
+                </div>
+                <div class="col-sm-6">
+                    <ol class="breadcrumb float-sm-right">
+                        {% for item in breadcrumbs %}
+                            {% if item.url %}
+                                <li class="breadcrumb-item">
+                                    <a href="{{ item.url }}">{{ item.title }}</a>
+                                </li>
+                            {% else %}
+                                <li class="breadcrumb-item active">{{ item.title }}</li>
+                            {% endif %}
+                        {% endfor %}
+                    </ol>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main content -->
+    <section class="content">
+        <div class="container-fluid">
+            
+            <div class="row">
+                <!-- Formulario del Asistente -->
+                <div class="col-md-8">
+                    <div class="card card-primary">
+                        <div class="card-header">
+                            <h3 class="card-title">
+                                <i class="fas fa-magic"></i> Configurar Variables de Segmento
+                            </h3>
+                        </div>
+                        <form method="post" id="formAsistente">
+                            {% csrf_token %}
+                            <div class="card-body">
+                                <div class="alert alert-info">
+                                    <h6><i class="fas fa-lightbulb"></i> ¿Qué hace este asistente?</h6>
+                                    <p>Te ayuda a configurar las variables personalizadas para tus segmentos de forma visual y fácil. 
+                                       Selecciona las variables que necesitas y define valores por defecto.</p>
+                                </div>
+                                
+                                <h5>Variables Comunes Disponibles</h5>
+                                <p class="text-muted">Selecciona las variables que deseas incluir en tu segmento:</p>
+                                
+                                <div class="row">
+                                    {% for field in form %}
+                                        {% if field.name|slice:":8" == "incluir_" %}
+                                            {% with field_name=field.name|slice:"8:" %}
+                                            <div class="col-md-6 mb-4">
+                                                <div class="card border-left-primary">
+                                                    <div class="card-body p-3">
+                                                        <div class="form-check mb-2">
+                                                            {{ field }}
+                                                            {{ field.label_tag }}
+                                                        </div>
+                                                        <small class="text-muted">{{ field.help_text }}</small>
+                                                        
+                                                        <!-- Campo de valor por defecto correspondiente -->
+                                                        {% for default_field in form %}
+                                                            {% if default_field.name == "default_"|add:field_name %}
+                                                            <div class="mt-2 campo-default" data-for="{{ field.auto_id }}" style="display: none;">
+                                                                {{ default_field.label_tag }}
+                                                                {{ default_field }}
+                                                                {% if default_field.help_text %}
+                                                                <small class="form-text text-muted">{{ default_field.help_text }}</small>
+                                                                {% endif %}
+                                                            </div>
+                                                            {% endif %}
+                                                        {% endfor %}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            {% endwith %}
+                                        {% endif %}
+                                    {% endfor %}
+                                </div>
+                                
+                                <hr>
+                                
+                                <h5>Variables Adicionales</h5>
+                                <p class="text-muted">Define variables personalizadas adicionales en formato JSON:</p>
+                                
+                                <div class="form-group">
+                                    {{ form.variables_adicionales.label_tag }}
+                                    {{ form.variables_adicionales }}
+                                    {% if form.variables_adicionales.errors %}
+                                        <div class="text-danger">{{ form.variables_adicionales.errors }}</div>
+                                    {% endif %}
+                                    <small class="form-text text-muted">{{ form.variables_adicionales.help_text }}</small>
+                                </div>
+                            </div>
+                            
+                            <div class="card-footer">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-magic"></i> Generar JSON de Variables
+                                </button>
+                                <button type="button" class="btn btn-secondary" id="btnLimpiar">
+                                    <i class="fas fa-times"></i> Limpiar Todo
+                                </button>
+                                <button type="button" class="btn btn-info" id="btnSeleccionarTodo">
+                                    <i class="fas fa-check-double"></i> Seleccionar Todo
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+                
+                <!-- Panel de Resultado -->
+                <div class="col-md-4">
+                    {% if variables_json %}
+                    <div class="card card-success">
+                        <div class="card-header">
+                            <h3 class="card-title">
+                                <i class="fas fa-check-circle"></i> JSON Generado
+                            </h3>
+                        </div>
+                        <div class="card-body">
+                            <p class="text-success">¡Variables configuradas exitosamente!</p>
+                            
+                            <h6>JSON para Variables Personalizadas:</h6>
+                            <div class="bg-light p-3 position-relative">
+                                <pre id="jsonResultado">{{ variables_json|pprint }}</pre>
+                                <button type="button" class="btn btn-sm btn-outline-primary position-absolute" 
+                                        style="top: 5px; right: 5px;" id="btnCopiar">
+                                    <i class="fas fa-copy"></i>
+                                </button>
+                            </div>
+                            
+                            <div class="mt-3">
+                                <h6>¿Cómo usar este JSON?</h6>
+                                <ol class="small">
+                                    <li>Copia el JSON generado</li>
+                                    <li>Ve al formulario de crear/editar segmento</li>
+                                    <li>Pega el JSON en el campo "Variables Personalizadas"</li>
+                                    <li>Guarda el segmento</li>
+                                </ol>
+                            </div>
+                        </div>
+                    </div>
+                    {% else %}
+                    <div class="card card-info">
+                        <div class="card-header">
+                            <h3 class="card-title">
+                                <i class="fas fa-info-circle"></i> Instrucciones
+                            </h3>
+                        </div>
+                        <div class="card-body">
+                            <h6>Cómo usar el asistente:</h6>
+                            <ol>
+                                <li>Selecciona las variables que necesitas</li>
+                                <li>Define valores por defecto para cada variable</li>
+                                <li>Agrega variables adicionales si es necesario</li>
+                                <li>Haz clic en "Generar JSON"</li>
+                                <li>Copia el resultado a tu segmento</li>
+                            </ol>
+                            
+                            <div class="alert alert-warning mt-3">
+                                <small>
+                                    <i class="fas fa-exclamation-triangle"></i>
+                                    Los valores por defecto son opcionales. Si no defines uno, 
+                                    se usará el valor de ejemplo de cada variable.
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Referencia de Variables -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">
+                                <i class="fas fa-book"></i> Referencia de Variables
+                            </h3>
+                            <div class="card-tools">
+                                <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                                    <i class="fas fa-minus"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card-body p-0">
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>Variable</th>
+                                        <th>Tipo</th>
+                                        <th>Ejemplo</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for nombre, info in variables_comunes.items %}
+                                    <tr>
+                                        <td><code>{{ nombre }}</code></td>
+                                        <td><span class="badge badge-light">{{ info.tipo }}</span></td>
+                                        <td><small>{{ info.ejemplo|truncatechars:20 }}</small></td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <!-- Accesos Rápidos -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">
+                                <i class="fas fa-rocket"></i> Accesos Rápidos
+                            </h3>
+                        </div>
+                        <div class="card-body">
+                            <a href="{% url 'generador_actas:crear_segmento' %}" class="btn btn-primary btn-sm btn-block">
+                                <i class="fas fa-plus"></i> Crear Nuevo Segmento
+                            </a>
+                            <a href="{% url 'generador_actas:lista_segmentos' %}" class="btn btn-info btn-sm btn-block">
+                                <i class="fas fa-list"></i> Ver Todos los Segmentos
+                            </a>
+                            <a href="{% url 'generador_actas:segmentos_dashboard' %}" class="btn btn-secondary btn-sm btn-block">
+                                <i class="fas fa-chart-pie"></i> Dashboard Segmentos
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+</div>
+{% endblock content %}
+
+{% block javascripts %}
+<script>
+$(document).ready(function() {
+    // Mostrar/ocultar campos de valor por defecto
+    $('input[type="checkbox"]').change(function() {
+        const checkbox = $(this);
+        const campoDefault = $(`.campo-default[data-for="${checkbox.attr('id')}"]`);
+        
+        if (checkbox.is(':checked')) {
+            campoDefault.slideDown();
+        } else {
+            campoDefault.slideUp();
+            // Limpiar el campo cuando se desmarca
+            campoDefault.find('input, textarea, select').val('');
+        }
+    });
+    
+    // Inicializar campos visibles para checkboxes marcados
+    $('input[type="checkbox"]:checked').each(function() {
+        const checkbox = $(this);
+        const campoDefault = $(`.campo-default[data-for="${checkbox.attr('id')}"]`);
+        campoDefault.show();
+    });
+    
+    // Seleccionar todo
+    $('#btnSeleccionarTodo').click(function() {
+        $('input[type="checkbox"]').prop('checked', true).trigger('change');
+        toastr.info('Todas las variables seleccionadas');
+    });
+    
+    // Limpiar todo
+    $('#btnLimpiar').click(function() {
+        if (confirm('¿Estás seguro de limpiar toda la configuración?')) {
+            $('input[type="checkbox"]').prop('checked', false).trigger('change');
+            $('#id_variables_adicionales').val('');
+            toastr.warning('Configuración limpiada');
+        }
+    });
+    
+    // Copiar JSON al portapapeles
+    $('#btnCopiar').click(function() {
+        const texto = $('#jsonResultado').text();
+        navigator.clipboard.writeText(texto).then(function() {
+            toastr.success('JSON copiado al portapapeles');
+        }).catch(function() {
+            // Fallback para navegadores antiguos
+            const textarea = document.createElement('textarea');
+            textarea.value = texto;
+            document.body.appendChild(textarea);
+            textarea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textarea);
+            toastr.success('JSON copiado al portapapeles');
+        });
+    });
+    
+    // Validar JSON en tiempo real para variables adicionales
+    $('#id_variables_adicionales').on('input', function() {
+        const valor = $(this).val().trim();
+        if (valor) {
+            try {
+                JSON.parse(valor);
+                $(this).removeClass('is-invalid').addClass('is-valid');
+            } catch (e) {
+                $(this).removeClass('is-valid').addClass('is-invalid');
+            }
+        } else {
+            $(this).removeClass('is-invalid is-valid');
+        }
+    });
+    
+    // Ejemplos predefinidos para variables adicionales
+    const ejemplos = {
+        'reunion_ordinaria': {
+            'reunion_tipo': 'Ordinaria',
+            'quorum_minimo': 5,
+            'duracion_maxima': 180
+        },
+        'reunion_extraordinaria': {
+            'reunion_tipo': 'Extraordinaria',
+            'urgencia_nivel': 'Alta',
+            'convocatoria_anticipacion': 24
+        },
+        'acta_formal': {
+            'formato_oficial': true,
+            'incluir_firmas': true,
+            'idioma': 'es'
+        }
+    };
+    
+    // Agregar botones de ejemplo
+    const ejemplosHtml = Object.keys(ejemplos).map(key => 
+        `<button type="button" class="btn btn-sm btn-outline-secondary mr-1 mb-1 btn-ejemplo" data-ejemplo="${key}">
+            ${key.replace('_', ' ').toUpperCase()}
+        </button>`
+    ).join('');
+    
+    $('#id_variables_adicionales').after(
+        `<div class="mt-2">
+            <small class="text-muted">Ejemplos rápidos:</small><br>
+            ${ejemplosHtml}
+        </div>`
+    );
+    
+    // Manejar clicks en ejemplos
+    $('.btn-ejemplo').click(function() {
+        const ejemplo = $(this).data('ejemplo');
+        const json = JSON.stringify(ejemplos[ejemplo], null, 2);
+        $('#id_variables_adicionales').val(json).trigger('input');
+        toastr.info(`Ejemplo "${ejemplo}" cargado`);
+    });
+});
+</script>
+{% endblock %}

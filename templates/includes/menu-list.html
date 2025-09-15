@@ -154,7 +154,7 @@
             
             <!-- Gestión de Segmentos -->
             <li class="nav-item">
-                <a href="{% url 'generador_actas:segmentos_lista' %}" class="nav-link {% if 'segmentos' in segment and 'lista' in request.resolver_match.url_name %} active {% endif %}">
+                <a href="{% url 'generador_actas:segmentos_dashboard' %}" class="nav-link {% if 'segmentos' in segment %} active {% endif %}">
                  
                     <p>📝 Dashboard de Segmentos</p>
                 </a>

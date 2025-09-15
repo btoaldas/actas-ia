@@ -674,3 +674,391 @@ class BusquedaPlantillasForm(forms.Form):
             raise ValidationError("La fecha 'Hasta' no puede ser menor que la fecha 'Desde'")
         
         return fecha_hasta
+
+
+# ==================== FORMULARIOS PARA SEGMENTOS DE PLANTILLA ====================
+
+class SegmentoPlantillaForm(forms.ModelForm):
+    """Formulario para crear y editar segmentos de plantilla"""
+    
+    class Meta:
+        model = SegmentoPlantilla
+        fields = [
+            'codigo', 'nombre', 'descripcion', 'categoria', 'tipo',
+            'prompt_ia', 'proveedor_ia', 'estructura_json', 'componentes',
+            'parametros_entrada', 'variables_personalizadas',
+            'orden_defecto', 'reutilizable', 'obligatorio', 'activo'
+        ]
+        widgets = {
+            'codigo': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Código único del segmento (ej: ENCAB_001)'
+            }),
+            'nombre': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Nombre descriptivo del segmento'
+            }),
+            'descripcion': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 3,
+                'placeholder': 'Describe el propósito y función de este segmento'
+            }),
+            'categoria': forms.Select(attrs={'class': 'form-control'}),
+            'tipo': forms.Select(attrs={
+                'class': 'form-control',
+                'onchange': 'toggleCamposIA(this.value)'
+            }),
+            'prompt_ia': forms.Textarea(attrs={
+                'class': 'form-control prompt-field',
+                'rows': 8,
+                'placeholder': 'Prompt para procesamiento con IA (solo para segmentos dinámicos)'
+            }),
+            'proveedor_ia': forms.Select(attrs={
+                'class': 'form-control proveedor-field'
+            }),
+            'estructura_json': forms.Textarea(attrs={
+                'class': 'form-control json-field',
+                'rows': 6,
+                'placeholder': '{"campo1": "valor", "campo2": ["lista", "valores"]}'
+            }),
+            'componentes': forms.Textarea(attrs={
+                'class': 'form-control json-field',
+                'rows': 4,
+                'placeholder': '{"texto": "contenido", "variables": ["var1", "var2"]}'
+            }),
+            'parametros_entrada': forms.Textarea(attrs={
+                'class': 'form-control json-field',
+                'rows': 3,
+                'placeholder': '["param1", "param2", "param3"]'
+            }),
+            'variables_personalizadas': forms.Textarea(attrs={
+                'class': 'form-control json-field',
+                'rows': 5,
+                'placeholder': '{"fecha": "2025-01-01", "lugar": "Sala Principal"}'
+            }),
+            'orden_defecto': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'min': '0',
+                'step': '1'
+            }),
+            'reutilizable': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'obligatorio': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'activo': forms.CheckboxInput(attrs={'class': 'form-check-input'})
+        }
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Filtrar solo proveedores IA activos
+        self.fields['proveedor_ia'].queryset = ProveedorIA.objects.filter(activo=True)
+        self.fields['proveedor_ia'].required = False
+        
+        # Configurar campos requeridos según el tipo
+        if self.instance and self.instance.pk:
+            if self.instance.es_dinamico:
+                self.fields['prompt_ia'].required = True
+                self.fields['proveedor_ia'].required = True
+    
+    def clean_estructura_json(self):
+        """Validar que el JSON de estructura sea válido"""
+        estructura = self.cleaned_data.get('estructura_json')
+        if estructura:
+            try:
+                if isinstance(estructura, str):
+                    json.loads(estructura)
+            except json.JSONDecodeError:
+                raise ValidationError("La estructura JSON no es válida")
+        return estructura
+    
+    def clean_componentes(self):
+        """Validar que el JSON de componentes sea válido"""
+        componentes = self.cleaned_data.get('componentes')
+        if componentes:
+            try:
+                if isinstance(componentes, str):
+                    json.loads(componentes)
+            except json.JSONDecodeError:
+                raise ValidationError("Los componentes JSON no son válidos")
+        return componentes
+    
+    def clean_parametros_entrada(self):
+        """Validar que los parámetros de entrada sean válidos"""
+        parametros = self.cleaned_data.get('parametros_entrada')
+        if parametros:
+            try:
+                if isinstance(parametros, str):
+                    parsed = json.loads(parametros)
+                    if not isinstance(parsed, list):
+                        raise ValidationError("Los parámetros de entrada deben ser una lista")
+            except json.JSONDecodeError:
+                raise ValidationError("Los parámetros de entrada JSON no son válidos")
+        return parametros
+    
+    def clean_variables_personalizadas(self):
+        """Validar que las variables personalizadas sean válidas"""
+        variables = self.cleaned_data.get('variables_personalizadas')
+        if variables:
+            try:
+                if isinstance(variables, str):
+                    parsed = json.loads(variables)
+                    if not isinstance(parsed, dict):
+                        raise ValidationError("Las variables personalizadas deben ser un objeto JSON")
+            except json.JSONDecodeError:
+                raise ValidationError("Las variables personalizadas JSON no son válidas")
+        return variables
+    
+    def clean(self):
+        """Validación global del formulario"""
+        cleaned_data = super().clean()
+        tipo = cleaned_data.get('tipo')
+        prompt_ia = cleaned_data.get('prompt_ia')
+        proveedor_ia = cleaned_data.get('proveedor_ia')
+        
+        # Validaciones para segmentos dinámicos
+        if tipo in ['dinamico', 'hibrido']:
+            if not prompt_ia or not prompt_ia.strip():
+                self.add_error('prompt_ia', 'El prompt IA es obligatorio para segmentos dinámicos')
+            
+            if not proveedor_ia:
+                self.add_error('proveedor_ia', 'Debe seleccionar un proveedor IA para segmentos dinámicos')
+        
+        return cleaned_data
+
+
+class SegmentoFiltroForm(forms.Form):
+    """Formulario para filtrar segmentos de plantilla"""
+    
+    ORDENAMIENTO_CHOICES = [
+        ('nombre', 'Nombre (A-Z)'),
+        ('-nombre', 'Nombre (Z-A)'),
+        ('categoria', 'Categoría (A-Z)'),
+        ('-categoria', 'Categoría (Z-A)'),
+        ('tipo', 'Tipo (A-Z)'),
+        ('-tipo', 'Tipo (Z-A)'),
+        ('total_usos', 'Menos usados'),
+        ('-total_usos', 'Más usados'),
+        ('fecha_creacion', 'Más antiguos'),
+        ('-fecha_creacion', 'Más recientes'),
+        ('fecha_actualizacion', 'Menos actualizados'),
+        ('-fecha_actualizacion', 'Más actualizados'),
+        ('orden_defecto', 'Orden por defecto'),
+        ('-tiempo_promedio_procesamiento', 'Más lentos'),
+        ('tiempo_promedio_procesamiento', 'Más rápidos'),
+    ]
+    
+    buscar = forms.CharField(
+        required=False,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Buscar por nombre, código o descripción...'
+        })
+    )
+    
+    categoria = forms.ChoiceField(
+        choices=[('', 'Todas las categorías')] + SegmentoPlantilla.CATEGORIA_SEGMENTO,
+        required=False,
+        widget=forms.Select(attrs={'class': 'form-control'})
+    )
+    
+    tipo = forms.ChoiceField(
+        choices=[('', 'Todos los tipos')] + SegmentoPlantilla.TIPO_SEGMENTO,
+        required=False,
+        widget=forms.Select(attrs={'class': 'form-control'})
+    )
+    
+    proveedor_ia = forms.ModelChoiceField(
+        queryset=ProveedorIA.objects.filter(activo=True),
+        required=False,
+        empty_label="Todos los proveedores",
+        widget=forms.Select(attrs={'class': 'form-control'})
+    )
+    
+    activo = forms.ChoiceField(
+        choices=[('', 'Todos'), ('true', 'Activos'), ('false', 'Inactivos')],
+        required=False,
+        widget=forms.Select(attrs={'class': 'form-control'})
+    )
+    
+    reutilizable = forms.ChoiceField(
+        choices=[('', 'Todos'), ('true', 'Reutilizables'), ('false', 'No reutilizables')],
+        required=False,
+        widget=forms.Select(attrs={'class': 'form-control'})
+    )
+    
+    obligatorio = forms.ChoiceField(
+        choices=[('', 'Todos'), ('true', 'Obligatorios'), ('false', 'Opcionales')],
+        required=False,
+        widget=forms.Select(attrs={'class': 'form-control'})
+    )
+    
+    ordenar_por = forms.ChoiceField(
+        choices=ORDENAMIENTO_CHOICES,
+        initial='-fecha_actualizacion',
+        widget=forms.Select(attrs={'class': 'form-control'})
+    )
+
+
+class PruebaSegmentoForm(forms.Form):
+    """Formulario para probar segmentos de plantilla"""
+    
+    segmento = forms.ModelChoiceField(
+        queryset=SegmentoPlantilla.objects.filter(activo=True),
+        widget=forms.Select(attrs={'class': 'form-control'}),
+        help_text="Selecciona el segmento a probar"
+    )
+    
+    datos_contexto = forms.CharField(
+        widget=forms.Textarea(attrs={
+            'class': 'form-control',
+            'rows': 10,
+            'placeholder': '''Ejemplo de datos de contexto:
+{
+    "fecha_reunion": "2025-01-15",
+    "participantes": ["Juan Pérez", "María García", "Carlos López"],
+    "lugar": "Sala de Juntas Principal",
+    "hora_inicio": "09:00",
+    "temas": ["Presupuesto 2025", "Nuevos proyectos"],
+    "tipo_reunion": "Ordinaria"
+}'''
+        }),
+        help_text="Datos de contexto en formato JSON para la prueba"
+    )
+    
+    usar_celery = forms.BooleanField(
+        initial=False,
+        required=False,
+        help_text="Procesar con Celery (asíncrono) en lugar de procesamiento directo"
+    )
+    
+    incluir_metricas = forms.BooleanField(
+        initial=True,
+        required=False,
+        help_text="Incluir métricas de tiempo y actualizar estadísticas del segmento"
+    )
+    
+    def clean_datos_contexto(self):
+        """Validar que los datos de contexto sean JSON válido"""
+        datos = self.cleaned_data.get('datos_contexto')
+        if datos:
+            try:
+                parsed_data = json.loads(datos)
+                if not isinstance(parsed_data, dict):
+                    raise ValidationError("Los datos de contexto deben ser un objeto JSON")
+                return parsed_data
+            except json.JSONDecodeError as e:
+                raise ValidationError(f"JSON inválido: {str(e)}")
+        return {}
+    
+    def clean(self):
+        """Validación global del formulario"""
+        cleaned_data = super().clean()
+        segmento = cleaned_data.get('segmento')
+        
+        if segmento and segmento.es_dinamico and not segmento.esta_configurado:
+            raise ValidationError(
+                f"El segmento '{segmento.nombre}' no está correctamente configurado para pruebas dinámicas"
+            )
+        
+        return cleaned_data
+
+
+class VariablesSegmentoForm(forms.Form):
+    """Formulario para definir variables de segmento de forma asistida"""
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        
+        # Agregar campos dinámicos para variables comunes
+        variables_comunes = SegmentoPlantilla.obtener_variables_comunes()
+        
+        for var_name, var_info in variables_comunes.items():
+            field_name = f"incluir_{var_name}"
+            self.fields[field_name] = forms.BooleanField(
+                required=False,
+                label=f"Incluir {var_name}",
+                help_text=f"{var_info['descripcion']} (Ej: {var_info['ejemplo']})"
+            )
+            
+            # Campo para valor por defecto
+            default_field_name = f"default_{var_name}"
+            if var_info['tipo'] == 'date':
+                self.fields[default_field_name] = forms.DateField(
+                    required=False,
+                    widget=forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
+                    label=f"Valor por defecto para {var_name}"
+                )
+            elif var_info['tipo'] == 'time':
+                self.fields[default_field_name] = forms.TimeField(
+                    required=False,
+                    widget=forms.TimeInput(attrs={'type': 'time', 'class': 'form-control'}),
+                    label=f"Valor por defecto para {var_name}"
+                )
+            elif var_info['tipo'] == 'array':
+                self.fields[default_field_name] = forms.CharField(
+                    required=False,
+                    widget=forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
+                    label=f"Valores por defecto para {var_name} (JSON array)",
+                    help_text=f"Ejemplo: {json.dumps(var_info['ejemplo'])}"
+                )
+            else:
+                self.fields[default_field_name] = forms.CharField(
+                    required=False,
+                    widget=forms.TextInput(attrs={'class': 'form-control'}),
+                    label=f"Valor por defecto para {var_name}"
+                )
+    
+    variables_adicionales = forms.CharField(
+        required=False,
+        widget=forms.Textarea(attrs={
+            'class': 'form-control',
+            'rows': 5,
+            'placeholder': '{"variable_custom": "valor", "otra_variable": ["lista", "valores"]}'
+        }),
+        help_text="Variables adicionales personalizadas en formato JSON"
+    )
+    
+    def clean_variables_adicionales(self):
+        """Validar variables adicionales"""
+        variables = self.cleaned_data.get('variables_adicionales')
+        if variables and variables.strip():
+            try:
+                parsed = json.loads(variables)
+                if not isinstance(parsed, dict):
+                    raise ValidationError("Las variables adicionales deben ser un objeto JSON")
+                return parsed
+            except json.JSONDecodeError:
+                raise ValidationError("JSON inválido en variables adicionales")
+        return {}
+    
+    def get_variables_json(self):
+        """Genera el JSON de variables basado en los campos seleccionados"""
+        if not self.is_valid():
+            return {}
+            
+        variables = {}
+        variables_comunes = SegmentoPlantilla.obtener_variables_comunes()
+        
+        for var_name, var_info in variables_comunes.items():
+            incluir_field = f"incluir_{var_name}"
+            default_field = f"default_{var_name}"
+            
+            if self.cleaned_data.get(incluir_field, False):
+                default_value = self.cleaned_data.get(default_field)
+                if default_value:
+                    if var_info['tipo'] == 'array' and isinstance(default_value, str):
+                        try:
+                            default_value = json.loads(default_value)
+                        except:
+                            default_value = var_info['ejemplo']
+                    elif var_info['tipo'] in ['date', 'time']:
+                        default_value = str(default_value)
+                    
+                    variables[var_name] = default_value
+                else:
+                    variables[var_name] = var_info['ejemplo']
+        
+        # Agregar variables adicionales
+        variables_adicionales = self.cleaned_data.get('variables_adicionales', {})
+        if variables_adicionales:
+            variables.update(variables_adicionales)
+        
+        return variables

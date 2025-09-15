@@ -1,0 +1,416 @@
+{% extends "layouts/base.html" %}
+{% load static %}
+
+{% block title %}{{ page_title }}{% endblock title %}
+
+{% block stylesheets %}
+    <link rel="stylesheet" href="{% static 'generador_actas/css/segmentos.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="content-wrapper">
+    <!-- Content Header -->
+    <div class="content-header">
+        <div class="container-fluid">
+            <div class="row mb-2">
+                <div class="col-sm-6">
+                    <h1>🧪 {{ page_title }}</h1>
+                </div>
+                <div class="col-sm-6">
+                    <ol class="breadcrumb float-sm-right">
+                        {% for item in breadcrumbs %}
+                            {% if item.url %}
+                                <li class="breadcrumb-item">
+                                    <a href="{{ item.url }}">{{ item.title }}</a>
+                                </li>
+                            {% else %}
+                                <li class="breadcrumb-item active">{{ item.title }}</li>
+                            {% endif %}
+                        {% endfor %}
+                    </ol>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main content -->
+    <section class="content">
+        <div class="container-fluid">
+            
+            <div class="row">
+                <!-- Formulario de Prueba -->
+                <div class="col-md-6">
+                    <div class="card card-primary">
+                        <div class="card-header">
+                            <h3 class="card-title">
+                                <i class="fas fa-vial"></i> Configuración de Prueba
+                            </h3>
+                        </div>
+                        <form method="post" id="formPrueba">
+                            {% csrf_token %}
+                            <div class="card-body">
+                                <div class="form-group">
+                                    {{ form.segmento.label_tag }}
+                                    {{ form.segmento }}
+                                    {% if form.segmento.errors %}
+                                        <div class="text-danger">{{ form.segmento.errors }}</div>
+                                    {% endif %}
+                                    <small class="form-text text-muted">{{ form.segmento.help_text }}</small>
+                                </div>
+                                
+                                <div class="form-group">
+                                    {{ form.datos_contexto.label_tag }}
+                                    {{ form.datos_contexto }}
+                                    {% if form.datos_contexto.errors %}
+                                        <div class="text-danger">{{ form.datos_contexto.errors }}</div>
+                                    {% endif %}
+                                    <small class="form-text text-muted">{{ form.datos_contexto.help_text }}</small>
+                                </div>
+                                
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="form-check">
+                                            {{ form.usar_celery }}
+                                            {{ form.usar_celery.label_tag }}
+                                            {% if form.usar_celery.errors %}
+                                                <div class="text-danger">{{ form.usar_celery.errors }}</div>
+                                            {% endif %}
+                                            <small class="form-text text-muted">{{ form.usar_celery.help_text }}</small>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-check">
+                                            {{ form.incluir_metricas }}
+                                            {{ form.incluir_metricas.label_tag }}
+                                            {% if form.incluir_metricas.errors %}
+                                                <div class="text-danger">{{ form.incluir_metricas.errors }}</div>
+                                            {% endif %}
+                                            <small class="form-text text-muted">{{ form.incluir_metricas.help_text }}</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="card-footer">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-play"></i> Ejecutar Prueba
+                                </button>
+                                <button type="button" class="btn btn-success" id="btnEjemplos">
+                                    <i class="fas fa-lightbulb"></i> Cargar Ejemplo
+                                </button>
+                                <button type="button" class="btn btn-info" id="btnValidarJSON">
+                                    <i class="fas fa-check"></i> Validar JSON
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                    
+                    <!-- Información del Segmento Seleccionado -->
+                    <div class="card card-info" id="infoSegmento" style="display: none;">
+                        <div class="card-header">
+                            <h3 class="card-title">
+                                <i class="fas fa-info-circle"></i> Información del Segmento
+                            </h3>
+                        </div>
+                        <div class="card-body" id="contenidoInfoSegmento">
+                            <!-- Contenido dinámico -->
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Resultados -->
+                <div class="col-md-6">
+                    {% if resultado %}
+                    <div class="card card-{% if resultado.tipo == 'error' %}danger{% else %}success{% endif %}">
+                        <div class="card-header">
+                            <h3 class="card-title">
+                                <i class="fas fa-{% if resultado.tipo == 'error' %}exclamation-triangle{% else %}check-circle{% endif %}"></i>
+                                Resultado de la Prueba
+                            </h3>
+                        </div>
+                        <div class="card-body">
+                            {% if resultado.tipo == 'error' %}
+                                <div class="alert alert-danger">
+                                    <h6><i class="fas fa-exclamation-triangle"></i> Error en la Prueba</h6>
+                                    <p>{{ resultado.error }}</p>
+                                </div>
+                            {% else %}
+                                <div class="alert alert-success">
+                                    <h6><i class="fas fa-check-circle"></i> Prueba Completada</h6>
+                                    <p><strong>Segmento:</strong> {{ resultado.segmento }}</p>
+                                    <p><strong>Tipo:</strong> {{ resultado.tipo|capfirst }}</p>
+                                    {% if resultado.tiempo_procesamiento %}
+                                    <p><strong>Tiempo:</strong> {{ resultado.tiempo_procesamiento }} segundos</p>
+                                    {% endif %}
+                                </div>
+                                
+                                {% if resultado.tipo == 'directo' %}
+                                    <h6>Contenido Generado:</h6>
+                                    <div class="bg-light p-3 rounded">
+                                        {{ resultado.respuesta_simulada|default:resultado.contenido }}
+                                    </div>
+                                    
+                                    {% if resultado.json_enviado %}
+                                    <h6 class="mt-3">JSON Enviado a IA:</h6>
+                                    <pre class="bg-dark text-light p-3 rounded">{{ resultado.json_enviado|pprint }}</pre>
+                                    {% endif %}
+                                    
+                                {% elif resultado.tipo == 'estatico' %}
+                                    <h6>Contenido Final:</h6>
+                                    <div class="bg-light p-3 rounded">
+                                        {{ resultado.contenido_final }}
+                                    </div>
+                                    
+                                    <h6 class="mt-3">Variables Aplicadas:</h6>
+                                    <pre class="bg-secondary text-light p-3 rounded">{{ resultado.variables_aplicadas|pprint }}</pre>
+                                    
+                                {% elif resultado.tipo == 'celery' %}
+                                    <div class="alert alert-info">
+                                        <h6><i class="fas fa-clock"></i> Procesamiento Asíncrono</h6>
+                                        <p>{{ resultado.mensaje }}</p>
+                                        {% if resultado.task_id %}
+                                        <p><strong>Task ID:</strong> <code>{{ resultado.task_id }}</code></p>
+                                        {% endif %}
+                                    </div>
+                                {% endif %}
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% else %}
+                    <div class="card card-secondary">
+                        <div class="card-header">
+                            <h3 class="card-title">
+                                <i class="fas fa-clock"></i> Esperando Prueba
+                            </h3>
+                        </div>
+                        <div class="card-body text-center">
+                            <i class="fas fa-vial fa-3x text-muted mb-3"></i>
+                            <h5 class="text-muted">No hay resultados aún</h5>
+                            <p class="text-muted">
+                                Selecciona un segmento y ejecuta una prueba para ver los resultados aquí.
+                            </p>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Historial de Pruebas (placeholder) -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">
+                                <i class="fas fa-history"></i> Historial Reciente
+                            </h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="timeline">
+                                <!-- Placeholder para historial futuro -->
+                                <div class="text-center text-muted">
+                                    <i class="fas fa-history fa-2x mb-2"></i>
+                                    <p>El historial de pruebas se mostrará aquí</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Ejemplos de Datos de Contexto -->
+            <div class="row mt-4">
+                <div class="col-12">
+                    <div class="card card-info">
+                        <div class="card-header">
+                            <h3 class="card-title">
+                                <i class="fas fa-book"></i> Ejemplos de Datos de Contexto
+                            </h3>
+                            <div class="card-tools">
+                                <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                                    <i class="fas fa-minus"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <h6>Reunión Ordinaria</h6>
+                                    <pre class="bg-light p-2 ejemplo-json" data-ejemplo="ordinaria">{
+  "fecha_reunion": "2025-01-15",
+  "tipo_reunion": "Ordinaria",
+  "lugar": "Sala de Juntas Principal",
+  "hora_inicio": "09:00",
+  "hora_fin": "11:30",
+  "participantes": [
+    "Juan Pérez - Alcalde",
+    "María García - Secretaria",
+    "Carlos López - Concejal"
+  ],
+  "numero_acta": "ACTA-2025-001",
+  "temas_tratados": [
+    "Aprobación presupuesto 2025",
+    "Proyecto de pavimentación"
+  ]
+}</pre>
+                                </div>
+                                <div class="col-md-4">
+                                    <h6>Reunión Extraordinaria</h6>
+                                    <pre class="bg-light p-2 ejemplo-json" data-ejemplo="extraordinaria">{
+  "fecha_reunion": "2025-01-20",
+  "tipo_reunion": "Extraordinaria",
+  "lugar": "Auditorio Municipal",
+  "hora_inicio": "14:00",
+  "participantes": [
+    "Ana Rodríguez - Alcaldesa",
+    "Luis Morales - Director Financiero"
+  ],
+  "numero_acta": "ACTA-EXT-2025-001",
+  "tema_urgente": "Declaración de emergencia",
+  "decisiones": [
+    "Aprobar fondos de emergencia",
+    "Activar plan de contingencia"
+  ]
+}</pre>
+                                </div>
+                                <div class="col-md-4">
+                                    <h6>Reunión de Comisión</h6>
+                                    <pre class="bg-light p-2 ejemplo-json" data-ejemplo="comision">{
+  "fecha_reunion": "2025-01-25",
+  "tipo_reunion": "Comisión",
+  "comision": "Obras Públicas",
+  "lugar": "Sala de Comisiones",
+  "hora_inicio": "10:00",
+  "participantes": [
+    "Pedro Vásquez - Presidente Comisión",
+    "Sandra Jiménez - Vocal",
+    "Miguel Torres - Secretario"
+  ],
+  "proyectos_revision": [
+    "Mejoramiento vial Sector Norte",
+    "Construcción parque infantil"
+  ],
+  "presupuesto_disponible": 250000
+}</pre>
+                                </div>
+                            </div>
+                            <div class="mt-3">
+                                <small class="text-muted">
+                                    <i class="fas fa-info-circle"></i>
+                                    Haz clic en cualquier ejemplo para cargarlo automáticamente en el formulario de prueba.
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+</div>
+
+<!-- Modal de Información del Segmento -->
+<div class="modal fade" id="modalInfoSegmento" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Información del Segmento</h5>
+                <button type="button" class="close" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <div class="modal-body" id="modalContenidoSegmento">
+                <!-- Contenido dinámico -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cerrar</button>
+                <button type="button" class="btn btn-primary" id="btnUsarSegmento">
+                    <i class="fas fa-check"></i> Usar Este Segmento
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock content %}
+
+{% block javascripts %}
+<script>
+$(document).ready(function() {
+    // Cargar ejemplos
+    $('.ejemplo-json').click(function() {
+        const ejemplo = $(this).text();
+        $('#id_datos_contexto').val(ejemplo);
+        toastr.success('Ejemplo cargado en el formulario');
+    });
+    
+    // Botón de ejemplos
+    $('#btnEjemplos').click(function() {
+        const ejemplos = ['ordinaria', 'extraordinaria', 'comision'];
+        const ejemploAleatorio = ejemplos[Math.floor(Math.random() * ejemplos.length)];
+        const contenido = $(`.ejemplo-json[data-ejemplo="${ejemploAleatorio}"]`).text();
+        $('#id_datos_contexto').val(contenido);
+        toastr.info('Ejemplo aleatorio cargado');
+    });
+    
+    // Validar JSON
+    $('#btnValidarJSON').click(function() {
+        const datos = $('#id_datos_contexto').val().trim();
+        if (!datos) {
+            toastr.warning('Ingresa datos de contexto para validar');
+            return;
+        }
+        
+        try {
+            JSON.parse(datos);
+            $('#id_datos_contexto').removeClass('is-invalid').addClass('is-valid');
+            toastr.success('JSON válido');
+        } catch (e) {
+            $('#id_datos_contexto').removeClass('is-valid').addClass('is-invalid');
+            toastr.error('JSON inválido: ' + e.message);
+        }
+    });
+    
+    // Auto-validar JSON mientras se escribe
+    $('#id_datos_contexto').on('input', function() {
+        const datos = $(this).val().trim();
+        if (datos) {
+            try {
+                JSON.parse(datos);
+                $(this).removeClass('is-invalid').addClass('is-valid');
+            } catch (e) {
+                $(this).removeClass('is-valid').addClass('is-invalid');
+            }
+        } else {
+            $(this).removeClass('is-invalid is-valid');
+        }
+    });
+    
+    // Cambio de segmento - mostrar información
+    $('#id_segmento').change(function() {
+        const segmentoId = $(this).val();
+        if (segmentoId) {
+            // Simular información del segmento
+            const segmentoNombre = $(this).find('option:selected').text();
+            const info = `
+                <h6>${segmentoNombre}</h6>
+                <p><strong>ID:</strong> ${segmentoId}</p>
+                <p><strong>Configuración:</strong> Segmento seleccionado para prueba</p>
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i>
+                    Asegúrate de que los datos de contexto sean apropiados para este segmento.
+                </div>
+            `;
+            $('#contenidoInfoSegmento').html(info);
+            $('#infoSegmento').show();
+        } else {
+            $('#infoSegmento').hide();
+        }
+    });
+    
+    // Inicializar validación si hay datos
+    const datosIniciales = $('#id_datos_contexto').val().trim();
+    if (datosIniciales) {
+        try {
+            JSON.parse(datosIniciales);
+            $('#id_datos_contexto').addClass('is-valid');
+        } catch (e) {
+            $('#id_datos_contexto').addClass('is-invalid');
+        }
+    }
+});
+</script>
+{% endblock %}
