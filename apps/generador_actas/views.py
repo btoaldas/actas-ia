@@ -1480,7 +1480,7 @@ def crear_proveedor_ia(request):
             {'title': 'Proveedores IA', 'url': reverse('generador_actas:proveedores_lista')},
             {'title': 'Crear', 'url': ''}
         ],
-        'modelos_por_proveedor': json.dumps({})  # TODO: Investigar problema con ProveedorIAForm.obtener_modelos_por_proveedor()
+        'modelos_por_proveedor': json.dumps(ProveedorIAForm.obtener_modelos_por_proveedor())
     }
     
     return render(request, 'generador_actas/proveedores_ia/form.html', context)
@@ -1518,7 +1518,7 @@ def editar_proveedor_ia(request, pk):
             {'title': 'Proveedores IA', 'url': reverse('generador_actas:proveedores_lista')},
             {'title': 'Editar', 'url': ''}
         ],
-        'modelos_por_proveedor': json.dumps({})  # TODO: Investigar problema con ProveedorIAForm.obtener_modelos_por_proveedor()
+        'modelos_por_proveedor': json.dumps(ProveedorIAForm.obtener_modelos_por_proveedor())
     }
     
     return render(request, 'generador_actas/proveedores_ia/form.html', context)
@@ -1708,18 +1708,8 @@ def probar_conexion_proveedor(request):
 def obtener_modelos_proveedor(request, tipo_proveedor):
     """API para obtener modelos disponibles por tipo de proveedor"""
     try:
-        # TODO: Arreglar ProveedorIAForm.obtener_modelos_por_proveedor()
-        modelos_por_proveedor = {
-            'openai': ['gpt-4o', 'gpt-4o-mini', 'gpt-4-turbo', 'gpt-4', 'gpt-3.5-turbo'],
-            'anthropic': ['claude-3-5-sonnet-20241022', 'claude-3-opus-20240229'],
-            'deepseek': ['deepseek-chat', 'deepseek-coder'],
-            'google': ['gemini-1.5-pro', 'gemini-1.5-flash'],
-            'groq': ['llama-3.1-70b-versatile', 'mixtral-8x7b-32768'],
-            'ollama': ['llama3.2:3b', 'llama3.1:8b', 'mistral:7b'],
-            'lmstudio': ['lmstudio-community/Meta-Llama-3.1-8B-Instruct-GGUF'],
-            'generic1': ['custom-model-1', 'custom-model-2'],
-            'generic2': ['custom-model-1', 'custom-model-2']
-        }
+        # Usar modelos desde el formulario actualizado
+        modelos_por_proveedor = ProveedorIAForm.obtener_modelos_por_proveedor()
         modelos = modelos_por_proveedor.get(tipo_proveedor, [])
         
         return JsonResponse({

@@ -143,18 +143,80 @@ class ProveedorIA(models.Model):
     
     @classmethod
     def obtener_configuraciones_por_defecto(cls):
-        """Obtiene las configuraciones por defecto desde el .env"""
+        """Obtiene las configuraciones por defecto desde el .env con fallbacks inteligentes"""
         from django.conf import settings
+        
+        # Configuraciones por defecto con fallbacks
+        configuraciones_defecto = {
+            'openai': {
+                'api_url': 'https://api.openai.com/v1/chat/completions',
+                'modelo': 'gpt-4o',
+                'temperatura': 0.7,
+                'max_tokens': 4000
+            },
+            'anthropic': {
+                'api_url': 'https://api.anthropic.com/v1/messages',
+                'modelo': 'claude-3-5-sonnet-20241022',
+                'temperatura': 0.7,
+                'max_tokens': 4000
+            },
+            'deepseek': {
+                'api_url': 'https://api.deepseek.com/v1/chat/completions',
+                'modelo': 'deepseek-chat',
+                'temperatura': 0.7,
+                'max_tokens': 4000
+            },
+            'google': {
+                'api_url': 'https://generativelanguage.googleapis.com/v1beta/models',
+                'modelo': 'gemini-1.5-flash',
+                'temperatura': 0.7,
+                'max_tokens': 4000
+            },
+            'groq': {
+                'api_url': 'https://api.groq.com/openai/v1/chat/completions',
+                'modelo': 'llama-3.1-70b-versatile',
+                'temperatura': 0.7,
+                'max_tokens': 4000
+            },
+            'ollama': {
+                'api_url': 'http://localhost:11434/api/chat',
+                'modelo': 'llama3.2:3b',
+                'temperatura': 0.7,
+                'max_tokens': 4000
+            },
+            'lmstudio': {
+                'api_url': 'http://localhost:1234/v1/chat/completions',
+                'modelo': 'lmstudio-community/Meta-Llama-3.1-8B-Instruct-GGUF',
+                'temperatura': 0.7,
+                'max_tokens': 4000
+            },
+            'generic1': {
+                'api_url': '',
+                'modelo': 'custom-model-1',
+                'temperatura': 0.7,
+                'max_tokens': 4000
+            },
+            'generic2': {
+                'api_url': '',
+                'modelo': 'custom-model-2',
+                'temperatura': 0.7,
+                'max_tokens': 4000
+            }
+        }
         
         configuraciones = {}
         for tipo, nombre in cls.TIPO_PROVEEDOR:
             env_prefix = tipo.upper()
+            
+            # Usar configuración por defecto como base
+            config_base = configuraciones_defecto.get(tipo, {})
+            
             configuraciones[tipo] = {
                 'api_key': getattr(settings, f'{env_prefix}_API_KEY', ''),
-                'api_url': getattr(settings, f'{env_prefix}_API_URL', ''),
-                'modelo': getattr(settings, f'{env_prefix}_DEFAULT_MODEL', ''),
-                'temperatura': float(getattr(settings, f'{env_prefix}_DEFAULT_TEMPERATURE', 0.7)),
-                'max_tokens': int(getattr(settings, f'{env_prefix}_DEFAULT_MAX_TOKENS', 4000)),
+                'api_url': getattr(settings, f'{env_prefix}_API_URL', config_base.get('api_url', '')),
+                'modelo': getattr(settings, f'{env_prefix}_DEFAULT_MODEL', config_base.get('modelo', '')),
+                'temperatura': float(getattr(settings, f'{env_prefix}_DEFAULT_TEMPERATURE', config_base.get('temperatura', 0.7))),
+                'max_tokens': int(getattr(settings, f'{env_prefix}_DEFAULT_MAX_TOKENS', config_base.get('max_tokens', 4000))),
             }
         
         return configuraciones

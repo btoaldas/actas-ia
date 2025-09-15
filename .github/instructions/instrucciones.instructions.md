@@ -14,6 +14,8 @@ No reinicies el docker a menos que sea estrictamente necesario, por ejemplo si h
 Nunca expongas credenciales en el codigo, si necesitas usarlas siempre usa las variables de entorno que estan en el archivo .env
 Al reiniciar un contenedor docker espera al menos 60 segundos antes de verificar los logs o intentar acceder a la web o api, no lo reinicies y de inmediato intentes acceder, espera el tiempo prudente no reinicies a menos que sea estrictamente necesario.
 Cuando debas ejecutar comandos de manage.py como migrate, createsuperuser, etc, siempre hazlo dentro del contenedor docker, nunca lo hagas fuera del contenedor.
+No abir el navegador para probar es muy basico todo por curl y registra crf y claves y demas tod por curl
+utiliza siempre docker-compose.yml por que el docker-compose.simple.yml no existe
 
 # Copilot Instructions – Actas IA (Django + Docker + AdminLTE)
 

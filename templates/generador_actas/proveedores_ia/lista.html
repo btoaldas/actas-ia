@@ -205,6 +205,11 @@
                                                             title="Probar Conexión">
                                                         <i class="fas fa-flask"></i>
                                                     </button>
+                                                    <a href="{% url 'generador_actas:test_proveedor_ia' %}"
+                                                       class="btn btn-success btn-sm"
+                                                       title="Ir a Pruebas Completas">
+                                                        <i class="fas fa-vial"></i>
+                                                    </a>
                                                     <a href="{% url 'generador_actas:editar_proveedor_ia' proveedor.pk %}" 
                                                        class="btn btn-warning btn-sm" title="Editar">
                                                         <i class="fas fa-edit"></i>

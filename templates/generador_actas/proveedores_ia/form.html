@@ -5,6 +5,7 @@
 
 {% block stylesheets %}
     <link rel="stylesheet" href="{% static 'generador_actas/css/proveedores-ia.css' %}">
+    <link rel="stylesheet" href="{% static 'css/proveedor_ia_form.css' %}">
 {% endblock %}
 
 {% block content %}
@@ -89,15 +90,34 @@
                                     </div>
                                     <div class="card-body">
                                         <div class="row">
+                                            <div class="col-md-12">
+                                                <!-- Checkbox para elegir origen de API Key -->
+                                                <div class="form-group">
+                                                    <div class="form-check">
+                                                        {{ form.usar_env_api_key }}
+                                                        <label class="form-check-label" for="{{ form.usar_env_api_key.id_for_label }}">
+                                                            <strong>{{ form.usar_env_api_key.label }}</strong>
+                                                        </label>
+                                                    </div>
+                                                    <small class="form-text text-muted">
+                                                        {{ form.usar_env_api_key.help_text }}
+                                                    </small>
+                                                    {% if form.usar_env_api_key.errors %}
+                                                        <div class="text-danger small">{{ form.usar_env_api_key.errors }}</div>
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="row">
                                             <div class="col-md-6">
                                                 <div class="form-group">
                                                     <label for="{{ form.api_key.id_for_label }}">
-                                                        Clave API <span class="text-danger">*</span>
+                                                        Clave API Personalizada <span class="text-danger" id="apiKeyRequired">*</span>
                                                     </label>
                                                     <div class="input-group">
                                                         {{ form.api_key }}
                                                         <div class="input-group-append">
-                                                            <button class="btn btn-outline-secondary" type="button" onclick="toggleApiKey()">
+                                                            <button class="btn btn-outline-secondary" type="button" onclick="toggleApiKey()" id="toggleApiKeyBtn" title="Mostrar/Ocultar API Key">
                                                                 <i class="fas fa-eye" id="eyeIcon"></i>
                                                             </button>
                                                         </div>
@@ -105,8 +125,12 @@
                                                     {% if form.api_key.errors %}
                                                         <div class="text-danger small">{{ form.api_key.errors }}</div>
                                                     {% endif %}
-                                                    <small class="form-text text-muted">
-                                                        Dejar vacío para usar la configuración del .env
+                                                    <small class="form-text text-muted" id="apiKeyHelpText">
+                                                        {% if form.api_key.help_text %}
+                                                            {{ form.api_key.help_text }}
+                                                        {% else %}
+                                                            Campo deshabilitado - se usa configuración del .env
+                                                        {% endif %}
                                                     </small>
                                                 </div>
                                             </div>
@@ -284,9 +308,9 @@
 
                                 <!-- Estado -->
                                 <div class="form-group">
-                                    <div class="custom-control custom-switch">
+                                    <div class="custom">
                                         {{ form.activo }}
-                                        <label class="custom-control-label" for="{{ form.activo.id_for_label }}">
+                                        <label class="custom" for="{{ form.activo.id_for_label }}">
                                             <strong>Proveedor Activo</strong>
                                         </label>
                                     </div>
@@ -318,7 +342,7 @@
                     <!-- Ayuda sobre tipos de proveedor -->
                     <div class="card card-info">
                         <div class="card-header">
-                            <h3 class="card-title">💡 Información sobre Proveedores</h3>
+                            <h3 class="card-title">💡 Información sobre dasdasssssssProveedores</h3>
                         </div>
                         <div class="card-body">
                             <div id="proveedorInfo">
@@ -355,6 +379,11 @@
                                     <i class="fas fa-flask"></i> Probar API
                                 </button>
                             </div>
+                            <div class="mt-3">
+                                <a href="{% url 'generador_actas:test_proveedor_ia' %}" class="btn btn-success btn-block">
+                                    <i class="fas fa-vial"></i> Ir a Pruebas Completas
+                                </a>
+                            </div>
                             <div id="testResult"></div>
                         </div>
                     </div>
@@ -386,6 +415,96 @@ document.addEventListener('DOMContentLoaded', function() {
     const modeloInput = document.getElementById('{{ form.modelo.id_for_label }}');
     const temperaturaInput = document.getElementById('{{ form.temperatura.id_for_label }}');
     const apiUrlInput = document.getElementById('{{ form.api_url.id_for_label }}');
+    const usarEnvCheckbox = document.getElementById('{{ form.usar_env_api_key.id_for_label }}');
+    const apiKeyInput = document.getElementById('{{ form.api_key.id_for_label }}');
+    const apiKeyHelpText = document.getElementById('apiKeyHelpText');
+    const apiKeyRequired = document.getElementById('apiKeyRequired');
+    const toggleApiKeyBtn = document.getElementById('toggleApiKeyBtn');
+    
+    // Función para actualizar el estado del campo API Key
+    function actualizarEstadoApiKey() {
+        const usarEnv = usarEnvCheckbox ? usarEnvCheckbox.checked : true;
+        const apiKeyGroup = apiKeyInput.closest('.form-group');
+        
+        if (usarEnv) {
+            // Usar configuración del .env
+            apiKeyInput.disabled = true;
+            apiKeyInput.required = false;
+            apiKeyInput.removeAttribute('required');  // Asegurar que no sea requerido
+            apiKeyInput.placeholder = 'Se usará la configuración del .env';
+            apiKeyHelpText.innerHTML = '<span class="api-key-status env-mode">✓ Configuración del .env</span>';
+            apiKeyRequired.style.display = 'none';
+            toggleApiKeyBtn.disabled = true;
+            apiKeyInput.value = '';  // IMPORTANTE: Limpiar el valor
+            
+            // Aplicar estilo visual
+            if (apiKeyGroup) {
+                apiKeyGroup.classList.remove('custom-mode');
+                apiKeyGroup.classList.add('env-mode');
+            }
+        } else {
+            // Usar API Key personalizada
+            apiKeyInput.disabled = false;
+            apiKeyInput.required = true;
+            apiKeyInput.setAttribute('required', 'required');  // Asegurar que sea requerido
+            apiKeyInput.placeholder = 'Ingrese su API Key personalizada';
+            apiKeyHelpText.innerHTML = '<span class="api-key-status custom-mode">🔑 API Key personalizada</span>';
+            apiKeyRequired.style.display = 'inline';
+            toggleApiKeyBtn.disabled = false;
+            
+            // Aplicar estilo visual
+            if (apiKeyGroup) {
+                apiKeyGroup.classList.remove('env-mode');
+                apiKeyGroup.classList.add('custom-mode');
+            }
+        }
+        
+        // Debug: Log del estado actual
+        console.log('Estado API Key:', {
+            usarEnv: usarEnv,
+            disabled: apiKeyInput.disabled,
+            required: apiKeyInput.required,
+            hasRequiredAttr: apiKeyInput.hasAttribute('required'),
+            value: usarEnv ? 'LIMPIADO' : (apiKeyInput.value ? '***' : 'vacío')
+        });
+    }
+    
+    // Evento para el checkbox
+    if (usarEnvCheckbox) {
+        usarEnvCheckbox.addEventListener('change', actualizarEstadoApiKey);
+        // Aplicar estado inicial
+        actualizarEstadoApiKey();
+    }
+    
+    // Asegurar que el estado esté correcto antes de enviar el formulario
+    const form = document.getElementById('proveedorForm');
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            // Actualizar estado una vez más antes del envío
+            actualizarEstadoApiKey();
+            
+            // Si usa .env, asegurar que api_key esté vacío y NO SEA REQUERIDO
+            if (usarEnvCheckbox && usarEnvCheckbox.checked) {
+                apiKeyInput.value = '';
+                apiKeyInput.removeAttribute('required');
+                apiKeyInput.required = false;
+                
+                // También remover del DOM cualquier atributo required
+                if (apiKeyInput.hasAttribute('required')) {
+                    apiKeyInput.removeAttribute('required');
+                }
+            }
+            
+            // Log para debugging
+            console.log('Enviando formulario con estado:', {
+                usarEnv: usarEnvCheckbox ? usarEnvCheckbox.checked : 'N/A',
+                apiKeyValue: apiKeyInput.value,
+                apiKeyDisabled: apiKeyInput.disabled,
+                apiKeyRequired: apiKeyInput.required,
+                hasRequiredAttribute: apiKeyInput.hasAttribute('required')
+            });
+        });
+    }
     
     // Actualizar valor de temperatura en tiempo real
     if (temperaturaInput) {
@@ -519,6 +638,11 @@ function toggleApiKey() {
     const input = document.getElementById('{{ form.api_key.id_for_label }}');
     const icon = document.getElementById('eyeIcon');
     
+    // No hacer nada si el campo está deshabilitado
+    if (input.disabled) {
+        return;
+    }
+    
     if (input.type === 'password') {
         input.type = 'text';
         icon.className = 'fas fa-eye-slash';
@@ -537,7 +661,10 @@ function probarConexion() {
 {% endblock content %}
 
 {% block javascripts %}
+    <!-- Script específico para el formulario de proveedores -->
+    <script src="{% static 'js/proveedor_ia_form.js' %}"></script>
     <script src="{% static 'generador_actas/js/proveedores-ia.js' %}"></script>
+    
     <script>
         // Configurar ProveedoresIA con datos del template
         document.addEventListener('DOMContentLoaded', function() {
