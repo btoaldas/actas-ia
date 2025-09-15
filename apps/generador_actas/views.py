@@ -12,7 +12,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import ValidationError, PermissionDenied
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.db import transaction
-from django.db.models import Q, Count
+from django.db.models import Q, Count, Sum
 from django.http import JsonResponse, HttpResponse, Http404
 from django.shortcuts import render, get_object_or_404, redirect
 from django.urls import reverse_lazy, reverse
@@ -1416,13 +1416,17 @@ def _iniciar_tarea_asincrona(tipo_operacion, operacion_id, parametros):
 @login_required
 def lista_proveedores_ia(request):
     """Vista para listar proveedores de IA"""
-    proveedores = ProveedorIA.objects.all().order_by('nombre')
     
     # Filtros
     filtro_tipo = request.GET.get('tipo', '')
     filtro_activo = request.GET.get('activo', '')
     filtro_busqueda = request.GET.get('q', '')
+    orden = request.GET.get('orden', 'nombre')  # Nuevo parámetro de ordenación
     
+    # QuerySet base
+    proveedores = ProveedorIA.objects.all()
+    
+    # Aplicar filtros
     if filtro_tipo:
         proveedores = proveedores.filter(tipo=filtro_tipo)
     
@@ -1436,17 +1440,105 @@ def lista_proveedores_ia(request):
             Q(modelo__icontains=filtro_busqueda)
         )
     
+    # Aplicar ordenación
+    ordenes_validos = {
+        'nombre': 'nombre',
+        '-nombre': '-nombre',
+        'tipo': 'tipo',
+        '-tipo': '-tipo',
+        'fecha_creacion': 'fecha_creacion',
+        '-fecha_creacion': '-fecha_creacion',
+        'ultima_conexion': 'ultima_conexion_exitosa',
+        '-ultima_conexion': '-ultima_conexion_exitosa',
+        'total_llamadas': 'total_llamadas',
+        '-total_llamadas': '-total_llamadas',
+        'activo': 'activo',
+        '-activo': '-activo'
+    }
+    
+    if orden in ordenes_validos:
+        proveedores = proveedores.order_by(ordenes_validos[orden])
+    else:
+        proveedores = proveedores.order_by('nombre')
+    
+    # Calcular métricas detalladas
+    todos_proveedores = ProveedorIA.objects.all()
+    total_proveedores = todos_proveedores.count()
+    activos = todos_proveedores.filter(activo=True).count()
+    inactivos = todos_proveedores.filter(activo=False).count()
+    
+    # Métricas adicionales
+    con_errores = todos_proveedores.exclude(ultimo_error='').count()
+    sin_configurar = sum(1 for p in todos_proveedores if not p.esta_configurado)
+    total_llamadas_global = todos_proveedores.aggregate(
+        total=Sum('total_llamadas')
+    )['total'] or 0
+    total_tokens_global = todos_proveedores.aggregate(
+        total=Sum('total_tokens_usados')
+    )['total'] or 0
+    
+    # Métricas por tipo
+    tipos_stats = {}
+    for tipo_code, tipo_name in ProveedorIA.TIPO_PROVEEDOR:
+        count = todos_proveedores.filter(tipo=tipo_code).count()
+        activos_tipo = todos_proveedores.filter(tipo=tipo_code, activo=True).count()
+        if count > 0:
+            tipos_stats[tipo_code] = {
+                'nombre': tipo_name,
+                'total': count,
+                'activos': activos_tipo,
+                'porcentaje': round((count / total_proveedores) * 100, 1) if total_proveedores > 0 else 0
+            }
+    
+    # Proveedor más usado
+    proveedor_mas_usado = todos_proveedores.filter(total_llamadas__gt=0).order_by('-total_llamadas').first()
+    
+    # Últimas conexiones
+    ultimas_conexiones = todos_proveedores.exclude(
+        ultima_conexion_exitosa__isnull=True
+    ).order_by('-ultima_conexion_exitosa')[:5]
+    
     context = {
         'proveedores': proveedores,
         'filtro_tipo': filtro_tipo,
         'filtro_activo': filtro_activo,
         'filtro_busqueda': filtro_busqueda,
+        'orden': orden,
         'tipos_disponibles': ProveedorIA.TIPO_PROVEEDOR,
+        'ordenes_disponibles': [
+            ('nombre', 'Nombre A-Z'),
+            ('-nombre', 'Nombre Z-A'),
+            ('tipo', 'Tipo A-Z'),
+            ('-tipo', 'Tipo Z-A'),
+            ('-fecha_creacion', 'Más recientes'),
+            ('fecha_creacion', 'Más antiguos'),
+            ('-ultima_conexion', 'Última conexión'),
+            ('-total_llamadas', 'Más usados'),
+            ('total_llamadas', 'Menos usados'),
+            ('activo', 'Activos primero'),
+            ('-activo', 'Inactivos primero'),
+        ],
         'page_title': 'Proveedores de IA',
         'breadcrumbs': [
             {'title': 'Generador Actas', 'url': reverse('generador_actas:dashboard')},
             {'title': 'Proveedores IA', 'url': ''}
-        ]
+        ],
+        # Métricas básicas
+        'stats_basicas': {
+            'total': total_proveedores,
+            'activos': activos,
+            'inactivos': inactivos,
+            'con_errores': con_errores,
+        },
+        # Métricas avanzadas
+        'stats_avanzadas': {
+            'sin_configurar': sin_configurar,
+            'total_llamadas_global': total_llamadas_global,
+            'total_tokens_global': total_tokens_global,
+            'proveedor_mas_usado': proveedor_mas_usado,
+            'tipos_stats': tipos_stats,
+            'ultimas_conexiones': ultimas_conexiones,
+        }
     }
     
     return render(request, 'generador_actas/proveedores_ia/lista.html', context)

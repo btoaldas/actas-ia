@@ -42,7 +42,7 @@
                 <div class="col-lg-3 col-6">
                     <div class="small-box bg-info">
                         <div class="inner">
-                            <h3>{{ proveedores|length }}</h3>
+                            <h3>{{ stats_basicas.total }}</h3>
                             <p>Total Proveedores</p>
                         </div>
                         <div class="icon">
@@ -53,7 +53,7 @@
                 <div class="col-lg-3 col-6">
                     <div class="small-box bg-success">
                         <div class="inner">
-                            <h3>{{ proveedores|length }}</h3>
+                            <h3>{{ stats_basicas.activos }}</h3>
                             <p>Proveedores Activos</p>
                         </div>
                         <div class="icon">
@@ -64,7 +64,7 @@
                 <div class="col-lg-3 col-6">
                     <div class="small-box bg-warning">
                         <div class="inner">
-                            <h3>0</h3>
+                            <h3>{{ stats_basicas.inactivos }}</h3>
                             <p>Proveedores Inactivos</p>
                         </div>
                         <div class="icon">
@@ -85,6 +85,54 @@
                 </div>
             </div>
 
+            <!-- Métricas Avanzadas -->
+            <div class="row mb-3">
+                <div class="col-lg-3 col-6">
+                    <div class="small-box bg-danger">
+                        <div class="inner">
+                            <h3>{{ stats_basicas.con_errores }}</h3>
+                            <p>Con Errores</p>
+                        </div>
+                        <div class="icon">
+                            <i class="fas fa-exclamation-triangle"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-6">
+                    <div class="small-box bg-secondary">
+                        <div class="inner">
+                            <h3>{{ stats_avanzadas.sin_configurar }}</h3>
+                            <p>Sin Configurar</p>
+                        </div>
+                        <div class="icon">
+                            <i class="fas fa-cog"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-6">
+                    <div class="small-box bg-purple">
+                        <div class="inner">
+                            <h3>{{ stats_avanzadas.total_llamadas_global|floatformat:0 }}</h3>
+                            <p>Total Llamadas</p>
+                        </div>
+                        <div class="icon">
+                            <i class="fas fa-phone"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-6">
+                    <div class="small-box bg-teal">
+                        <div class="inner">
+                            <h3>{{ stats_avanzadas.total_tokens_global|floatformat:0 }}</h3>
+                            <p>Total Tokens</p>
+                        </div>
+                        <div class="icon">
+                            <i class="fas fa-coins"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- Filtros -->
             <div class="card card-primary card-outline">
                 <div class="card-header">
@@ -97,11 +145,11 @@
                 </div>
                 <div class="card-body">
                     <form method="get" class="row">
-                        <div class="col-md-4">
+                        <div class="col-md-3">
                             <input type="text" name="q" value="{{ filtro_busqueda }}" 
                                    class="form-control" placeholder="Buscar por nombre o modelo...">
                         </div>
-                        <div class="col-md-3">
+                        <div class="col-md-2">
                             <select name="tipo" class="form-control">
                                 <option value="">Todos los tipos</option>
                                 {% for value, label in tipos_disponibles %}
@@ -111,11 +159,20 @@
                                 {% endfor %}
                             </select>
                         </div>
-                        <div class="col-md-3">
+                        <div class="col-md-2">
                             <select name="activo" class="form-control">
                                 <option value="">Todos los estados</option>
                                 <option value="true" {% if filtro_activo == "true" %}selected{% endif %}>Activos</option>
                                 <option value="false" {% if filtro_activo == "false" %}selected{% endif %}>Inactivos</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <select name="orden" class="form-control">
+                                {% for value, label in ordenes_disponibles %}
+                                    <option value="{{ value }}" {% if value == orden %}selected{% endif %}>
+                                        {{ label }}
+                                    </option>
+                                {% endfor %}
                             </select>
                         </div>
                         <div class="col-md-2">
@@ -235,6 +292,80 @@
                             <a href="{% url 'generador_actas:crear_proveedor_ia' %}" class="btn btn-primary">
                                 <i class="fas fa-plus"></i> Crear Primer Proveedor
                             </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Métricas Adicionales -->
+            <div class="row">
+                <div class="col-md-6">
+                    <!-- Distribución por Tipo -->
+                    <div class="card card-info">
+                        <div class="card-header">
+                            <h3 class="card-title">📊 Distribución por Tipo</h3>
+                        </div>
+                        <div class="card-body">
+                            {% for tipo, stats in stats_avanzadas.tipos_stats.items %}
+                                <div class="progress-group">
+                                    <span class="progress-text">{{ stats.nombre }}</span>
+                                    <span class="float-right"><b>{{ stats.activos }}</b>/{{ stats.total }}</span>
+                                    <div class="progress progress-sm">
+                                        <div class="progress-bar bg-primary" style="width: {{ stats.porcentaje }}%"></div>
+                                    </div>
+                                </div>
+                            {% empty %}
+                                <p class="text-muted">No hay datos para mostrar</p>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <!-- Actividad Reciente -->
+                    <div class="card card-success">
+                        <div class="card-header">
+                            <h3 class="card-title">🕒 Últimas Conexiones</h3>
+                        </div>
+                        <div class="card-body">
+                            {% if stats_avanzadas.ultimas_conexiones %}
+                                <ul class="list-unstyled">
+                                    {% for proveedor in stats_avanzadas.ultimas_conexiones %}
+                                        <li class="mb-2">
+                                            <div class="d-flex justify-content-between">
+                                                <span><strong>{{ proveedor.nombre }}</strong></span>
+                                                <small class="text-muted">{{ proveedor.ultima_conexion_exitosa|date:"d/m/Y H:i" }}</small>
+                                            </div>
+                                            <small class="text-muted">{{ proveedor.get_tipo_display }} - {{ proveedor.modelo }}</small>
+                                        </li>
+                                    {% endfor %}
+                                </ul>
+                            {% else %}
+                                <p class="text-muted">No hay conexiones registradas</p>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Proveedor Más Usado -->
+                    {% if stats_avanzadas.proveedor_mas_usado %}
+                        <div class="card card-warning">
+                            <div class="card-header">
+                                <h3 class="card-title">🏆 Proveedor Más Usado</h3>
+                            </div>
+                            <div class="card-body">
+                                <h5>{{ stats_avanzadas.proveedor_mas_usado.nombre }}</h5>
+                                <p class="text-muted">{{ stats_avanzadas.proveedor_mas_usado.get_tipo_display }}</p>
+                                <div class="row">
+                                    <div class="col-6">
+                                        <strong>{{ stats_avanzadas.proveedor_mas_usado.total_llamadas }}</strong><br>
+                                        <small>Llamadas</small>
+                                    </div>
+                                    <div class="col-6">
+                                        <strong>{{ stats_avanzadas.proveedor_mas_usado.total_tokens_usados|floatformat:0 }}</strong><br>
+                                        <small>Tokens</small>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     {% endif %}
                 </div>

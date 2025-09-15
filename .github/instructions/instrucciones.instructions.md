@@ -16,6 +16,7 @@ Al reiniciar un contenedor docker espera al menos 60 segundos antes de verificar
 Cuando debas ejecutar comandos de manage.py como migrate, createsuperuser, etc, siempre hazlo dentro del contenedor docker, nunca lo hagas fuera del contenedor.
 No abir el navegador para probar es muy basico todo por curl y registra crf y claves y demas tod por curl
 utiliza siempre docker-compose.yml por que el docker-compose.simple.yml no existe
+Despeus de un proceso exitoso, es necesario que me preguntes si tienes que hacer el add commit y push en un solo comando para subir lo que se a echo al github, siempre, y yo te conetsatre si o no y aplicas el comando global
 
 # Copilot Instructions – Actas IA (Django + Docker + AdminLTE)
 
