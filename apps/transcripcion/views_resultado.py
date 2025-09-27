@@ -33,8 +33,8 @@ def vista_resultado_transcripcion(request, transcripcion_id):
             'duracion_procesamiento': None
         }
         
-        if transcripcion.fecha_inicio_procesamiento and transcripcion.fecha_completado:
-            duracion = transcripcion.fecha_completado - transcripcion.fecha_inicio_procesamiento
+        if transcripcion.tiempo_inicio_proceso and transcripcion.tiempo_fin_proceso:
+            duracion = transcripcion.tiempo_fin_proceso - transcripcion.tiempo_inicio_proceso
             estadisticas['duracion_procesamiento'] = duracion.total_seconds()
         
         # Preparar timeline para visualización

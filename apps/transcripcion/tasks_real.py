@@ -36,7 +36,7 @@ def procesar_transcripcion_completa(self, transcripcion_id: int):
         
         # Actualizar estado
         transcripcion.estado = EstadoTranscripcion.EN_PROCESO
-        transcripcion.fecha_inicio_procesamiento = timezone.now()
+        transcripcion.tiempo_inicio_proceso = timezone.now()
         transcripcion.progreso = 10
         transcripcion.save()
         
@@ -124,7 +124,7 @@ def procesar_transcripcion_completa(self, transcripcion_id: int):
             transcripcion, 
             'transcripcion_completada',
             {
-                'duracion_procesamiento': (timezone.now() - transcripcion.fecha_inicio_procesamiento).total_seconds(),
+                'duracion_procesamiento': (timezone.now() - transcripcion.tiempo_inicio_proceso).total_seconds() if transcripcion.tiempo_inicio_proceso else 0,
                 'num_hablantes': transcripcion.num_hablantes,
                 'palabras_transcritas': len(transcripcion.texto_completo.split())
             }

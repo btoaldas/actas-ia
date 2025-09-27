@@ -488,7 +488,7 @@ def procesar_transcripcion_completa(self, transcripcion_id: int):
             transcripcion, 
             'transcripcion_completada',
             {
-                'duracion_procesamiento': (timezone.now() - transcripcion.fecha_inicio_procesamiento).total_seconds(),
+                'duracion_procesamiento': (timezone.now() - transcripcion.tiempo_inicio_proceso).total_seconds() if transcripcion.tiempo_inicio_proceso else 0,
                 'num_hablantes': transcripcion.numero_hablantes,
                 'palabras_transcritas': len(transcripcion.texto_completo.split())
             }
