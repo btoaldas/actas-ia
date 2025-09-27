@@ -26,9 +26,10 @@ echo [5] Crear backup
 echo [6] Restaurar backup
 echo [7] Detener sistema
 echo [8] Limpiar y reinstalar
+echo [9] 🆕 Aplicar solo schema de logs (reparacion rapida)
 echo [0] Salir
 echo.
-set /p "opcion=Ingrese su opcion (0-8): "
+set /p "opcion=Ingrese su opcion (0-9): "
 
 if "%opcion%"=="1" goto instalacion_completa
 if "%opcion%"=="2" goto iniciar_sistema
@@ -38,6 +39,7 @@ if "%opcion%"=="5" goto crear_backup
 if "%opcion%"=="6" goto restaurar_backup
 if "%opcion%"=="7" goto detener_sistema
 if "%opcion%"=="8" goto limpiar_reinstalar
+if "%opcion%"=="9" goto aplicar_solo_logs
 if "%opcion%"=="0" goto salir
 goto main
 
@@ -122,7 +124,10 @@ if errorlevel 1 (
 echo 👤 Creando usuarios iniciales...
 docker-compose run --rm web python manage.py crear_usuarios_iniciales
 
-echo 🚀 Iniciando todos los servicios...
+echo �️  Aplicando schema de logs y auditoría (CRÍTICO)...
+call :aplicar_schema_logs
+
+echo �🚀 Iniciando todos los servicios...
 docker-compose up -d
 
 echo ⏳ Esperando servicios...
@@ -236,9 +241,18 @@ echo 🔧 Reparando migraciones...
 :: Limpiar base de datos
 docker exec -i actas_postgres psql -U admin_actas -d actas_municipales_pastaza -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public; GRANT ALL ON SCHEMA public TO admin_actas; GRANT ALL ON SCHEMA public TO public;" >nul 2>&1
 
-:: Aplicar migraciones
+:: Aplicar migraciones Django
 docker-compose run --rm web python manage.py migrate
 docker-compose run --rm web python manage.py crear_usuarios_iniciales
+
+:: 🆕 APLICAR SCHEMA DE LOGS CRÍTICO (previene errores de vistas)
+echo 🗄️  Aplicando schema de logs y auditoría...
+powershell -Command "Get-Content scripts/migrations/2025-09-06_sistema_logs_auditoria.sql | docker exec -i actas_postgres psql -U admin_actas -d actas_municipales_pastaza" >nul 2>&1
+if errorlevel 1 (
+    echo ⚠️  Error aplicando logs - continuando...
+) else (
+    echo ✅ Schema de logs aplicado correctamente
+)
 
 echo ✅ Migraciones reparadas
 goto :eof
@@ -396,6 +410,70 @@ docker volume prune -f
 
 echo 🚀 Ejecutando instalacion completa...
 goto instalacion_completa
+
+:: ========================================
+::   APLICAR SOLO SCHEMA DE LOGS (OPCION 9)
+:: ========================================
+:aplicar_solo_logs
+cls
+echo.
+echo 🗄️  APLICAR SCHEMA DE LOGS Y AUDITORIA
+echo ========================================
+echo.
+echo Esta opcion aplica SOLO el schema de logs sin afectar otros datos.
+echo Util para reparar errores de vistas sin reinstalar todo.
+echo.
+set /p "confirmar=¿Aplicar schema de logs? (S/N): "
+if /i not "!confirmar!"=="s" goto main
+
+echo 🔍 Verificando servicios...
+docker exec actas_postgres pg_isready -U admin_actas >nul 2>&1
+if errorlevel 1 (
+    echo ❌ PostgreSQL no está disponible
+    echo 💡 Asegurate de que el sistema esté iniciado (Opción 2)
+    pause
+    goto main
+)
+
+echo 🗄️  Aplicando schema de logs...
+call :aplicar_schema_logs
+
+echo ✅ SCHEMA DE LOGS APLICADO
+echo ========================================
+echo.
+echo Las vistas de auditoria ahora deberían funcionar correctamente.
+echo.
+pause
+goto main
+
+:: ========================================
+::   FUNCIÓN ESPECÍFICA PARA SCHEMA DE LOGS
+:: ========================================
+:aplicar_schema_logs
+echo 🗄️  Verificando y aplicando schema de logs...
+
+:: Verificar si el archivo de migración existe
+if not exist "scripts\migrations\2025-09-06_sistema_logs_auditoria.sql" (
+    echo ⚠️  Archivo de migración de logs no encontrado
+    echo    scripts\migrations\2025-09-06_sistema_logs_auditoria.sql
+    goto :eof
+)
+
+:: Aplicar schema usando PowerShell (maneja mejor el pipeline)
+powershell -Command "Get-Content scripts/migrations/2025-09-06_sistema_logs_auditoria.sql | docker exec -i actas_postgres psql -U admin_actas -d actas_municipales_pastaza"
+if errorlevel 1 (
+    echo ❌ Error aplicando schema de logs
+    echo 💡 El sistema funcionará pero algunas vistas pueden fallar
+    echo    Execute manualmente: Get-Content scripts/migrations/2025-09-06_sistema_logs_auditoria.sql | docker exec -i actas_postgres psql -U admin_actas -d actas_municipales_pastaza
+) else (
+    echo ✅ Schema de logs aplicado exitosamente
+    echo    - Schema 'logs' creado con 8 tablas
+    echo    - Schema 'auditoria' creado
+    echo    - 37 índices optimizados
+    echo    - 4 funciones de logging
+    echo    - 3 vistas de reportes
+)
+goto :eof
 
 :salir
 cls

@@ -69,6 +69,26 @@ if errorlevel 1 (
 )
 echo ✅ Todos los servicios levantados exitosamente
 
+REM 🆕 Verificación crítica del schema de logs
+echo 🔍 Verificando schema de logs (crítico para vistas)...
+timeout /t 5 >nul
+docker exec actas_postgres psql -U admin_actas -d actas_municipales_pastaza -c "\dn" | findstr logs >nul 2>&1
+if errorlevel 1 (
+    echo ⚠️  Schema 'logs' no encontrado - Aplicando automáticamente...
+    if exist "scripts\migrations\2025-09-06_sistema_logs_auditoria.sql" (
+        powershell -Command "Get-Content scripts/migrations/2025-09-06_sistema_logs_auditoria.sql | docker exec -i actas_postgres psql -U admin_actas -d actas_municipales_pastaza" >nul 2>&1
+        if errorlevel 1 (
+            echo ❌ Error aplicando logs - algunas vistas pueden fallar
+        ) else (
+            echo ✅ Schema de logs aplicado correctamente
+        )
+    ) else (
+        echo ❌ Archivo de migración no encontrado - contactar soporte
+    )
+) else (
+    echo ✅ Schema de logs verificado correctamente
+)
+
 echo.
 echo 🎉 ¡Sistema completo levantado exitosamente!
 echo.
