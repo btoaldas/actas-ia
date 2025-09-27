@@ -1,5 +1,12 @@
 # 🗄️ CONEXIÓN A BASE DE DATOS - NAVICAT
 
+> ⚠️ **NOTA IMPORTANTE**: Si obtienes "Connection Refused" desde fuera de Docker, ejecuta:
+> ```bash
+> docker-compose restart db_postgres
+> Start-Sleep 10  # Esperar 10 segundos
+> ```
+> Esto resuelve el problema común de Docker Desktop en Windows.
+
 ## 📋 **INFORMACIÓN DE CONEXIÓN POSTGRESQL**
 
 ### **Datos de Conexión Principal**
@@ -53,8 +60,30 @@ Query Timeout:   30
 # Verificar que PostgreSQL esté corriendo
 docker ps | findstr postgres
 
-# Probar conexión directa
+# Probar conexión directa (dentro de Docker)
 docker exec -it actas_postgres psql -U admin_actas -d actas_municipales_pastaza -c "SELECT version();"
+
+# Verificar que el puerto esté expuesto al host (Windows)
+netstat -an | findstr :5432
+
+# Si no aparece el puerto, reiniciar PostgreSQL:
+docker-compose restart db_postgres
+Start-Sleep 10
+netstat -an | findstr :5432
+```
+
+### **Verificación de Conectividad TCP (sin psql)**
+```bash
+# Método 1: Usando PowerShell (recomendado)
+Test-NetConnection -ComputerName localhost -Port 5432
+
+# Resultado esperado: TcpTestSucceeded : True
+
+# Método 2: Usando telnet
+telnet localhost 5432
+
+# Si telnet se conecta (aunque no muestre respuesta), la conexión TCP funciona
+# Resultado esperado: NO aparece "Connection refused"
 ```
 
 ### **URL de Conexión Completa**
@@ -99,12 +128,34 @@ SELECT * FROM generador_actas_actamunicipal;
 
 ### **Error: "Connection Refused"**
 ```bash
-# Verificar que Docker esté corriendo
+# 1. Verificar que Docker esté corriendo
 docker ps
 
-# Si no hay contenedores, iniciar sistema
+# 2. Si no hay contenedores, iniciar sistema
 .\iniciar_actas_ia.bat
+
+# 3. SOLUCIÓN COMÚN: Reiniciar PostgreSQL si el puerto no está expuesto
+docker-compose restart db_postgres
+
+# 4. Esperar 10 segundos y verificar puerto
+Start-Sleep 10
+netstat -an | findstr :5432
+
+# 5. Resultado esperado: debería mostrar
+# TCP    0.0.0.0:5432           0.0.0.0:0              LISTENING
 ```
+
+### **Error: Puerto 5432 no está disponible desde Windows**
+Este es un problema común de Docker Desktop. **SOLUCIÓN:**
+```bash
+# Reiniciar específicamente el contenedor PostgreSQL
+docker-compose restart db_postgres
+
+# Verificar que el puerto esté escuchando (después de 10 segundos)
+netstat -an | findstr :5432
+```
+
+Si el comando anterior muestra `TCP    0.0.0.0:5432` entonces ya está solucionado.
 
 ### **Error: "Authentication Failed"**
 - Verificar usuario y contraseña exactos
