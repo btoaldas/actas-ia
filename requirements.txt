@@ -6,6 +6,9 @@ python-dotenv==1.0.1
 str2bool==1.1
 django-quill-editor==0.1.40
 
+# Generación de documentos
+weasyprint==60.2
+
 # Base de datos PostgreSQL
 psycopg2-binary==2.9.9
 

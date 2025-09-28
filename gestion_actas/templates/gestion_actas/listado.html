@@ -1,0 +1,566 @@
+{% extends "layouts/base.html" %}
+{% load static %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block extrastyle %}
+<link rel="stylesheet" href="{% static 'gestion_actas/css/gestion_actas.css' %}">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+<style>
+.card-acta {
+    transition: all 0.3s ease;
+    border: 1px solid #dee2e6;
+}
+
+.card-acta:hover {
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    transform: translateY(-2px);
+}
+
+.badge-estado {
+    font-size: 0.75rem;
+    padding: 0.375rem 0.75rem;
+}
+
+.stats-card {
+    background: linear-gradient(45deg, #007bff, #0056b3);
+    color: white;
+    border-radius: 10px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+}
+
+.filtros-avanzados {
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+}
+
+.accion-rapida {
+    margin: 0 2px;
+    padding: 4px 8px;
+    font-size: 0.75rem;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Content Wrapper. Contains page content -->
+<div class="content-wrapper">
+    <!-- Content Header (Page header) -->
+    <div class="content-header">
+        <div class="container-fluid">
+            <div class="row mb-2">
+                <div class="col-sm-6">
+                    <h1><i class="fas fa-file-contract"></i> {{ page_title }}</h1>
+                </div>
+                <div class="col-sm-6">
+                    <ol class="breadcrumb float-sm-right">
+                        {% for crumb in breadcrumbs %}
+                            {% if crumb.active %}
+                                <li class="breadcrumb-item active">{{ crumb.title }}</li>
+                            {% else %}
+                                <li class="breadcrumb-item"><a href="{{ crumb.url }}">{{ crumb.title }}</a></li>
+                            {% endif %}
+                        {% endfor %}
+                    </ol>
+                </div>
+            </div>
+        </div><!-- /.container-fluid -->
+    </div>
+    <!-- /.content-header -->
+
+    <!-- Main content -->
+    <section class="content">
+        <div class="container-fluid">
+
+<!-- Estadísticas -->
+<div class="row">
+    <div class="col-lg-3 col-6">
+        <div class="small-box bg-info">
+            <div class="inner">
+                <h3>{{ stats.total }}</h3>
+                <p>Total Actas</p>
+            </div>
+            <div class="icon">
+                <i class="fas fa-file-alt"></i>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-3 col-6">
+        <div class="small-box bg-warning">
+            <div class="inner">
+                <h3>{{ stats.en_edicion }}</h3>
+                <p>En Edición</p>
+            </div>
+            <div class="icon">
+                <i class="fas fa-edit"></i>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-3 col-6">
+        <div class="small-box bg-orange">
+            <div class="inner">
+                <h3>{{ stats.en_revision }}</h3>
+                <p>En Revisión</p>
+            </div>
+            <div class="icon">
+                <i class="fas fa-eye"></i>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-3 col-6">
+        <div class="small-box bg-success">
+            <div class="inner">
+                <h3>{{ stats.publicadas }}</h3>
+                <p>Publicadas</p>
+            </div>
+            <div class="icon">
+                <i class="fas fa-globe"></i>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Filtros -->
+<div class="card card-outline card-primary">
+    <div class="card-header">
+        <h3 class="card-title"><i class="fas fa-filter"></i> Filtros de Búsqueda</h3>
+        <div class="card-tools">
+            <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                <i class="fas fa-minus"></i>
+            </button>
+        </div>
+    </div>
+    
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-3">
+                <label for="q" class="form-label">Buscar texto:</label>
+                <input type="text" class="form-control" id="q" name="q" 
+                       value="{{ filtros.busqueda }}" placeholder="Título, contenido...">
+            </div>
+            
+            <div class="col-md-2">
+                <label for="estado" class="form-label">Estado:</label>
+                <select class="form-control" id="estado" name="estado">
+                    <option value="">Todos los estados</option>
+                    {% for estado in estados %}
+                        <option value="{{ estado.codigo }}" 
+                                {% if filtros.estado == estado.codigo %}selected{% endif %}>
+                            {{ estado.nombre }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="col-md-2">
+                <label for="tipo_reunion" class="form-label">Tipo Reunión:</label>
+                <select class="form-control" id="tipo_reunion" name="tipo_reunion">
+                    <option value="">Todos los tipos</option>
+                    {% for tipo in tipos_reunion %}
+                        <option value="{{ tipo.codigo }}" 
+                                {% if filtros.tipo_reunion == tipo.codigo %}selected{% endif %}>
+                            {{ tipo.nombre }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="col-md-2">
+                <label for="fecha_desde" class="form-label">Desde:</label>
+                <input type="date" class="form-control" id="fecha_desde" 
+                       name="fecha_desde" value="{{ filtros.fecha_desde }}">
+            </div>
+            
+            <div class="col-md-2">
+                <label for="fecha_hasta" class="form-label">Hasta:</label>
+                <input type="date" class="form-control" id="fecha_hasta" 
+                       name="fecha_hasta" value="{{ filtros.fecha_hasta }}">
+            </div>
+            
+            <div class="col-md-3">
+                <label class="form-label">&nbsp;</label>
+                <div class="btn-group d-block">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-search"></i> Filtrar
+                    </button>
+                    <a href="{% url 'gestion_actas:listado' %}" class="btn btn-secondary">
+                        <i class="fas fa-times"></i> Limpiar
+                    </a>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Listado de Actas -->
+<div class="card card-outline card-info">
+    <div class="card-header">
+        <h3 class="card-title">
+            <i class="fas fa-list"></i> 
+            Actas Municipales 
+            <small class="text-muted">({{ page_obj.paginator.count }} resultados)</small>
+        </h3>
+    </div>
+    
+    <div class="card-body p-0">
+        {% if page_obj %}
+            <div class="table-responsive">
+                <table class="table table-striped table-hover">
+                    <thead class="table-dark">
+                        <tr>
+                            <th width="3%">#</th>
+                            <th width="25%">Información del Acta</th>
+                            <th width="15%">Detalles de la Reunión</th>
+                            <th width="12%">Transcripción</th>
+                            <th width="10%">Estado Gestión</th>
+                            <th width="15%">Fechas Importantes</th>
+                            <th width="8%">Plantilla/IA</th>
+                            <th width="12%">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for acta in page_obj %}
+                            <tr class="align-middle">
+                                <td>
+                                    <strong class="text-primary">#{{ acta.pk }}</strong>
+                                </td>
+                                
+                                <!-- Información completa del acta -->
+                                <td>
+                                    <div>
+                                        {% if acta.acta_generada %}
+                                            <strong class="text-dark">{{ acta.acta_generada.titulo }}</strong>
+                                            <br>
+                                            <small class="text-info">
+                                                <i class="fas fa-file-signature"></i> 
+                                                {{ acta.acta_generada.numero_acta }}
+                                            </small>
+                                            <br>
+                                            <small class="text-muted">
+                                                <i class="fas fa-user"></i> 
+                                                {{ acta.acta_generada.usuario_creacion.get_full_name|default:acta.acta_generada.usuario_creacion.username }}
+                                            </small>
+                                        {% else %}
+                                            <strong>Gestión Manual #{{ acta.pk }}</strong>
+                                            <br>
+                                            <small class="text-muted">Sin acta generada asociada</small>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                                
+                                <!-- Detalles de la reunión -->
+                                <td>
+                                    {% if acta.acta_generada.transcripcion.procesamiento_audio %}
+                                        {% with proc=acta.acta_generada.transcripcion.procesamiento_audio %}
+                                            <div class="small">
+                                                <strong class="text-success">
+                                                    <i class="fas fa-users"></i> 
+                                                    {{ proc.tipo_reunion.nombre|default:"Reunión" }}
+                                                </strong>
+                                                <br>
+                                                
+                                                {% if proc.participantes_detallados %}
+                                                    <span class="text-primary">
+                                                        <i class="fas fa-user-friends"></i> 
+                                                        {{ proc.participantes_detallados|length }} participante{{ proc.participantes_detallados|length|pluralize }}
+                                                    </span>
+                                                    <br>
+                                                {% endif %}
+                                                
+                                                {% if proc.ubicacion %}
+                                                    <span class="text-secondary">
+                                                        <i class="fas fa-map-marker-alt"></i> 
+                                                        {{ proc.ubicacion|truncatechars:30 }}
+                                                    </span>
+                                                    <br>
+                                                {% endif %}
+                                                
+                                                {% if proc.duracion_seg %}
+                                                    <span class="text-info">
+                                                        <i class="fas fa-clock"></i> 
+                                                        {{ proc.duracion_seg|floatformat:0 }}s 
+                                                        {% widthratio proc.duracion_seg 60 1 as minutos %}
+                                                        ({{ minutos|floatformat:1 }}min)
+                                                    </span>
+                                                {% endif %}
+                                                
+                                                {% if proc.confidencial %}
+                                                    <br>
+                                                    <span class="badge badge-warning badge-sm">
+                                                        <i class="fas fa-lock"></i> Confidencial
+                                                    </span>
+                                                {% endif %}
+                                            </div>
+                                        {% endwith %}
+                                    {% else %}
+                                        <span class="text-muted small">Sin información de reunión</span>
+                                    {% endif %}
+                                </td>
+                                
+                                <!-- Información de transcripción -->
+                                <td>
+                                    {% if acta.acta_generada.transcripcion %}
+                                        {% with trans=acta.acta_generada.transcripcion %}
+                                            <div class="small">
+                                                {% if trans.numero_hablantes %}
+                                                    <span class="text-primary">
+                                                        <i class="fas fa-microphone-alt"></i> 
+                                                        {{ trans.numero_hablantes }} hablante{{ trans.numero_hablantes|pluralize }}
+                                                    </span>
+                                                    <br>
+                                                {% endif %}
+                                                
+                                                {% if trans.palabras_totales %}
+                                                    <span class="text-info">
+                                                        <i class="fas fa-comment-alt"></i> 
+                                                        {{ trans.palabras_totales|floatformat:0 }} palabras
+                                                    </span>
+                                                    <br>
+                                                {% endif %}
+                                                
+                                                {% if trans.confianza_promedio %}
+                                                    <span class="{% if trans.confianza_promedio > 0.8 %}text-success{% elif trans.confianza_promedio > 0.6 %}text-warning{% else %}text-danger{% endif %}">
+                                                        <i class="fas fa-chart-line"></i> 
+                                                        {{ trans.confianza_promedio|floatformat:1 }}% conf.
+                                                    </span>
+                                                {% endif %}
+                                            </div>
+                                        {% endwith %}
+                                    {% else %}
+                                        <span class="text-muted small">Sin transcripción</span>
+                                    {% endif %}
+                                </td>
+                                
+                                <!-- Estado de gestión -->
+                                <td>
+                                    <span class="badge badge-estado" 
+                                          style="background-color: {{ acta.estado.color }}; color: white;">
+                                        {{ acta.estado.nombre }}
+                                    </span>
+                                    
+                                    {% if acta.acta_generada %}
+                                        <br>
+                                        <small class="text-muted">
+                                            Original: 
+                                            <span class="badge badge-sm badge-secondary">
+                                                {{ acta.acta_generada.get_estado_display }}
+                                            </span>
+                                        </small>
+                                    {% endif %}
+                                </td>
+                                
+                                <!-- Fechas importantes -->
+                                <td>
+                                    <div class="small">
+                                        {% if acta.acta_generada.fecha_sesion %}
+                                            <strong class="text-primary">
+                                                <i class="fas fa-calendar-day"></i> Sesión:
+                                            </strong>
+                                            <br>{{ acta.acta_generada.fecha_sesion|date:"d/m/Y H:i" }}
+                                            <br>
+                                        {% endif %}
+                                        
+                                        <span class="text-muted">
+                                            <i class="fas fa-edit"></i> Gestión:
+                                        </span>
+                                        <br>{{ acta.fecha_creacion|date:"d/m/Y H:i" }}
+                                        
+                                        {% if acta.fecha_ultima_edicion != acta.fecha_creacion %}
+                                            <br>
+                                            <span class="text-info">
+                                                <i class="fas fa-sync"></i> Últ. edición:
+                                            </span>
+                                            <br>{{ acta.fecha_ultima_edicion|date:"d/m/Y H:i" }}
+                                        {% endif %}
+                                    </div>
+                                </td>
+                                
+                                <!-- Plantilla e IA -->
+                                <td>
+                                    {% if acta.acta_generada %}
+                                        <div class="small">
+                                            <strong class="text-success">{{ acta.acta_generada.plantilla.nombre|truncatechars:15 }}</strong>
+                                            <br>
+                                            <span class="text-info">{{ acta.acta_generada.proveedor_ia.nombre|truncatechars:15 }}</span>
+                                        </div>
+                                    {% else %}
+                                        <span class="text-muted small">N/A</span>
+                                    {% endif %}
+                                </td>
+                                
+                                <td>
+                                    <div class="btn-group btn-group-sm" role="group">
+                                        <!-- Ver -->
+                                        <a href="{% url 'gestion_actas:ver' acta_id=acta.pk %}" 
+                                           class="btn btn-outline-info accion-rapida" 
+                                           title="Ver acta">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        
+                                        <!-- Editar (siempre disponible por ahora) -->
+                                        <a href="{% url 'gestion_actas:editor' acta_id=acta.pk %}" 
+                                           class="btn btn-outline-primary accion-rapida" 
+                                           title="Editar acta">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        
+                                        <!-- Publicar (si está lista para publicación) -->
+                                        {% if acta.estado.codigo == 'lista_publicacion' %}
+                                            <button onclick="confirmarPublicacion({{ acta.pk }}, '{{ acta.titulo|escapejs }}')"
+                                                   class="btn btn-success accion-rapida" 
+                                                   title="Publicar en Portal Ciudadano">
+                                                <i class="fas fa-globe"></i>
+                                            </button>
+                                        {% endif %}
+                                        
+                                        <!-- Revisar (si corresponde) -->
+                                        {% if acta.proceso_revision %}
+                                            {% for revision in acta.proceso_revision.revisiones.all %}
+                                                {% if revision.usuario == request.user and revision.estado == 'pendiente' %}
+                                                    <a href="{% url 'gestion_actas:revisar' acta_id=acta.pk %}" 
+                                                       class="btn btn-outline-warning accion-rapida" 
+                                                       title="Revisar acta">
+                                                        <i class="fas fa-clipboard-check"></i>
+                                                    </a>
+                                                {% endif %}
+                                            {% endfor %}
+                                        {% endif %}
+                                    </div>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Paginación -->
+            {% if page_obj.has_other_pages %}
+                <div class="card-footer">
+                    <nav aria-label="Navegación de páginas">
+                        <ul class="pagination pagination-sm justify-content-center m-0">
+                            {% if page_obj.has_previous %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page=1">
+                                        <i class="fas fa-angle-double-left"></i>
+                                    </a>
+                                </li>
+                                <li class="page-item">
+                                    <a class="page-link" href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ page_obj.previous_page_number }}">
+                                        <i class="fas fa-angle-left"></i>
+                                    </a>
+                                </li>
+                            {% endif %}
+                            
+                            {% for num in page_obj.paginator.page_range %}
+                                {% if page_obj.number == num %}
+                                    <li class="page-item active">
+                                        <span class="page-link">{{ num }}</span>
+                                    </li>
+                                {% else %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ num }}">{{ num }}</a>
+                                    </li>
+                                {% endif %}
+                            {% endfor %}
+                            
+                            {% if page_obj.has_next %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ page_obj.next_page_number }}">
+                                        <i class="fas fa-angle-right"></i>
+                                    </a>
+                                </li>
+                                <li class="page-item">
+                                    <a class="page-link" href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ page_obj.paginator.num_pages }}">
+                                        <i class="fas fa-angle-double-right"></i>
+                                    </a>
+                                </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                </div>
+            {% endif %}
+            
+        {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                <h4 class="text-muted">No se encontraron actas</h4>
+                <p class="text-muted">No hay actas que coincidan con los filtros aplicados.</p>
+                <a href="{% url 'gestion_actas:listado' %}" class="btn btn-primary">
+                    <i class="fas fa-refresh"></i> Ver todas las actas
+                </a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+        </div><!-- /.container-fluid -->
+    </section>
+    <!-- /.content -->
+</div>
+<!-- /.content-wrapper -->
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+$(document).ready(function() {
+    // Inicializar tooltips
+    $('[title]').tooltip();
+    
+    // Auto-refresh mejorado cada 15 segundos para actualizar solo estados
+    setInterval(function() {
+        actualizarEstadosActas();
+    }, 15000);
+    
+    // Refresh completo cada 60 segundos solo si hay cambios importantes
+    setTimeout(function() {
+        // Solo recargar si no hay formularios activos o modales abiertos
+        if (!$('.modal:visible').length && !$('input:focus, textarea:focus').length) {
+            location.reload();
+        }
+    }, 60000);
+});
+
+function actualizarEstadosActas() {
+    // Función para actualizar solo los estados de las actas sin recargar toda la página
+    // Por ahora mantenemos el refresh completo, pero se puede optimizar con AJAX
+    console.log('Actualizando estados de actas...');
+}
+
+function confirmarPublicacion(actaId, tituloActa) {
+    if (confirm('¿Confirmas PUBLICAR esta acta en el Portal Ciudadano?\n\nActa: ' + tituloActa + '\n\nUna vez publicada, será visible para el público general.')) {
+        // Mostrar indicador de carga
+        const button = event.target.closest('button');
+        const originalContent = button.innerHTML;
+        button.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+        button.disabled = true;
+        
+        // Crear formulario hidden y enviarlo
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = '/gestion-actas/acta/' + actaId + '/publicar/';
+        
+        // Agregar CSRF token
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value || 
+                         document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ||
+                         '{{ csrf_token }}';
+        if (csrfToken) {
+            const csrfInput = document.createElement('input');
+            csrfInput.type = 'hidden';
+            csrfInput.name = 'csrfmiddlewaretoken';
+            csrfInput.value = csrfToken;
+            form.appendChild(csrfInput);
+        }
+        
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
+</script>
+{% endblock %}

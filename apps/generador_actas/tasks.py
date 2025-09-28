@@ -2005,6 +2005,56 @@ Se da por terminada la sesión a las [hora] del día [fecha].
         acta.historial_cambios.append(historial_final)
         acta.save()
         
+        # SINCRONIZACIÓN EXPLÍCITA CON GESTION_ACTAS
+        # Como Celery ejecuta en proceso separado, las señales Django pueden fallar
+        # Llamamos explícitamente a la sincronización
+        try:
+            from gestion_actas.models import GestionActa
+            gestion_acta = GestionActa.objects.get(acta_generada=acta)
+            
+            # Sincronizar contenido si GestionActa está vacía o desactualizada
+            contenido_nuevo = acta.contenido_html or acta.contenido_final or ""
+            contenido_actual = gestion_acta.contenido_editado or ""
+            
+            if contenido_nuevo and (not contenido_actual or len(contenido_actual.strip()) == 0):
+                gestion_acta.contenido_editado = contenido_nuevo
+                gestion_acta.fecha_ultima_edicion = timezone.now()
+                
+                # Actualizar estado según ActaGenerada
+                if acta.estado == 'revision':
+                    # Cambiar a estado apropiado según disponibilidad de estados
+                    try:
+                        from gestion_actas.models import EstadoGestionActa
+                        estado_revision = EstadoGestionActa.objects.filter(
+                            codigo__in=['revision', 'en_revision', 'pendiente_revision']
+                        ).first()
+                        if estado_revision:
+                            gestion_acta.estado = estado_revision
+                    except:
+                        pass  # Mantener estado actual si no se puede cambiar
+                
+                # Agregar información de sincronización
+                cambios = gestion_acta.cambios_realizados or {}
+                cambios['sincronizado_desde_celery'] = {
+                    'timestamp': timezone.now().isoformat(),
+                    'task_id': str(self.request.id),
+                    'contenido_length': len(contenido_nuevo),
+                    'acta_estado': acta.estado
+                }
+                gestion_acta.cambios_realizados = cambios
+                
+                gestion_acta.observaciones = (gestion_acta.observaciones or '') + f'\n[{timezone.now()}] Contenido sincronizado desde Celery (task: {str(self.request.id)[:8]}...)'
+                
+                gestion_acta.save()
+                
+                logger.info(f"🔄 GestionActa ID {gestion_acta.id} sincronizada desde Celery - {len(contenido_nuevo)} chars")
+            else:
+                logger.debug(f"🔍 GestionActa ID {gestion_acta.id} - sin necesidad de sincronización desde Celery")
+                
+        except Exception as sync_error:
+            logger.error(f"❌ Error sincronizando GestionActa desde Celery para acta {acta.id}: {str(sync_error)}")
+            # No fallar la tarea por errores de sincronización
+        
         logger.info(f"✅ Procesamiento de acta {acta.numero_acta} completado exitosamente")
         
         return {
@@ -2416,6 +2466,56 @@ Genera una versión unificada manteniendo toda la información importante pero m
             'timestamp': timezone.now().isoformat(),
         })
         acta.save()
+        
+        # SINCRONIZACIÓN EXPLÍCITA CON GESTION_ACTAS PARA TAREA COMPLEJA
+        # Igual que en procesar_acta_simple_task - Celery necesita sincronización explícita
+        try:
+            from gestion_actas.models import GestionActa
+            gestion_acta = GestionActa.objects.get(acta_generada=acta)
+            
+            # Sincronizar contenido si GestionActa está vacía o desactualizada
+            contenido_nuevo = acta.contenido_html or acta.contenido_final or ""
+            contenido_actual = gestion_acta.contenido_editado or ""
+            
+            if contenido_nuevo and (not contenido_actual or len(contenido_actual.strip()) == 0):
+                gestion_acta.contenido_editado = contenido_nuevo
+                gestion_acta.fecha_ultima_edicion = timezone.now()
+                
+                # Actualizar estado según ActaGenerada
+                if acta.estado == 'revision':
+                    try:
+                        from gestion_actas.models import EstadoGestionActa
+                        estado_revision = EstadoGestionActa.objects.filter(
+                            codigo__in=['revision', 'en_revision', 'pendiente_revision']
+                        ).first()
+                        if estado_revision:
+                            gestion_acta.estado = estado_revision
+                    except:
+                        pass  # Mantener estado actual si no se puede cambiar
+                
+                # Agregar información de sincronización
+                cambios = gestion_acta.cambios_realizados or {}
+                cambios['sincronizado_desde_celery_complejo'] = {
+                    'timestamp': timezone.now().isoformat(),
+                    'task_id': str(self.request.id),
+                    'contenido_length': len(contenido_nuevo),
+                    'acta_estado': acta.estado,
+                    'segmentos_procesados': len(acta.segmentos_procesados),
+                    'task_type': 'procesar_acta_completa_real'
+                }
+                gestion_acta.cambios_realizados = cambios
+                
+                gestion_acta.observaciones = (gestion_acta.observaciones or '') + f'\n[{timezone.now()}] Contenido sincronizado desde Celery complejo (task: {str(self.request.id)[:8]}...)'
+                
+                gestion_acta.save()
+                
+                logger.info(f"🔄 GestionActa ID {gestion_acta.id} sincronizada desde Celery complejo - {len(contenido_nuevo)} chars")
+            else:
+                logger.debug(f"🔍 GestionActa ID {gestion_acta.id} - sin necesidad de sincronización desde Celery complejo")
+                
+        except Exception as sync_error:
+            logger.error(f"❌ Error sincronizando GestionActa desde Celery complejo para acta {acta.id}: {str(sync_error)}")
+            # No fallar la tarea por errores de sincronización
         
         logger.info(f"✅ Acta {acta.numero_acta} procesada exitosamente")
         

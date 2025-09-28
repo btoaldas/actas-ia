@@ -1,0 +1,2268 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Actas IA | Editando: Acta #26</title>
+
+  <!-- Google Font: Source Sans Pro -->
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700&display=fallback">
+  <!-- Theme style -->
+  <link rel="stylesheet" href="/static/dist/css/adminlte.min.css">
+  <!-- overlayScrollbars -->
+  <link rel="stylesheet" href="/static/plugins/overlayScrollbars/css/OverlayScrollbars.min.css">
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="/static/plugins/fontawesome-free/css/all.min.css">
+  
+  <!-- Custom Sidebar CSS -->
+  <link rel="stylesheet" href="/static/css/sidebar-custom.css">
+
+
+  
+<!-- Summernote Rich Text Editor -->
+<link rel="stylesheet" href="/static/plugins/summernote/summernote-bs4.min.css">
+<style>
+.editor-container {
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.summernote-editor {
+    min-height: 500px;
+    font-family: 'Times New Roman', serif;
+    font-size: 14px;
+    line-height: 1.6;
+}
+
+.toolbar-custom {
+    border-bottom: 1px solid #ccc;
+    padding: 10px;
+}
+
+.save-indicator {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 1000;
+    opacity: 0;
+    transition: opacity 0.3s;
+}
+
+.save-indicator.show {
+    opacity: 1;
+}
+
+.acta-header {
+    background: linear-gradient(45deg, #007bff, #0056b3);
+    color: white;
+    padding: 1.5rem;
+    border-radius: 8px 8px 0 0;
+}
+
+.acta-sidebar {
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 1rem;
+    height: fit-content;
+}
+
+.historial-item {
+    border-left: 3px solid #007bff;
+    padding-left: 10px;
+    margin-bottom: 10px;
+}
+
+.contenido-preview {
+    max-height: 300px;
+    overflow-y: auto;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    padding: 10px;
+    background: white;
+}
+</style>
+
+</head>
+<body class="">
+
+  <div class="wrapper">
+
+    
+      <!-- Preloader -->
+      <div class="preloader flex-column justify-content-center align-items-center">
+        <img class="animation__shake" src="/static/dist/img/logoia.png" alt="AdminLTELogo" height="60" width="60">
+      </div>
+    
+
+    
+      
+  
+  <!-- Navbar -->
+  <nav class="main-header navbar navbar-expand navbar-white navbar-light">
+    <!-- Left navbar links -->
+    <ul class="navbar-nav">
+      <li class="nav-item">
+        <a class="nav-link" data-widget="pushmenu" href="#" role="button"><i class="fas fa-bars"></i></a>
+      </li>
+      
+      <!-- Enlaces públicos destacados - Visible en pantallas grandes -->
+      <li class="nav-item d-none d-lg-inline-block">
+        <a href="/portal-ciudadano/" class="btn btn-primary btn-sm ml-2" style="margin-top: 4px;">
+          <i class="fas fa-scroll"></i> 
+          <span class="font-weight-bold">ACTAS PÚBLICAS</span>
+        </a>
+      </li>
+      <li class="nav-item d-none d-lg-inline-block">
+        <a href="/transparencia/" class="btn btn-info btn-sm ml-2" style="margin-top: 4px;">
+          <i class="fas fa-eye"></i> 
+          <span class="font-weight-bold">PORTAL TRANSPARENCIA</span>
+        </a>
+      </li>
+      
+      <!-- Menú dropdown para pantallas medianas y pequeñas -->
+      <li class="nav-item dropdown d-lg-none">
+        <a class="nav-link dropdown-toggle btn btn-outline-primary btn-sm ml-2" data-toggle="dropdown" href="#" role="button" aria-expanded="false">
+          <i class="fas fa-globe"></i> <span class="d-none d-md-inline">Portales Públicos</span>
+        </a>
+        <div class="dropdown-menu">
+          <a class="dropdown-item" href="/portal-ciudadano/">
+            <i class="fas fa-scroll text-primary"></i> 
+            <strong>Actas Públicas</strong>
+            <small class="d-block text-muted">Consulte las actas municipales</small>
+          </a>
+          <div class="dropdown-divider"></div>
+          <a class="dropdown-item" href="/transparencia/">
+            <i class="fas fa-eye text-info"></i> 
+            <strong>Portal Transparencia</strong>
+            <small class="d-block text-muted">Información pública municipal</small>
+          </a>
+        </div>
+      </li>
+      
+      
+        <!-- Enlaces de usuario autenticado comentados -->
+      
+    </ul>
+
+    <!-- Right navbar links -->
+    <ul class="navbar-nav ml-auto">
+      <!-- Indicador visual para usuarios no autenticados -->
+      
+      
+      <!-- Navbar Search -->
+      <li class="nav-item">
+        <a class="nav-link" data-widget="navbar-search" href="#" role="button">
+          <i class="fas fa-search"></i>
+        </a>
+        <div class="navbar-search-block">
+          <form class="form-inline" method="get" action="/portal-ciudadano/">
+            <div class="input-group input-group-sm">
+              <input class="form-control form-control-navbar" type="search" name="search" placeholder="Buscar en actas municipales..." aria-label="Buscar" value="">
+              <div class="input-group-append">
+                <button class="btn btn-navbar" type="submit">
+                  <i class="fas fa-search"></i>
+                </button>
+                <button class="btn btn-navbar" type="button" data-widget="navbar-search">
+                  <i class="fas fa-times"></i>
+                </button>
+              </div>
+            </div>
+          </form>
+        </div>
+      </li>
+
+      <!-- Messages Dropdown Menu -->
+      <li class="nav-item dropdown navbar-eventos">
+        <a class="nav-link" data-toggle="dropdown" href="#">
+          <i class="far fa-comments"></i>
+          <span class="badge badge-danger navbar-badge">5</span>
+        </a>
+        <div class="dropdown-menu dropdown-menu-lg dropdown-menu-right">
+          
+            
+              <a href="#" class="dropdown-item">
+                <!-- Message Start -->
+                <div class="media">
+                  <div class="media-object mr-3">
+                    <i class="fas fa-skull text-danger"></i>
+                  </div>
+                  <div class="media-body">
+                    <h3 class="dropdown-item-title">
+                      CRITICAL: Error del sistema
+                      
+                        <span class="float-right text-sm text-danger"><i class="fas fa-exclamation-triangle"></i></span>
+                      
+                    </h3>
+                    <p class="text-sm">gestion_actas/ver_acta.html</p>
+                    <p class="text-sm text-muted">
+                      <i class="far fa-clock mr-1"></i> hace 19 horas
+                    </p>
+                  </div>
+                </div>
+                <!-- Message End -->
+              </a>
+              
+                <div class="dropdown-divider"></div>
+              
+            
+              <a href="#" class="dropdown-item">
+                <!-- Message Start -->
+                <div class="media">
+                  <div class="media-object mr-3">
+                    <i class="fas fa-skull text-danger"></i>
+                  </div>
+                  <div class="media-body">
+                    <h3 class="dropdown-item-title">
+                      CRITICAL: Error del sistema
+                      
+                        <span class="float-right text-sm text-danger"><i class="fas fa-exclamation-triangle"></i></span>
+                      
+                    </h3>
+                    <p class="text-sm">gestion_actas/ver_acta.html</p>
+                    <p class="text-sm text-muted">
+                      <i class="far fa-clock mr-1"></i> hace 19 horas
+                    </p>
+                  </div>
+                </div>
+                <!-- Message End -->
+              </a>
+              
+                <div class="dropdown-divider"></div>
+              
+            
+              <a href="#" class="dropdown-item">
+                <!-- Message Start -->
+                <div class="media">
+                  <div class="media-object mr-3">
+                    <i class="fas fa-skull text-danger"></i>
+                  </div>
+                  <div class="media-body">
+                    <h3 class="dropdown-item-title">
+                      CRITICAL: Error del sistema
+                      
+                        <span class="float-right text-sm text-danger"><i class="fas fa-exclamation-triangle"></i></span>
+                      
+                    </h3>
+                    <p class="text-sm">gestion_actas/ver_acta.html</p>
+                    <p class="text-sm text-muted">
+                      <i class="far fa-clock mr-1"></i> hace 19 horas
+                    </p>
+                  </div>
+                </div>
+                <!-- Message End -->
+              </a>
+              
+                <div class="dropdown-divider"></div>
+              
+            
+              <a href="#" class="dropdown-item">
+                <!-- Message Start -->
+                <div class="media">
+                  <div class="media-object mr-3">
+                    <i class="fas fa-skull text-danger"></i>
+                  </div>
+                  <div class="media-body">
+                    <h3 class="dropdown-item-title">
+                      CRITICAL: Error del sistema
+                      
+                        <span class="float-right text-sm text-danger"><i class="fas fa-exclamation-triangle"></i></span>
+                      
+                    </h3>
+                    <p class="text-sm">gestion_actas/ver_acta.html</p>
+                    <p class="text-sm text-muted">
+                      <i class="far fa-clock mr-1"></i> hace 19 horas
+                    </p>
+                  </div>
+                </div>
+                <!-- Message End -->
+              </a>
+              
+                <div class="dropdown-divider"></div>
+              
+            
+              <a href="#" class="dropdown-item">
+                <!-- Message Start -->
+                <div class="media">
+                  <div class="media-object mr-3">
+                    <i class="fas fa-skull text-danger"></i>
+                  </div>
+                  <div class="media-body">
+                    <h3 class="dropdown-item-title">
+                      CRITICAL: Error del sistema
+                      
+                        <span class="float-right text-sm text-danger"><i class="fas fa-exclamation-triangle"></i></span>
+                      
+                    </h3>
+                    <p class="text-sm">Invalid filter: &#x27;div&#x27;</p>
+                    <p class="text-sm text-muted">
+                      <i class="far fa-clock mr-1"></i> hace 19 horas
+                    </p>
+                  </div>
+                </div>
+                <!-- Message End -->
+              </a>
+              
+            
+          
+          <div class="dropdown-divider"></div>
+          <a href="/auditoria/eventos/" class="dropdown-item dropdown-footer">Ver Todos los Eventos</a>
+        </div>
+      </li>
+
+
+      <!-- Notifications Dropdown Menu -->
+      <li class="nav-item dropdown">
+        <a class="nav-link" data-toggle="dropdown" href="#">
+          <i class="far fa-bell"></i>
+          <span class="badge badge-warning navbar-badge">0</span>
+        </a>
+        <div class="dropdown-menu dropdown-menu-lg dropdown-menu-right">
+          <span class="dropdown-item dropdown-header">0 Actas Recientes</span>
+          <div class="dropdown-divider"></div>
+          
+          
+            <div class="dropdown-item text-center text-muted py-3">
+              <i class="fas fa-file-alt mr-2 text-muted"></i>
+              <small>No hay actas publicadas recientes</small>
+            </div>
+          
+          
+          <div class="dropdown-divider"></div>
+          <a href="/portal-ciudadano/" class="dropdown-item dropdown-footer">
+            <i class="fas fa-eye mr-2"></i>Ver Todas las Actas Públicas
+          </a>
+        </div>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" data-widget="fullscreen" href="#" role="button">
+          <i class="fas fa-expand-arrows-alt"></i>
+        </a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" data-widget="control-sidebar" data-controlsidebar-slide="true" href="#" role="button">
+          <i class="fas fa-th-large"></i>
+        </a>
+      </li>
+    </ul>
+  </nav>
+  <!-- /.navbar -->
+
+  <!-- CSS adicional para mejorar la presentación -->
+  <link rel="stylesheet" href="/static/css/navbar-eventos.css">
+  <style>
+    /* Animación hover para botones del menú */
+    .navbar .btn-primary:hover,
+    .navbar .btn-info:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+      transition: all 0.3s ease;
+    }
+    
+    /* Asegurar que los botones estén alineados */
+    .navbar .btn-sm {
+      padding: 0.25rem 0.75rem;
+      font-size: 0.875rem;
+      line-height: 1.5;
+      border-radius: 0.2rem;
+    }
+    
+    /* Mejorar el dropdown en móviles */
+    @media (max-width: 991px) {
+      .navbar .dropdown-menu {
+        margin-top: 0.5rem !important;
+        border: 2px solid #007bff;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      }
+      
+      .navbar .dropdown-item:hover {
+        background-color: #f8f9fa;
+        padding-left: 1.5rem;
+        transition: all 0.2s ease;
+      }
+    }
+    
+    /* Prevenir overflow en pantallas pequeñas */
+    @media (max-width: 576px) {
+      .navbar-nav {
+        flex-wrap: nowrap;
+      }
+      
+      .nav-item {
+        flex-shrink: 0;
+      }
+    }
+  </style>
+    
+
+    
+      
+
+<!-- Main Sidebar Container -->
+<aside class="main-sidebar sidebar-dark-primary elevation-4">
+  <!-- Brand Logo -->
+  <a href="/" class="brand-link d-flex align-items-center" style="padding: 0.8rem 1rem; height: auto; min-height: 3.5rem;">
+    <div class="brand-logo-container" style="display: flex; align-items: center; margin-right: 10px;">
+      <!-- Opción 1: Logo con fondo blanco (descomentar para usar) -->
+      <img src="/static/dist/img/logoia2.svg?v=20250906" 
+           alt="Municipio Logo" 
+           class="brand-image-custom logo-con-fondo"
+           style="width: 70px; 
+                  height: 70px;"> 
+      
+      <!-- Opción 2: Logo invertido a blanco (activo por defecto) -->
+       <!--<img src="/static/dist/img/logoia2.svg?v=20250906" 
+           alt="Municipio Logo" 
+           class="brand-image-custom logo-invertido"
+           style="width: 45px; 
+                  height: 45px;"> -->
+    </div>
+    <div class="brand-text-container" style="display: flex; align-items: center;">
+      <span class="brand-text font-weight-bold" 
+            style="font-size: 2rem; 
+                   color: #ffffff; 
+                   text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+                   letter-spacing: 1px;">
+        Actas <span style="color: #17a2b8;">IA</span>
+      </span>
+    </div>
+  </a>
+
+  <!-- Sidebar -->
+  <div class="sidebar" style="padding-top: 0.5rem;">
+    <!-- Sidebar user panel (optional) -->
+    <div class="user-panel mt-2 pb-3 mb-3 d-flex align-items-center" style="border-top: 1px solid rgba(255,255,255,0.1); padding-top: 1rem; min-height: 80px;">
+      <div class="image" style="padding-left: 0.5rem;">
+        <img src="/static/dist/img/user2-160x160.jpg" 
+             class="img-circle elevation-2" 
+             alt="User Image"
+             style="width: 55px; height: 55px; object-fit: cover;">
+      </div>
+      <div class="info" style="padding-left: 10px;">
+        
+          <a href="/users/profile/" class="d-block" style="font-size: 1.1rem;">
+            <i class="fas fa-user-circle"></i> superadmin
+          </a>
+          <small class="d-block text-muted" style="margin-top: 5px;">
+            <i class="fas fa-circle text-success" style="font-size: 8px;"></i> En línea
+          </small>
+                
+      </div>
+    </div>
+
+    <!-- Enlaces de autenticación -->
+    <div class="user-actions" style="border-bottom: 1px solid #4f5962; margin-bottom: 1rem;">
+      <ul class="nav nav-pills nav-sidebar flex-column">
+        
+          <li class="nav-item">
+            <a href="/admin/logout/" class="nav-link">
+              <i class="fas fa-sign-out-alt nav-icon text-danger"></i>
+              <p>Cerrar Sesión</p>
+            </a> 
+          </li>
+          <li class="nav-item">
+            <a href="/admin/password_change/" class="nav-link ">
+              <i class="fas fa-key nav-icon text-info"></i>
+              <p>Cambiar Contraseña</p>
+            </a>
+          </li>
+        
+      </ul>
+    </div>
+
+    <!-- SidebarSearch Form -->
+    <div class="form-inline">
+      <form class="input-group" method="get" action="/portal-ciudadano/" style="width:100%;">
+        <input class="form-control form-control-sidebar" type="search" name="search" placeholder="Buscar en actas municipales..." aria-label="Buscar" value="">
+        <div class="input-group-append">
+          <button class="btn btn-sidebar" type="submit">
+            <i class="fas fa-search fa-fw"></i>
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Sidebar Menu -->
+    <nav class="mt-2">
+      
+
+<ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu" data-accordion="false">
+    <!-- Dashboard Principal (simplificado) -->
+    <li class="nav-item">
+        <a href="/" class="nav-link ">
+            <i class="nav-icon fas fa-tachometer-alt"></i>
+            <p>Dashboard Principal</p>
+        </a>
+    </li>
+  <!-- Separador -->
+    <li class="nav-header">PROCESAMIENTO DE AUDIO</li>
+    
+    <!-- Procesamiento de Audio -->
+    <li class="nav-item ">
+        <a href="#" class="nav-link ">
+            <i class="nav-icon fas fa-microphone-alt"></i>
+            <p>Proceso de Audio
+                <i class="right fas fa-angle-left"></i>
+            </p>
+        </a>
+        <ul class="nav nav-treeview">
+            <li class="nav-item">
+                <a href="/audio/" class="nav-link ">
+                    
+                    <p>🎯 Centro de Audio</p>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="/audio/lista/" class="nav-link ">
+                    
+                    <p>📋 Lista de Procesos</p>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="/audio/tipos-reunion/" class="nav-link ">
+                                        <p>⚙️ Tipos de Reunión</p>
+                </a>
+            </li>
+        </ul>
+    </li>
+
+    <!-- Transcripción y Diarización -->
+    <!--Transcripción version anterior
+    <li class="nav-item ">
+        <a href="#" class="nav-link ">
+          
+            <p>
+                🗣️ Transcripción
+                <i class="right fas fa-angle-left"></i>
+            </p>
+        </a>
+        <ul class="nav nav-treeview">
+            <li class="nav-item">
+                <a href="/transcripcion/audios-listos/" class="nav-link ">
+                    <i class="far fa-circle nav-icon"></i>
+                    <p>🎵 Audios Listos para Transcribir</p>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="/transcripcion/lista/" class="nav-link ">
+                    <i class="far fa-circle nav-icon"></i>
+                    <p>📋 Lista de Transcripciones</p>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="#" class="nav-link ">
+                    <i class="far fa-circle nav-icon"></i>
+                    <p>⚙️ Configuración</p>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="#" class="nav-link ">
+                    <i class="far fa-circle nav-icon"></i>
+                    <p>📊 Estadísticas</p>
+                </a>
+            </li>
+        </ul>
+    </li>
+    --- IGNORE --->
+
+
+    <!-- Transcripción V2 - Nueva Arquitectura de Dashboards -->
+    <li class="nav-item ">
+        <a href="#" class="nav-link ">
+              <i class="nav-icon fas fa-comments"></i>
+            <p>             Transcripción V2
+                <i class="right fas fa-angle-left"></i>
+            </p>
+        </a>
+        <ul class="nav nav-treeview">
+            <li class="nav-item">
+                <a href="/transcripcion/audios/" class="nav-link ">
+                 
+                    <p>🎵 Audios por Transcribir</p>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="/transcripcion/transcripciones/" class="nav-link ">
+              
+                    <p>📋 Transcripciones Realizadas</p>
+                </a>
+            </li>
+            <!-- Se accede desde audios y transcripciones
+            <li class="nav-item">
+                <a href="#" class="nav-link disabled" style="opacity: 0.6;">
+                   <p>⚙️ Configurar Procesamiento</p>
+                    <small class="text-muted">(Se accede desde audios)</small>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="#" class="nav-link disabled" style="opacity: 0.6;">
+                    <i class="far fa-circle nav-icon"></i>
+                    <p>🔍 Ver Detalle</p>
+                    <small class="text-muted">(Se accede desde transcripciones)</small>
+                </a>
+            </li>
+            --- IGNORE --->
+        </ul>
+    </li>
+<!-- Separador -->
+    <li class="nav-header">PROCESAMIENTO DE ACTAS</li>
+    <!-- Generador de Actas IA - Menú Principal -->
+    <li class="nav-item ">
+        <a href="#" class="nav-link ">
+            <i class="nav-icon fas fa-brain"></i>
+            <p>Generador de Actas IA
+                <i class="right fas fa-angle-left"></i>
+            </p>
+        </a>
+        <ul class="nav nav-treeview">
+            <!-- Dashboard Principal del Generador -->
+            <li class="nav-item">
+                <a href="/generador-actas/" class="nav-link ">
+                   
+                    <p>📊 Dashboard General</p>
+                </a>
+            </li>
+            
+            <!-- Gestión de Proveedores IA -->
+            <li class="nav-item">
+                <a href="/generador-actas/proveedores/" class="nav-link ">
+                 
+                    <p>🧠 Dashboard de IAs</p>
+                </a>
+            </li>
+            
+            <li class="nav-item">
+                <a href="/generador-actas/proveedores/crear/" class="nav-link ">
+                
+                    <p>⚙️ Crear/Editar IA</p>
+                </a>
+            </li>
+            
+            <!-- Gestión de Segmentos -->
+            <li class="nav-item">
+                <a href="/generador-actas/segmentos/" class="nav-link ">
+                 
+                    <p>📝 Dashboard de Segmentos</p>
+                </a>
+            </li>
+            
+            <li class="nav-item">
+                <a href="/generador-actas/segmentos/crear/" class="nav-link ">
+                 
+                    <p>✏️ Crear/Editar Segmento</p>
+                </a>
+            </li>
+            
+            <!-- Gestión de Plantillas -->
+            <li class="nav-item">
+                <a href="/generador-actas/plantillas/" class="nav-link ">
+         
+                    <p>📋 Dashboard de Plantillas</p>
+                </a>
+            </li>
+            
+            <li class="nav-item">
+                <a href="/generador-actas/plantillas/crear/" class="nav-link ">
+               
+                    <p>📄 Crear/Editar Plantilla</p>
+                </a>
+            </li>
+            
+            <!-- NUEVO SISTEMA DE PLANTILLAS CON EJECUCIÓN -->
+            <li class="nav-item">
+                <a href="/generador-actas/plantillas/nuevo/dashboard/" class="nav-link ">
+                    <i class="nav-icon fas fa-project-diagram"></i>
+                    <p>🎯 Dashboard Plantillas Avanzado</p>
+                </a>
+            </li>
+            
+            <li class="nav-item">
+                <a href="/generador-actas/plantillas/nuevo/crear/" class="nav-link ">
+                    <i class="nav-icon fas fa-plus-circle"></i>
+                    <p>⚡ Nueva Plantilla Completa</p>
+                </a>
+            </li>
+            
+            <li class="nav-item">
+                <a href="/generador-actas/ejecuciones/" class="nav-link ">
+                    <i class="nav-icon fas fa-play-circle"></i>
+                    <p>🚀 Historial de Ejecuciones</p>
+                </a>
+            </li>
+            
+            <!-- Gestión de Actas IA -->
+            <li class="nav-item">
+                <a href="/generador-actas/actas/" class="nav-link ">
+            
+                    <p>📊 Dashboard de Actas IA</p>
+                </a>
+            </li>
+            
+            <li class="nav-item">
+                <a href="/generador-actas/actas/crear/" class="nav-link ">
+              
+                    <p>🚀 Crear/Procesar Acta IA</p>
+                </a>
+            </li>
+            
+            <!-- Configuración Avanzada -->
+            <li class="nav-item">
+                <a href="/generador-actas/configuracion/" class="nav-link ">
+             
+                    <p>⚙️ Configuración Global</p>
+                </a>
+            </li>
+        </ul>
+    </li>
+
+    <!-- Gestión de Actas no funcional (simplificado) 
+    <li class="nav-item ">
+        <a href="#" class="nav-link ">
+            <i class="nav-icon fas fa-file-alt"></i>
+            <p>Gestión de Actas
+                <i class="right fas fa-angle-left"></i>
+            </p>
+        </a>
+        <ul class="nav nav-treeview">
+            <li class="nav-item">
+                <a href="/actas/listado/" class="nav-link ">
+                    <i class="far fa-circle nav-icon"></i>
+                    <p>📄 Listado de Actas</p>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="/actas/nueva/" class="nav-link ">
+                    <i class="far fa-circle nav-icon"></i>
+                    <p>📂 Nueva Acta</p>
+                </a>
+            </li>
+        </ul>
+    </li>
+    --- IGNORE --->
+
+    <!-- Procesamiento con IA no funcional (simplificado) 
+    <li class="nav-item ">
+        <a href="#" class="nav-link ">
+            <i class="nav-icon fas fa-robot"></i>
+            <p>
+                🤖 Procesamiento IA
+                <i class="right fas fa-angle-left"></i>
+            </p>
+        </a>
+        <ul class="nav nav-treeview">
+            <li class="nav-item">
+                <a href="/audio/" class="nav-link ">
+                    <i class="far fa-circle nav-icon"></i>
+                    <p>🎤 Transcripción de Audio</p>
+                </a>
+            </li>
+        </ul>
+    </li>
+    --- IGNORE --->
+
+
+    <!-- Administración de Actas -->
+     <!-- AQUI SE PONDRA EL MENU DE GESTION DE ACTAS CUANDO ESTE FUNCIONAL -->
+      <li class="nav-item ">
+        <a href="#" class="nav-link ">
+            <i class="nav-icon fas fa-file-alt"></i>
+            <p>Gestión de Actas
+                <i class="right fas fa-angle-left"></i>
+            </p>
+        </a>
+      <!-- Validación de Actas -->
+       <!-- AQUI SE PONDRA EL MENU DE VALIDACION DE ACTAS CUANDO ESTE FUNCIONAL -->
+      <!--Aprobación de Actas -->
+       <!-- AQUI SE PONDRA EL MENU DE APROBACION DE ACTAS CUANDO ESTE FUNCIONAL -->
+      <!--Publicación de Actas -->
+       <!-- AQUI SE PONDRA EL MENU DE PUBLICACION DE ACTAS CUANDO ESTE FUNCIONAL -->
+ 
+ 
+       
+<!-- Separador -->
+    <li class="nav-header">ADMINISTRACION GENERAL</li>
+
+    <!-- Administración del Sistema -->
+    <li class="nav-item ">
+        <a href="#" class="nav-link ">
+            <i class="nav-icon fas fa-cogs"></i>
+            <p>Sistema
+                <i class="right fas fa-angle-left"></i>
+            </p>
+        </a>
+        <ul class="nav nav-treeview">
+            <!-- Panel de Administración Django no funcional 
+            <li class="nav-item">
+                <a href="/admin/" class="nav-link ">
+                    <i class="far fa-circle nav-icon"></i>
+                    <p>🔐 Panel de Administración</p>
+                </a>
+            </li>
+        -->
+            <!-- Configuraciones del Sistema IA -->
+            
+                    <li class="nav-item">
+                        <a href="/config-system/" class="nav-link ">
+                            <i class="far fa-dot-circle nav-icon"></i>
+                            <p>📊 Dashboard Config</p>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="/config-system/ia/" class="nav-link ">
+                            <i class="far fa-dot-circle nav-icon"></i>
+                            <p>🧠 Config IA</p>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="/config-system/whisper/" class="nav-link ">
+                            <i class="far fa-dot-circle nav-icon"></i>
+                            <p>🎤 Config Whisper</p>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="/config-system/smtp/" class="nav-link ">
+                            <i class="far fa-dot-circle nav-icon"></i>
+                            <p>📧 Config SMTP</p>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="/config-system/email-config/" class="nav-link ">
+                            <i class="far fa-dot-circle nav-icon"></i>
+                            <p>✉️ Config Emails</p>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="/config-system/email-logs/" class="nav-link ">
+                            <i class="far fa-dot-circle nav-icon"></i>
+                            <p>📋 Logs Email</p>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="/config-system/usuarios/" class="nav-link ">
+                            <i class="far fa-dot-circle nav-icon"></i>
+                            <p>👥 Usuarios Config</p>
+                        </a>
+                    </li>
+          
+        </ul>
+    </li>
+   
+
+    <!-- Auditoría y Seguridad -->
+    <li class="nav-item ">
+        <a href="#" class="nav-link ">
+            <i class="nav-icon fas fa-shield-alt"></i>
+            <p>Auditoría & Seguridad
+                <i class="right fas fa-angle-left"></i>
+            </p>
+        </a>
+        <ul class="nav nav-treeview">
+            <li class="nav-item">
+                <a href="/auditoria/" class="nav-link ">
+                    <i class="far fa-circle nav-icon"></i>
+                    <p>📊 Dashboard de Auditoría</p>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="/auditoria/logs/sistema/" class="nav-link ">
+                    <i class="far fa-circle nav-icon"></i>
+                    <p>📋 Logs del Sistema</p>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="/auditoria/logs/navegacion/" class="nav-link ">
+                    <i class="far fa-circle nav-icon"></i>
+                    <p>🔍 Logs de Navegación</p>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="/auditoria/auditoria/cambios/" class="nav-link ">
+                    <i class="far fa-circle nav-icon"></i>
+                    <p>📝 Auditoría de Cambios</p>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="/auditoria/debug/session/" class="nav-link ">
+                    <i class="far fa-circle nav-icon"></i>
+                    <p>🔧 Debug Sesiones</p>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="/auditoria/debug/sessions/" class="nav-link ">
+                    <i class="far fa-circle nav-icon"></i>
+                    <p>🔍 Debug Todas las Sesiones</p>
+                </a>
+            </li>
+        </ul>
+    </li>
+
+   
+
+
+<!-- Separador -->
+    <li class="nav-header">OTROS</li>
+
+    
+
+    <!-- Eventos Municipales -->
+    <li class="nav-item ">
+        <a href="#" class="nav-link ">
+            <i class="nav-icon fas fa-calendar-alt"></i>
+            <p>Eventos
+                <i class="right fas fa-angle-left"></i>
+            </p>
+        </a>
+        <ul class="nav nav-treeview">
+            <li class="nav-item">
+                <a href="/eventos/calendario/" class="nav-link ">
+                    
+                    <p>📅 Calendario</p>
+                </a>
+            </li>
+            
+            <li class="nav-item">
+                <a href="/eventos/nuevo/" class="nav-link ">
+                 
+                    <p>➕ Añadir Evento</p>
+                </a>
+            </li>
+            
+            <li class="nav-item">
+                <a href="/eventos/calendario/?tipo=sesion_concejo" class="nav-link">
+                  
+                    <p>🏛️ Sesiones de Concejo</p>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="/eventos/calendario/?tipo=reunion_publica" class="nav-link">
+            
+                    <p>👥 Reuniones Públicas</p>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="/eventos/calendario/?tipo=audiencia_publica" class="nav-link">
+                  
+                    <p>🎤 Audiencias Públicas</p>
+                </a>
+            </li>
+        </ul>
+    </li>
+    
+    
+    <!-- Elementos reorganizados -->
+    <li class="nav-item ">
+        <a href="#" class="nav-link ">
+            <i class="nav-icon fas fa-th-large"></i>
+            <p>Herramientas Adicionales
+                <i class="right fas fa-angle-left"></i>
+            </p>
+        </a>
+        <ul class="nav nav-treeview">
+            <!-- Estadísticas Avanzadas (sin renombrar) -->
+            <li class="nav-item">
+                <a href="/dashboard-v2/" class="nav-link ">
+                    <i class="far fa-circle nav-icon"></i>
+                    <p>Estadísticas Avanzadas</p>
+                </a>
+            </li>
+            <!-- Métricas de IA (sin renombrar) -->
+            <li class="nav-item">
+                <a href="/dashboard-v3/" class="nav-link ">
+                    <i class="far fa-circle nav-icon"></i>
+                    <p>Métricas de IA</p>
+                </a>
+            </li>
+            <!-- Buscar Actas → widgets -->
+            <li class="nav-item">
+                <a href="/widgets/" class="nav-link ">
+                    <i class="far fa-circle nav-icon"></i>
+                    <p>widgets</p>
+                </a>
+            </li>
+            <!-- Estadísticas de Actas → chartjs -->
+            <li class="nav-item">
+                <a href="/chartjs/" class="nav-link ">
+                    <i class="far fa-circle nav-icon"></i>
+                    <p>chartjs</p>
+                </a>
+            </li>
+            <!-- Procesamiento Automático → tasks -->
+            <li class="nav-item">
+                <a href="/tasks/" class="nav-link ">
+                    <i class="far fa-circle nav-icon"></i>
+                    <p>tasks</p>
+                </a>
+            </li>
+            <!-- Configurar IA → Perfil -->
+            <li class="nav-item">
+                <a href="/users/profile/" class="nav-link ">
+                    <i class="far fa-circle nav-icon"></i>
+                    <p>Perfil</p>
+                </a>
+            </li>
+            <!-- Dashboard General → inicio -->
+            <li class="nav-item">
+                <a href="/" class="nav-link ">
+                    <i class="far fa-circle nav-icon"></i>
+                    <p>inicio</p>
+                </a>
+            </li>
+            <!-- Gestión de Datos → panel -->
+            <li class="nav-item">
+                <a href="/table/simple/" class="nav-link ">
+                    <i class="far fa-circle nav-icon"></i>
+                    <p>panel</p>
+                </a>
+            </li>
+            <!-- Tablas Dinámicas → monitoring -->
+            <li class="nav-item">
+                <a href="/table/data/" class="nav-link ">
+                    <i class="far fa-circle nav-icon"></i>
+                    <p>monitoring</p>
+                </a>
+            </li>
+            <!-- Herramientas Rápidas → batch -->
+            <li class="nav-item">
+                <a href="/table/jsgrid/" class="nav-link ">
+                    <i class="far fa-circle nav-icon"></i>
+                    <p>batch</p>
+                </a>
+            </li>
+            <!-- Análisis de Texto → text-analysis -->
+            <li class="nav-item">
+                <a href="/ia/analisis-texto/" class="nav-link ">
+                    <i class="far fa-circle nav-icon"></i>
+                    <p>text-analysis</p>
+                </a>
+            </li>
+            <!-- Escaneo de Documentos → auto-classification -->
+            <li class="nav-item">
+                <a href="/top-navigation/" class="nav-link">
+                    <i class="far fa-circle nav-icon"></i>
+                    <p>auto-classification</p>
+                </a>
+            </li>
+            <!-- OCR - Reconocimiento → data-extraction -->
+            <li class="nav-item">
+                <a href="/top-nav-sidebar/" class="nav-link">
+                    <i class="far fa-circle nav-icon"></i>
+                    <p>data-extraction</p>
+                </a>
+            </li>
+            <!-- Validación de Datos → version-control -->
+            <li class="nav-item">
+                <a href="/boxed/" class="nav-link ">
+                    <i class="far fa-circle nav-icon"></i>
+                    <p>version-control</p>
+                </a>
+            </li>
+            <!-- Archivo Digital → backup -->
+            <li class="nav-item">
+                <a href="/fixed-sidebar/" class="nav-link ">
+                    <i class="far fa-circle nav-icon"></i>
+                    <p>backup</p>
+                </a>
+            </li>
+            <!-- Portal de Transparencia → network -->
+            <li class="nav-item">
+                <a href="/fixed-navbar/" class="nav-link ">
+                    <i class="far fa-circle nav-icon"></i>
+                    <p>network</p>
+                </a>
+            </li>
+            <!-- Galería de Documentos → file-manager -->
+            <li class="nav-item">
+                <a href="/examples/gallery/" class="nav-link ">
+                    <i class="far fa-circle nav-icon"></i>
+                    <p>file-manager</p>
+                </a>
+            </li>
+            <!-- Gestión de Usuarios → code-editor -->
+            <li class="nav-item">
+                <a href="/form/general/" class="nav-link ">
+                    <i class="far fa-circle nav-icon"></i>
+                    <p>code-editor</p>
+                </a>
+            </li>
+            <!-- Configuración Municipal → web-terminal -->
+            <li class="nav-item">
+                <a href="/form/advanced/" class="nav-link ">
+                    <i class="far fa-circle nav-icon"></i>
+                    <p>web-terminal</p>
+                </a>
+            </li>
+            <!-- Manual de Usuario → tech-docs -->
+            <li class="nav-item">
+                <a href="/examples/invoice/" class="nav-link ">
+                    <i class="far fa-circle nav-icon"></i>
+                    <p>tech-docs</p>
+                </a>
+            </li>
+            <!-- APIs Públicas → api-docs -->
+            <li class="nav-item">
+                <a href="#" class="nav-link ">
+                    <i class="far fa-circle nav-icon"></i>
+                    <p>api-docs</p>
+                </a>
+            </li>
+            <!-- KPIs de Eficiencia → dev-tools -->
+            <li class="nav-item">
+                <a href="/uplot/" class="nav-link ">
+                    <i class="far fa-circle nav-icon"></i>
+                    <p>dev-tools</p>
+                </a>
+            </li>
+        </ul>
+    </li>
+
+    <!-- Separador NO visible 
+    <li class="nav-header">ACCESO RÁPIDO</li>
+--- IGNORE --->
+    <!-- Accesos Rápidos 
+    <li class="nav-item">
+        <a href="/actas/nueva/" class="nav-link">
+            <i class="nav-icon fas fa-plus text-success"></i>
+            <p>Nueva Acta</p>
+        </a>
+    </li>
+    
+    <li class="nav-item">
+        <a href="/actas/listado/" class="nav-link">
+            <i class="nav-icon fas fa-search text-primary"></i>
+            <p>Buscar Actas</p>
+        </a>
+    </li>
+    
+    <li class="nav-item">
+        <a href="/chartjs/" class="nav-link">
+            <i class="nav-icon fas fa-chart-bar text-warning"></i>
+            <p>Estadísticas</p>
+        </a>
+    </li>
+      
+    <li class="nav-item">
+        <a target="_blank" href="https://puyo.gob.ec/soporte/" class="nav-link">
+            <i class="fa fa-download text-primary nav-icon"></i>
+            <p>Soporte</p>
+        </a>
+    </li>
+
+</ul>
+
+    --- IGNORE --->
+    
+    <!-- Autenticación -->
+    
+    <li class="nav-item">
+        <a href="/accounts/logout/" class="nav-link">
+            <i class="fa fa-sign-out-alt nav-icon"></i>
+            <p>Salir</p>
+        </a>
+    </li>
+     
+  
+    </nav>
+    <!-- /.sidebar-menu -->
+  </div>
+  <!-- /.sidebar -->
+</aside>
+
+<style>
+  /* Estilos base del brand-link */
+  .brand-link {
+    display: flex !important;
+    align-items: center !important;
+    border-bottom: 3px solid #17a2b8;
+    background: linear-gradient(135deg, rgba(52,58,64,1) 0%, rgba(33,37,41,1) 100%);
+    margin-bottom: 0;
+  }
+  
+  /* Opción 1: Logo con fondo blanco */
+  .logo-con-fondo {
+    background-color: #ffffff;
+    padding: 8px !important;
+    border-radius: 50%;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.2), 
+                0 0 20px rgba(255,255,255,0.3);
+    opacity: 1;
+    transition: all 0.3s ease;
+  }
+  
+  .logo-con-fondo:hover {
+    transform: scale(1.1) rotate(5deg);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.3), 
+                0 0 30px rgba(23, 162, 184, 0.5);
+    background-color: #f8f9fa;
+  }
+  
+  /* Opción 2: Logo invertido a blanco */
+  .logo-invertido {
+    filter: brightness(0) invert(1);
+    opacity: 0.95;
+    transition: all 0.3s ease;
+    padding: 5px;
+    background-color: rgba(255, 255, 255, 0.1);
+    border-radius: 50%;
+    box-shadow: 0 0 15px rgba(255,255,255,0.2);
+  }
+  
+  .logo-invertido:hover {
+    transform: scale(1.1) rotate(5deg);
+    filter: brightness(0) invert(1) drop-shadow(0 0 10px rgba(23, 162, 184, 0.8));
+    opacity: 1;
+    background-color: rgba(23, 162, 184, 0.2);
+    box-shadow: 0 0 25px rgba(23, 162, 184, 0.5);
+  }
+  
+  /* Efecto hover en el brand-link */
+  .brand-link:hover .brand-text {
+    color: #17a2b8 !important;
+  }
+  
+  /* Asegurar que el sidebar comience después del brand */
+  .sidebar {
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+  
+  /* Ajustar el panel de usuario para que no se sobreponga */
+  .user-panel {
+    clear: both;
+    overflow: hidden;
+    transition: all 0.3s ease;
+  }
+  
+  .user-panel:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+  }
+  
+  .user-panel .image img {
+    border: 3px solid rgba(255, 255, 255, 0.2);
+    transition: all 0.3s ease;
+  }
+  
+  .user-panel:hover .image img {
+    border-color: #17a2b8;
+    transform: scale(1.05);
+  }
+</style>
+    
+    
+    
+
+<!-- Indicador de guardado automático -->
+<div id="saveIndicator" class="alert alert-success save-indicator">
+    <i class="fas fa-check"></i> <span id="saveMessage">Guardado automáticamente</span>
+</div>
+
+<form id="editorForm" method="post">
+    <input type="hidden" name="csrfmiddlewaretoken" value="iICuyAuQWPdW40NHM480ufRpTV4VCbxJ5a9xisRtm5dLasfA0fTBlR0U3PYN2ED6">
+    
+    <div class="row">
+        <!-- Columna principal: Editor -->
+        <div class="col-lg-8">
+            <div class="card editor-container">
+                <!-- Encabezado del Acta CON INFORMACIÓN RICA -->
+                <div class="acta-header">
+                    <div class="row align-items-center">
+                        <div class="col">
+                            
+                                <h4><i class="fas fa-file-contract"></i> Test Creación Automática Gestión</h4>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <p class="mb-1">
+                                            <strong><i class="fas fa-file-signature"></i> TEST-SIGNAL-001</strong>
+                                        </p>
+                                        <small>
+                                            <i class="fas fa-calendar-day"></i> Sesión: 28/09/2025 07:17
+                                        </small>
+                                    </div>
+                                    <div class="col-md-6">
+                                        
+                                            <p class="mb-1">
+                                                <strong><i class="fas fa-users"></i> reunion_trabajo</strong>
+                                            </p>
+                                            <small>
+                                                
+                                                    <i class="fas fa-user-friends"></i> 3 participantes
+                                                
+                                                
+                                                
+                                                    | <i class="fas fa-clock"></i> 88s
+                                                
+                                            </small>
+                                        
+                                    </div>
+                                </div>
+                                <hr style="border-color: rgba(255,255,255,0.3); margin: 0.5rem 0;">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <small>
+                                            <i class="fas fa-robot"></i> <strong>Generado por:</strong> Proveedor Demo
+                                            | <i class="fas fa-file-alt"></i> Test Modelo Correcto BD
+                                        </small>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <small>
+                                            <i class="fas fa-user"></i> <strong>Creado por:</strong> Super Administrador
+                                            
+                                        </small>
+                                    </div>
+                                </div>
+                            
+                        </div>
+                        <div class="col-auto">
+                            <div class="text-center">
+                                <span class="badge badge-lg" style="background-color: #ffc107; color: white; font-size: 0.9rem; padding: 0.5rem 1rem;">
+                                    En Edición/Depuración
+                                </span>
+                                
+                                    <br>
+                                    <small>
+                                        Estado Original: 
+                                        <span class="badge badge-sm badge-light" style="color: #333; margin-top: 0.25rem;">
+                                            Borrador
+                                        </span>
+                                    </small>
+                                
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Título del Acta -->
+                <div class="card-body">
+                    <div class="form-group mb-4">
+                        <label for="titulo" class="form-label">
+                            <strong><i class="fas fa-heading"></i> Título del Acta:</strong>
+                        </label>
+                        <input type="text" class="form-control form-control-lg" id="titulo" name="titulo" 
+                               value="Test Creación Automática Gestión" required 
+                               placeholder="Ingrese el título del acta...">
+                    </div>
+                    
+                    <!-- Editor de texto enriquecido -->
+                    <div class="form-group">
+                        <label class="form-label">
+                            <strong><i class="fas fa-file-text"></i> Contenido del Acta:</strong>
+                        </label>
+                        
+                        <!-- Editor Summernote -->
+                        <div id="summernote" class="summernote-editor">
+<h1>ACTA DE REUNIÓN MUNICIPAL</h1>
+<h2>Información General</h2>
+<p>En la ciudad de <strong>Puyo</strong>, el día <em>28 de septiembre de 2025</em>, se llevó a cabo una reunión con los siguientes participantes:</p>
+<ul>
+<li>Alcalde Municipal</li>
+<li>Secretario General</li>
+<li>Director de Obras Públicas</li>
+</ul>
+<h2>Puntos Tratados</h2>
+<ol>
+<li><strong>Aprobación del presupuesto 2025</strong>
+   <p>Se discutió en detalle el presupuesto propuesto para el próximo año.</p>
+</li>
+<li><strong>Proyectos de infraestructura</strong>
+   <p>Se presentaron los siguientes proyectos:</p>
+   <ul>
+   <li>Pavimentación de calles</li>
+   <li>Construcción de parque municipal</li>
+   </ul>
+</li>
+</ol>
+<blockquote>
+<p>Es importante destacar que todos los proyectos fueron aprobados por unanimidad.</p>
+</blockquote>
+</div>
+                        
+                        <!-- Campo oculto para el contenido HTML -->
+                        <textarea id="contenido_html" name="contenido_html" style="display:none;">
+&lt;h1&gt;ACTA DE REUNIÓN MUNICIPAL&lt;/h1&gt;
+&lt;h2&gt;Información General&lt;/h2&gt;
+&lt;p&gt;En la ciudad de &lt;strong&gt;Puyo&lt;/strong&gt;, el día &lt;em&gt;28 de septiembre de 2025&lt;/em&gt;, se llevó a cabo una reunión con los siguientes participantes:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;Alcalde Municipal&lt;/li&gt;
+&lt;li&gt;Secretario General&lt;/li&gt;
+&lt;li&gt;Director de Obras Públicas&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2&gt;Puntos Tratados&lt;/h2&gt;
+&lt;ol&gt;
+&lt;li&gt;&lt;strong&gt;Aprobación del presupuesto 2025&lt;/strong&gt;
+   &lt;p&gt;Se discutió en detalle el presupuesto propuesto para el próximo año.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Proyectos de infraestructura&lt;/strong&gt;
+   &lt;p&gt;Se presentaron los siguientes proyectos:&lt;/p&gt;
+   &lt;ul&gt;
+   &lt;li&gt;Pavimentación de calles&lt;/li&gt;
+   &lt;li&gt;Construcción de parque municipal&lt;/li&gt;
+   &lt;/ul&gt;
+&lt;/li&gt;
+&lt;/ol&gt;
+&lt;blockquote&gt;
+&lt;p&gt;Es importante destacar que todos los proyectos fueron aprobados por unanimidad.&lt;/p&gt;
+&lt;/blockquote&gt;
+</textarea>
+                    </div>
+                    
+                    <!-- Observaciones -->
+                    <div class="form-group mt-4">
+                        <label for="observaciones" class="form-label">
+                            <i class="fas fa-comment"></i> Observaciones:
+                        </label>
+                        <textarea class="form-control" id="observaciones" name="observaciones" rows="3" 
+                                  placeholder="Agregue observaciones adicionales...">Creado automáticamente al generar acta. Estado original: borrador</textarea>
+                    </div>
+                </div>
+                
+                <!-- Acciones -->
+                <div class="card-footer">
+                    <div class="row">
+                        <div class="col">
+                            <button type="submit" class="btn btn-success btn-lg">
+                                <i class="fas fa-save"></i> Guardar Cambios
+                            </button>
+                            
+                            
+                                <button type="submit" name="enviar_revision" class="btn btn-primary btn-lg ml-2">
+                                    <i class="fas fa-paper-plane"></i> Enviar a Revisión
+                                </button>
+                            
+                        </div>
+                        
+                        <div class="col-auto">
+                            <a href="/gestion-actas/" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left"></i> Volver al Listado
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Sidebar: Información y Historial -->
+        <div class="col-lg-4">
+            <!-- Información RICA del Acta -->
+            <div class="card acta-sidebar mb-4">
+                <h5><i class="fas fa-info-circle"></i> Información del Acta</h5>
+                
+                <div class="info-item mb-2">
+                    <strong>ID Gestión:</strong> #26
+                </div>
+                
+                
+                    <div class="info-item mb-2">
+                        <strong>Número Acta:</strong> TEST-SIGNAL-001
+                    </div>
+                
+                
+                <div class="info-item mb-2">
+                    <strong>Estado Gestión:</strong>
+                    <span class="badge" style="background-color: #ffc107; color: white;">
+                        En Edición/Depuración
+                    </span>
+                </div>
+                
+                
+                    <div class="info-item mb-2">
+                        <strong>Estado Original:</strong>
+                        <span class="badge badge-secondary badge-sm">
+                            Borrador
+                        </span>
+                    </div>
+                    
+                    <!-- Información de la Reunión -->
+                    <hr>
+                    <h6><i class="fas fa-users"></i> Información de la Reunión</h6>
+                    
+                    
+                        <div class="info-item mb-2">
+                            <strong>Tipo:</strong> reunion_trabajo
+                        </div>
+                        
+                        
+                            <div class="info-item mb-2">
+                                <strong>Participantes:</strong> 3
+                                <br><small class="text-muted">
+                                    
+                                         , 
+                                    
+                                         , 
+                                    
+                                         
+                                    
+                                    
+                                </small>
+                            </div>
+                        
+                        
+                        
+                        
+                        
+                            <div class="info-item mb-2">
+                                <strong>Duración:</strong> 
+                                88s
+                                
+                                (1,0min)
+                            </div>
+                        
+                        
+                        
+                    
+                    
+                    <!-- Información de Transcripción -->
+                    <hr>
+                    <h6><i class="fas fa-microphone-alt"></i> Transcripción</h6>
+                    
+                    
+                        
+                            <div class="info-item mb-2">
+                                <strong>Hablantes:</strong> 3
+                            </div>
+                        
+                        
+                        
+                        
+                        
+                    
+                    
+                    <!-- Información de Generación -->
+                    <hr>
+                    <h6><i class="fas fa-robot"></i> Generación IA</h6>
+                    
+                    <div class="info-item mb-2">
+                        <strong>Plantilla:</strong><br>
+                        <small>Test Modelo Correcto BD</small>
+                    </div>
+                    
+                    <div class="info-item mb-2">
+                        <strong>Proveedor IA:</strong><br>
+                        <small>Proveedor Demo</small>
+                    </div>
+                    
+                    
+                    
+                    
+                
+                
+                <hr>
+                <h6><i class="fas fa-edit"></i> Editor</h6>
+                <div class="info-item mb-2">
+                    <strong>Palabras:</strong> <span id="wordCount">0</span>
+                </div>
+                
+                <div class="info-item mb-2">
+                    <strong>Caracteres:</strong> <span id="charCount">0</span>
+                </div>
+                
+                
+            </div>
+            
+            <!-- Historial de Cambios -->
+            
+        </div>
+    </div>
+</form>
+
+
+
+    
+      
+
+<footer class="main-footer">
+
+  <strong>&copy; Actas IA.io</strong> - coded by <a target="_blank" href="https://app-generator.dev">App-Generator</a> and by <a target="_blank" href="#">Grupo 7 Poryecto Integrador 8 - UNIANDES</a>.
+
+  <div class="float-right d-none d-sm-inline-block">
+    <b>Version</b> 3.2.0
+  </div>
+
+</footer>
+
+    
+
+    
+      
+      <!-- Control Sidebar -->
+      <aside class="control-sidebar control-sidebar-dark">
+        <!-- Control sidebar content goes here -->
+      </aside>
+      <!-- /.control-sidebar -->
+    
+    
+
+  </div>
+  
+  <!-- Widget de Debug de Sesiones -->
+  <!-- Widget de Debug de Sesiones solo para superusuarios -->
+
+<div id="session-debug-widget" style="
+    position: fixed; 
+    bottom: 20px; 
+    right: 20px; 
+    z-index: 9999;
+    background: #2c3e50;
+    color: white;
+    padding: 15px;
+    border-radius: 10px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+    min-width: 320px;
+    font-size: 12px;
+    font-family: 'Courier New', monospace;
+    display: none;
+    max-height: 80vh;
+    overflow-y: auto;
+">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+        <h5 style="margin: 0; color: #3498db;">🔧 Debug Sesión</h5>
+        <button onclick="toggleSessionWidget()" style="
+            background: #e74c3c; 
+            border: none; 
+            color: white; 
+            padding: 5px 10px; 
+            border-radius: 5px;
+            cursor: pointer;
+        ">✕</button>
+    </div>
+    
+    <div id="session-info">
+        <div><strong>🍪 Sesión ID:</strong> <span id="session-id">Cargando...</span></div>
+        <div><strong>👤 Usuario:</strong> <span id="session-user">Cargando...</span></div>
+        <div><strong>⏰ Última Actividad:</strong> <span id="session-activity">Cargando...</span></div>
+        <div><strong>🌐 IP:</strong> <span id="session-ip">Cargando...</span></div>
+        <div><strong>⏱️ Tiempo Restante:</strong> <span id="session-expires">Cargando...</span></div>
+        <div><strong>📊 Requests:</strong> <span id="session-requests">Cargando...</span></div>
+    </div>
+    
+    <hr style="border-color: #34495e; margin: 10px 0;">
+    
+    <div id="cookies-info">
+        <strong>🍪 Cookies Activas:</strong>
+        <div id="cookies-list" style="max-height: 150px; overflow-y: auto; margin-top: 5px;">
+            Cargando...
+        </div>
+    </div>
+    
+    <hr style="border-color: #34495e; margin: 10px 0;">
+    
+    <div id="path-history">
+        <strong>🛤️ Historial de Navegación:</strong>
+        <div id="path-list" style="max-height: 100px; overflow-y: auto; margin-top: 5px;">
+            Cargando...
+        </div>
+    </div>
+    
+    <div style="margin-top: 10px;">
+        <button onclick="refreshSessionInfo()" style="
+            background: #27ae60; 
+            border: none; 
+            color: white; 
+            padding: 5px 10px; 
+            border-radius: 3px;
+            cursor: pointer;
+            margin-right: 5px;
+            font-size: 11px;
+        ">🔄 Actualizar</button>
+        
+        <button onclick="clearSessionData()" style="
+            background: #f39c12; 
+            border: none; 
+            color: white; 
+            padding: 5px 10px; 
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 11px;
+        ">🗑️ Limpiar</button>
+    </div>
+</div>
+
+<!-- Botón flotante para mostrar el widget -->
+<div id="session-debug-trigger" style="
+    position: fixed; 
+    bottom: 20px; 
+    right: 20px; 
+    z-index: 9998;
+    background: #3498db;
+    color: white;
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 4px 15px rgba(52, 152, 219, 0.3);
+    font-size: 20px;
+    transition: all 0.3s ease;
+" onclick="toggleSessionWidget()" title="Debug de Sesiones">
+    🔧
+</div>
+
+<script>
+let sessionWidgetVisible = false;
+let sessionRefreshInterval = null;
+
+function toggleSessionWidget() {
+    const widget = document.getElementById('session-debug-widget');
+    const trigger = document.getElementById('session-debug-trigger');
+    
+    sessionWidgetVisible = !sessionWidgetVisible;
+    
+    if (sessionWidgetVisible) {
+        widget.style.display = 'block';
+        trigger.style.display = 'none';
+        refreshSessionInfo();
+        
+        // Auto-refresh cada 30 segundos
+        sessionRefreshInterval = setInterval(refreshSessionInfo, 30000);
+    } else {
+        widget.style.display = 'none';
+        trigger.style.display = 'flex';
+        
+        if (sessionRefreshInterval) {
+            clearInterval(sessionRefreshInterval);
+            sessionRefreshInterval = null;
+        }
+    }
+}
+
+function refreshSessionInfo() {
+    fetch('/auditoria/debug/session/api/', {
+        method: 'GET',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        document.getElementById('session-id').textContent = (data.session_key || 'No disponible').substring(0, 20) + '...';
+        document.getElementById('session-user').textContent = data.user || 'Anónimo';
+        document.getElementById('session-activity').textContent = data.last_activity ? new Date(data.last_activity).toLocaleTimeString() : 'No disponible';
+        document.getElementById('session-ip').textContent = data.ip_address || 'No disponible';
+        document.getElementById('session-expires').textContent = data.expires_in || 'No disponible';
+        document.getElementById('session-requests').textContent = data.request_count || '0';
+        
+        // Mostrar cookies
+        const cookiesList = document.getElementById('cookies-list');
+        if (data.cookies && Object.keys(data.cookies).length > 0) {
+            cookiesList.innerHTML = Object.entries(data.cookies)
+                .map(([name, value]) => 
+                    `<div style="background: #34495e; padding: 3px 5px; margin: 2px 0; border-radius: 3px; font-size: 10px;">
+                        <strong>${name}:</strong> ${value.length > 25 ? value.substring(0, 25) + '...' : value}
+                    </div>`
+                ).join('');
+        } else {
+            cookiesList.innerHTML = '<div style="color: #95a5a6; font-size: 10px;">No hay cookies</div>';
+        }
+        
+        // Mostrar historial de navegación
+        const pathList = document.getElementById('path-list');
+        if (data.path_history && data.path_history.length > 0) {
+            pathList.innerHTML = data.path_history.slice(-5).map(pathInfo => {
+                const timestamp = pathInfo.timestamp ? new Date(pathInfo.timestamp).toLocaleTimeString() : '';
+                return `<div style="background: #34495e; padding: 2px 5px; margin: 1px 0; border-radius: 3px; font-size: 10px;">
+                    <strong>${pathInfo.path || pathInfo}</strong> <small style="color: #bdc3c7;">${timestamp}</small>
+                </div>`;
+            }).join('');
+        } else {
+            pathList.innerHTML = '<div style="color: #95a5a6; font-size: 10px;">Sin historial</div>';
+        }
+    })
+    .catch(error => {
+        console.error('Error al obtener información de sesión:', error);
+        document.getElementById('session-id').textContent = 'Error al cargar';
+    });
+}
+
+function clearSessionData() {
+    if (confirm('¿Estás seguro de que quieres limpiar los datos de sesión?')) {
+        fetch('/auditoria/debug/session/clear/', {
+            method: 'POST',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || ''
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            alert(data.message || 'Datos de sesión limpiados');
+            refreshSessionInfo();
+        })
+        .catch(error => {
+            console.error('Error al limpiar sesión:', error);
+        });
+    }
+}
+
+// Log automático de actividades
+document.addEventListener('DOMContentLoaded', function() {
+    // Log de carga de página
+    logActivity('page_load', {
+        url: window.location.href,
+        title: document.title,
+        timestamp: new Date().toISOString()
+    });
+    
+    // Log de clicks en elementos importantes
+    document.addEventListener('click', function(event) {
+        const target = event.target;
+        
+        // Solo loggear clicks en elementos importantes
+        if (target.tagName === 'A' || target.closest('button') || target.closest('.btn')) {
+            logActivity('click', {
+                element: target.tagName,
+                text: target.textContent?.trim().substring(0, 50),
+                href: target.href || target.closest('a')?.href,
+                timestamp: new Date().toISOString()
+            });
+        }
+    });
+    
+    // Log al salir de la página
+    window.addEventListener('beforeunload', function() {
+        logActivity('page_unload', {
+            url: window.location.href,
+            duration: Date.now() - window.loadTime,
+            timestamp: new Date().toISOString()
+        });
+    });
+    
+    window.loadTime = Date.now();
+});
+
+function logActivity(action, data) {
+    // Solo hacer log si hay token CSRF disponible
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value;
+    if (!csrfToken) return;
+    
+    fetch('/auditoria/log-activity/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrfToken,
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: JSON.stringify({
+            action: action,
+            data: data
+        })
+    }).catch(error => console.log('Log error:', error));
+}
+</script>
+
+
+  
+  <!-- Notificación de Cookies -->
+  <!-- Notificación de Cookies -->
+<div id="cookie-notification" style="display: none;">
+    <div style="
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+        color: white;
+        padding: 20px;
+        text-align: center;
+        z-index: 10000;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+        border-bottom: 3px solid #3498db;
+    ">
+        <div style="max-width: 1200px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 15px;">
+            <div style="flex: 1; margin-right: 20px; text-align: left;">
+                <div style="font-size: 18px; font-weight: bold; margin-bottom: 5px;">
+                    🍪 <span style="color: #3498db;">Sistema de Actas Municipales</span> utiliza cookies
+                </div>
+                <div style="font-size: 14px; line-height: 1.4; opacity: 0.9;">
+                    Utilizamos cookies esenciales para el funcionamiento del sistema, autenticación de usuarios, 
+                    y para mejorar tu experiencia de navegación. Al continuar usando este sitio, 
+                    aceptas nuestro uso de cookies.
+                </div>
+            </div>
+            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                <button onclick="acceptCookies()" style="
+                    background: #27ae60; 
+                    border: none; 
+                    color: white; 
+                    padding: 12px 25px; 
+                    border-radius: 8px;
+                    cursor: pointer;
+                    font-weight: bold;
+                    font-size: 14px;
+                    transition: all 0.3s ease;
+                " onmouseover="this.style.background='#2ecc71'" onmouseout="this.style.background='#27ae60'">
+                    ✓ Aceptar Cookies
+                </button>
+                <button onclick="showCookieDetails()" style="
+                    background: transparent; 
+                    border: 2px solid #3498db; 
+                    color: #3498db; 
+                    padding: 10px 20px; 
+                    border-radius: 8px;
+                    cursor: pointer;
+                    font-size: 14px;
+                    transition: all 0.3s ease;
+                " onmouseover="this.style.background='#3498db'; this.style.color='white'" onmouseout="this.style.background='transparent'; this.style.color='#3498db'">
+                    ℹ️ Más Información
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Información Detallada de Cookies -->
+<div id="cookie-details-modal" style="display: none;">
+    <div style="
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0,0,0,0.7);
+        z-index: 10001;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+    " onclick="hideCookieDetails()">
+        <div style="
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            max-width: 600px;
+            max-height: 80vh;
+            overflow-y: auto;
+            position: relative;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        " onclick="event.stopPropagation()">
+            <button onclick="hideCookieDetails()" style="
+                position: absolute;
+                top: 15px;
+                right: 15px;
+                background: #e74c3c;
+                border: none;
+                color: white;
+                width: 30px;
+                height: 30px;
+                border-radius: 50%;
+                cursor: pointer;
+                font-size: 16px;
+            ">✕</button>
+            
+            <h2 style="color: #2c3e50; margin-top: 0; margin-bottom: 20px;">
+                🍪 Información sobre Cookies
+            </h2>
+            
+            <div style="color: #34495e; line-height: 1.6;">
+                <h3 style="color: #27ae60; border-bottom: 2px solid #27ae60; padding-bottom: 5px;">
+                    ✅ Cookies Esenciales (Requeridas)
+                </h3>
+                <ul style="margin-bottom: 20px;">
+                    <li><strong>actas_sessionid:</strong> Identifica tu sesión de usuario activa</li>
+                    <li><strong>actas_csrftoken:</strong> Protección contra ataques de falsificación de solicitudes</li>
+                    <li><strong>Cookies de autenticación:</strong> Mantienen tu sesión iniciada de forma segura</li>
+                </ul>
+                
+                <h3 style="color: #3498db; border-bottom: 2px solid #3498db; padding-bottom: 5px;">
+                    📊 Cookies Funcionales
+                </h3>
+                <ul style="margin-bottom: 20px;">
+                    <li><strong>Preferencias de usuario:</strong> Recuerdan tu configuración personalizada</li>
+                    <li><strong>Configuración de idioma:</strong> Mantienen tu idioma preferido</li>
+                    <li><strong>Datos de navegación:</strong> Mejoran la experiencia de usuario</li>
+                </ul>
+                
+                <h3 style="color: #e67e22; border-bottom: 2px solid #e67e22; padding-bottom: 5px;">
+                    🔒 Seguridad y Privacidad
+                </h3>
+                <ul style="margin-bottom: 20px;">
+                    <li>Todas las cookies están configuradas como <strong>HttpOnly</strong> cuando es posible</li>
+                    <li>Protección automática contra ataques XSS y CSRF</li>
+                    <li>Expiración automática por seguridad (2 horas para sesiones)</li>
+                    <li>No compartimos información con terceros</li>
+                    <li>Los datos se almacenan de forma segura en nuestros servidores</li>
+                </ul>
+                
+                <div style="background: #ecf0f1; padding: 15px; border-radius: 8px; margin-top: 20px;">
+                    <h4 style="margin-top: 0; color: #2c3e50;">🛠️ Para Administradores:</h4>
+                    <p style="margin-bottom: 0; font-size: 14px;">
+                        Si eres administrador del sistema, puedes usar el widget de debug (🔧) 
+                        para ver todas las cookies activas y monitorear las sesiones en tiempo real.
+                    </p>
+                </div>
+            </div>
+            
+            <div style="text-align: center; margin-top: 25px;">
+                <button onclick="acceptCookiesFromModal()" style="
+                    background: #27ae60; 
+                    border: none; 
+                    color: white; 
+                    padding: 12px 30px; 
+                    border-radius: 8px;
+                    cursor: pointer;
+                    font-weight: bold;
+                    font-size: 16px;
+                    margin-right: 10px;
+                ">✓ Aceptar y Continuar</button>
+                <button onclick="hideCookieDetails()" style="
+                    background: #95a5a6; 
+                    border: none; 
+                    color: white; 
+                    padding: 12px 20px; 
+                    border-radius: 8px;
+                    cursor: pointer;
+                    font-size: 14px;
+                ">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Verificar si se debe mostrar la notificación de cookies
+document.addEventListener('DOMContentLoaded', function() {
+    // Verificar si el usuario ya aceptó las cookies
+    if (!localStorage.getItem('cookies_accepted') && !sessionStorage.getItem('cookies_notification_shown')) {
+        showCookieNotification();
+        sessionStorage.setItem('cookies_notification_shown', 'true');
+    }
+});
+
+function showCookieNotification() {
+    const notification = document.getElementById('cookie-notification');
+    notification.style.display = 'block';
+    
+    // Animación de entrada
+    setTimeout(() => {
+        notification.style.opacity = '1';
+        notification.style.transform = 'translateY(0)';
+    }, 100);
+}
+
+function acceptCookies() {
+    localStorage.setItem('cookies_accepted', 'true');
+    localStorage.setItem('cookies_accepted_date', new Date().toISOString());
+    hideCookieNotification();
+    
+    // Opcional: Enviar evento al servidor
+    logCookieAcceptance();
+}
+
+function acceptCookiesFromModal() {
+    acceptCookies();
+    hideCookieDetails();
+}
+
+function hideCookieNotification() {
+    const notification = document.getElementById('cookie-notification');
+    notification.style.display = 'none';
+}
+
+function showCookieDetails() {
+    document.getElementById('cookie-details-modal').style.display = 'flex';
+}
+
+function hideCookieDetails() {
+    document.getElementById('cookie-details-modal').style.display = 'none';
+}
+
+function logCookieAcceptance() {
+    // Registrar que el usuario aceptó las cookies
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value;
+    if (!csrfToken) return;
+    
+    fetch('/auditoria/log-activity/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSrfToken': csrfToken,
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: JSON.stringify({
+            action: 'cookie_acceptance',
+            data: {
+                timestamp: new Date().toISOString(),
+                user_agent: navigator.userAgent,
+                url: window.location.href
+            }
+        })
+    }).catch(error => console.log('Cookie acceptance log error:', error));
+}
+
+// Función para mostrar la notificación manualmente (para testing)
+function showCookieNotificationTest() {
+    localStorage.removeItem('cookies_accepted');
+    sessionStorage.removeItem('cookies_notification_shown');
+    showCookieNotification();
+}
+</script>
+
+  
+  
+
+<!-- jQuery -->
+<script src="/static/plugins/jquery/jquery.min.js"></script>
+<!-- Bootstrap 4 -->
+<script src="/static/plugins/bootstrap/js/bootstrap.bundle.min.js"></script>
+<!-- Actas IA App -->
+<script src="/static/dist/js/adminlte.min.js"></script>
+<!-- Actas IA for demo purposes -->
+<script src="/static/dist/js/demo.js"></script>
+  
+<!-- Summernote JS -->
+<script src="/static/plugins/summernote/summernote-bs4.min.js"></script>
+<script src="/static/plugins/summernote/lang/summernote-es-ES.min.js"></script>
+
+<script>
+$(document).ready(function() {
+    // Inicializar editor Summernote
+    $('#summernote').summernote({
+        height: 500,
+        lang: 'es-ES',
+        fontNames: ['Arial', 'Times New Roman', 'Georgia', 'Courier New'],
+        fontNamesIgnoreCheck: ['Arial', 'Times New Roman'],
+        toolbar: [
+            ['style', ['style']],
+            ['font', ['bold', 'italic', 'underline', 'strikethrough', 'superscript', 'subscript']],
+            ['fontsize', ['fontsize', 'fontname']],
+            ['color', ['color']],
+            ['para', ['ul', 'ol', 'paragraph']],
+            ['height', ['height']],
+            ['table', ['table']],
+            ['insert', ['link', 'picture', 'hr']],
+            ['view', ['fullscreen', 'codeview', 'undo', 'redo', 'help']]
+        ],
+        placeholder: 'Escriba el contenido del acta aquí...',
+        callbacks: {
+            onChange: function(contents, $editable) {
+                updateCounters();
+                
+                // Autoguardado cada 10 segundos si hay cambios
+                clearTimeout(window.autoSaveTimeout);
+                window.autoSaveTimeout = setTimeout(autoSave, 10000);
+            }
+        }
+    });
+    
+    // Función para actualizar contadores
+    function updateCounters() {
+        var contents = $('#summernote').summernote('code');
+        var text = $('<div>').html(contents).text();
+        
+        $('#wordCount').text(text.split(/\s+/).filter(word => word.length > 0).length);
+        $('#charCount').text(text.length);
+        
+        // Sincronizar con el campo oculto
+        $('#contenido_html').val(contents);
+    }
+    
+    // Inicializar contadores
+    updateCounters();
+    
+    // Función de autoguardado
+    function autoSave() {
+        var contenidoHtml = $('#summernote').summernote('code');
+        
+        $.ajax({
+            url: '/gestion-actas/api/acta/26/autoguardar/',
+            method: 'POST',
+            data: JSON.stringify({
+                'contenido_html': contenidoHtml
+            }),
+            contentType: 'application/json',
+            headers: {
+                'X-CSRFToken': $('[name=csrfmiddlewaretoken]').val()
+            },
+            success: function(data) {
+                if (data.success) {
+                    showSaveIndicator('Autoguardado a las ' + data.timestamp, 'success');
+                } else {
+                    showSaveIndicator('Error en autoguardado', 'danger');
+                }
+            },
+            error: function() {
+                showSaveIndicator('Error de conexión', 'danger');
+            }
+        });
+    }
+    
+    // Mostrar indicador de guardado
+    function showSaveIndicator(message, type) {
+        var indicator = $('#saveIndicator');
+        indicator.removeClass('alert-success alert-danger alert-warning')
+                 .addClass('alert-' + type)
+                 .addClass('show');
+        $('#saveMessage').text(message);
+        
+        setTimeout(function() {
+            indicator.removeClass('show');
+        }, 3000);
+    }
+    
+    // Antes de enviar el formulario, sincronizar contenido de Summernote
+    $('#editorForm').on('submit', function() {
+        // Sincronizar contenido del editor con el campo oculto
+        var contenidoHtml = $('#summernote').summernote('code');
+        $('#contenido_html').val(contenidoHtml);
+        
+        // Validaciones básicas
+        if ($('#titulo').val().trim() === '') {
+            alert('El título del acta es requerido.');
+            return false;
+        }
+        
+        var text = $('<div>').html(contenidoHtml).text();
+        
+        if (text.trim().length < 10) {
+            alert('El contenido del acta debe tener al menos 10 caracteres.');
+            return false;
+        }
+        
+        return true;
+    });
+    
+    // Confirmar antes de enviar a revisión
+    $('button[name="enviar_revision"]').on('click', function(e) {
+        if (!confirm('¿Está seguro de enviar esta acta a revisión?\n\nUna vez enviada, no podrá editarla hasta que sea rechazada o devuelta.')) {
+            e.preventDefault();
+            return false;
+        }
+    });
+    
+    // Atajos de teclado
+    $(document).on('keydown', function(e) {
+        // Ctrl+S para guardar
+        if (e.ctrlKey && e.which === 83) {
+            e.preventDefault();
+            $('#editorForm').submit();
+            return false;
+        }
+        
+        // Ctrl+Shift+S para autoguardar
+        if (e.ctrlKey && e.shiftKey && e.which === 83) {
+            e.preventDefault();
+            autoSave();
+            return false;
+        }
+    });
+    
+    // Advertencia al salir si hay cambios sin guardar
+    var initialContent = $('#summernote').summernote('code');
+    window.onbeforeunload = function(e) {
+        var currentContent = $('#summernote').summernote('code');
+        if (currentContent !== initialContent) {
+            return '¿Está seguro de salir? Los cambios no guardados se perderán.';
+        }
+    };
+    
+    // Limpiar advertencia al enviar formulario
+    $('#editorForm').on('submit', function() {
+        window.onbeforeunload = null;
+    });
+});
+</script>
+
+
+
+</body>
+</html>

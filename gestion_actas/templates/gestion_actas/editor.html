@@ -1,0 +1,656 @@
+{% extends "layouts/base.html" %}
+{% load static %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block extrastyle %}
+<!-- Summernote Rich Text Editor -->
+<link rel="stylesheet" href="{% static 'plugins/summernote/summernote-bs4.min.css' %}">
+<style>
+.editor-container {
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.summernote-editor {
+    min-height: 500px;
+    font-family: 'Times New Roman', serif;
+    font-size: 14px;
+    line-height: 1.6;
+}
+
+.toolbar-custom {
+    border-bottom: 1px solid #ccc;
+    padding: 10px;
+}
+
+.save-indicator {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 1000;
+    opacity: 0;
+    transition: opacity 0.3s;
+}
+
+.save-indicator.show {
+    opacity: 1;
+}
+
+.acta-header {
+    background: linear-gradient(45deg, #007bff, #0056b3);
+    color: white;
+    padding: 1.5rem;
+    border-radius: 8px 8px 0 0;
+}
+
+.acta-sidebar {
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 1rem;
+    height: fit-content;
+}
+
+.historial-item {
+    border-left: 3px solid #007bff;
+    padding-left: 10px;
+    margin-bottom: 10px;
+}
+
+.contenido-preview {
+    max-height: 300px;
+    overflow-y: auto;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    padding: 10px;
+    background: white;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Content Wrapper. Contains page content -->
+<div class="content-wrapper">
+    <!-- Content Header (Page header) -->
+    <div class="content-header">
+        <div class="container-fluid">
+            <div class="row mb-2">
+                <div class="col-sm-6">
+                    <h1><i class="fas fa-edit"></i> {{ page_title }}</h1>
+                </div>
+                <div class="col-sm-6">
+                    <ol class="breadcrumb float-sm-right">
+                        {% for crumb in breadcrumbs %}
+                            {% if crumb.active %}
+                                <li class="breadcrumb-item active">{{ crumb.title }}</li>
+                            {% else %}
+                                <li class="breadcrumb-item"><a href="{{ crumb.url }}">{{ crumb.title }}</a></li>
+                            {% endif %}
+                        {% endfor %}
+                    </ol>
+                </div>
+            </div>
+        </div><!-- /.container-fluid -->
+    </div>
+    <!-- /.content-header -->
+
+    <!-- Main content -->
+    <section class="content">
+        <div class="container-fluid">
+
+<!-- Indicador de guardado automático -->
+<div id="saveIndicator" class="alert alert-success save-indicator">
+    <i class="fas fa-check"></i> <span id="saveMessage">Guardado automáticamente</span>
+</div>
+
+<form id="editorForm" method="post">
+    {% csrf_token %}
+    
+    <div class="row">
+        <!-- Columna principal: Editor -->
+        <div class="col-lg-8">
+            <div class="card editor-container">
+                <!-- Encabezado del Acta CON INFORMACIÓN RICA -->
+                <div class="acta-header">
+                    <div class="row align-items-center">
+                        <div class="col">
+                            {% if acta.acta_generada %}
+                                <h4><i class="fas fa-file-contract"></i> {{ acta.acta_generada.titulo }}</h4>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <p class="mb-1">
+                                            <strong><i class="fas fa-file-signature"></i> {{ acta.acta_generada.numero_acta }}</strong>
+                                        </p>
+                                        <small>
+                                            <i class="fas fa-calendar-day"></i> Sesión: {{ acta.acta_generada.fecha_sesion|date:"d/m/Y H:i" }}
+                                        </small>
+                                    </div>
+                                    <div class="col-md-6">
+                                        {% with proc=acta.acta_generada.transcripcion.procesamiento_audio %}
+                                            <p class="mb-1">
+                                                <strong><i class="fas fa-users"></i> {{ proc.tipo_reunion.nombre }}</strong>
+                                            </p>
+                                            <small>
+                                                {% if proc.participantes_detallados %}
+                                                    <i class="fas fa-user-friends"></i> {{ proc.participantes_detallados|length }} participantes
+                                                {% endif %}
+                                                {% if proc.ubicacion %}
+                                                    | <i class="fas fa-map-marker-alt"></i> {{ proc.ubicacion }}
+                                                {% endif %}
+                                                {% if proc.duracion_seg %}
+                                                    | <i class="fas fa-clock"></i> {{ proc.duracion_seg|floatformat:0 }}s
+                                                {% endif %}
+                                            </small>
+                                        {% endwith %}
+                                    </div>
+                                </div>
+                                <hr style="border-color: rgba(255,255,255,0.3); margin: 0.5rem 0;">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <small>
+                                            <i class="fas fa-robot"></i> <strong>Generado por:</strong> {{ acta.acta_generada.proveedor_ia.nombre }}
+                                            | <i class="fas fa-file-alt"></i> {{ acta.acta_generada.plantilla.nombre }}
+                                        </small>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <small>
+                                            <i class="fas fa-user"></i> <strong>Creado por:</strong> {{ acta.acta_generada.usuario_creacion.get_full_name|default:acta.acta_generada.usuario_creacion.username }}
+                                            {% if acta.acta_generada.fecha_procesamiento %}
+                                                | <i class="fas fa-cog"></i> {{ acta.acta_generada.fecha_procesamiento|date:"d/m/Y H:i" }}
+                                            {% endif %}
+                                        </small>
+                                    </div>
+                                </div>
+                            {% else %}
+                                <h4><i class="fas fa-file-contract"></i> Acta Manual #{{ acta.pk }}</h4>
+                                <p class="mb-0">
+                                    <small>
+                                        <i class="fas fa-calendar"></i> Creada: {{ acta.fecha_creacion|date:"d/m/Y H:i" }} |
+                                        <i class="fas fa-user"></i> {{ acta.usuario_editor.get_full_name|default:acta.usuario_editor.username }}
+                                        {% if acta.fecha_ultima_edicion %}
+                                            | <i class="fas fa-edit"></i> Última edición: {{ acta.fecha_ultima_edicion|date:"d/m/Y H:i" }}
+                                        {% endif %}
+                                    </small>
+                                </p>
+                            {% endif %}
+                        </div>
+                        <div class="col-auto">
+                            <div class="text-center">
+                                <span class="badge badge-lg" style="background-color: {{ acta.estado.color }}; color: white; font-size: 0.9rem; padding: 0.5rem 1rem;">
+                                    {{ acta.estado.nombre }}
+                                </span>
+                                {% if acta.acta_generada %}
+                                    <br>
+                                    <small>
+                                        Estado Original: 
+                                        <span class="badge badge-sm badge-light" style="color: #333; margin-top: 0.25rem;">
+                                            {{ acta.acta_generada.get_estado_display }}
+                                        </span>
+                                    </small>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Título del Acta -->
+                <div class="card-body">
+                    <div class="form-group mb-4">
+                        <label for="titulo" class="form-label">
+                            <strong><i class="fas fa-heading"></i> Título del Acta:</strong>
+                        </label>
+                        <input type="text" class="form-control form-control-lg" id="titulo" name="titulo" 
+                               value="{% if acta.acta_generada %}{{ acta.acta_generada.titulo }}{% else %}Acta Manual #{{ acta.pk }}{% endif %}" required 
+                               placeholder="Ingrese el título del acta...">
+                    </div>
+                    
+                    <!-- Editor de texto enriquecido -->
+                    <div class="form-group">
+                        <label class="form-label">
+                            <strong><i class="fas fa-file-text"></i> Contenido del Acta:</strong>
+                        </label>
+                        
+                        <!-- BOTÓN DE BYPASS PARA DEBUG -->
+                        <div class="alert alert-info">
+                            <h5><i class="fas fa-bug"></i> Modo Debug Activo</h5>
+                            <p>Si el botón "Guardar Cambios" no funciona, usa este bypass:</p>
+                            <button type="button" onclick="bypassSave()" class="btn btn-warning">
+                                <i class="fas fa-save"></i> BYPASS: Guardar Sin JavaScript
+                            </button>
+                        </div>
+                        
+                        <!-- Editor Summernote -->
+                        <textarea id="summernote" name="contenido_html" class="summernote-editor">{{ acta.contenido_editado|safe }}</textarea>
+                    </div>
+                    
+                    <!-- Observaciones -->
+                    <div class="form-group mt-4">
+                        <label for="observaciones" class="form-label">
+                            <i class="fas fa-comment"></i> Observaciones:
+                        </label>
+                        <textarea class="form-control" id="observaciones" name="observaciones" rows="3" 
+                                  placeholder="Agregue observaciones adicionales...">{{ acta.observaciones }}</textarea>
+                    </div>
+                </div>
+                
+                <!-- Acciones -->
+                <div class="card-footer">
+                    <div class="row">
+                        <div class="col">
+                            <button type="submit" class="btn btn-success btn-lg">
+                                <i class="fas fa-save"></i> Guardar Cambios
+                            </button>
+                            
+                            {% if puede_enviar_revision %}
+                                <button type="submit" name="enviar_revision" class="btn btn-primary btn-lg ml-2">
+                                    <i class="fas fa-paper-plane"></i> Enviar a Revisión
+                                </button>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="col-auto">
+                            <a href="{% url 'gestion_actas:listado' %}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left"></i> Volver al Listado
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Sidebar: Información y Historial -->
+        <div class="col-lg-4">
+            <!-- Información RICA del Acta -->
+            <div class="card acta-sidebar mb-4">
+                <h5><i class="fas fa-info-circle"></i> Información del Acta</h5>
+                
+                <div class="info-item mb-2">
+                    <strong>ID Gestión:</strong> #{{ acta.pk }}
+                </div>
+                
+                {% if acta.acta_generada %}
+                    <div class="info-item mb-2">
+                        <strong>Número Acta:</strong> {{ acta.acta_generada.numero_acta }}
+                    </div>
+                {% endif %}
+                
+                <div class="info-item mb-2">
+                    <strong>Estado Gestión:</strong>
+                    <span class="badge" style="background-color: {{ acta.estado.color }}; color: white;">
+                        {{ acta.estado.nombre }}
+                    </span>
+                </div>
+                
+                {% if acta.acta_generada %}
+                    <div class="info-item mb-2">
+                        <strong>Estado Original:</strong>
+                        <span class="badge badge-secondary badge-sm">
+                            {{ acta.acta_generada.get_estado_display }}
+                        </span>
+                    </div>
+                    
+                    <!-- Información de la Reunión -->
+                    <hr>
+                    <h6><i class="fas fa-users"></i> Información de la Reunión</h6>
+                    
+                    {% with proc=acta.acta_generada.transcripcion.procesamiento_audio %}
+                        <div class="info-item mb-2">
+                            <strong>Tipo:</strong> {{ proc.tipo_reunion.nombre }}
+                        </div>
+                        
+                        {% if proc.participantes_detallados %}
+                            <div class="info-item mb-2">
+                                <strong>Participantes:</strong> {{ proc.participantes_detallados|length }}
+                                <br><small class="text-muted">
+                                    {% for p in proc.participantes_detallados|slice:":3" %}
+                                        {{ p.nombre }} {{ p.apellido }}{% if not forloop.last %}, {% endif %}
+                                    {% endfor %}
+                                    {% if proc.participantes_detallados|length > 3 %}...{% endif %}
+                                </small>
+                            </div>
+                        {% endif %}
+                        
+                        {% if proc.ubicacion %}
+                            <div class="info-item mb-2">
+                                <strong>Ubicación:</strong><br>
+                                <small>{{ proc.ubicacion }}</small>
+                            </div>
+                        {% endif %}
+                        
+                        {% if proc.duracion_seg %}
+                            <div class="info-item mb-2">
+                                <strong>Duración:</strong> 
+                                {{ proc.duracion_seg|floatformat:0 }}s
+                                {% widthratio proc.duracion_seg 60 1 as minutos %}
+                                ({{ minutos|floatformat:1 }}min)
+                            </div>
+                        {% endif %}
+                        
+                        {% if proc.confidencial %}
+                            <div class="info-item mb-2">
+                                <span class="badge badge-warning">
+                                    <i class="fas fa-lock"></i> Confidencial
+                                </span>
+                            </div>
+                        {% endif %}
+                    {% endwith %}
+                    
+                    <!-- Información de Transcripción -->
+                    <hr>
+                    <h6><i class="fas fa-microphone-alt"></i> Transcripción</h6>
+                    
+                    {% with trans=acta.acta_generada.transcripcion %}
+                        {% if trans.numero_hablantes %}
+                            <div class="info-item mb-2">
+                                <strong>Hablantes:</strong> {{ trans.numero_hablantes }}
+                            </div>
+                        {% endif %}
+                        
+                        {% if trans.palabras_totales %}
+                            <div class="info-item mb-2">
+                                <strong>Palabras transcritas:</strong> {{ trans.palabras_totales|floatformat:0 }}
+                            </div>
+                        {% endif %}
+                        
+                        {% if trans.confianza_promedio %}
+                            <div class="info-item mb-2">
+                                <strong>Confianza:</strong> 
+                                <span class="{% if trans.confianza_promedio > 0.8 %}text-success{% elif trans.confianza_promedio > 0.6 %}text-warning{% else %}text-danger{% endif %}">
+                                    {{ trans.confianza_promedio|floatformat:1 }}%
+                                </span>
+                            </div>
+                        {% endif %}
+                    {% endwith %}
+                    
+                    <!-- Información de Generación -->
+                    <hr>
+                    <h6><i class="fas fa-robot"></i> Generación IA</h6>
+                    
+                    <div class="info-item mb-2">
+                        <strong>Plantilla:</strong><br>
+                        <small>{{ acta.acta_generada.plantilla.nombre }}</small>
+                    </div>
+                    
+                    <div class="info-item mb-2">
+                        <strong>Proveedor IA:</strong><br>
+                        <small>{{ acta.acta_generada.proveedor_ia.nombre }}</small>
+                    </div>
+                    
+                    {% if acta.acta_generada.fecha_procesamiento %}
+                        <div class="info-item mb-2">
+                            <strong>Procesado:</strong><br>
+                            <small>{{ acta.acta_generada.fecha_procesamiento|date:"d/m/Y H:i" }}</small>
+                        </div>
+                    {% endif %}
+                    
+                    {% if acta.acta_generada.metricas_procesamiento %}
+                        <div class="info-item mb-2">
+                            <strong>Métricas:</strong><br>
+                            <small class="text-muted">
+                                {% for key, value in acta.acta_generada.metricas_procesamiento.items %}
+                                    {{ key }}: {{ value }}<br>
+                                {% endfor %}
+                            </small>
+                        </div>
+                    {% endif %}
+                {% endif %}
+                
+                <hr>
+                <h6><i class="fas fa-edit"></i> Editor</h6>
+                <div class="info-item mb-2">
+                    <strong>Palabras:</strong> <span id="wordCount">0</span>
+                </div>
+                
+                <div class="info-item mb-2">
+                    <strong>Caracteres:</strong> <span id="charCount">0</span>
+                </div>
+                
+                {% if acta.proceso_revision %}
+                    <hr>
+                    <h6><i class="fas fa-eye"></i> Estado de Revisión</h6>
+                    <div class="progress mb-2">
+                        <div class="progress-bar" role="progressbar" 
+                             style="width: {{ acta.proceso_revision.porcentaje_completado }}%">
+                            {{ acta.proceso_revision.porcentaje_completado }}%
+                        </div>
+                    </div>
+                    <small>
+                        {{ acta.proceso_revision.revisiones_completadas }}/{{ acta.proceso_revision.total_revisiones }} revisiones completadas
+                    </small>
+                {% endif %}
+            </div>
+            
+            <!-- Historial de Cambios -->
+            {% if historial %}
+                <div class="card acta-sidebar">
+                    <h5><i class="fas fa-history"></i> Historial Reciente</h5>
+                    
+                    <div class="historial-container" style="max-height: 300px; overflow-y: auto;">
+                        {% for cambio in historial %}
+                            <div class="historial-item">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div>
+                                        <strong class="text-primary">{{ cambio.get_tipo_cambio_display }}</strong>
+                                        <br>
+                                        <small>{{ cambio.descripcion }}</small>
+                                    </div>
+                                    <small class="text-muted">
+                                        {{ cambio.fecha_cambio|date:"d/m H:i" }}
+                                    </small>
+                                </div>
+                                <small class="text-muted">
+                                    <i class="fas fa-user"></i> 
+                                    {{ cambio.usuario.get_full_name|default:cambio.usuario.username }}
+                                </small>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</form>
+
+        </div><!-- /.container-fluid -->
+    </section>
+    <!-- /.content -->
+</div>
+<!-- /.content-wrapper -->
+{% endblock %}
+
+{% block extra_scripts %}
+<!-- Summernote JS -->
+<script src="{% static 'plugins/summernote/summernote-bs4.min.js' %}"></script>
+<script src="{% static 'plugins/summernote/lang/summernote-es-ES.min.js' %}"></script>
+
+<script>
+$(document).ready(function() {
+    // Inicializar editor Summernote
+    $('#summernote').summernote({
+        height: 500,
+        lang: 'es-ES',
+        fontNames: ['Arial', 'Times New Roman', 'Georgia', 'Courier New'],
+        fontNamesIgnoreCheck: ['Arial', 'Times New Roman'],
+        toolbar: [
+            ['style', ['style']],
+            ['font', ['bold', 'italic', 'underline', 'strikethrough', 'superscript', 'subscript']],
+            ['fontsize', ['fontsize', 'fontname']],
+            ['color', ['color']],
+            ['para', ['ul', 'ol', 'paragraph']],
+            ['height', ['height']],
+            ['table', ['table']],
+            ['insert', ['link', 'picture', 'hr']],
+            ['view', ['fullscreen', 'codeview', 'undo', 'redo', 'help']]
+        ],
+        placeholder: 'Escriba el contenido del acta aquí...',
+        callbacks: {
+            onChange: function(contents, $editable) {
+                updateCounters();
+                
+                // Autoguardado cada 10 segundos si hay cambios
+                clearTimeout(window.autoSaveTimeout);
+                window.autoSaveTimeout = setTimeout(autoSave, 10000);
+            }
+        }
+    });
+    
+    // Función para actualizar contadores
+    function updateCounters() {
+        var contents = $('#summernote').summernote('code');
+        var text = $('<div>').html(contents).text();
+        
+        $('#wordCount').text(text.split(/\s+/).filter(word => word.length > 0).length);
+        $('#charCount').text(text.length);
+    }
+    
+    // Inicializar contadores
+    updateCounters();
+    
+    // Función de autoguardado
+    function autoSave() {
+        var contenidoHtml = $('#summernote').summernote('code');
+        
+        $.ajax({
+            url: '{% url "gestion_actas:autoguardar" acta.id %}',
+            method: 'POST',
+            data: JSON.stringify({
+                'contenido_html': contenidoHtml
+            }),
+            contentType: 'application/json',
+            headers: {
+                'X-CSRFToken': $('[name=csrfmiddlewaretoken]').val()
+            },
+            success: function(data) {
+                if (data.success) {
+                    showSaveIndicator('Autoguardado a las ' + data.timestamp, 'success');
+                } else {
+                    showSaveIndicator('Error en autoguardado', 'danger');
+                }
+            },
+            error: function() {
+                showSaveIndicator('Error de conexión', 'danger');
+            }
+        });
+    }
+    
+    // Mostrar indicador de guardado
+    function showSaveIndicator(message, type) {
+        var indicator = $('#saveIndicator');
+        indicator.removeClass('alert-success alert-danger alert-warning')
+                 .addClass('alert-' + type)
+                 .addClass('show');
+        $('#saveMessage').text(message);
+        
+        setTimeout(function() {
+            indicator.removeClass('show');
+        }, 3000);
+    }
+    
+    // Antes de enviar el formulario, asegurar que Summernote esté sincronizado
+    $('#editorForm').on('submit', function(e) {
+        console.log('🔄 [DEBUG] Formulario enviándose...');
+        console.log('🔄 [DEBUG] Event object:', e);
+        
+        // CRÍTICO: Sincronizar Summernote con el textarea antes del envío
+        var contenidoActual = $('#summernote').summernote('code');
+        $('textarea[name="contenido_html"]').val(contenidoActual);
+        
+        console.log('📝 [DEBUG] Contenido a enviar:', contenidoActual.length, 'chars');
+        console.log('📝 [DEBUG] Preview:', contenidoActual.substring(0, 100) + '...');
+        
+        // Verificar que el textarea tenga el contenido
+        var textareaValue = $('textarea[name="contenido_html"]').val();
+        console.log('📝 [DEBUG] Textarea value length:', textareaValue.length);
+        
+        // Validaciones básicas
+        var titulo = $('#titulo').val().trim();
+        console.log('🏷️ [DEBUG] Título:', titulo);
+        
+        if (titulo === '') {
+            console.error('❌ [DEBUG] Error: Título vacío');
+            alert('El título del acta es requerido.');
+            e.preventDefault();
+            return false;
+        }
+        
+        var text = $('<div>').html(contenidoActual).text().trim();
+        console.log('📄 [DEBUG] Texto plano length:', text.length);
+        
+        if (text.length < 10) {
+            console.error('❌ [DEBUG] Error: Contenido muy corto');
+            alert('El contenido del acta debe tener al menos 10 caracteres.');
+            e.preventDefault();
+            return false;
+        }
+        
+        console.log('✅ [DEBUG] Validaciones pasadas, enviando formulario...');
+        console.log('✅ [DEBUG] Form action:', $('#editorForm').attr('action'));
+        console.log('✅ [DEBUG] Form method:', $('#editorForm').attr('method'));
+        
+        // NO hacer preventDefault aquí - dejar que el formulario se envíe normalmente
+        return true;
+    });
+    
+    // Confirmar antes de enviar a revisión
+    $('button[name="enviar_revision"]').on('click', function(e) {
+        if (!confirm('¿Está seguro de enviar esta acta a revisión?\n\nUna vez enviada, no podrá editarla hasta que sea rechazada o devuelta.')) {
+            e.preventDefault();
+            return false;
+        }
+    });
+    
+    // Atajos de teclado
+    $(document).on('keydown', function(e) {
+        // Ctrl+S para guardar
+        if (e.ctrlKey && e.which === 83) {
+            e.preventDefault();
+            $('#editorForm').submit();
+            return false;
+        }
+        
+        // Ctrl+Shift+S para autoguardar
+        if (e.ctrlKey && e.shiftKey && e.which === 83) {
+            e.preventDefault();
+            autoSave();
+            return false;
+        }
+    });
+    
+    // Advertencia al salir si hay cambios sin guardar
+    var initialContent = $('#summernote').summernote('code');
+    window.onbeforeunload = function(e) {
+        var currentContent = $('#summernote').summernote('code');
+        if (currentContent !== initialContent) {
+            return '¿Está seguro de salir? Los cambios no guardados se perderán.';
+        }
+    };
+    
+    // Limpiar advertencia al enviar formulario
+    $('#editorForm').on('submit', function() {
+        window.onbeforeunload = null;
+    });
+    
+    // FUNCIÓN DE BYPASS PARA DEBUG
+    window.bypassSave = function() {
+        console.log('🚨 [BYPASS] Iniciando bypass de guardado...');
+        
+        // Sincronizar Summernote
+        var contenido = $('#summernote').summernote('code');
+        $('textarea[name="contenido_html"]').val(contenido);
+        
+        console.log('🚨 [BYPASS] Contenido sincronizado:', contenido.length, 'chars');
+        
+        // Deshabilitar todos los event listeners
+        $('#editorForm').off('submit');
+        window.onbeforeunload = null;
+        
+        console.log('🚨 [BYPASS] Event listeners deshabilitados');
+        console.log('🚨 [BYPASS] Enviando formulario directamente...');
+        
+        // Enviar formulario directamente
+        document.getElementById('editorForm').submit();
+    };
+});
+</script>
+{% endblock %}

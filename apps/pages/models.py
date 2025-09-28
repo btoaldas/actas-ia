@@ -234,16 +234,26 @@ class VisualizacionActa(models.Model):
         ordering = ['-fecha_visualizacion']
 
 class DescargaActa(models.Model):
-    """Registro de descargas de PDFs"""
+    """Registro de descargas de documentos de actas"""
+    FORMATO_CHOICES = [
+        ('pdf', 'PDF'),
+        ('txt', 'Texto Plano'),
+        ('word', 'Word Document'),
+    ]
+    
     acta = models.ForeignKey(ActaMunicipal, on_delete=models.CASCADE, related_name='descargas')
     usuario = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
     ip_address = models.GenericIPAddressField()
+    formato = models.CharField(max_length=10, choices=FORMATO_CHOICES, default='pdf')
     fecha_descarga = models.DateTimeField(auto_now_add=True)
     
     class Meta:
         verbose_name = "Descarga de Acta"
         verbose_name_plural = "Descargas de Actas"
         ordering = ['-fecha_descarga']
+        
+    def __str__(self):
+        return f"{self.acta} - {self.get_formato_display()} - {self.fecha_descarga}"
 
 # ========================================================================
 # MODELOS DE TRANSPARENCIA

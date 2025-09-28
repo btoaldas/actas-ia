@@ -55,6 +55,8 @@ urlpatterns = [
     path('acta/<int:pk>/', views.acta_detail, name='acta_detail'),
     path('acta/<int:pk>/pdf/', views.acta_pdf_view, name='acta_pdf_view'),
     path('acta/<int:pk>/download/', views.acta_pdf_download, name='acta_pdf_download'),
+    path('acta/<int:pk>/txt/', views.acta_txt_download, name='acta_txt_download'),
+    path('acta/<int:pk>/word/', views.acta_word_download, name='acta_word_download'),
     path('api/portal-ciudadano/', views.portal_ciudadano_api, name='portal_ciudadano_api'),
 
     path('iframe/', views.iframe, name='iframe'),

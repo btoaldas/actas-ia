@@ -1,0 +1,191 @@
+{% extends "layouts/base.html" %}
+{% load static %}
+
+{% block title %}Activar Edición - {{ acta.titulo }}{% endblock %}
+
+{% block extrastyle %}
+<style>
+.warning-container {
+    background: linear-gradient(45deg, #ffc107, #e0a800);
+    color: #212529;
+    padding: 2rem;
+    border-radius: 8px;
+    margin-bottom: 2rem;
+    border: 2px solid #e0a800;
+}
+
+.danger-alert {
+    background: #f8d7da;
+    border: 1px solid #f5c6cb;
+    color: #721c24;
+    padding: 1rem;
+    border-radius: 5px;
+    margin: 1rem 0;
+}
+
+.info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1rem;
+    margin: 1rem 0;
+}
+
+.info-item {
+    background: white;
+    padding: 1rem;
+    border-radius: 5px;
+    border: 1px solid #dee2e6;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Content Wrapper. Contains page content -->
+<div class="content-wrapper">
+    <!-- Content Header (Page header) -->
+    <div class="content-header">
+        <div class="container-fluid">
+            <div class="row mb-2">
+                <div class="col-sm-6">
+                    <h1><i class="fas fa-exclamation-triangle"></i> Activar Edición (Emergencia)</h1>
+                </div>
+                <div class="col-sm-6">
+                    <ol class="breadcrumb float-sm-right">
+                        <li class="breadcrumb-item"><a href="/">Inicio</a></li>
+                        <li class="breadcrumb-item"><a href="{% url 'gestion_actas:listado' %}">Gestión de Actas</a></li>
+                        <li class="breadcrumb-item"><a href="{% url 'gestion_actas:ver' acta_id=acta.id %}">Ver Acta</a></li>
+                        <li class="breadcrumb-item active">Activar Edición</li>
+                    </ol>
+                </div>
+            </div>
+        </div><!-- /.container-fluid -->
+    </div>
+    <!-- /.content-header -->
+
+    <!-- Main content -->
+    <section class="content">
+        <div class="container-fluid">
+            
+            <div class="row">
+                <div class="col-lg-8 offset-lg-2">
+                    
+                    <!-- Advertencia Principal -->
+                    <div class="warning-container text-center">
+                        <h2><i class="fas fa-exclamation-triangle fa-2x"></i></h2>
+                        <h3>⚠️ ACCIÓN DE EMERGENCIA ⚠️</h3>
+                        <p class="lead">Estás a punto de forzar la reactivación de la edición de esta acta</p>
+                    </div>
+                    
+                    <!-- Información del Acta -->
+                    <div class="card">
+                        <div class="card-header bg-info">
+                            <h4><i class="fas fa-file-alt"></i> Información del Acta</h4>
+                        </div>
+                        <div class="card-body">
+                            <div class="info-grid">
+                                <div class="info-item">
+                                    <strong>Título:</strong><br>
+                                    {{ acta.titulo }}
+                                </div>
+                                <div class="info-item">
+                                    <strong>ID:</strong><br>
+                                    #{{ acta.id }}
+                                </div>
+                                <div class="info-item">
+                                    <strong>Estado Actual:</strong><br>
+                                    <span class="badge" style="background-color: {{ estado_actual.color }}; color: white;">
+                                        {{ estado_actual.nombre }}
+                                    </span>
+                                </div>
+                                <div class="info-item">
+                                    <strong>Permite Edición:</strong><br>
+                                    {% if estado_actual.permite_edicion %}
+                                        <span class="badge badge-success">Sí</span>
+                                    {% else %}
+                                        <span class="badge badge-danger">No (Por eso necesitas esta función)</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Advertencias -->
+                    <div class="card">
+                        <div class="card-header bg-warning">
+                            <h4><i class="fas fa-exclamation-circle"></i> Consecuencias de esta Acción</h4>
+                        </div>
+                        <div class="card-body">
+                            <div class="danger-alert">
+                                <h6><i class="fas fa-times-circle"></i> Lo que va a pasar:</h6>
+                                <ul>
+                                    <li><strong>Cambio de estado:</strong> El acta pasará a "En Edición/Depuración"</li>
+                                    <li><strong>Interrupción de procesos:</strong> Cualquier revisión activa será interrumpida</li>
+                                    <li><strong>Pérdida de progreso:</strong> El progreso de revisiones pendientes podría perderse</li>
+                                    <li><strong>Registro de auditoría:</strong> Esta acción quedará registrada permanentemente</li>
+                                </ul>
+                            </div>
+                            
+                            <div class="alert alert-info">
+                                <h6><i class="fas fa-info-circle"></i> Después de la activación:</h6>
+                                <ul>
+                                    <li>Podrás editar el contenido del acta normalmente</li>
+                                    <li>Deberás enviar nuevamente a revisión cuando termines</li>
+                                    <li>Los revisores serán notificados del cambio si corresponde</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Botones de Confirmación -->
+                    <div class="card">
+                        <div class="card-footer text-center">
+                            <form method="post" style="display: inline;">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-danger btn-lg mr-3" onclick="return confirmarActivacion()">
+                                    <i class="fas fa-unlock"></i> 
+                                    SÍ, ACTIVAR EDICIÓN
+                                </button>
+                            </form>
+                            
+                            <a href="{% url 'gestion_actas:ver' acta_id=acta.id %}" class="btn btn-secondary btn-lg">
+                                <i class="fas fa-arrow-left"></i> 
+                                Cancelar y Volver
+                            </a>
+                        </div>
+                    </div>
+                    
+                    <!-- Información Adicional -->
+                    <div class="alert alert-secondary">
+                        <small>
+                            <i class="fas fa-user-shield"></i> 
+                            <strong>Nota:</strong> Esta función está disponible solo para superusuarios.
+                            Tu acción será registrada en el sistema de auditoría con tu usuario ({{ user.username }}) 
+                            y timestamp {{ "now"|date:"d/m/Y H:i" }}.
+                        </small>
+                    </div>
+                    
+                </div>
+            </div>
+            
+        </div><!-- /.container-fluid -->
+    </section>
+    <!-- /.content -->
+</div>
+<!-- /.content-wrapper -->
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+function confirmarActivacion() {
+    const confirmacion = confirm(
+        '🚨 CONFIRMACIÓN FINAL 🚨\n\n' +
+        'Esta es tu última oportunidad para cancelar.\n\n' +
+        'La acción no se puede deshacer automáticamente.\n' +
+        'Quedará registrada en el historial del sistema.\n\n' +
+        '¿CONFIRMAS que deseas activar la edición de esta acta?'
+    );
+    
+    return confirmacion;
+}
+</script>
+{% endblock %}

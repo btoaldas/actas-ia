@@ -1,0 +1,487 @@
+{% extends "layouts/base.html" %}
+{% load static %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block extrastyle %}
+<meta name="csrf-token" content="{{ csrf_token }}">
+<link href="https://cdn.datatables.net/1.11.3/css/dataTables.bootstrap4.min.css" rel="stylesheet">
+<style>
+    .acta-header {
+        background: linear-gradient(45deg, #007bff, #0056b3);
+        color: white;
+        padding: 1.5rem;
+        border-radius: 8px 8px 0 0;
+    }
+    
+    .acta-content {
+        background: white;
+        padding: 2rem;
+        border-radius: 0 0 8px 8px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    
+    .info-section {
+        background: #f8f9fa;
+        border-left: 4px solid #007bff;
+        padding: 1rem;
+        margin: 1rem 0;
+        border-radius: 0 5px 5px 0;
+    }
+    
+    .metadata-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1rem;
+        margin: 1rem 0;
+    }
+    
+    .metadata-item {
+        background: white;
+        padding: 1rem;
+        border-radius: 5px;
+        border: 1px solid #dee2e6;
+    }
+    
+    .metadata-label {
+        font-weight: bold;
+        color: #495057;
+        display: block;
+        margin-bottom: 0.25rem;
+    }
+    
+    .metadata-value {
+        color: #212529;
+    }
+    
+    .contenido-acta {
+        background: white;
+        padding: 2rem;
+        border: 1px solid #dee2e6;
+        border-radius: 5px;
+        font-family: 'Times New Roman', serif;
+        line-height: 1.6;
+        min-height: 400px;
+    }
+    
+    .historial-container {
+        max-height: 400px;
+        overflow-y: auto;
+    }
+    
+    .historial-item {
+        border-left: 3px solid #007bff;
+        padding-left: 1rem;
+        margin-bottom: 1rem;
+    }
+    
+    .historial-fecha {
+        font-size: 0.85rem;
+        color: #6c757d;
+    }
+    
+    .action-buttons {
+        position: sticky;
+        top: 20px;
+        background: white;
+        padding: 1rem;
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Content Wrapper. Contains page content -->
+<div class="content-wrapper">
+    <!-- Content Header (Page header) -->
+    <div class="content-header">
+        <div class="container-fluid">
+            <div class="row mb-2">
+                <div class="col-sm-6">
+                    <h1>{{ page_title }}</h1>
+                </div>
+                <div class="col-sm-6">
+                    <nav aria-label="breadcrumb">
+                        <ol class="breadcrumb float-sm-right">
+                            {% for breadcrumb in breadcrumbs %}
+                                {% if breadcrumb.active %}
+                                    <li class="breadcrumb-item active" aria-current="page">{{ breadcrumb.title }}</li>
+                                {% else %}
+                                    <li class="breadcrumb-item"><a href="{{ breadcrumb.url }}">{{ breadcrumb.title }}</a></li>
+                                {% endif %}
+                            {% endfor %}
+                        </ol>
+                    </nav>
+                </div>
+            </div>
+        </div><!-- /.container-fluid -->
+    </div>
+    <!-- /.content-header -->
+
+    <!-- Main content -->
+    <section class="content">
+        <div class="container-fluid">
+    <div class="row">
+        <!-- Contenido principal -->
+        <div class="col-lg-8">
+            <!-- Encabezado del Acta -->
+            <div class="card">
+                <div class="acta-header">
+                    <div class="row align-items-center">
+                        <div class="col-md-8">
+                            <h2 class="mb-0">
+                                <i class="fas fa-file-alt"></i>
+                                {{ acta.titulo }}
+                            </h2>
+                            <p class="mb-0 mt-2">
+                                <strong>Acta #{{ acta.id }}</strong> - 
+                                Creada el {{ acta.fecha_creacion|date:"d/m/Y H:i" }}
+                            </p>
+                        </div>
+                        <div class="col-md-4 text-right">
+                            <span class="badge badge-lg" style="background-color: {{ acta.estado.color }}; color: white; font-size: 1rem;">
+                                {{ acta.estado.nombre }}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Información contextual -->
+                <div class="acta-content">
+                    {% if acta.acta_generada %}
+                    <div class="info-section">
+                        <h5><i class="fas fa-info-circle"></i> Información de la Reunión</h5>
+                        <div class="metadata-grid">
+                            <div class="metadata-item">
+                                <span class="metadata-label">Tipo de Reunión:</span>
+                                <span class="metadata-value">{{ acta.acta_generada.procesamiento_audio.tipo_reunion.nombre }}</span>
+                            </div>
+                            <div class="metadata-item">
+                                <span class="metadata-label">Ubicación:</span>
+                                <span class="metadata-value">{{ acta.acta_generada.procesamiento_audio.ubicacion|default:"No especificada" }}</span>
+                            </div>
+                            <div class="metadata-item">
+                                <span class="metadata-label">Duración:</span>
+                                <span class="metadata-value">{{ acta.duracion_formateada }}</span>
+                            </div>
+                            <div class="metadata-item">
+                                <span class="metadata-label">Participantes:</span>
+                                <span class="metadata-value">{{ acta.numero_participantes }} personas</span>
+                            </div>
+                        </div>
+                        
+                        {% if acta.acta_generada.procesamiento_audio.participantes_detallados %}
+                        <h6><i class="fas fa-users"></i> Participantes Identificados:</h6>
+                        <div class="row">
+                            {% for participante in acta.acta_generada.procesamiento_audio.participantes_detallados %}
+                            <div class="col-md-6 col-lg-4 mb-2">
+                                <span class="badge badge-info">{{ participante.nombre|default:participante.identificador }}</span>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Contenido del Acta -->
+                    <h5><i class="fas fa-file-text"></i> Contenido del Acta</h5>
+                    <div class="contenido-acta">
+                        {{ acta.contenido_editado|safe }}
+                    </div>
+                    
+                    {% if acta.observaciones %}
+                    <div class="info-section mt-4">
+                        <h6><i class="fas fa-comment"></i> Observaciones</h6>
+                        <p>{{ acta.observaciones }}</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Barra lateral con información adicional -->
+        <div class="col-lg-4">
+            <!-- Botones de acción -->
+            <div class="action-buttons">
+                <h6><i class="fas fa-tools"></i> Acciones</h6>
+                <div class="btn-group-vertical w-100">
+                    <!-- Botones de revisión (si el usuario es revisor) -->
+                    {% if revision_individual and not revision_individual.revisado %}
+                    <div class="card bg-warning mb-3">
+                        <div class="card-header">
+                            <h6><i class="fas fa-clipboard-check"></i> Pendiente de Revisión</h6>
+                        </div>
+                        <div class="card-body">
+                            <p class="card-text">Esta acta está pendiente de tu revisión.</p>
+                            <form method="post" class="revision-form">
+                                {% csrf_token %}
+                                <div class="form-group">
+                                    <label for="comentarios">Comentarios de revisión:</label>
+                                    <textarea class="form-control" name="comentarios" id="comentarios" rows="3" placeholder="Agrega tus comentarios aquí..."></textarea>
+                                </div>
+                                <div class="btn-group w-100">
+                                    <button type="submit" name="accion" value="aprobado" class="btn btn-success">
+                                        <i class="fas fa-check"></i> Aprobar
+                                    </button>
+                                    <button type="submit" name="accion" value="rechazado" class="btn btn-danger">
+                                        <i class="fas fa-times"></i> Rechazar
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                    {% elif revision_individual and revision_individual.revisado %}
+                    <div class="card bg-info mb-3">
+                        <div class="card-header">
+                            <h6><i class="fas fa-info-circle"></i> Tu Revisión</h6>
+                        </div>
+                        <div class="card-body">
+                            <p class="card-text">
+                                <strong>Estado:</strong> 
+                                {% if revision_individual.aprobado %}
+                                    <span class="badge badge-success">Aprobado</span>
+                                {% else %}
+                                    <span class="badge badge-danger">Rechazado</span>
+                                {% endif %}
+                            </p>
+                            {% if revision_individual.comentarios %}
+                            <p><strong>Tus comentarios:</strong><br>
+                            <small>{{ revision_individual.comentarios }}</small></p>
+                            {% endif %}
+                            <small class="text-muted">
+                                Revisado el {{ revision_individual.fecha_revision|date:"d/m/Y H:i" }}
+                            </small>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Botones estándar de acción -->
+                    {% if not revision_individual or revision_individual.revisado %}
+                    
+                    <!-- Botón Editar (normal) -->
+                    {% if acta.estado.permite_edicion %}
+                    <a href="{% url 'gestion_actas:editor' acta_id=acta.id %}" class="btn btn-primary">
+                        <i class="fas fa-edit"></i> Editar Acta
+                    </a>
+                    {% else %}
+                    <!-- Botón Editar deshabilitado -->
+                    <button class="btn btn-secondary" disabled title="Edición bloqueada por estado actual">
+                        <i class="fas fa-edit"></i> Editar Acta (Bloqueado)
+                    </button>
+                    
+                    <!-- Botón de Emergencia para Superusuarios -->
+                    {% if user.is_superuser %}
+                    <button class="btn btn-warning btn-sm mt-2" onclick="confirmarActivarEdicion()">
+                        <i class="fas fa-unlock"></i> Activar Edición (Emergencia)
+                    </button>
+                    {% endif %}
+                    {% endif %}
+                    
+                    {% endif %}
+                    
+                    {% if acta.estado.codigo == 'borrador' %}
+                    <a href="{% url 'gestion_actas:configurar_revision' acta_id=acta.id %}" class="btn btn-warning">
+                        <i class="fas fa-clipboard-check"></i> Enviar a Revisión
+                    </a>
+                    {% endif %}
+                    
+                    {% if acta.proceso_revision and acta.proceso_revision.estado == 'completado' and acta.proceso_revision.resultado == 'aprobado' %}
+                    <button class="btn btn-success btn-lg" onclick="confirmarPublicacion()">
+                        <i class="fas fa-globe"></i> Publicar en Portal
+                    </button>
+                    {% endif %}
+                    
+                    <a href="{% url 'gestion_actas:listado' %}" class="btn btn-secondary">
+                        <i class="fas fa-list"></i> Volver al Listado
+                    </a>
+                </div>
+            </div>
+            
+            <!-- Estado del proceso -->
+            {% if acta.proceso_revision %}
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h6><i class="fas fa-tasks"></i> Estado de Revisión</h6>
+                </div>
+                <div class="card-body">
+                    <div class="progress mb-2">
+                        <div class="progress-bar" role="progressbar"
+                             style="width: {{ acta.proceso_revision.porcentaje_completado }}%"
+                             aria-valuenow="{{ acta.proceso_revision.porcentaje_completado }}"
+                             aria-valuemin="0" aria-valuemax="100">
+                            {{ acta.proceso_revision.porcentaje_completado }}%
+                        </div>
+                    </div>
+                    <small class="text-muted">
+                        Fase: {{ acta.proceso_revision.fase_actual }}
+                    </small>
+                    
+                    {% if acta.proceso_revision.revisores.exists %}
+                    <h6 class="mt-3">Revisores:</h6>
+                    <ul class="list-unstyled">
+                        {% for revisor in acta.proceso_revision.revisores.all %}
+                        <li>
+                            <i class="fas fa-user"></i> {{ revisor.get_full_name|default:revisor.username }}
+                        </li>
+                        {% endfor %}
+                    </ul>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- Información técnica -->
+            {% if acta.acta_generada %}
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h6><i class="fas fa-cogs"></i> Información Técnica</h6>
+                </div>
+                <div class="card-body">
+                    <div class="metadata-grid">
+                        {% if acta.acta_generada.transcripcion %}
+                        <div class="metadata-item">
+                            <span class="metadata-label">Confianza de Transcripción:</span>
+                            <span class="metadata-value">
+                                {% with confidence=acta.acta_generada.transcripcion.confidence_promedio %}
+                                    {% if confidence >= 0.8 %}
+                                        <span class="badge badge-success">{{ confidence|floatformat:2 }}</span>
+                                    {% elif confidence >= 0.6 %}
+                                        <span class="badge badge-warning">{{ confidence|floatformat:2 }}</span>
+                                    {% else %}
+                                        <span class="badge badge-danger">{{ confidence|floatformat:2 }}</span>
+                                    {% endif %}
+                                {% endwith %}
+                            </span>
+                        </div>
+                        {% endif %}
+                        
+                        <div class="metadata-item">
+                            <span class="metadata-label">Modelo IA Utilizado:</span>
+                            <span class="metadata-value">{{ acta.acta_generada.modelo_utilizado|default:"No especificado" }}</span>
+                        </div>
+                        
+                        <div class="metadata-item">
+                            <span class="metadata-label">Archivo Original:</span>
+                            <span class="metadata-value">{{ acta.acta_generada.procesamiento_audio.archivo_audio.name|default:"No disponible" }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- Historial de cambios -->
+            {% if historial %}
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h6><i class="fas fa-history"></i> Historial de Cambios</h6>
+                </div>
+                <div class="card-body">
+                    <div class="historial-container">
+                        {% for cambio in historial %}
+                        <div class="historial-item">
+                            <div class="historial-fecha">{{ cambio.fecha_cambio|date:"d/m/Y H:i" }}</div>
+                            <strong>{{ cambio.usuario.get_full_name|default:cambio.usuario.username }}</strong><br>
+                            <small>{{ cambio.descripcion_cambio }}</small>
+                        </div>
+                        {% empty %}
+                        <p class="text-muted">No hay historial de cambios disponible.</p>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+        </div><!-- /.container-fluid -->
+    </section>
+    <!-- /.content -->
+</div>
+<!-- /.content-wrapper -->
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="https://cdn.datatables.net/1.11.3/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.11.3/js/dataTables.bootstrap4.min.js"></script>
+<script>
+$(document).ready(function() {
+    // Inicialización adicional si es necesaria
+    console.log('Vista de acta cargada correctamente');
+    
+    // Confirmación para acciones de revisión
+    $('.revision-form button').click(function(e) {
+        const accion = $(this).val();
+        const comentarios = $('#comentarios').val().trim();
+        
+        let mensaje = '';
+        if (accion === 'aprobado') {
+            mensaje = '¿Confirmas que APRUEBAS esta acta?';
+        } else if (accion === 'rechazado') {
+            mensaje = '¿Confirmas que RECHAZAS esta acta?';
+            if (!comentarios) {
+                alert('Debes agregar comentarios para justificar el rechazo.');
+                $('#comentarios').focus();
+                e.preventDefault();
+                return false;
+            }
+        }
+        
+        if (mensaje && !confirm(mensaje)) {
+            e.preventDefault();
+            return false;
+        }
+    });
+});
+
+function confirmarPublicacion() {
+    if (confirm('¿Confirmas publicar esta acta en el Portal Ciudadano?\n\nUna vez publicada, será visible para el público general.')) {
+        // Aquí iría la lógica de publicación
+        alert('Funcionalidad de publicación en desarrollo...');
+    }
+}
+
+function confirmarActivarEdicion() {
+    const confirmacion = confirm(
+        '⚠️ ACCIÓN DE EMERGENCIA ⚠️\n\n' +
+        '¿Confirmas ACTIVAR la edición de esta acta?\n\n' +
+        'ADVERTENCIA:\n' +
+        '• Esta acción cambiará el estado del acta\n' +
+        '• Se interrumpirá cualquier proceso de revisión activo\n' +
+        '• Solo debe usarse en casos de emergencia\n' +
+        '• Quedará registrado en el historial\n\n' +
+        '¿Estás seguro de continuar?'
+    );
+    
+    if (confirmacion) {
+        // Mostrar segunda confirmación
+        const segundaConfirmacion = confirm(
+            '🚨 CONFIRMACIÓN FINAL 🚨\n\n' +
+            'Esta es tu última oportunidad para cancelar.\n\n' +
+            '¿REALMENTE deseas activar la edición de esta acta?'
+        );
+        
+        if (segundaConfirmacion) {
+            // Crear formulario hidden y enviarlo
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = '/gestion-actas/acta/{{ acta.id }}/activar-edicion/';
+            
+            // Agregar CSRF token
+            const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value || 
+                             document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+            if (csrfToken) {
+                const csrfInput = document.createElement('input');
+                csrfInput.type = 'hidden';
+                csrfInput.name = 'csrfmiddlewaretoken';
+                csrfInput.value = csrfToken;
+                form.appendChild(csrfInput);
+            }
+            
+            document.body.appendChild(form);
+            form.submit();
+        }
+    }
+}
+</script>
+{% endblock %}

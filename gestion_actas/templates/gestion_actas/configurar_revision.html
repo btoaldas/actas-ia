@@ -1,0 +1,382 @@
+{% extends "layouts/base.html" %}
+{% load static %}
+
+{% block title %}Configurar Revisión - {{ acta.titulo }}{% endblock %}
+
+{% block extrastyle %}
+<style>
+.revisor-selector {
+    border: 1px solid #dee2e6;
+    border-radius: 5px;
+    padding: 0.75rem;
+    margin-bottom: 0.5rem;
+    transition: all 0.2s ease;
+}
+
+.revisor-selector:hover {
+    background-color: #f8f9fa;
+    border-color: #007bff;
+}
+
+.revisor-selector.selected {
+    background-color: #e3f2fd;
+    border-color: #007bff;
+}
+
+.revisor-info {
+    margin-left: 1.5rem;
+}
+
+.revisor-avatar {
+    width: 40px;
+    height: 40px;
+    background: #007bff;
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    margin-right: 0.75rem;
+}
+
+.revisor-avatar.bg-danger {
+    background: #dc3545 !important;
+}
+
+.revisor-avatar.bg-warning {
+    background: #ffc107 !important;
+    color: #212529 !important;
+}
+
+.revisor-avatar.bg-primary {
+    background: #007bff !important;
+}
+
+.config-section {
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.revision-preview {
+    background: white;
+    border: 1px solid #dee2e6;
+    border-radius: 5px;
+    padding: 1rem;
+    margin-top: 1rem;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Content Wrapper. Contains page content -->
+<div class="content-wrapper">
+    <!-- Content Header (Page header) -->
+    <div class="content-header">
+        <div class="container-fluid">
+            <div class="row mb-2">
+                <div class="col-sm-8">
+                    <h1><i class="fas fa-paper-plane"></i> Configurar Revisión del Acta</h1>
+                    <p class="text-muted">Selecciona los revisores y configura el proceso de revisión</p>
+                </div>
+                <div class="col-sm-4">
+                    <ol class="breadcrumb float-sm-right">
+                        <li class="breadcrumb-item"><a href="/">Inicio</a></li>
+                        <li class="breadcrumb-item"><a href="{% url 'gestion_actas:listado' %}">Gestión de Actas</a></li>
+                        <li class="breadcrumb-item"><a href="{% url 'gestion_actas:editor' acta_id=acta.id %}">Editor</a></li>
+                        <li class="breadcrumb-item active">Configurar Revisión</li>
+                    </ol>
+                </div>
+            </div>
+        </div><!-- /.container-fluid -->
+    </div>
+    <!-- /.content-header -->
+
+    <!-- Main content -->
+    <section class="content">
+        <div class="container-fluid">
+
+            <div class="row">
+                <!-- Formulario de configuración -->
+                <div class="col-lg-8">
+                    <form method="post" id="revisionForm">
+                        {% csrf_token %}
+                        
+                        <!-- Información del Acta -->
+                        <div class="card">
+                            <div class="card-header bg-primary">
+                                <h3 class="card-title">
+                                    <i class="fas fa-file-alt"></i>
+                                    {{ acta.titulo }}
+                                </h3>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <p><strong>Número de Acta:</strong> {{ acta.numero_acta }}</p>
+                                        <p><strong>Estado Actual:</strong> 
+                                            <span class="badge" style="background-color: {{ acta.estado.color }}; color: white;">
+                                                {{ acta.estado.nombre }}
+                                            </span>
+                                        </p>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <p><strong>Última edición:</strong> {{ acta.fecha_ultima_edicion|date:"d/m/Y H:i" }}</p>
+                                        <p><strong>Editor:</strong> {{ acta.usuario_editor.get_full_name|default:acta.usuario_editor.username }}</p>
+                                    </div>
+                                </div>
+                                
+                                <hr>
+                                <h6><i class="fas fa-file-text"></i> Vista Previa del Contenido</h6>
+                                <div class="revision-preview" style="max-height: 200px; overflow-y: auto;">
+                                    {{ acta.contenido_editado|safe|truncatewords:100 }}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Selección de Revisores -->
+                        <div class="card">
+                            <div class="card-header">
+                                <h3 class="card-title">
+                                    <i class="fas fa-users"></i> 
+                                    Seleccionar Revisores 
+                                    <span class="badge badge-info" id="revisorCount">0</span>
+                                </h3>
+                            </div>
+                            <div class="card-body">
+                                <p class="text-muted">Selecciona los usuarios que revisarán esta acta. Se les enviará una notificación por correo.</p>
+                                
+                                <div class="row">
+                                    {% for usuario in usuarios_revisores %}
+                                    <div class="col-md-6 mb-2">
+                                        <div class="revisor-selector" onclick="toggleRevisor(this, {{ usuario.id }})">
+                                            <div class="d-flex align-items-center">
+                                                <input type="checkbox" 
+                                                       name="revisores" 
+                                                       value="{{ usuario.id }}"
+                                                       id="revisor_{{ usuario.id }}"
+                                                       style="margin-right: 0.75rem;">
+                                                
+                                                <div class="revisor-avatar {% if usuario.is_superuser %}bg-danger{% elif usuario.is_staff %}bg-warning{% else %}bg-primary{% endif %}">
+                                                    {{ usuario.first_name.0|default:usuario.username.0|upper }}
+                                                </div>
+                                                
+                                                <div class="revisor-info">
+                                                    <div class="font-weight-bold">
+                                                        {{ usuario.get_full_name|default:usuario.username }}
+                                                        {% if usuario.is_superuser %}
+                                                            <span class="badge badge-danger badge-sm ml-1">SUPER</span>
+                                                        {% elif usuario.is_staff %}
+                                                            <span class="badge badge-warning badge-sm ml-1">STAFF</span>
+                                                        {% endif %}
+                                                        {% if usuario.id == user.id %}
+                                                            <span class="badge badge-info badge-sm ml-1">TÚ</span>
+                                                        {% endif %}
+                                                    </div>
+                                                    <small class="text-muted">
+                                                        {{ usuario.email|default:"Sin email" }}
+                                                        {% if usuario.groups.all %}
+                                                            - {{ usuario.groups.first.name }}
+                                                        {% else %}
+                                                            {% if usuario.is_superuser %}
+                                                                - Superadministrador
+                                                            {% elif usuario.is_staff %}
+                                                                - Personal Administrativo
+                                                            {% else %}
+                                                                - Usuario General
+                                                            {% endif %}
+                                                        {% endif %}
+                                                    </small>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                                
+                                {% if not usuarios_revisores %}
+                                <div class="alert alert-warning">
+                                    <i class="fas fa-exclamation-triangle"></i>
+                                    No hay usuarios disponibles para revisión. 
+                                    <a href="/admin/auth/user/" target="_blank">Crear usuarios revisores</a>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <!-- Configuración del Proceso -->
+                        <div class="card">
+                            <div class="card-header">
+                                <h3 class="card-title">
+                                    <i class="fas fa-cog"></i> Configuración del Proceso
+                                </h3>
+                            </div>
+                            <div class="card-body">
+                                <div class="config-section">
+                                    <h6><i class="fas fa-vote-yea"></i> Tipo de Aprobación</h6>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="tipo_aprobacion" 
+                                               id="unanimidad" value="unanimidad" checked>
+                                        <label class="form-check-label" for="unanimidad">
+                                            <strong>Unanimidad</strong> - Todos los revisores deben aprobar
+                                        </label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="tipo_aprobacion" 
+                                               id="mayoria" value="mayoria">
+                                        <label class="form-check-label" for="mayoria">
+                                            <strong>Mayoría</strong> - Solo se necesita mayoría de aprobaciones
+                                        </label>
+                                    </div>
+                                </div>
+                                
+                                <div class="config-section">
+                                    <h6><i class="fas fa-calendar-alt"></i> Fecha Límite (Opcional)</h6>
+                                    <input type="datetime-local" 
+                                           class="form-control" 
+                                           name="fecha_limite" 
+                                           id="fecha_limite">
+                                    <small class="form-text text-muted">
+                                        Si se especifica, los revisores recibirán recordatorios automáticos
+                                    </small>
+                                </div>
+                                
+                                <div class="config-section">
+                                    <h6><i class="fas fa-comment"></i> Instrucciones para Revisores</h6>
+                                    <textarea class="form-control" 
+                                              name="instrucciones" 
+                                              rows="3"
+                                              placeholder="Instrucciones específicas para los revisores..."></textarea>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Botones de acción -->
+                        <div class="card">
+                            <div class="card-footer">
+                                <button type="submit" class="btn btn-success btn-lg" id="enviarBtn" disabled>
+                                    <i class="fas fa-paper-plane"></i> 
+                                    Enviar a Revisión
+                                </button>
+                                
+                                <a href="{% url 'gestion_actas:editor' acta_id=acta.id %}" class="btn btn-secondary btn-lg ml-2">
+                                    <i class="fas fa-arrow-left"></i> 
+                                    Volver al Editor
+                                </a>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                
+                <!-- Panel de información -->
+                <div class="col-lg-4">
+                    <!-- Información del proceso -->
+                    <div class="card bg-light">
+                        <div class="card-header">
+                            <h5><i class="fas fa-info-circle"></i> Información del Proceso</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <strong>¿Cómo funciona la revisión?</strong>
+                                <ol class="mt-2 small">
+                                    <li>Seleccionas los revisores</li>
+                                    <li>Se envía notificación por correo</li>
+                                    <li>Los revisores pueden aprobar/rechazar</li>
+                                    <li>Se completa según la configuración</li>
+                                    <li>Si se aprueba, habilita publicación</li>
+                                </ol>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <strong>Durante la revisión:</strong>
+                                <ul class="mt-2 small text-muted">
+                                    <li>El acta se bloquea para edición</li>
+                                    <li>Solo los revisores pueden ver/actuar</li>
+                                    <li>Se registra todo el proceso</li>
+                                </ul>
+                            </div>
+                            
+                            <div class="alert alert-warning small">
+                                <i class="fas fa-exclamation-triangle"></i>
+                                <strong>Importante:</strong> Una vez enviada, no podrás modificar el acta hasta que sea rechazada.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div><!-- /.container-fluid -->
+    </section>
+    <!-- /.content -->
+</div>
+<!-- /.content-wrapper -->
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+$(document).ready(function() {
+    updateRevisorCount();
+    
+    // Habilitar fecha límite mínima (ahora + 1 hora)
+    const now = new Date();
+    now.setHours(now.getHours() + 1);
+    $('#fecha_limite').attr('min', now.toISOString().slice(0, 16));
+});
+
+function toggleRevisor(element, usuarioId) {
+    const checkbox = element.querySelector('input[type="checkbox"]');
+    checkbox.checked = !checkbox.checked;
+    
+    if (checkbox.checked) {
+        element.classList.add('selected');
+    } else {
+        element.classList.remove('selected');
+    }
+    
+    updateRevisorCount();
+}
+
+function updateRevisorCount() {
+    const checkedCount = document.querySelectorAll('input[name="revisores"]:checked').length;
+    document.getElementById('revisorCount').textContent = checkedCount;
+    
+    const enviarBtn = document.getElementById('enviarBtn');
+    if (checkedCount > 0) {
+        enviarBtn.disabled = false;
+        enviarBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Enviar a Revisión (' + checkedCount + ' revisores)';
+    } else {
+        enviarBtn.disabled = true;
+        enviarBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Enviar a Revisión';
+    }
+}
+
+// Confirmar envío
+document.getElementById('revisionForm').addEventListener('submit', function(e) {
+    const checkedCount = document.querySelectorAll('input[name="revisores"]:checked').length;
+    const tipoAprobacion = document.querySelector('input[name="tipo_aprobacion"]:checked').value;
+    
+    const mensaje = `¿Confirmas enviar esta acta a revisión?\n\n` +
+                   `• Revisores seleccionados: ${checkedCount}\n` +
+                   `• Tipo de aprobación: ${tipoAprobacion === 'unanimidad' ? 'Unanimidad' : 'Mayoría'}\n` +
+                   `• El acta se bloqueará para edición hasta completar la revisión`;
+    
+    if (!confirm(mensaje)) {
+        e.preventDefault();
+        return false;
+    }
+});
+
+// Auto-selección al hacer click en la fila completa
+document.querySelectorAll('.revisor-selector').forEach(selector => {
+    selector.addEventListener('click', function(e) {
+        if (e.target.type !== 'checkbox') {
+            const checkbox = this.querySelector('input[type="checkbox"]');
+            checkbox.click();
+        }
+    });
+});
+</script>
+{% endblock %}

@@ -1321,8 +1321,20 @@ def acta_detail(request, pk):
     
     actas_relacionadas = actas_relacionadas.order_by('-fecha_sesion')[:5]
     
+    # Limpiar contenido HTML para mostrar en la página
+    try:
+        import sys
+        import os
+        sys.path.append(os.path.join(os.path.dirname(__file__), '../../'))
+        from gestion_actas.utils_contenido import limpiar_contenido_html
+        contenido_limpio = limpiar_contenido_html(acta.contenido or "")
+    except ImportError:
+        # Fallback si no se puede importar
+        contenido_limpio = acta.contenido or ""
+    
     context = {
         'acta': acta,
+        'contenido_limpio': contenido_limpio,
         'actas_relacionadas': actas_relacionadas,
         'puede_descargar': acta.archivo_pdf and acta.puede_ver_usuario(request.user),
     }
@@ -1356,29 +1368,182 @@ def acta_pdf_download(request, pk):
     if not acta.puede_ver_usuario(request.user):
         raise Http404("No tienes permisos para descargar esta acta")
     
-    if not acta.archivo_pdf:
-        raise Http404("Esta acta no tiene archivo PDF disponible")
+    # Registrar descarga
+    if request.user.is_authenticated:
+        DescargaActa.objects.create(
+            acta=acta,
+            usuario=request.user,
+            ip_address=get_client_ip(request),
+            formato='pdf'
+        )
+    else:
+        DescargaActa.objects.create(
+            acta=acta,
+            ip_address=get_client_ip(request),
+            formato='pdf'
+        )
+    
+    try:
+        # Intentar usar archivo PDF existente
+        if acta.archivo_pdf and acta.archivo_pdf.path:
+            try:
+                with open(acta.archivo_pdf.path, 'rb') as pdf_file:
+                    response = HttpResponse(pdf_file.read(), content_type='application/pdf')
+                    response['Content-Disposition'] = f'attachment; filename="{acta.numero_acta}.pdf"'
+                    return response
+            except FileNotFoundError:
+                pass
+        
+        # Si no hay archivo, generar uno nuevo
+        from gestion_actas.generador_documentos import generar_documentos_acta_mejorados
+        
+        documentos = generar_documentos_acta_mejorados(acta)
+        
+        if 'pdf' in documentos:
+            pdf_path = documentos['pdf']['ruta']
+            with open(pdf_path, 'rb') as pdf_file:
+                response = HttpResponse(pdf_file.read(), content_type='application/pdf')
+                response['Content-Disposition'] = f'attachment; filename="{acta.numero_acta}.pdf"'
+                return response
+        
+        raise Http404("No se pudo generar el archivo PDF")
+        
+    except Exception as e:
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"Error descargando PDF del acta {pk}: {str(e)}")
+        raise Http404("Error al generar el archivo PDF")
+
+
+def acta_txt_download(request, pk):
+    """Vista para descargar el TXT"""
+    acta = get_object_or_404(ActaMunicipal, pk=pk, activo=True)
+    
+    # Verificar permisos
+    if not acta.puede_ver_usuario(request.user):
+        raise Http404("No tienes permisos para descargar esta acta")
     
     # Registrar descarga
     if request.user.is_authenticated:
         DescargaActa.objects.create(
             acta=acta,
             usuario=request.user,
-            ip_address=get_client_ip(request)
+            ip_address=get_client_ip(request),
+            formato='txt'
         )
     else:
         DescargaActa.objects.create(
             acta=acta,
-            ip_address=get_client_ip(request)
+            ip_address=get_client_ip(request),
+            formato='txt'
         )
     
     try:
-        with open(acta.archivo_pdf.path, 'rb') as pdf_file:
-            response = HttpResponse(pdf_file.read(), content_type='application/pdf')
-            response['Content-Disposition'] = f'attachment; filename="{acta.numero_acta}.pdf"'
-            return response
-    except FileNotFoundError:
-        raise Http404("Archivo PDF no encontrado")
+        from gestion_actas.generador_documentos import generar_documentos_acta_mejorados
+        
+        documentos = generar_documentos_acta_mejorados(acta)
+        
+        if 'txt' in documentos:
+            txt_path = documentos['txt']['ruta']
+            with open(txt_path, 'r', encoding='utf-8') as txt_file:
+                response = HttpResponse(txt_file.read(), content_type='text/plain; charset=utf-8')
+                response['Content-Disposition'] = f'attachment; filename="{acta.numero_acta}.txt"'
+                return response
+        
+        raise Http404("No se pudo generar el archivo TXT")
+        
+    except Exception as e:
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"Error descargando TXT del acta {pk}: {str(e)}")
+        raise Http404("Error al generar el archivo TXT")
+
+
+def acta_word_download(request, pk):
+    """Vista para descargar el Word"""
+    acta = get_object_or_404(ActaMunicipal, pk=pk, activo=True)
+    
+    # Verificar permisos
+    if not acta.puede_ver_usuario(request.user):
+        raise Http404("No tienes permisos para descargar esta acta")
+    
+    # Registrar descarga
+    if request.user.is_authenticated:
+        DescargaActa.objects.create(
+            acta=acta,
+            usuario=request.user,
+            ip_address=get_client_ip(request),
+            formato='word'
+        )
+    else:
+        DescargaActa.objects.create(
+            acta=acta,
+            ip_address=get_client_ip(request),
+            formato='word'
+        )
+    
+    try:
+        from gestion_actas.generador_documentos import generar_documentos_acta_mejorados
+        
+        documentos = generar_documentos_acta_mejorados(acta)
+        
+        if 'word' in documentos:
+            word_path = documentos['word']['ruta']
+            with open(word_path, 'rb') as word_file:
+                response = HttpResponse(
+                    word_file.read(), 
+                    content_type='application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+                )
+                response['Content-Disposition'] = f'attachment; filename="{acta.numero_acta}.docx"'
+                return response
+        
+        raise Http404("No se pudo generar el archivo Word")
+        
+    except Exception as e:
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"Error descargando Word del acta {pk}: {str(e)}")
+        raise Http404("Error al generar el archivo Word")
+
+
+def acta_pdf_view(request, pk):
+    """Vista para mostrar el PDF en el navegador"""
+    acta = get_object_or_404(ActaMunicipal, pk=pk, activo=True)
+    
+    # Verificar permisos
+    if not acta.puede_ver_usuario(request.user):
+        raise Http404("No tienes permisos para ver esta acta")
+    
+    try:
+        # Intentar usar archivo PDF existente
+        if acta.archivo_pdf and acta.archivo_pdf.path:
+            try:
+                with open(acta.archivo_pdf.path, 'rb') as pdf_file:
+                    response = HttpResponse(pdf_file.read(), content_type='application/pdf')
+                    response['Content-Disposition'] = f'inline; filename="{acta.numero_acta}.pdf"'
+                    return response
+            except FileNotFoundError:
+                pass
+        
+        # Si no hay archivo, generar uno nuevo
+        from gestion_actas.generador_documentos import generar_documentos_acta_mejorados
+        
+        documentos = generar_documentos_acta_mejorados(acta)
+        
+        if 'pdf' in documentos:
+            pdf_path = documentos['pdf']['ruta']
+            with open(pdf_path, 'rb') as pdf_file:
+                response = HttpResponse(pdf_file.read(), content_type='application/pdf')
+                response['Content-Disposition'] = f'inline; filename="{acta.numero_acta}.pdf"'
+                return response
+        
+        raise Http404("No se pudo generar el archivo PDF")
+        
+    except Exception as e:
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"Error mostrando PDF del acta {pk}: {str(e)}")
+        raise Http404("Error al mostrar el archivo PDF")
 
 @csrf_exempt
 def portal_ciudadano_api(request):

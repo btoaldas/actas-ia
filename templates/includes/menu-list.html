@@ -277,13 +277,28 @@
 
     <!-- Administración de Actas -->
      <!-- AQUI SE PONDRA EL MENU DE GESTION DE ACTAS CUANDO ESTE FUNCIONAL -->
-      <li class="nav-item {% if 'actas' in parent %} menu-open {% endif %}">
-        <a href="#" class="nav-link {% if 'actas' in parent %} active {% endif %}">
+      <li class="nav-item {% if 'gestion-actas' in segment %} menu-open {% endif %}">
+        <a href="#" class="nav-link {% if 'gestion-actas' in segment %} active {% endif %}">
             <i class="nav-icon fas fa-file-alt"></i>
             <p>Gestión de Actas
                 <i class="right fas fa-angle-left"></i>
             </p>
         </a>
+        <ul class="nav nav-treeview">
+            <li class="nav-item">
+                <a href="{% url 'gestion_actas:listado' %}" class="nav-link {% if 'listado' in request.resolver_match.url_name or 'gestion-actas' in segment and not 'dashboard' in request.resolver_match.url_name %} active {% endif %}">
+                    <i class="far fa-circle nav-icon"></i>
+                    <p>📋 Listado de Actas</p>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="{% url 'gestion_actas:dashboard_revision' %}" class="nav-link {% if 'dashboard-revision' in segment %} active {% endif %}">
+                    <i class="far fa-circle nav-icon"></i>
+                    <p>📋 Mis Revisiones</p>
+                </a>
+            </li>
+        </ul>
+    </li>
       <!-- Validación de Actas -->
        <!-- AQUI SE PONDRA EL MENU DE VALIDACION DE ACTAS CUANDO ESTE FUNCIONAL -->
       <!--Aprobación de Actas -->

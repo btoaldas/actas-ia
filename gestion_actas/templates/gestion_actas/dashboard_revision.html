@@ -1,0 +1,328 @@
+{% extends "layouts/base.html" %}
+{% load static %}
+
+{% block title %}Dashboard de Revisiones{% endblock %}
+
+{% block extrastyle %}
+<style>
+.stats-card {
+    border-radius: 10px;
+    border: none;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    transition: transform 0.3s ease;
+}
+
+.stats-card:hover {
+    transform: translateY(-5px);
+}
+
+.revision-item {
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    background: white;
+    transition: box-shadow 0.3s ease;
+}
+
+.revision-item:hover {
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+.urgente {
+    border-left: 5px solid #e74c3c;
+}
+
+.normal {
+    border-left: 5px solid #3498db;
+}
+
+.revision-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+.revision-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.badge-urgente {
+    background-color: #e74c3c !important;
+}
+
+.badge-normal {
+    background-color: #3498db !important;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 3rem;
+    color: #6c757d;
+}
+
+.empty-state i {
+    font-size: 4rem;
+    margin-bottom: 1rem;
+    opacity: 0.5;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Content Wrapper. Contains page content -->
+<div class="content-wrapper">
+    <!-- Content Header (Page header) -->
+    <div class="content-header">
+        <div class="container-fluid">
+            <div class="row mb-2">
+                <div class="col-sm-8">
+                    <h1><i class="fas fa-clipboard-check"></i> Dashboard de Revisiones</h1>
+                    <p class="text-muted">Gestiona tus revisiones de actas pendientes</p>
+                </div>
+                <div class="col-sm-4">
+                    <ol class="breadcrumb float-sm-right">
+                        <li class="breadcrumb-item"><a href="/">Inicio</a></li>
+                        <li class="breadcrumb-item"><a href="{% url 'gestion_actas:listado' %}">Gestión de Actas</a></li>
+                        <li class="breadcrumb-item active">Dashboard de Revisiones</li>
+                    </ol>
+                </div>
+            </div>
+        </div><!-- /.container-fluid -->
+    </div>
+    <!-- /.content-header -->
+
+    <!-- Main content -->
+    <section class="content">
+        <div class="container-fluid">
+            
+            <!-- Estadísticas -->
+            <div class="row">
+                <div class="col-lg-3 col-6">
+                    <div class="card stats-card bg-gradient-warning">
+                        <div class="card-body text-white">
+                            <div class="d-flex">
+                                <div class="flex-grow-1">
+                                    <h3 class="mb-0">{{ stats.pendientes }}</h3>
+                                    <p class="mb-0">Pendientes</p>
+                                </div>
+                                <div class="align-self-center">
+                                    <i class="fas fa-clock fa-2x"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-lg-3 col-6">
+                    <div class="card stats-card bg-gradient-success">
+                        <div class="card-body text-white">
+                            <div class="d-flex">
+                                <div class="flex-grow-1">
+                                    <h3 class="mb-0">{{ stats.completadas_hoy }}</h3>
+                                    <p class="mb-0">Completadas Hoy</p>
+                                </div>
+                                <div class="align-self-center">
+                                    <i class="fas fa-check-circle fa-2x"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-lg-3 col-6">
+                    <div class="card stats-card bg-gradient-info">
+                        <div class="card-body text-white">
+                            <div class="d-flex">
+                                <div class="flex-grow-1">
+                                    <h3 class="mb-0">{{ stats.aprobadas }}</h3>
+                                    <p class="mb-0">Aprobadas</p>
+                                </div>
+                                <div class="align-self-center">
+                                    <i class="fas fa-thumbs-up fa-2x"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-lg-3 col-6">
+                    <div class="card stats-card bg-gradient-danger">
+                        <div class="card-body text-white">
+                            <div class="d-flex">
+                                <div class="flex-grow-1">
+                                    <h3 class="mb-0">{{ stats.rechazadas }}</h3>
+                                    <p class="mb-0">Rechazadas</p>
+                                </div>
+                                <div class="align-self-center">
+                                    <i class="fas fa-thumbs-down fa-2x"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <!-- Revisiones Pendientes -->
+                <div class="col-lg-8">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">
+                                <i class="fas fa-tasks"></i>
+                                Revisiones Pendientes
+                                {% if stats.pendientes > 0 %}
+                                <span class="badge badge-warning ml-2">{{ stats.pendientes }}</span>
+                                {% endif %}
+                            </h3>
+                        </div>
+                        <div class="card-body">
+                            {% if mis_revisiones %}
+                                {% for revision in mis_revisiones %}
+                                <div class="revision-item {% if revision.proceso_revision.fecha_limite and revision.proceso_revision.fecha_limite|date:'Y-m-d H:i' < 'now'|date:'Y-m-d H:i' %}urgente{% else %}normal{% endif %}">
+                                    <div class="revision-header">
+                                        <div>
+                                            <h5 class="mb-1">{{ revision.proceso_revision.gestion_acta.titulo }}</h5>
+                                            <small class="text-muted">
+                                                Acta #{{ revision.proceso_revision.gestion_acta.id }} -
+                                                Enviado el {{ revision.proceso_revision.fecha_creacion|date:"d/m/Y H:i" }}
+                                            </small>
+                                        </div>
+                                        <div>
+                                            {% if revision.proceso_revision.fecha_limite %}
+                                                {% if revision.proceso_revision.fecha_limite|date:'Y-m-d H:i' < 'now'|date:'Y-m-d H:i' %}
+                                                <span class="badge badge-urgente">URGENTE</span>
+                                                {% else %}
+                                                <span class="badge badge-normal">
+                                                    Límite: {{ revision.proceso_revision.fecha_limite|date:"d/m H:i" }}
+                                                </span>
+                                                {% endif %}
+                                            {% else %}
+                                            <span class="badge badge-secondary">Sin límite</span>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    
+                                    {% if revision.proceso_revision.instrucciones_revision %}
+                                    <p class="mb-2">
+                                        <strong>Instrucciones:</strong>
+                                        {{ revision.proceso_revision.instrucciones_revision|truncatewords:20 }}
+                                    </p>
+                                    {% endif %}
+                                    
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <small class="text-muted">
+                                                Solicitado por: {{ revision.proceso_revision.iniciado_por.get_full_name|default:revision.proceso_revision.iniciado_por.username }}
+                                            </small>
+                                        </div>
+                                        
+                                        <div class="revision-actions">
+                                            <a href="{% url 'gestion_actas:ver' acta_id=revision.proceso_revision.gestion_acta.id %}" 
+                                               class="btn btn-sm btn-primary">
+                                                <i class="fas fa-eye"></i> Revisar
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            {% else %}
+                            <div class="empty-state">
+                                <i class="fas fa-clipboard-check"></i>
+                                <h4>¡No tienes revisiones pendientes!</h4>
+                                <p>Actualmente no hay actas asignadas para tu revisión.</p>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Panel de información y historial -->
+                <div class="col-lg-4">
+                    <!-- Acciones rápidas -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">
+                                <i class="fas fa-bolt"></i> Acciones Rápidas
+                            </h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="list-group list-group-flush">
+                                <a href="{% url 'gestion_actas:listado' %}" class="list-group-item list-group-item-action">
+                                    <i class="fas fa-list"></i> Ver Todas las Actas
+                                </a>
+                                <a href="{% url 'gestion_actas:listado' %}?estado=en_revision" class="list-group-item list-group-item-action">
+                                    <i class="fas fa-search"></i> Actas en Revisión
+                                </a>
+                                <a href="/admin/" target="_blank" class="list-group-item list-group-item-action">
+                                    <i class="fas fa-cogs"></i> Panel de Administración
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Revisiones completadas recientes -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">
+                                <i class="fas fa-history"></i> Revisiones Recientes
+                            </h3>
+                        </div>
+                        <div class="card-body">
+                            {% if mis_completadas %}
+                            <div class="timeline">
+                                {% for revision in mis_completadas %}
+                                <div class="timeline-item">
+                                    <div class="timeline-date">{{ revision.fecha_revision|date:"d/m H:i" }}</div>
+                                    <div class="timeline-content">
+                                        <h6 class="mb-1">
+                                            {% if revision.aprobado %}
+                                            <i class="fas fa-check text-success"></i>
+                                            {% else %}
+                                            <i class="fas fa-times text-danger"></i>
+                                            {% endif %}
+                                            {{ revision.proceso_revision.gestion_acta.titulo|truncatewords:5 }}
+                                        </h6>
+                                        <small class="text-muted">
+                                            {% if revision.aprobado %}Aprobado{% else %}Rechazado{% endif %}
+                                            {% if revision.comentarios %}
+                                            - {{ revision.comentarios|truncatewords:10 }}
+                                            {% endif %}
+                                        </small>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                            {% else %}
+                            <p class="text-muted">No hay revisiones completadas recientes.</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div><!-- /.container-fluid -->
+    </section>
+    <!-- /.content -->
+</div>
+<!-- /.content-wrapper -->
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+$(document).ready(function() {
+    // Auto-refresh cada 5 minutos para ver nuevas revisiones
+    setInterval(function() {
+        location.reload();
+    }, 300000);
+    
+    // Resaltar revisiones urgentes
+    $('.urgente').addClass('border-danger').find('.revision-header h5').addClass('text-danger');
+    
+    // Tooltip para fechas límite
+    $('[data-toggle="tooltip"]').tooltip();
+});
+</script>
+{% endblock %}
