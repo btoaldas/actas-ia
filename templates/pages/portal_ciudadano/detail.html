@@ -3,6 +3,12 @@
 
 {% block title %}{{ acta.titulo }} - Portal Ciudadano {% endblock title %}
 
+{% block extrastyle %}
+  <!-- SweetAlert2 -->
+  <link rel="stylesheet" href="{% static 'plugins/sweetalert2/sweetalert2.min.css' %}">
+  <link rel="stylesheet" href="{% static 'plugins/sweetalert2-theme-bootstrap-4/bootstrap-4.min.css' %}">
+{% endblock extrastyle %}
+
 {% block bodyclass %} hold-transition sidebar-mini layout-fixed layout-navbar-fixed layout-footer-fixed {% endblock bodyclass %}
 
 {% block content %}
@@ -361,6 +367,9 @@
 {% endblock content %}
 
 {% block extra_scripts %}
+  <!-- SweetAlert2 -->
+  <script src="{% static 'plugins/sweetalert2/sweetalert2.min.js' %}"></script>
+  
   <script>
     // Función para copiar al portapapeles
     function copyToClipboard(text) {
