@@ -138,6 +138,11 @@
     <section class="content">
         <div class="container-fluid">
             
+            <!-- CSRF Token Form (Hidden) -->
+            <form style="display: none;">
+                {% csrf_token %}
+            </form>
+            
             <!-- Header del Acta -->
             <div class="acta-header">
                 <div class="row">
@@ -331,6 +336,61 @@
                         </div>
                         <div class="card-body">
                             <div class="contenido-preview">{{ acta.contenido_final|default:acta.contenido_borrador }}</div>
+
+                            {% if prompt_final_info %}
+                            <div class="mt-3">
+                                <button class="btn btn-sm btn-outline-info" type="button"
+                                        data-toggle="collapse"
+                                        data-target="#prompt-final-global"
+                                        aria-expanded="false"
+                                        aria-controls="prompt-final-global">
+                                    <i class="fas fa-code"></i>
+                                    Ver Prompt Global Usado
+                                </button>
+                                <div class="collapse mt-2" id="prompt-final-global">
+                                    <div class="card bg-light">
+                                        <div class="card-body">
+                                            <div class="d-flex flex-column flex-lg-row justify-content-between mb-3">
+                                                <div>
+                                                    <p class="mb-1"><strong>Modelo:</strong> {{ prompt_final_info.modelo_usado|default:"No disponible" }}</p>
+                                                    <p class="mb-1"><strong>Tokens usados:</strong> {{ prompt_final_info.tokens_usados|default:"-" }}</p>
+                                                    <p class="mb-1"><strong>Tiempo de respuesta:</strong> {{ prompt_final_info.tiempo_respuesta|default:"-" }}</p>
+                                                    <small class="text-muted"><i class="far fa-clock"></i> {{ prompt_final_info.timestamp|default:"-" }}</small>
+                                                </div>
+                                                <div class="mt-3 mt-lg-0">
+                                                    <button class="btn btn-outline-secondary btn-sm" type="button"
+                                                            data-toggle="collapse"
+                                                            data-target="#prompt-final-original"
+                                                            aria-expanded="false"
+                                                            aria-controls="prompt-final-original">
+                                                        Prompt Original
+                                                    </button>
+                                                    <button class="btn btn-outline-primary btn-sm ml-lg-2 mt-2 mt-lg-0" type="button"
+                                                            data-toggle="collapse"
+                                                            data-target="#prompt-final-renderizado"
+                                                            aria-expanded="false"
+                                                            aria-controls="prompt-final-renderizado">
+                                                        Prompt Ejecutado
+                                                    </button>
+                                                </div>
+                                            </div>
+                                            <div class="collapse" id="prompt-final-original">
+                                                <div class="bg-white border rounded p-3 mb-3">
+                                                    <h6 class="text-muted">Prompt Original</h6>
+                                                    <pre class="mb-0 text-sm">{{ prompt_final_info.prompt_original }}</pre>
+                                                </div>
+                                            </div>
+                                            <div class="collapse" id="prompt-final-renderizado">
+                                                <div class="bg-white border rounded p-3">
+                                                    <h6 class="text-muted">Prompt Ejecutado</h6>
+                                                    <pre class="mb-0 text-sm">{{ prompt_final_info.prompt_renderizado }}</pre>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endif %}
                         </div>
                     </div>
                     {% endif %}
@@ -404,10 +464,78 @@
                         </div>
                         <div class="card-body">
                             {% if puede_procesar %}
-                            <button class="btn btn-success btn-block procesar-btn" data-acta-id="{{ acta.pk }}">
+                            <button id="btnProcesarActaPrincipal" class="btn btn-success btn-block procesar-btn" data-acta-id="{{ acta.pk }}">
                                 <i class="fas fa-play"></i>
                                 Procesar Acta
                             </button>
+                            <div id="debug-procesar-acta" style="margin-top:10px; font-size:12px; color:#555;">
+                                <strong>Debug JS:</strong>
+                                <ul id="debug-list" style="padding-left:18px; margin:4px 0;"></ul>
+                            </div>
+                            <script>
+                                (function(){
+                                    function logDbg(msg){
+                                        try {
+                                            console.log('[ACTA_DEBUG]', msg);
+                                            var ul = document.getElementById('debug-list');
+                                            if(ul){ var li = document.createElement('li'); li.textContent = msg; ul.appendChild(li);}    
+                                        } catch(e) { console.warn('Debug log error', e); }
+                                    }
+                                    logDbg('Inline debugger cargado');
+                                    var btn = document.getElementById('btnProcesarActaPrincipal');
+                                    if(!btn){ logDbg('Botón no encontrado en DOM inmediato'); return; }
+                                    logDbg('Botón encontrado. data-acta-id=' + btn.getAttribute('data-acta-id'));
+                                    // Remover listeners previos simples
+                                    btn.onclick = null;
+                                    btn.addEventListener('click', function(ev){
+                                        ev.preventDefault(); ev.stopPropagation();
+                                        logDbg('CLICK capturado inline');
+                                        var actaId = btn.getAttribute('data-acta-id');
+                                        var csrfInput = document.querySelector('[name=csrfmiddlewaretoken]');
+                                        var csrfToken = csrfInput ? csrfInput.value : null;
+                                        logDbg('CSRF token: ' + (csrfToken ? csrfToken.substring(0,12)+'...' : 'NO'));
+                                        if(!csrfToken){ alert('No se encontró CSRF token. Recarga la página.'); return; }
+                                        if(!actaId){ alert('No se encontró ID de acta.'); return; }
+                                        if(window._procesandoActa){ logDbg('Ya en proceso, ignorando segundo click'); return; }
+                                        window._procesandoActa = true;
+                                        btn.disabled = true;
+                                        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Procesando...';
+                                        logDbg('Enviando POST fetch...');
+                                        fetch('/generador-actas/actas/' + actaId + '/procesar/', {
+                                            method: 'POST',
+                                            headers: {
+                                                'X-CSRFToken': csrfToken,
+                                                'Content-Type': 'application/json'
+                                            },
+                                            credentials: 'same-origin',
+                                            body: JSON.stringify({})
+                                        }).then(r => {
+                                            logDbg('Respuesta HTTP status=' + r.status);
+                                            return r.json().catch(()=>({success:false, message:'Respuesta no JSON'}));
+                                        }).then(data => {
+                                            logDbg('JSON recibido: ' + JSON.stringify(data));
+                                            if(data.success){
+                                                logDbg('Éxito: ' + (data.message || 'Procesamiento iniciado'));
+                                                btn.innerHTML = '<i class="fas fa-check"></i> Iniciado';
+                                                setTimeout(()=>window.location.reload(), 2500);
+                                            } else {
+                                                logDbg('Fallo lógico: ' + (data.message || 'Sin mensaje'));
+                                                alert('Error: ' + (data.message || 'No se pudo iniciar procesamiento'));
+                                                btn.disabled = false;
+                                                btn.innerHTML = '<i class="fas fa-play"></i> Procesar Acta';
+                                                window._procesandoActa = false;
+                                            }
+                                        }).catch(err => {
+                                            logDbg('Error fetch: ' + err.message);
+                                            alert('Error de red o servidor: ' + err.message);
+                                            btn.disabled = false;
+                                            btn.innerHTML = '<i class="fas fa-play"></i> Procesar Acta';
+                                            window._procesandoActa = false;
+                                        });
+                                    });
+                                    logDbg('Listener inline registrado');
+                                })();
+                            </script>
                             {% endif %}
                             
                             {% if puede_exportar %}
@@ -431,7 +559,7 @@
                             </div>
                             {% endif %}
                             
-                            <a href="{% url 'generador_actas:actas_list' %}" class="btn btn-secondary btn-block">
+                            <a href="{% url 'generador_actas:actas_lista' %}" class="btn btn-secondary btn-block">
                                 <i class="fas fa-arrow-left"></i>
                                 Volver al Listado
                             </a>
@@ -450,7 +578,7 @@
                         <div class="card-body">
                             {% for key, value in acta.metricas_procesamiento.items %}
                             <div class="metadata-item">
-                                <strong>{{ key|capfirst|replace:"_":" " }}:</strong> 
+                                <strong>{{ key|capfirst }}:</strong> 
                                 {% if 'tiempo' in key %}
                                     {{ value|floatformat:2 }}s
                                 {% else %}
@@ -463,7 +591,7 @@
                     {% endif %}
 
                     <!-- Historial -->
-                    {% if acta.historial_cambios.all %}
+                    {% if acta.historial_cambios %}
                     <div class="card">
                         <div class="card-header">
                             <h3 class="card-title">
@@ -473,27 +601,29 @@
                         </div>
                         <div class="card-body">
                             <div class="timeline">
-                                {% for evento in acta.historial_cambios.all %}
+                                {% for evento in acta.historial_cambios %}
                                 <div class="timeline-item">
                                     <div class="timeline-icon bg-primary">
                                         <i class="fas fa-circle"></i>
                                     </div>
                                     <div>
-                                        <strong>{{ evento.accion|capfirst|replace:"_":" " }}</strong>
+                                        <strong>{{ evento.descripcion|default:evento.evento|capfirst }}</strong>
+                                        {% if evento.progreso %}
+                                        <div class="progress mt-2" style="height: 5px;">
+                                            <div class="progress-bar" style="width: {{ evento.progreso }}%"></div>
+                                        </div>
+                                        <small class="text-muted">Progreso: {{ evento.progreso }}%</small>
+                                        {% endif %}
                                         <br>
                                         <small class="text-muted">
-                                            <i class="fas fa-user"></i>
-                                            {{ evento.usuario.get_full_name|default:evento.usuario.username }}
-                                            <br>
                                             <i class="fas fa-clock"></i>
-                                            {{ evento.fecha|date:"d/m/Y H:i" }}
+                                            {{ evento.timestamp|date:"d/m/Y H:i:s" }}
                                         </small>
-                                        {% if evento.detalles %}
-                                        <div class="mt-1">
-                                            <small>{{ evento.detalles }}</small>
-                                        </div>
-                                        {% endif %}
                                     </div>
+                                </div>
+                                {% empty %}
+                                <div class="text-muted">
+                                    <i class="fas fa-info-circle"></i> Sin eventos registrados
                                 </div>
                                 {% endfor %}
                             </div>
@@ -511,68 +641,291 @@
 
 {% block javascripts %}
 {{ block.super }}
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="{% static 'plugins/sweetalert2/sweetalert2.min.js' %}"></script>
+
 <script>
+// ========== SISTEMA ROBUSTO DE PROCESAMIENTO DE ACTAS - DIRECTO EN TEMPLATE ==========
 $(document).ready(function() {
-    // Procesar acta
-    $('.procesar-btn').click(function() {
-        const actaId = $(this).data('acta-id');
-        const btn = $(this);
+    console.log('🚀 INICIANDO SISTEMA DE PROCESAMIENTO DE ACTAS');
+    console.log('📅 Fecha:', new Date().toLocaleString());
+    console.log('🌐 URL actual:', window.location.href);
+    
+    // Verificar dependencias
+    if (typeof jQuery === 'undefined') {
+        console.error('❌ jQuery no está cargado');
+        alert('ERROR: jQuery no está cargado');
+        return;
+    } else {
+        console.log('✅ jQuery versión:', $.fn.jquery);
+    }
+    
+    if (typeof Swal === 'undefined') {
+        console.error('❌ SweetAlert2 no está cargado');
+        alert('ERROR: SweetAlert2 no está cargado');
+        return;
+    } else {
+        console.log('✅ SweetAlert2 disponible');
+    }
+    
+    // ========== BUSCAR Y CONFIGURAR BOTONES ==========
+    setTimeout(function() {
+        console.log('🔍 Buscando botones .procesar-btn...');
+        const botones = $('.procesar-btn');
+        console.log('📊 Botones encontrados:', botones.length);
+        
+        if (botones.length === 0) {
+            console.warn('⚠️ NO SE ENCONTRARON BOTONES CON CLASE .procesar-btn');
+            console.log('🔍 Buscando todos los botones en la página...');
+            $('button').each(function(index) {
+                console.log(`Botón ${index + 1}:`, {
+                    texto: $(this).text().trim(),
+                    clases: this.className,
+                    id: this.id
+                });
+            });
+            return;
+        }
+        
+        // Configurar cada botón encontrado
+        botones.each(function(index) {
+            const btn = $(this);
+            const actaId = btn.data('acta-id');
+            
+            console.log(`🎯 Configurando botón ${index + 1}:`, {
+                texto: btn.text().trim(),
+                actaId: actaId,
+                clases: this.className,
+                deshabilitado: this.disabled,
+                elemento: this
+            });
+            
+            // REMOVER TODOS los eventos anteriores
+            btn.off('click');
+            
+            // AGREGAR evento click con debugging
+            btn.on('click', function(e) {
+                console.log('🚀 ¡¡¡CLICK DETECTADO EN BOTÓN!!!');
+                console.log('🎯 Evento:', e);
+                console.log('🎯 Elemento clickeado:', this);
+                console.log('🎯 Acta ID:', actaId);
+                
+                e.preventDefault();
+                e.stopPropagation();
+                
+                if (!actaId) {
+                    console.error('❌ ERROR: No hay Acta ID');
+                    alert('ERROR: No se encontró el ID del acta');
+                    return false;
+                }
+                
+                console.log('✅ Iniciando confirmación para Acta ID:', actaId);
+                mostrarConfirmacion(actaId, btn);
+                return false;
+            });
+            
+            console.log('✅ Botón configurado correctamente');
+        });
+        
+        console.log('🎯 TODOS LOS BOTONES CONFIGURADOS');
+    }, 500); // Esperar 500ms para que cargue todo
+    
+    // ========== FUNCIÓN DE CONFIRMACIÓN ==========
+    function mostrarConfirmacion(actaId, btn) {
+        console.log('❓ Mostrando confirmación para Acta:', actaId);
+        
+        // Buscar token CSRF
+        const csrfToken = $('[name=csrfmiddlewaretoken]').val();
+        console.log('🔑 CSRF Token:', csrfToken ? 'ENCONTRADO (' + csrfToken.substring(0, 10) + '...)' : 'NO ENCONTRADO');
+        
+        if (!csrfToken) {
+            console.error('❌ NO HAY CSRF TOKEN');
+            alert('ERROR: No se encontró el token de seguridad. Recarga la página.');
+            return;
+        }
+        
+        console.log('🎨 Mostrando diálogo SweetAlert...');
         
         Swal.fire({
-            title: '¿Procesar acta?',
-            text: 'Esto iniciará el procesamiento automático con IA',
+            title: '🤖 ¿Procesar con IA?',
+            html: `
+                <div style="text-align: center;">
+                    <p><strong>Acta ID:</strong> ${actaId}</p>
+                    <p>Se iniciará el procesamiento automático usando Inteligencia Artificial.</p>
+                    <p>Este proceso puede tomar varios minutos.</p>
+                </div>
+            `,
             icon: 'question',
             showCancelButton: true,
-            confirmButtonColor: '#3085d6',
-            cancelButtonColor: '#d33',
-            confirmButtonText: 'Sí, procesar',
-            cancelButtonText: 'Cancelar'
+            confirmButtonText: '✅ Sí, procesar',
+            cancelButtonText: '❌ Cancelar',
+            confirmButtonColor: '#28a745',
+            cancelButtonColor: '#dc3545',
+            allowOutsideClick: false,
+            width: 500
         }).then((result) => {
+            console.log('👤 Respuesta del usuario:', result);
+            
             if (result.isConfirmed) {
-                btn.prop('disabled', true);
-                btn.html('<i class="fas fa-spinner fa-spin"></i> Procesando...');
+                console.log('✅ Usuario confirmó - INICIANDO PROCESAMIENTO');
+                ejecutarProcesamiento(actaId, csrfToken, btn);
+            } else {
+                console.log('❌ Usuario canceló el procesamiento');
+            }
+        }).catch((error) => {
+            console.error('❌ Error en SweetAlert:', error);
+            alert('Error mostrando diálogo: ' + error.message);
+        });
+    }
+    
+    // ========== FUNCIÓN DE PROCESAMIENTO ==========
+    function ejecutarProcesamiento(actaId, csrfToken, btn) {
+        console.log('🔄 EJECUTANDO PROCESAMIENTO REAL');
+        console.log('📋 Parámetros:', {
+            actaId: actaId,
+            csrfToken: csrfToken.substring(0, 10) + '...',
+            botonTexto: btn.text().trim()
+        });
+        
+        // Cambiar estado del botón INMEDIATAMENTE
+        const textoOriginal = btn.html();
+        btn.prop('disabled', true);
+        btn.html('<i class="fas fa-spinner fa-spin"></i> Procesando con IA...');
+        console.log('🔄 Botón modificado - disabled=true, texto cambiado');
+        
+        // Preparar URL y datos
+        const url = `/generador-actas/actas/${actaId}/procesar/`;
+        console.log('📡 URL de procesamiento:', url);
+        
+        // Ejecutar petición AJAX con configuración completa
+        console.log('📤 Enviando petición AJAX...');
+        
+        $.ajax({
+            url: url,
+            type: 'POST',
+            headers: {
+                'X-CSRFToken': csrfToken,
+                'Content-Type': 'application/json'
+            },
+            data: JSON.stringify({}),
+            dataType: 'json',
+            timeout: 120000, // 2 minutos
+            cache: false,
+            
+            beforeSend: function(xhr) {
+                console.log('📤 Petición enviada, esperando respuesta...');
+            },
+            
+            success: function(response, textStatus, xhr) {
+                console.log('✅ RESPUESTA EXITOSA RECIBIDA');
+                console.log('✅ Status:', textStatus);
+                console.log('✅ XHR Status:', xhr.status);
+                console.log('✅ Response completa:', response);
                 
-                $.ajax({
-                    url: `/generador-actas/actas/${actaId}/procesar/`,
-                    method: 'POST',
-                    headers: {
-                        'X-CSRFToken': $('[name=csrfmiddlewaretoken]').val()
-                    },
-                    success: function(response) {
-                        if (response.success) {
-                            Swal.fire({
-                                title: 'Procesamiento iniciado',
-                                text: response.message,
-                                icon: 'success'
-                            }).then(() => {
-                                location.reload();
-                            });
-                        } else {
-                            Swal.fire('Error', response.message, 'error');
-                            btn.prop('disabled', false);
-                            btn.html('<i class="fas fa-play"></i> Procesar Acta');
-                        }
-                    },
-                    error: function() {
-                        Swal.fire('Error', 'Error comunicándose con el servidor', 'error');
-                        btn.prop('disabled', false);
-                        btn.html('<i class="fas fa-play"></i> Procesar Acta');
-                    }
-                });
+                if (response && response.success) {
+                    console.log('🎉 SUCCESS = TRUE - Procesamiento iniciado');
+                    
+                    const mensaje = response.message || 'Procesamiento iniciado exitosamente';
+                    const taskId = response.task_id || 'N/A';
+                    
+                    Swal.fire({
+                        title: '🎉 ¡Procesamiento Iniciado!',
+                        html: `
+                            <div style="text-align: center;">
+                                <p><strong>${mensaje}</strong></p>
+                                <hr>
+                                <p><small><strong>Task ID:</strong> ${taskId}</small></p>
+                                <p><small>La página se recargará en 5 segundos...</small></p>
+                            </div>
+                        `,
+                        icon: 'success',
+                        timer: 5000,
+                        timerProgressBar: true,
+                        allowOutsideClick: false,
+                        showConfirmButton: false
+                    }).then(() => {
+                        console.log('🔄 Recargando página...');
+                        window.location.reload();
+                    });
+                    
+                } else {
+                    console.error('❌ SUCCESS = FALSE');
+                    console.error('❌ Response:', response);
+                    const mensaje = response.message || 'Error desconocido del servidor';
+                    mostrarError('Error en el procesamiento', mensaje);
+                    restaurarBoton(btn, textoOriginal);
+                }
+            },
+            
+            error: function(xhr, textStatus, errorThrown) {
+                console.error('❌ ERROR EN PETICIÓN AJAX');
+                console.error('❌ XHR Status:', xhr.status);
+                console.error('❌ XHR StatusText:', xhr.statusText);
+                console.error('❌ TextStatus:', textStatus);
+                console.error('❌ Error:', errorThrown);
+                console.error('❌ Response Text:', xhr.responseText);
+                
+                let titulo = 'Error de Comunicación';
+                let mensaje = `Error al comunicarse con el servidor (Status: ${xhr.status})`;
+                
+                if (xhr.status === 403) {
+                    titulo = 'Acceso Denegado';
+                    mensaje = 'No tienes permisos para realizar esta acción.';
+                } else if (xhr.status === 404) {
+                    titulo = 'Recurso No Encontrado';
+                    mensaje = 'El acta o endpoint no fue encontrado.';
+                } else if (xhr.status === 500) {
+                    titulo = 'Error del Servidor';
+                    mensaje = 'Error interno del servidor.';
+                } else if (xhr.responseText) {
+                    mensaje += '\n\nDetalle: ' + xhr.responseText.substring(0, 200);
+                }
+                
+                mostrarError(titulo, mensaje);
+                restaurarBoton(btn, textoOriginal);
+            },
+            
+            complete: function() {
+                console.log('🏁 Petición AJAX completada');
             }
         });
-    });
+    }
     
-    // Refrescar estado
-    $('.refresh-status').click(function() {
+    // ========== FUNCIÓN PARA MOSTRAR ERRORES ==========
+    function mostrarError(titulo, mensaje) {
+        console.error('🚨 MOSTRANDO ERROR:', {titulo, mensaje});
+        
+        Swal.fire({
+            title: titulo,
+            html: `<div style="text-align: left; max-height: 200px; overflow-y: auto;">
+                     <strong>Detalle:</strong><br>${mensaje}
+                   </div>`,
+            icon: 'error',
+            width: 600,
+            confirmButtonText: 'Entendido',
+            confirmButtonColor: '#dc3545'
+        });
+    }
+    
+    // ========== FUNCIÓN PARA RESTAURAR BOTÓN ==========
+    function restaurarBoton(btn, textoOriginal) {
+        console.log('🔄 Restaurando botón...');
+        btn.prop('disabled', false);
+        btn.html(textoOriginal);
+        console.log('✅ Botón restaurado');
+    }
+    
+    // ========== FUNCIONES AUXILIARES ADICIONALES ==========
+    
+    // REFRESCAR ESTADO
+    $('.refresh-status').off('click').on('click', function() {
         const actaId = $(this).data('acta-id');
         const btn = $(this);
         
         btn.find('i').addClass('fa-spin');
         
         $.ajax({
-            url: `/generador-actas/actas/${actaId}/estado/`,
+            url: '/generador-actas/actas/' + actaId + '/estado/',
             method: 'GET',
             success: function(response) {
                 if (response.success) {
@@ -590,20 +943,25 @@ $(document).ready(function() {
         });
     });
     
-    // Auto-refresh si está procesando
+    // AUTO-REFRESH SI ESTÁ PROCESANDO
     {% if acta.estado in 'en_cola,procesando,procesando_segmentos,unificando' %}
+    console.log('🔄 Auto-refresh activado para acta en procesamiento');
     setInterval(function() {
         $.ajax({
-            url: `/generador-actas/actas/{{ acta.pk }}/estado/`,
+            url: '/generador-actas/actas/{{ acta.pk }}/estado/',
             method: 'GET',
             success: function(response) {
                 if (response.success && response.data.estado !== '{{ acta.estado }}') {
+                    console.log('🔄 Estado cambió, recargando página...');
                     location.reload();
                 }
             }
         });
-    }, 10000); // Cada 10 segundos
+    }, 10000);
     {% endif %}
+    
+    console.log('✅ Funciones auxiliares del template cargadas');
+    console.log('🎯 SISTEMA COMPLETAMENTE LISTO');
 });
 </script>
 {% endblock %}

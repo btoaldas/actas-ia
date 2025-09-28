@@ -16,7 +16,6 @@ from django.conf import settings
 from django.core.management import call_command
 from django.core.files.base import ContentFile
 from django.utils import timezone
-from django.contrib.auth.models import User
 from django.template.loader import render_to_string
 from django.db import transaction
 
@@ -1269,3 +1268,1180 @@ def generar_reporte_uso_segmentos():
             'success': False,
             'error': str(e)
         }
+
+
+# ================== TAREAS FASE 2: PROCESAMIENTO DE PLANTILLAS POR SEGMENTOS ==================
+
+@shared_task(bind=True, max_retries=3, default_retry_delay=60)
+def procesar_plantilla_completa_task(self, ejecucion_id: str, contexto_datos: dict = None):
+    """
+    Tarea principal para procesar una plantilla completa por segmentos
+    Coordina el procesamiento asíncrono de todos los segmentos configurados
+    """
+    from .models import EjecucionPlantilla, ResultadoSegmento, ActaBorrador, ConfiguracionSegmento
+    from celery import group, chain, chord
+    import logging
+    
+    logger = logging.getLogger(__name__)
+    
+    try:
+        # Obtener ejecución
+        ejecucion = EjecucionPlantilla.objects.select_related('plantilla').get(id=ejecucion_id)
+        
+        # Actualizar estado inicial
+        ejecucion.estado = 'procesando'
+        ejecucion.tiempo_inicio = timezone.now()  # Este campo sí existe
+        ejecucion.progreso_actual = 0
+        ejecucion.progreso_total = 0
+        ejecucion.task_id = str(self.request.id)
+        ejecucion.save()
+        
+        logger.info(f"🔄 Iniciando procesamiento de plantilla {ejecucion.plantilla.nombre} (ID: {ejecucion_id})")
+        
+        # Obtener configuraciones de segmentos ordenados
+        configuraciones = ConfiguracionSegmento.objects.filter(
+            plantilla=ejecucion.plantilla
+        ).select_related('segmento', 'segmento__proveedor_ia').order_by('orden')
+        
+        if not configuraciones.exists():
+            raise ValueError("La plantilla no tiene segmentos configurados")
+        
+        # Preparar contexto base
+        if contexto_datos is None:
+            contexto_datos = {
+                'transcripcion_id': ejecucion.transcripcion.id if ejecucion.transcripcion else None,
+                'variables_contexto': ejecucion.variables_contexto,
+                'configuracion_overrides': ejecucion.configuracion_overrides
+            }
+        
+        # Crear resultados para cada segmento
+        total_segmentos = configuraciones.count()
+        segmento_tasks = []
+        
+        for i, config in enumerate(configuraciones, 1):
+            # Crear ResultadoSegmento
+            resultado = ResultadoSegmento.objects.create(
+                ejecucion=ejecucion,
+                segmento=config.segmento,  # Usar el segmento de la configuración
+                orden_procesamiento=i,
+                estado='pendiente',
+                prompt_usado=""  # Se llenará durante el procesamiento
+            )
+            
+            # Contexto específico del segmento
+            contexto_segmento = {
+                **contexto_datos,
+                'orden_segmento': i,
+                'total_segmentos': total_segmentos,
+                'configuracion_id': config.id
+            }
+            
+            # Crear tarea según tipo de segmento
+            if config.segmento.es_dinamico:
+                task = procesar_segmento_con_ia_task.s(resultado.id, contexto_segmento)
+            else:
+                task = procesar_segmento_estatico_task.s(resultado.id, contexto_segmento)
+            
+            segmento_tasks.append(task)
+        
+        # Ejecutar tareas (usar procesamiento secuencial por defecto)
+        if len(segmento_tasks) > 1:
+            # Procesamiento paralelo con callback
+            job = chord(segmento_tasks)(unificar_segmentos_task.s(ejecucion_id))
+        else:
+            # Procesamiento secuencial
+            job = chain(*segmento_tasks, unificar_segmentos_task.s(ejecucion_id))
+        
+        # Actualizar progreso
+        ejecucion.progreso_actual = 0
+        ejecucion.progreso_total = len(segmento_tasks)
+        ejecucion.save()
+        
+        logger.info(f"✅ {len(segmento_tasks)} tareas de segmentos creadas para plantilla {ejecucion_id}")
+        
+        return {
+            'ejecucion_id': ejecucion_id,
+            'total_segmentos': total_segmentos,
+            'procesamiento_paralelo': ejecucion.procesamiento_paralelo,
+            'job_id': str(job.id) if hasattr(job, 'id') else None
+        }
+        
+    except Exception as exc:
+        logger.error(f"❌ Error procesando plantilla {ejecucion_id}: {exc}")
+        
+        # Actualizar estado de error
+        try:
+            ejecucion = EjecucionPlantilla.objects.get(id=ejecucion_id)
+            ejecucion.estado = 'error'
+            ejecucion.error_details = str(exc)
+            ejecucion.fecha_fin = timezone.now()
+            ejecucion.save()
+        except:
+            pass
+        
+        # Retry si es posible
+        if self.request.retries < self.max_retries:
+            raise self.retry(countdown=60 * (2 ** self.request.retries), exc=exc)
+        raise
+
+
+@shared_task(bind=True, max_retries=2, default_retry_delay=30)
+def procesar_segmento_con_ia_task(self, resultado_id: str, contexto: dict):
+    """
+    Procesa un segmento dinámico usando IA
+    """
+    from .models import ResultadoSegmento
+    import logging
+    import time
+    
+    logger = logging.getLogger(__name__)
+    
+    try:
+        resultado = ResultadoSegmento.objects.select_related(
+            'configuracion_segmento__segmento',
+            'configuracion_segmento__segmento__proveedor_ia',
+            'ejecucion__transcripcion'
+        ).get(id=resultado_id)
+        
+        # Actualizar estado
+        resultado.estado = 'procesando'
+        resultado.fecha_inicio = timezone.now()
+        resultado.save()
+        
+        config = resultado.configuracion_segmento
+        segmento = config.segmento
+        
+        logger.info(f"🤖 Procesando segmento dinámico: {segmento.nombre}")
+        
+        # Obtener proveedor IA
+        proveedor = segmento.proveedor_ia or resultado.ejecucion.plantilla.proveedor_ia_defecto
+        if not proveedor:
+            raise ValueError(f"No hay proveedor IA configurado para {segmento.nombre}")
+        
+        # Preparar prompt
+        prompt_efectivo = config.prompt_personalizado or segmento.prompt_ia
+        if not prompt_efectivo:
+            raise ValueError(f"No hay prompt configurado para {segmento.nombre}")
+        
+        # Preparar contexto de procesamiento
+        contexto_procesamiento = _preparar_contexto_segmento_ia(resultado, contexto)
+        
+        # Procesar con IA
+        inicio_ia = time.time()
+        
+        try:
+            contenido_generado = GeneradorActasService.procesar_segmento_con_ia(
+                prompt=prompt_efectivo,
+                contexto=contexto_procesamiento,
+                proveedor=proveedor,
+                configuracion_extra=config.parametros_override
+            )
+        except Exception as e:
+            logger.error(f"❌ Error en procesamiento IA para {segmento.nombre}: {e}")
+            raise
+        
+        tiempo_procesamiento = time.time() - inicio_ia
+        
+        # Guardar resultado
+        resultado.contenido_generado = contenido_generado
+        resultado.estado = 'completado'
+        resultado.fecha_fin = timezone.now()
+        resultado.tiempo_procesamiento = tiempo_procesamiento
+        resultado.metadata_procesamiento = {
+            'proveedor_usado': proveedor.nombre,
+            'modelo_usado': proveedor.modelo,
+            'tiempo_procesamiento': tiempo_procesamiento,
+            'prompt_usado': prompt_efectivo[:500] + '...' if len(prompt_efectivo) > 500 else prompt_efectivo,
+            'longitud_resultado': len(contenido_generado)
+        }
+        resultado.save()
+        
+        # Actualizar progreso global
+        _actualizar_progreso_ejecucion_segmentos(resultado.ejecucion)
+        
+        logger.info(f"✅ Segmento dinámico completado: {segmento.nombre} ({tiempo_procesamiento:.2f}s)")
+        
+        return {
+            'resultado_id': resultado_id,
+            'segmento_nombre': segmento.nombre,
+            'tiempo_procesamiento': tiempo_procesamiento,
+            'estado': 'completado'
+        }
+        
+    except Exception as exc:
+        logger.error(f"❌ Error procesando segmento dinámico {resultado_id}: {exc}")
+        
+        # Actualizar estado de error
+        try:
+            resultado = ResultadoSegmento.objects.get(id=resultado_id)
+            resultado.estado = 'error'
+            resultado.error_details = str(exc)
+            resultado.fecha_fin = timezone.now()
+            resultado.save()
+        except:
+            pass
+        
+        # Retry si es posible
+        if self.request.retries < self.max_retries:
+            raise self.retry(countdown=30 * (2 ** self.request.retries), exc=exc)
+        raise
+
+
+@shared_task(bind=True, max_retries=1)
+def procesar_segmento_estatico_task(self, resultado_id: str, contexto: dict):
+    """
+    Procesa un segmento estático (reemplaza variables sin IA)
+    """
+    from .models import ResultadoSegmento
+    import logging
+    import time
+    
+    logger = logging.getLogger(__name__)
+    
+    try:
+        resultado = ResultadoSegmento.objects.select_related(
+            'configuracion_segmento__segmento'
+        ).get(id=resultado_id)
+        
+        # Actualizar estado
+        resultado.estado = 'procesando'
+        resultado.fecha_inicio = timezone.now()
+        resultado.save()
+        
+        config = resultado.configuracion_segmento
+        segmento = config.segmento
+        
+        logger.info(f"📋 Procesando segmento estático: {segmento.nombre}")
+        
+        # Obtener contenido base
+        contenido_base = segmento.contenido_estatico
+        if not contenido_base:
+            raise ValueError(f"No hay contenido estático para {segmento.nombre}")
+        
+        # Preparar contexto
+        contexto_procesamiento = _preparar_contexto_segmento_ia(resultado, contexto)
+        
+        # Procesar template
+        inicio_procesamiento = time.time()
+        contenido_generado = _procesar_template_estatico(contenido_base, contexto_procesamiento)
+        tiempo_procesamiento = time.time() - inicio_procesamiento
+        
+        # Guardar resultado
+        resultado.contenido_generado = contenido_generado
+        resultado.estado = 'completado'
+        resultado.fecha_fin = timezone.now()
+        resultado.tiempo_procesamiento = tiempo_procesamiento
+        resultado.metadata_procesamiento = {
+            'tipo_procesamiento': 'estatico',
+            'tiempo_procesamiento': tiempo_procesamiento,
+            'longitud_original': len(contenido_base),
+            'longitud_final': len(contenido_generado)
+        }
+        resultado.save()
+        
+        # Actualizar progreso global
+        _actualizar_progreso_ejecucion_segmentos(resultado.ejecucion)
+        
+        logger.info(f"✅ Segmento estático completado: {segmento.nombre}")
+        
+        return {
+            'resultado_id': resultado_id,
+            'segmento_nombre': segmento.nombre,
+            'tiempo_procesamiento': tiempo_procesamiento,
+            'estado': 'completado'
+        }
+        
+    except Exception as exc:
+        logger.error(f"❌ Error procesando segmento estático {resultado_id}: {exc}")
+        
+        # Actualizar estado de error
+        try:
+            resultado = ResultadoSegmento.objects.get(id=resultado_id)
+            resultado.estado = 'error'
+            resultado.error_details = str(exc)
+            resultado.fecha_fin = timezone.now()
+            resultado.save()
+        except:
+            pass
+        
+        # Retry si es posible
+        if self.request.retries < self.max_retries:
+            raise self.retry(countdown=15, exc=exc)
+        raise
+
+
+@shared_task(bind=True, max_retries=2)
+def unificar_segmentos_task(self, resultados_anteriores, ejecucion_id: str):
+    """
+    Unifica todos los segmentos procesados en un acta final
+    """
+    from .models import EjecucionPlantilla, ResultadoSegmento, ActaBorrador
+    import logging
+    
+    logger = logging.getLogger(__name__)
+    
+    try:
+        ejecucion = EjecucionPlantilla.objects.select_related('plantilla').get(id=ejecucion_id)
+        
+        logger.info(f"🔄 Unificando segmentos para plantilla {ejecucion.plantilla.nombre}")
+        
+        # Obtener todos los resultados
+        resultados = ResultadoSegmento.objects.filter(
+            ejecucion=ejecucion
+        ).select_related('configuracion_segmento__segmento').order_by('orden_procesamiento')
+        
+        # Verificar completitud
+        segmentos_error = resultados.filter(estado='error')
+        if segmentos_error.exists():
+            error_names = list(segmentos_error.values_list('configuracion_segmento__segmento__nombre', flat=True))
+            error_msg = f"Segmentos con error: {error_names}"
+            
+            ejecucion.estado = 'error'
+            ejecucion.error_details = error_msg
+            ejecucion.fecha_fin = timezone.now()
+            ejecucion.save()
+            
+            raise ValueError(error_msg)
+        
+        # Actualizar estado
+        ejecucion.estado = 'unificando'
+        ejecucion.progreso = 85
+        ejecucion.save()
+        
+        # Unificar contenido
+        contenido_partes = []
+        for resultado in resultados.filter(estado='completado'):
+            if resultado.contenido_generado:
+                segmento = resultado.configuracion_segmento.segmento
+                
+                # Añadir separador si no es el primero
+                if contenido_partes:
+                    contenido_partes.append("\n\n---\n\n")
+                
+                # Añadir título de sección
+                if segmento.categoria != 'otros':
+                    titulo_seccion = f"## {segmento.nombre}\n\n"
+                    contenido_partes.append(titulo_seccion)
+                
+                # Añadir contenido
+                contenido_partes.append(resultado.contenido_generado)
+        
+        contenido_unificado = "".join(contenido_partes)
+
+        # Aplicar prompt global de plantilla si está disponible
+        from collections import UserDict
+        from .ia_providers import get_ia_provider
+
+        prompt_global = ejecucion.prompt_unificacion_override or (ejecucion.plantilla.prompt_global or '')
+        prompt_global = prompt_global.strip()
+        contenido_final = contenido_unificado
+        prompt_final_renderizado = None
+
+        prompt_metadata = None
+
+        if prompt_global:
+            logger.info("🤖 Ejecutando prompt global de plantilla durante unificación")
+
+            class _PromptFormatter(UserDict):
+                def __missing__(self, key):
+                    return '{' + key + '}'
+
+            participantes = ejecucion.variables_contexto.get('participantes', []) if ejecucion.variables_contexto else []
+            participantes_texto = ", ".join([
+                str(p.get('nombre', p)) if isinstance(p, dict) else str(p)
+                for p in participantes if p
+            ])
+
+            prompt_contexto = {
+                'segmentos': contenido_unificado,
+                'contenido_unificado': contenido_unificado,
+                'transcripcion': ejecucion.variables_contexto.get('transcripcion_texto', '') if ejecucion.variables_contexto else '',
+                'fecha': ejecucion.variables_contexto.get('fecha_sesion', ''),
+                'participantes': participantes_texto,
+                'titulo_acta': ejecucion.nombre,
+                'numero_acta': ejecucion.variables_contexto.get('numero_acta', ''),
+                'tipo_acta': ejecucion.plantilla.get_tipo_acta_display(),
+            }
+
+            prompt_final_renderizado = prompt_global.format_map(_PromptFormatter(prompt_contexto))
+            prompt_metadata = {
+                'prompt_original': prompt_global,
+                'prompt_renderizado': prompt_final_renderizado,
+                'timestamp': timezone.now().isoformat()
+            }
+
+            proveedor_final = ejecucion.proveedor_ia_global or ejecucion.plantilla.proveedor_ia_defecto
+            if proveedor_final:
+                try:
+                    proveedor_instance = get_ia_provider(proveedor_final)
+                    respuesta_final = proveedor_instance.generar_respuesta(
+                        prompt=prompt_final_renderizado,
+                        contexto={
+                            'plantilla': ejecucion.plantilla.nombre,
+                            'ejecucion': ejecucion.id,
+                            'segmentos_total': resultados.count(),
+                            'borrador_unificado': contenido_unificado
+                        }
+                    )
+                    contenido_generado_final = respuesta_final.get('contenido') or respuesta_final.get('respuesta')
+                    if contenido_generado_final and len(contenido_generado_final.strip()) > 100:
+                        contenido_final = contenido_generado_final.strip()
+                        logger.info("✅ Prompt global aplicado correctamente para ejecución")
+                        resultados_parciales = ejecucion.resultados_parciales or {}
+                        prompt_metadata.update({
+                            'tokens_usados': respuesta_final.get('tokens_usados'),
+                            'modelo_usado': respuesta_final.get('modelo_usado'),
+                            'tiempo_respuesta': respuesta_final.get('tiempo_respuesta')
+                        })
+                        resultados_parciales['prompt_final'] = prompt_metadata
+                        ejecucion.resultados_parciales = resultados_parciales
+                        ejecucion.resultado_unificacion = contenido_final
+                    else:
+                        logger.warning("⚠️ Respuesta final de prompt global inválida, usando contenido unificado")
+                        prompt_metadata['error'] = 'Respuesta final insuficiente'
+                except Exception as exc_final:
+                    logger.error(f"❌ Error aplicando prompt global en unificación: {exc_final}")
+                    prompt_metadata['error'] = str(exc_final)
+            else:
+                logger.warning("⚠️ No hay proveedor IA configurado para aplicar prompt global en unificación")
+                prompt_metadata['error'] = 'Proveedor IA no configurado'
+
+        if prompt_metadata:
+            resultados_parciales = ejecucion.resultados_parciales or {}
+            resultados_parciales.setdefault('prompt_final', prompt_metadata)
+            ejecucion.resultados_parciales = resultados_parciales
+
+        # Crear acta borrador
+        acta_borrador = ActaBorrador.objects.create(
+            ejecucion=ejecucion,
+            contenido_markdown=contenido_final,
+            contenido_html=contenido_final.replace('\n', '<br>') if contenido_final else '',
+            estado='borrador',
+            version=1,
+            metadata_generacion={
+                'total_segmentos': resultados.count(),
+                'segmentos_completados': resultados.filter(estado='completado').count(),
+                'tiempo_total_procesamiento': sum(r.tiempo_procesamiento or 0 for r in resultados),
+                'fecha_generacion': timezone.now().isoformat(),
+                'plantilla_utilizada': ejecucion.plantilla.nombre
+            }
+        )
+        
+        # Finalizar ejecución
+        ejecucion.estado = 'completado'
+        ejecucion.progreso = 100
+        ejecucion.fecha_fin = timezone.now()
+        ejecucion.acta_generada = acta_borrador
+        ejecucion.save()
+        
+        logger.info(f"✅ Unificación completada. Acta borrador: {acta_borrador.id}")
+        
+        return {
+            'ejecucion_id': ejecucion_id,
+            'acta_borrador_id': str(acta_borrador.id),
+            'total_segmentos': resultados.count(),
+            'estado': 'completado'
+        }
+        
+    except Exception as exc:
+        logger.error(f"❌ Error unificando segmentos {ejecucion_id}: {exc}")
+        
+        # Actualizar estado de error
+        try:
+            ejecucion = EjecucionPlantilla.objects.get(id=ejecucion_id)
+            ejecucion.estado = 'error'
+            ejecucion.error_details = str(exc)
+            ejecucion.fecha_fin = timezone.now()
+            ejecucion.save()
+        except:
+            pass
+        
+        # Retry si es posible
+        if self.request.retries < self.max_retries:
+            raise self.retry(countdown=60, exc=exc)
+        raise
+
+
+# ================== FUNCIONES AUXILIARES PARA TAREAS FASE 2 ==================
+
+def _preparar_contexto_segmento_ia(resultado, contexto: dict) -> dict:
+    """Prepara contexto específico para procesamiento de segmentos"""
+    from .models import ResultadoSegmento
+    
+    ejecucion = resultado.ejecucion
+    
+    contexto_procesamiento = {
+        **contexto,
+        'ejecucion_id': str(ejecucion.id),
+        'plantilla_nombre': ejecucion.plantilla.nombre,
+        'segmento_nombre': resultado.configuracion_segmento.segmento.nombre,
+        'orden_segmento': resultado.orden_procesamiento
+    }
+    
+    # Datos de transcripción
+    if ejecucion.transcripcion:
+        transcripcion = ejecucion.transcripcion
+        participantes_transcripcion = getattr(transcripcion, 'participantes_detallados', None) or []
+        if not participantes_transcripcion and hasattr(transcripcion, 'procesamiento_audio'):
+            participantes_transcripcion = getattr(transcripcion.procesamiento_audio, 'participantes_detallados', []) or []
+
+        contexto_procesamiento.update({
+            'transcripcion_texto': transcripcion.texto_final,
+            'transcripcion_metadata': transcripcion.metadata_procesamiento or {},
+            'participantes': participantes_transcripcion,
+            'duracion_audio': transcripcion.duracion_estimada,
+            'fecha_transcripcion': transcripcion.fecha_creacion.isoformat()
+        })
+    
+    # Parámetros globales
+    if ejecucion.parametros_globales:
+        contexto_procesamiento.update(ejecucion.parametros_globales)
+    
+    return contexto_procesamiento
+
+
+def _procesar_template_estatico(contenido: str, contexto: dict) -> str:
+    """Procesa template estático reemplazando variables"""
+    from django.template import Template, Context
+    
+    try:
+        template = Template(contenido)
+        context = Context(contexto)
+        return template.render(context)
+    except Exception as e:
+        # Fallback: reemplazo manual básico
+        resultado = contenido
+        for key, value in contexto.items():
+            placeholder = f"{{{{{key}}}}}"
+            if placeholder in resultado:
+                resultado = resultado.replace(placeholder, str(value))
+        return resultado
+
+
+def _actualizar_progreso_ejecucion_segmentos(ejecucion):
+    """Actualiza progreso basado en segmentos completados"""
+    from .models import ResultadoSegmento
+    
+    total = ResultadoSegmento.objects.filter(ejecucion=ejecucion).count()
+    completados = ResultadoSegmento.objects.filter(
+        ejecucion=ejecucion, estado='completado'
+    ).count()
+    
+    if total > 0:
+        progreso_segmentos = (completados / total) * 70  # 70% del progreso total
+        nuevo_progreso = min(10 + progreso_segmentos, 80)  # Entre 10% y 80%
+        
+        if ejecucion.progreso < nuevo_progreso:
+            ejecucion.progreso = nuevo_progreso
+            ejecucion.save(update_fields=['progreso'])
+
+
+# ================== TAREAS DE MONITOREO Y LIMPIEZA FASE 2 ==================
+
+@shared_task
+def limpiar_ejecuciones_antiguas_task():
+    """Limpia ejecuciones antiguas para liberar espacio"""
+    from .models import EjecucionPlantilla
+    import logging
+    
+    logger = logging.getLogger(__name__)
+    dias_limite = 30  # Configurable
+    fecha_limite = timezone.now() - timedelta(days=dias_limite)
+    
+    # Limpiar ejecuciones completadas antiguas
+    ejecuciones_antiguas = EjecucionPlantilla.objects.filter(
+        estado__in=['completado', 'error'],
+        fecha_fin__lt=fecha_limite
+    )
+    
+    count = ejecuciones_antiguas.count()
+    ejecuciones_antiguas.delete()
+    
+    logger.info(f"🧹 Limpiadas {count} ejecuciones antiguas")
+    return {'ejecuciones_eliminadas': count}
+
+
+@shared_task
+def monitorear_ejecuciones_colgadas_task():
+    """Identifica ejecuciones que llevan demasiado tiempo procesando"""
+    from .models import EjecucionPlantilla
+    import logging
+    
+    logger = logging.getLogger(__name__)
+    limite_horas = 2  # Configurable
+    fecha_limite = timezone.now() - timedelta(hours=limite_horas)
+    
+    ejecuciones_colgadas = EjecucionPlantilla.objects.filter(
+        estado__in=['procesando', 'pendiente'],
+        fecha_inicio__lt=fecha_limite
+    )
+    
+    count = 0
+    for ejecucion in ejecuciones_colgadas:
+        ejecucion.estado = 'error'
+        ejecucion.error_details = 'Timeout: Procesamiento excedió el tiempo límite'
+        ejecucion.fecha_fin = timezone.now()
+        ejecucion.save()
+        count += 1
+    
+    logger.info(f"⚠️ Marcadas como timeout: {count} ejecuciones")
+    return {'ejecuciones_timeout': count}
+
+
+# ======================================================================
+# TAREA SIMPLE PARA PROCESAMIENTO DE ACTAS
+# ======================================================================
+
+@shared_task(bind=True, max_retries=2)
+def procesar_acta_simple_task(self, acta_id):
+    """
+    Tarea simple para procesar un acta - simulación con IA
+    """
+    import time
+    import logging
+    
+    logger = logging.getLogger(__name__)
+    
+    try:
+        from .models import ActaGenerada
+        
+        # Obtener acta
+        acta = ActaGenerada.objects.get(id=acta_id)
+        
+        logger.info(f"🔄 Iniciando procesamiento simple de acta {acta.numero_acta}")
+        
+        # Actualizar estado
+        acta.estado = 'procesando'
+        acta.progreso = 10
+        acta.fecha_procesamiento = timezone.now()
+        acta.task_id_celery = str(self.request.id)
+        acta.save()
+        
+        # Simular procesamiento de segmentos
+        total_segmentos = 5
+        
+        for i in range(1, total_segmentos + 1):
+            logger.info(f"📝 Procesando segmento {i}/{total_segmentos}")
+            
+            # Simular tiempo de procesamiento
+            time.sleep(2)
+            
+            # Actualizar progreso
+            progreso = int((i / total_segmentos) * 80) + 10  # 10-90%
+            acta.progreso = progreso
+            
+            # Agregar al historial
+            historial_entry = {
+                'timestamp': timezone.now().isoformat(),
+                'evento': f'segmento_{i}_procesado',
+                'descripcion': f'Segmento {i} procesado exitosamente',
+                'progreso': progreso
+            }
+            acta.historial_cambios.append(historial_entry)
+            acta.save()
+        
+        # Unificar contenido final
+        logger.info("🔗 Unificando contenido final")
+        acta.estado = 'unificando'
+        acta.progreso = 90
+        acta.save()
+        
+        time.sleep(3)  # Simular unificación
+        
+        # Generar contenido final simulado
+        contenido_final = f"""
+# ACTA DE REUNIÓN MUNICIPAL
+## {acta.numero_acta}
+
+**Fecha de Sesión:** {acta.fecha_sesion.strftime('%d/%m/%Y') if acta.fecha_sesion else 'N/A'}
+**Lugar:** Sala de Sesiones - Municipio de Pastaza
+**Transcripción Base:** {str(acta.transcripcion) if acta.transcripcion else 'N/A'}
+**Procesado con:** {acta.proveedor_ia.nombre}
+
+---
+
+## 1. APERTURA DE SESIÓN
+Se procede a la apertura de la sesión ordinaria/extraordinaria del Concejo Municipal.
+
+## 2. VERIFICACIÓN DEL QUÓRUM
+Se verifica la asistencia de los concejales y se constata el quórum reglamentario.
+
+## 3. ORDEN DEL DÍA
+- Punto 1: Revisión de actas anteriores
+- Punto 2: Informes de comisiones
+- Punto 3: Asuntos varios
+- Punto 4: Clausura
+
+## 4. DESARROLLO DE LA SESIÓN
+[Contenido procesado con IA basado en la transcripción]
+
+## 5. ACUERDOS ADOPTADOS
+- Acuerdo 1: [Detalle del acuerdo]
+- Acuerdo 2: [Detalle del acuerdo]
+
+## 6. CLAUSURA
+Se da por terminada la sesión a las [hora] del día [fecha].
+
+---
+**Documento generado automáticamente el {timezone.now().strftime('%d/%m/%Y a las %H:%M')}**
+**Sistema de Actas Municipales - Pastaza**
+"""
+        
+        # Guardar resultado final
+        acta.contenido_final = contenido_final
+        acta.contenido_html = contenido_final.replace('\n', '<br>')
+        acta.estado = 'revision'
+        acta.progreso = 100
+        acta.fecha_revision = timezone.now()
+        
+        # Agregar entrada final al historial
+        historial_final = {
+            'timestamp': timezone.now().isoformat(),
+            'evento': 'procesamiento_completado',
+            'descripcion': 'Procesamiento completado exitosamente',
+            'progreso': 100,
+            'task_id': str(self.request.id)
+        }
+        acta.historial_cambios.append(historial_final)
+        acta.save()
+        
+        logger.info(f"✅ Procesamiento de acta {acta.numero_acta} completado exitosamente")
+        
+        return {
+            'success': True,
+            'acta_id': acta_id,
+            'numero_acta': acta.numero_acta,
+            'estado_final': acta.estado,
+            'progreso': acta.progreso,
+            'task_id': str(self.request.id)
+        }
+        
+    except Exception as exc:
+        logger.error(f"❌ Error procesando acta {acta_id}: {exc}")
+        
+        # Intentar actualizar el acta con el error
+        try:
+            acta = ActaGenerada.objects.get(id=acta_id)
+            acta.estado = 'error'
+            acta.mensajes_error = str(exc)
+            acta.save()
+        except:
+            pass
+            
+        # Reintentar si hay reintentos disponibles
+        if self.request.retries < self.max_retries:
+            logger.info(f"🔄 Reintentando procesamiento de acta {acta_id} (intento {self.request.retries + 1})")
+            raise self.retry(countdown=60, exc=exc)
+        else:
+            logger.error(f"❌ Máximo de reintentos alcanzado para acta {acta_id}")
+            raise
+
+
+@shared_task(bind=True, max_retries=2)
+def procesar_acta_completa_real(self, acta_id):
+    """
+    Procesamiento REAL de un acta usando la transcripción y segmentos configurados
+    """
+    from .models import ActaGenerada, ConfiguracionSegmento
+    from .ia_providers import get_ia_provider
+    import logging
+    
+    logger = logging.getLogger(__name__)
+    
+    try:
+        # Obtener acta con relaciones necesarias
+        acta = ActaGenerada.objects.select_related(
+            'plantilla', 'proveedor_ia', 'transcripcion'
+        ).get(id=acta_id)
+        
+        logger.info(f"🔄 Iniciando procesamiento REAL de acta {acta.numero_acta}")
+        
+        # Actualizar estado inicial
+        acta.estado = 'procesando'
+        acta.progreso = 0
+        acta.fecha_procesamiento = timezone.now()
+        acta.segmentos_procesados = {}
+        acta.mensajes_error = ""
+        
+        # Registrar inicio en historial
+        if not acta.historial_cambios:
+            acta.historial_cambios = []
+        acta.historial_cambios.append({
+            'evento': 'procesamiento_iniciado',
+            'descripcion': 'Procesamiento real iniciado',
+            'progreso': 0,
+            'timestamp': timezone.now().isoformat(),
+        })
+        acta.save()
+        
+        # Verificar que tiene transcripción
+        if not acta.transcripcion or not acta.transcripcion.conversacion_json:
+            raise ValueError("El acta no tiene una transcripción válida")
+        
+        # Obtener segmentos de conversación
+        conversacion = acta.transcripcion.conversacion_json.get('conversacion', [])
+        if not conversacion:
+            raise ValueError("La transcripción no tiene segmentos de conversación")
+        
+        logger.info(f"📝 Transcripción con {len(conversacion)} segmentos de conversación")
+        
+        # Obtener configuraciones de segmentos
+        configuraciones = ConfiguracionSegmento.objects.filter(
+            plantilla=acta.plantilla
+        ).select_related('segmento').order_by('orden')
+        
+        if not configuraciones.exists():
+            raise ValueError("La plantilla no tiene segmentos configurados")
+        
+        total_segmentos = configuraciones.count()
+        logger.info(f"📋 Plantilla con {total_segmentos} segmentos configurados")
+        
+        # Procesar cada segmento
+        contenido_completo = []
+        
+        for i, config in enumerate(configuraciones):
+            segmento = config.segmento
+            progreso_actual = int((i / total_segmentos) * 90)  # 90% para segmentos, 10% para unificación
+            
+            logger.info(f"📝 Procesando segmento {i+1}/{total_segmentos}: {segmento.nombre}")
+            
+            # Actualizar progreso
+            acta.progreso = progreso_actual
+            acta.historial_cambios.append({
+                'evento': f'segmento_{i+1}_iniciado',
+                'descripcion': f'Iniciando procesamiento de {segmento.nombre}',
+                'progreso': progreso_actual,
+                'timestamp': timezone.now().isoformat(),
+            })
+            acta.save()
+            
+            # Preparar contexto para el segmento
+            contexto_segmento = {
+                'transcripcion_completa': conversacion,
+                'numero_acta': acta.numero_acta,
+                'fecha_sesion': acta.fecha_sesion.isoformat() if acta.fecha_sesion else None,
+                'titulo_acta': acta.titulo,
+            }
+            
+            if segmento.tipo == 'dinamico':
+                # Segmento dinámico: usar IA
+                try:
+                    # Obtener proveedor IA
+                    proveedor = acta.proveedor_ia
+                    ia_provider = get_ia_provider(proveedor)
+                    
+                    # Preparar prompt
+                    prompt_base = config.prompt_personalizado or segmento.prompt_ia
+                    
+                    # Convertir conversación a texto para el prompt
+                    texto_conversacion = "\n".join([
+                        f"[{seg['hablante']}] ({seg['inicio']:.1f}s): {seg['texto']}"
+                        for seg in conversacion
+                    ])
+                    
+                    prompt_final = f"""
+{prompt_base}
+
+TRANSCRIPCIÓN DE LA REUNIÓN:
+{texto_conversacion}
+
+INSTRUCCIONES:
+- Genera el contenido para la sección "{segmento.nombre}"
+- Usa ÚNICAMENTE la información de la transcripción
+- Mantén un formato profesional y claro
+- Si no hay información relevante, indica "No se discutieron temas relacionados con {segmento.nombre}"
+"""
+                    
+                    logger.info(f"🤖 Enviando prompt a IA para {segmento.nombre}")
+                    
+                    # Llamar a IA
+                    resultado_ia = ia_provider.generar_respuesta(
+                        prompt=prompt_final,
+                        contexto=contexto_segmento
+                    )
+                    
+                    contenido_segmento = resultado_ia.get('contenido', f'Error procesando {segmento.nombre}')
+                    
+                    # Guardar información detallada del procesamiento
+                    info_segmento = {
+                        'orden': i + 1,
+                        'segmento_id': segmento.id,
+                        'nombre': segmento.nombre,
+                        'tipo': segmento.tipo,
+                        'contenido': contenido_segmento,
+                        'prompt_usado': prompt_final,
+                        'proveedor': proveedor.nombre,
+                        'timestamp': timezone.now().isoformat(),
+                        'tokens_usados': resultado_ia.get('tokens_usados', 0),
+                        'costo_estimado': resultado_ia.get('costo_estimado', 0),
+                    }
+                    
+                except Exception as e:
+                    logger.error(f"❌ Error procesando segmento dinámico {segmento.nombre}: {str(e)}")
+                    contenido_segmento = f"[ERROR] No se pudo procesar {segmento.nombre}: {str(e)}"
+                    info_segmento = {
+                        'orden': i + 1,
+                        'segmento_id': segmento.id,
+                        'nombre': segmento.nombre,
+                        'tipo': segmento.tipo,
+                        'contenido': contenido_segmento,
+                        'error': str(e),
+                        'timestamp': timezone.now().isoformat(),
+                    }
+            else:
+                # Segmento estático: usar contenido predefinido
+                contenido_segmento = segmento.contenido_estatico or f"[{segmento.nombre}]\n(Contenido estático no definido)"
+                info_segmento = {
+                    'orden': i + 1,
+                    'segmento_id': segmento.id,
+                    'nombre': segmento.nombre,
+                    'tipo': segmento.tipo,
+                    'contenido': contenido_segmento,
+                    'timestamp': timezone.now().isoformat(),
+                }
+            
+            # Guardar segmento procesado
+            acta.segmentos_procesados[f'segmento_{i+1}'] = info_segmento
+            contenido_completo.append(f"\n=== {segmento.nombre.upper()} ===\n{contenido_segmento}\n")
+            
+            # Actualizar progreso completado del segmento
+            progreso_segmento = int(((i + 1) / total_segmentos) * 90)
+            acta.progreso = progreso_segmento
+            acta.historial_cambios.append({
+                'evento': f'segmento_{i+1}_completado',
+                'descripcion': f'Segmento {segmento.nombre} procesado exitosamente',
+                'progreso': progreso_segmento,
+                'timestamp': timezone.now().isoformat(),
+            })
+            acta.save()
+            
+            logger.info(f"✅ Segmento {segmento.nombre} completado")
+        
+        # Unificar contenido final
+        logger.info(f"🔗 Unificando contenido final")
+        acta.progreso = 95
+        acta.historial_cambios.append({
+            'evento': 'unificacion_iniciada',
+            'descripcion': 'Unificando todos los segmentos',
+            'progreso': 95,
+            'timestamp': timezone.now().isoformat(),
+        })
+        acta.save()
+        
+        # Crear contenido unificado básico
+        contenido_borrador = "\n\n".join(contenido_completo)
+        contenido_unificado = contenido_borrador
+
+        # Intentar mejorar con IA si hay múltiples segmentos
+        if total_segmentos > 1:
+            try:
+                logger.info(f"🤖 Aplicando prompt de unificación general con IA")
+                prompt_unificacion = f"""
+Eres un asistente especializado en redacción de actas municipales.
+
+Tu tarea es revisar y unificar el siguiente contenido de acta municipal, asegurando:
+1. Coherencia y fluidez en el texto
+2. Formato apropiado para un documento oficial
+3. Eliminación de redundancias
+4. Estructura lógica y profesional
+
+Contenido a unificar:
+{contenido_borrador}
+
+Genera una versión unificada manteniendo toda la información importante pero mejorando la redacción y estructura.
+"""
+
+                respuesta_ia_unificacion = ia_provider.generar_respuesta(prompt_unificacion)
+                respuesta_texto = respuesta_ia_unificacion.get('contenido', '') if isinstance(respuesta_ia_unificacion, dict) else str(respuesta_ia_unificacion)
+                if respuesta_texto and len(respuesta_texto.strip()) > 100:
+                    contenido_unificado = respuesta_texto.strip()
+                    logger.info(f"✅ Contenido mejorado con IA: {len(contenido_unificado)} caracteres")
+
+                    acta.historial_cambios.append({
+                        'evento': 'unificacion_ia_aplicada',
+                        'descripcion': f'Contenido mejorado con IA: {len(contenido_unificado)} caracteres',
+                        'progreso': 97,
+                        'timestamp': timezone.now().isoformat(),
+                    })
+                else:
+                    logger.warning("⚠️ IA no generó respuesta válida, usando unificación básica")
+                    contenido_unificado = contenido_borrador
+            except Exception as e:
+                logger.error(f"❌ Error en unificación con IA: {str(e)}")
+                contenido_unificado = contenido_borrador
+
+        # Guardar borrador previo al prompt global
+        acta.contenido_borrador = contenido_unificado
+
+        # Aplicar prompt global de la plantilla para versión final
+        prompt_global_plantilla = (acta.plantilla.prompt_global or '').strip()
+        contenido_final = contenido_unificado
+        prompt_final_renderizado = None
+        metricas_finales = acta.metricas_procesamiento or {}
+
+        procesamiento_final_metadata = {}
+
+        if prompt_global_plantilla:
+            logger.info("🤖 Ejecutando prompt global de plantilla para versión final del acta")
+
+            from collections import UserDict
+
+            class _PromptFormatter(UserDict):
+                def __missing__(self, key):
+                    return '{' + key + '}'
+
+            participantes = []
+            if acta.transcripcion:
+                participantes = getattr(acta.transcripcion, 'participantes_detallados', None) or []
+                if not participantes and hasattr(acta.transcripcion, 'procesamiento_audio'):
+                    participantes = getattr(acta.transcripcion.procesamiento_audio, 'participantes_detallados', []) or []
+
+            participantes_normalizados = []
+            for participante in participantes or []:
+                if not participante:
+                    continue
+
+                if isinstance(participante, dict):
+                    nombre = participante.get('nombre') or participante.get('alias') or participante.get('rol') or participante.get('cargo')
+                    if nombre:
+                        participantes_normalizados.append(str(nombre))
+                    else:
+                        participantes_normalizados.append('Participante sin nombre')
+                else:
+                    participantes_normalizados.append(str(participante))
+
+            participantes_texto = ", ".join(participantes_normalizados)
+
+            if hasattr(acta.transcripcion, 'conversacion_json') and isinstance(acta.transcripcion.conversacion_json, dict):
+                transcripcion_texto = "\n".join([
+                    f"[{seg.get('hablante')}] {seg.get('texto')}"
+                    for seg in acta.transcripcion.conversacion_json.get('conversacion', [])
+                ])
+            else:
+                transcripcion_texto = getattr(acta.transcripcion, 'texto_completo', '') if acta.transcripcion else ''
+
+            prompt_contexto = {
+                'segmentos': contenido_unificado,
+                'contenido_unificado': contenido_unificado,
+                'borrador': contenido_unificado,
+                'transcripcion': transcripcion_texto,
+                'fecha': acta.fecha_sesion.strftime('%d/%m/%Y') if acta.fecha_sesion else '',
+                'participantes': participantes_texto,
+                'titulo_acta': acta.titulo,
+                'numero_acta': acta.numero_acta,
+                'tipo_acta': acta.plantilla.get_tipo_acta_display(),
+            }
+
+            prompt_final_renderizado = prompt_global_plantilla.format_map(_PromptFormatter(prompt_contexto))
+            procesamiento_final_metadata = {
+                'prompt_original': prompt_global_plantilla,
+                'prompt_renderizado': prompt_final_renderizado,
+                'timestamp': timezone.now().isoformat()
+            }
+
+            try:
+                ia_provider_global = get_ia_provider(acta.proveedor_ia)
+                respuesta_final = ia_provider_global.generar_respuesta(
+                    prompt=prompt_final_renderizado,
+                    contexto={
+                        'numero_acta': acta.numero_acta,
+                        'titulo_acta': acta.titulo,
+                        'proveedor': acta.proveedor_ia.nombre,
+                        'plantilla': acta.plantilla.nombre,
+                        'segmentos_resumidos': [
+                            {
+                                'nombre': seg.get('nombre'),
+                                'orden': seg.get('orden'),
+                                'longitud': len(seg.get('contenido', '') or '')
+                            }
+                            for seg in acta.segmentos_procesados.values()
+                        ] if acta.segmentos_procesados else [],
+                        'borrador_unificado': contenido_unificado
+                    }
+                )
+
+                contenido_generado_final = respuesta_final.get('contenido') or respuesta_final.get('respuesta')
+                if contenido_generado_final and len(contenido_generado_final.strip()) > 100:
+                    contenido_final = contenido_generado_final.strip()
+                    procesamiento_final_metadata.update({
+                        'tokens_usados': respuesta_final.get('tokens_usados'),
+                        'modelo_usado': respuesta_final.get('modelo_usado'),
+                        'tiempo_respuesta': respuesta_final.get('tiempo_respuesta')
+                    })
+                    metricas_finales['prompt_final'] = {
+                        'tokens_usados': respuesta_final.get('tokens_usados'),
+                        'modelo_usado': respuesta_final.get('modelo_usado'),
+                        'tiempo_respuesta': respuesta_final.get('tiempo_respuesta'),
+                        'timestamp': timezone.now().isoformat()
+                    }
+                    logger.info("✅ Prompt global aplicado correctamente")
+                else:
+                    logger.warning("⚠️ Respuesta final inválida, se mantiene contenido unificado")
+                    procesamiento_final_metadata['error'] = 'Respuesta final insuficiente'
+            except Exception as e:
+                logger.error(f"❌ Error aplicando prompt global: {str(e)}")
+                procesamiento_final_metadata['error'] = str(e)
+
+        # Guardar contenido final y métrica
+        acta.contenido_final = contenido_final
+        acta.contenido_html = contenido_final.replace('\n', '<br>') if contenido_final else ''
+        acta.metricas_procesamiento = metricas_finales
+        if procesamiento_final_metadata:
+            metadatos_acta = acta.metadatos or {}
+            metadatos_acta['procesamiento_final'] = procesamiento_final_metadata
+            acta.metadatos = metadatos_acta
+            acta.historial_cambios.append({
+                'evento': 'prompt_global_ejecutado',
+                'descripcion': 'Se aplicó el prompt global de la plantilla para generar la versión final del acta',
+                'progreso': 99,
+                'timestamp': timezone.now().isoformat(),
+            })
+        
+        # Finalizar
+        acta.estado = 'revision'
+        acta.progreso = 100
+        acta.fecha_completado = timezone.now()
+        acta.historial_cambios.append({
+            'evento': 'procesamiento_completado',
+            'descripcion': f'Acta procesada exitosamente con {total_segmentos} segmentos. Contenido final: {len(contenido_unificado)} caracteres.',
+            'progreso': 100,
+            'timestamp': timezone.now().isoformat(),
+        })
+        acta.save()
+        
+        logger.info(f"✅ Acta {acta.numero_acta} procesada exitosamente")
+        
+        return {
+            'success': True,
+            'acta_id': acta.id,
+            'numero_acta': acta.numero_acta,
+            'estado_final': acta.estado,
+            'progreso': 100,
+            'segmentos_procesados': len(acta.segmentos_procesados),
+            'task_id': str(self.request.id)
+        }
+        
+    except Exception as exc:
+        logger.error(f"❌ Error procesando acta {acta_id}: {str(exc)}")
+        
+        try:
+            acta = ActaGenerada.objects.get(id=acta_id)
+            acta.estado = 'error'
+            acta.mensajes_error = str(exc)
+            acta.historial_cambios.append({
+                'evento': 'error_procesamiento',
+                'descripcion': f'Error: {str(exc)}',
+                'progreso': acta.progreso,
+                'timestamp': timezone.now().isoformat(),
+            })
+            acta.save()
+        except:
+            pass
+            
+        # Reintentar si hay reintentos disponibles
+        if self.request.retries < self.max_retries:
+            logger.info(f"🔄 Reintentando procesamiento de acta {acta_id} (intento {self.request.retries + 1})")
+            raise self.retry(countdown=60, exc=exc)
+        else:
+            logger.error(f"❌ Máximo de reintentos alcanzado para acta {acta_id}")
+            raise
