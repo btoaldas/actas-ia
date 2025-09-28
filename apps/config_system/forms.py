@@ -1,8 +1,13 @@
 from django import forms
 from django.core.exceptions import ValidationError
+from allauth.socialaccount.forms import SignupForm
+from django.contrib.auth.models import User
 import json
+import logging
 
 from .models import ConfiguracionWhisper, ConfiguracionIA
+
+logger = logging.getLogger(__name__)
 
 
 class ConfiguracionWhisperForm(forms.ModelForm):
@@ -470,3 +475,78 @@ class AplicarPermisosMasivoForm(forms.Form):
         from .models import PerfilUsuario
         rol_choices = [('', 'Seleccionar rol específico')] + list(PerfilUsuario.ROLES)
         self.fields['rol'].choices = rol_choices
+
+
+class CustomSocialSignupForm(SignupForm):
+    """Formulario personalizado para signup social que no requiere campos adicionales."""
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        
+        # Hacer todos los campos opcionales y con estilos Bootstrap
+        for field_name, field in self.fields.items():
+            field.required = False
+            field.widget.attrs.update({
+                'class': 'form-control form-control-lg',
+                'placeholder': field.label or field_name.replace('_', ' ').title()
+            })
+        
+        # Email viene de OAuth, no necesita ser editable si ya existe
+        if 'email' in self.fields and hasattr(self, 'sociallogin') and self.sociallogin:
+            if self.sociallogin.user.email:
+                self.fields['email'].widget.attrs['readonly'] = True
+                self.fields['email'].help_text = 'Email verificado por tu proveedor OAuth'
+        
+        # Username opcional, se genera automáticamente
+        if 'username' in self.fields:
+            self.fields['username'].help_text = 'Déjalo vacío para generar uno automáticamente'
+            self.fields['username'].required = False
+    
+    def clean_username(self):
+        """Generar username automáticamente si está vacío."""
+        username = self.cleaned_data.get('username', '').strip()
+        
+        if not username and hasattr(self, 'sociallogin') and self.sociallogin and self.sociallogin.user.email:
+            # Generar username basado en email
+            base_username = self.sociallogin.user.email.split('@')[0]
+            username = base_username
+            counter = 1
+            while User.objects.filter(username=username).exists():
+                username = f"{base_username}{counter}"
+                counter += 1
+                
+            logger.info("[OAuth Form] Username generado automáticamente: %s", username)
+        
+        return username
+    
+    def clean_email(self):
+        """Usar email de OAuth si no se proporciona otro."""
+        email = self.cleaned_data.get('email', '').strip()
+        
+        if not email and hasattr(self, 'sociallogin') and self.sociallogin:
+            email = self.sociallogin.user.email
+            logger.info("[OAuth Form] Usando email de OAuth: %s", email)
+            
+        return email
+    
+    def save(self, request):
+        """Guardar usuario con datos mínimos requeridos."""
+        user = super().save(request)
+        
+        # Asegurar que el usuario tenga los datos básicos
+        if not user.first_name and hasattr(self, 'sociallogin') and self.sociallogin:
+            if self.sociallogin.account.provider == 'github':
+                name = self.sociallogin.account.extra_data.get('name', '')
+                if name:
+                    name_parts = name.split(' ', 1)
+                    user.first_name = name_parts[0]
+                    if len(name_parts) > 1:
+                        user.last_name = name_parts[1]
+            elif self.sociallogin.account.provider == 'google':
+                user.first_name = self.sociallogin.account.extra_data.get('given_name', '')
+                user.last_name = self.sociallogin.account.extra_data.get('family_name', '')
+        
+        user.save()
+        logger.info("[OAuth Form] Usuario guardado: %s (%s %s)", 
+                   user.username, user.first_name, user.last_name)
+        return user

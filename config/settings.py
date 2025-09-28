@@ -30,7 +30,7 @@ if not SECRET_KEY:
     SECRET_KEY = ''.join(random.choice( string.ascii_lowercase  ) for i in range( 32 ))
 
 # Enable/Disable DEBUG Mode
-DEBUG = str2bool(os.environ.get('DEBUG'))
+DEBUG = str2bool(os.environ.get('DEBUG', 'True'))
 #print(' DEBUG -> ' + str(DEBUG) ) 
 
 # Docker HOST
@@ -369,8 +369,8 @@ AUTHENTICATION_BACKENDS = [
 # Configuración de django-allauth
 ACCOUNT_EMAIL_REQUIRED = True
 ACCOUNT_EMAIL_VERIFICATION = 'optional'  # 'mandatory' para producción
-ACCOUNT_USERNAME_REQUIRED = True
-ACCOUNT_AUTHENTICATION_METHOD = 'username_email'
+ACCOUNT_USERNAME_REQUIRED = False  # Permitir crear usuarios sin username
+ACCOUNT_AUTHENTICATION_METHOD = 'email'  # Usar solo email
 ACCOUNT_LOGIN_ATTEMPTS_LIMIT = 5
 ACCOUNT_LOGIN_ATTEMPTS_TIMEOUT = 300  # 5 minutos
 ACCOUNT_LOGOUT_REDIRECT_URL = '/'
@@ -383,19 +383,11 @@ LOGOUT_REDIRECT_URL = '/'
 # Configuración de proveedores sociales
 SOCIALACCOUNT_PROVIDERS = {
     'github': {
-        'APP': {
-            'client_id': os.environ.get('GITHUB_CLIENT_ID', ''),
-            'secret': os.environ.get('GITHUB_CLIENT_SECRET', ''),
-        },
         'SCOPE': [
             'user:email',
         ],
     },
     'google': {
-        'APP': {
-            'client_id': os.environ.get('GOOGLE_CLIENT_ID', ''),
-            'secret': os.environ.get('GOOGLE_CLIENT_SECRET', ''),
-        },
         'SCOPE': [
             'profile',
             'email',
@@ -408,9 +400,19 @@ SOCIALACCOUNT_PROVIDERS = {
 
 # Configuración adicional para OAuth
 SOCIALACCOUNT_LOGIN_ON_GET = True
+SOCIALACCOUNT_ADAPTER = 'apps.config_system.adapters.CustomSocialAccountAdapter'
 SOCIALACCOUNT_AUTO_SIGNUP = True
-SOCIALACCOUNT_EMAIL_REQUIRED = True
-SOCIALACCOUNT_EMAIL_VERIFICATION = 'optional'
+SOCIALACCOUNT_EMAIL_REQUIRED = False  # No requerir email explícito
+SOCIALACCOUNT_EMAIL_VERIFICATION = 'none'  # Sin verificación para OAuth
+
+# Configuraciones para login automático sin signup manual
+SOCIALACCOUNT_QUERY_EMAIL = True
+SOCIALACCOUNT_STORE_TOKENS = False  # No necesitamos tokens para uso básico
+
+# Formularios personalizados para evitar campos requeridos
+SOCIALACCOUNT_FORMS = {
+    'signup': 'apps.config_system.forms.CustomSocialSignupForm',
+}
 
 # ### CONFIGURACIÓN DE CELERY (YA EXISTENTE MEJORADA) ###
 
