@@ -8,6 +8,10 @@ django-quill-editor==0.1.40
 
 # Generación de documentos
 weasyprint==60.2
+beautifulsoup4==4.12.3
+xhtml2pdf==0.2.13
+python-docx==1.1.2
+pdfkit==1.0.0
 
 # Base de datos PostgreSQL
 psycopg2-binary==2.9.9

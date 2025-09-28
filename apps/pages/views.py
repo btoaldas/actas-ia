@@ -5,14 +5,21 @@ from django.contrib.auth import views as auth_views
 from django.db.models import Q, Count, Avg
 from django.core.paginator import Paginator
 from django.http import JsonResponse, HttpResponse, Http404
-from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.csrf import csrf_exempt, csrf_protect
+from django.views.decorators.http import require_http_methods
 from django.utils.decorators import method_decorator
+from django.contrib import messages
 from django.views.generic import ListView, DetailView
 from django.utils import timezone
 from .models import ActaMunicipal, TipoSesion, EstadoActa, VisualizacionActa, DescargaActa
 from helpers.util import normalizar_busqueda, crear_filtros_busqueda_multiple
 import json
+import os
+import tempfile
+import logging
 from datetime import datetime, timedelta
+
+logger = logging.getLogger(__name__)
 
 # Create your views here.
 
@@ -1341,27 +1348,243 @@ def acta_detail(request, pk):
     
     return render(request, 'pages/portal_ciudadano/detail.html', context)
 
+
+def convertir_word_a_pdf(ruta_word, nombre_acta):
+    """
+    Convierte un archivo Word a PDF en formato A4 vertical
+    Usa múltiples métodos para asegurar compatibilidad
+    """
+    try:
+        # Generar nombre de archivo PDF
+        directorio_word = os.path.dirname(ruta_word)
+        nombre_pdf = os.path.splitext(os.path.basename(ruta_word))[0] + '.pdf'
+        ruta_pdf = os.path.join(directorio_word, nombre_pdf)
+        
+        # Método 1: Intentar con pdfkit (requiere wkhtmltopdf)
+        try:
+            import pdfkit
+            from docx import Document
+            from docx.shared import Inches
+            
+            # Leer documento Word y convertir a HTML
+            doc = Document(ruta_word)
+            html_content = f"""<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body {{
+            font-family: 'Times New Roman', serif;
+            line-height: 1.6;
+            margin: 2cm;
+            color: #333;
+        }}
+        h1, h2, h3 {{ color: #2c3e50; }}
+        .center {{ text-align: center; }}
+        table {{ width: 100%; border-collapse: collapse; margin: 15px 0; }}
+        td {{ padding: 8px; border: 1px solid #ddd; }}
+    </style>
+</head>
+<body>"""
+            
+            for paragraph in doc.paragraphs:
+                if paragraph.text.strip():
+                    if paragraph.style.name.startswith('Heading'):
+                        level = '1' if 'Title' in paragraph.style.name else ('2' if paragraph.style.name == 'Heading 1' else '3')
+                        html_content += f"<h{level}>{paragraph.text}</h{level}>"
+                    else:
+                        html_content += f"<p>{paragraph.text}</p>"
+            
+            # Procesar tablas
+            for table in doc.tables:
+                html_content += "<table>"
+                for row in table.rows:
+                    html_content += "<tr>"
+                    for cell in row.cells:
+                        html_content += f"<td>{cell.text}</td>"
+                    html_content += "</tr>"
+                html_content += "</table>"
+            
+            html_content += "</body></html>"
+            
+            # Opciones PDF A4 vertical
+            options = {
+                'page-size': 'A4',
+                'orientation': 'Portrait',
+                'margin-top': '0.75in',
+                'margin-right': '0.75in',  
+                'margin-bottom': '0.75in',
+                'margin-left': '0.75in',
+                'encoding': 'UTF-8',
+                'no-outline': None,
+                'enable-local-file-access': None,
+                'print-media-type': None
+            }
+            
+            pdfkit.from_string(html_content, ruta_pdf, options=options)
+            
+            if os.path.exists(ruta_pdf):
+                logger.info(f"PDF generado exitosamente con pdfkit: {ruta_pdf}")
+                return ruta_pdf
+                
+        except ImportError:
+            logger.info("pdfkit no disponible, intentando método alternativo")
+        except Exception as e:
+            logger.warning(f"Error con pdfkit: {str(e)}, intentando método alternativo")
+        
+        # Método 2: Fallback usando python-docx + reportlab
+        try:
+            from docx import Document
+            from reportlab.lib.pagesizes import A4
+            from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
+            from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+            from reportlab.lib.units import inch
+            from reportlab.lib import colors
+            
+            # Leer documento Word
+            doc = Document(ruta_word)
+            
+            # Crear documento PDF
+            pdf_doc = SimpleDocTemplate(
+                ruta_pdf, 
+                pagesize=A4,
+                rightMargin=0.75*inch,
+                leftMargin=0.75*inch,
+                topMargin=0.75*inch,
+                bottomMargin=0.75*inch
+            )
+            
+            # Estilos
+            styles = getSampleStyleSheet()
+            title_style = ParagraphStyle(
+                'CustomTitle',
+                parent=styles['Title'],
+                fontSize=16,
+                spaceAfter=20,
+                alignment=1  # Centro
+            )
+            
+            heading_style = ParagraphStyle(
+                'CustomHeading',
+                parent=styles['Heading1'],
+                fontSize=14,
+                spaceAfter=12,
+                textColor=colors.HexColor('#2c3e50')
+            )
+            
+            normal_style = ParagraphStyle(
+                'CustomNormal',
+                parent=styles['Normal'],
+                fontSize=11,
+                spaceAfter=6
+            )
+            
+            story = []
+            
+            # Procesar párrafos del Word
+            for paragraph in doc.paragraphs:
+                if paragraph.text.strip():
+                    if paragraph.style.name == 'Title':
+                        story.append(Paragraph(paragraph.text, title_style))
+                    elif paragraph.style.name.startswith('Heading'):
+                        story.append(Paragraph(paragraph.text, heading_style))
+                    else:
+                        story.append(Paragraph(paragraph.text, normal_style))
+            
+            # Procesar tablas del Word
+            for table in doc.tables:
+                data = []
+                for row in table.rows:
+                    row_data = []
+                    for cell in row.cells:
+                        row_data.append(cell.text)
+                    data.append(row_data)
+                
+                if data:
+                    pdf_table = Table(data)
+                    pdf_table.setStyle(TableStyle([
+                        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#f8f9fa')),
+                        ('TEXTCOLOR', (0, 0), (-1, 0), colors.HexColor('#2c3e50')),
+                        ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+                        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+                        ('FONTSIZE', (0, 0), (-1, 0), 10),
+                        ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+                        ('BACKGROUND', (0, 1), (-1, -1), colors.white),
+                        ('GRID', (0, 0), (-1, -1), 1, colors.HexColor('#dee2e6'))
+                    ]))
+                    story.append(pdf_table)
+                    story.append(Spacer(1, 12))
+            
+            # Construir PDF
+            pdf_doc.build(story)
+            
+            if os.path.exists(ruta_pdf):
+                logger.info(f"PDF generado exitosamente con reportlab: {ruta_pdf}")
+                return ruta_pdf
+                
+        except ImportError:
+            logger.error("reportlab no disponible")
+        except Exception as e:
+            logger.error(f"Error con reportlab: {str(e)}")
+        
+        return None
+        
+    except Exception as e:
+        logger.error(f"Error general convirtiendo Word a PDF: {str(e)}")
+        return None
+
+
 def acta_pdf_view(request, pk):
-    """Vista para mostrar el PDF en el navegador"""
+    """Vista para mostrar el PDF en el navegador (usando exactamente el mismo proceso que Word)"""
     acta = get_object_or_404(ActaMunicipal, pk=pk, activo=True)
     
     # Verificar permisos
     if not acta.puede_ver_usuario(request.user):
         raise Http404("No tienes permisos para ver esta acta")
     
-    if not acta.archivo_pdf:
-        raise Http404("Esta acta no tiene archivo PDF disponible")
-    
     try:
-        with open(acta.archivo_pdf.path, 'rb') as pdf_file:
-            response = HttpResponse(pdf_file.read(), content_type='application/pdf')
-            response['Content-Disposition'] = f'inline; filename="{acta.numero_acta}.pdf"'
-            return response
-    except FileNotFoundError:
-        raise Http404("Archivo PDF no encontrado")
+        # PASO 1: Usar archivo PDF ya generado si existe
+        if acta.archivo_pdf and os.path.exists(acta.archivo_pdf.path):
+            with open(acta.archivo_pdf.path, 'rb') as pdf_file:
+                response = HttpResponse(pdf_file.read(), content_type='application/pdf')
+                response['Content-Disposition'] = f'inline; filename="{acta.numero_acta}.pdf"'
+                return response
+        
+        # PASO 2: Usar EXACTAMENTE el mismo proceso que acta_word_download → PDF
+        logger.info(f"PDF no encontrado para acta {pk}, generando usando proceso idéntico a Word")
+        
+        from gestion_actas.generador_documentos import generar_documentos_acta_mejorados
+        
+        documentos = generar_documentos_acta_mejorados(acta)
+        
+        # Si se generó Word, convertir a PDF (manteniendo formato idéntico)
+        if 'word' in documentos:
+            word_path = documentos['word']['ruta']
+            pdf_path = convertir_word_a_pdf(word_path, acta.numero_acta)
+            
+            if pdf_path and os.path.exists(pdf_path):
+                # Guardar PDF en modelo para uso futuro
+                with open(pdf_path, 'rb') as pdf_file:
+                    from django.core.files.base import ContentFile
+                    acta.archivo_pdf.save(
+                        os.path.basename(pdf_path),
+                        ContentFile(pdf_file.read()),
+                        save=True
+                    )
+                
+                with open(pdf_path, 'rb') as pdf_file:
+                    response = HttpResponse(pdf_file.read(), content_type='application/pdf')
+                    response['Content-Disposition'] = f'inline; filename="{acta.numero_acta}.pdf"'
+                    return response
+        
+        raise Http404("No se pudo generar PDF usando proceso de Word")
+        
+    except Exception as e:
+        logger.error(f"Error mostrando PDF del acta {pk}: {str(e)}")
+        raise Http404("Error al generar el archivo PDF")
 
 def acta_pdf_download(request, pk):
-    """Vista para descargar el PDF"""
+    """Vista para descargar el PDF (generado desde Word)"""
     acta = get_object_or_404(ActaMunicipal, pk=pk, activo=True)
     
     # Verificar permisos
@@ -1376,47 +1599,42 @@ def acta_pdf_download(request, pk):
             ip_address=get_client_ip(request),
             formato='pdf'
         )
-    else:
-        DescargaActa.objects.create(
-            acta=acta,
-            ip_address=get_client_ip(request),
-            formato='pdf'
-        )
     
     try:
-        # Intentar usar archivo PDF existente
-        if acta.archivo_pdf and acta.archivo_pdf.path:
-            try:
-                with open(acta.archivo_pdf.path, 'rb') as pdf_file:
-                    response = HttpResponse(pdf_file.read(), content_type='application/pdf')
-                    response['Content-Disposition'] = f'attachment; filename="{acta.numero_acta}.pdf"'
-                    return response
-            except FileNotFoundError:
-                pass
-        
-        # Si no hay archivo, generar uno nuevo
+        # Generar documentos (Word primero, luego PDF desde Word)
         from gestion_actas.generador_documentos import generar_documentos_acta_mejorados
         
         documentos = generar_documentos_acta_mejorados(acta)
         
+        # Si se generó Word, convertir a PDF
+        if 'word' in documentos:
+            word_path = documentos['word']['ruta']
+            pdf_path = convertir_word_a_pdf(word_path, acta.numero_acta)
+            
+            if pdf_path and os.path.exists(pdf_path):
+                with open(pdf_path, 'rb') as pdf_file:
+                    response = HttpResponse(pdf_file.read(), content_type='application/pdf')
+                    response['Content-Disposition'] = f'attachment; filename="{acta.numero_acta}.pdf"'
+                    return response
+        
+        # Fallback: usar PDF generado por el sistema original
         if 'pdf' in documentos:
             pdf_path = documentos['pdf']['ruta']
-            with open(pdf_path, 'rb') as pdf_file:
-                response = HttpResponse(pdf_file.read(), content_type='application/pdf')
-                response['Content-Disposition'] = f'attachment; filename="{acta.numero_acta}.pdf"'
-                return response
+            if os.path.exists(pdf_path):
+                with open(pdf_path, 'rb') as pdf_file:
+                    response = HttpResponse(pdf_file.read(), content_type='application/pdf')
+                    response['Content-Disposition'] = f'attachment; filename="{acta.numero_acta}.pdf"'
+                    return response
         
         raise Http404("No se pudo generar el archivo PDF")
         
     except Exception as e:
-        import logging
-        logger = logging.getLogger(__name__)
         logger.error(f"Error descargando PDF del acta {pk}: {str(e)}")
         raise Http404("Error al generar el archivo PDF")
 
 
 def acta_txt_download(request, pk):
-    """Vista para descargar el TXT"""
+    """Vista para descargar el TXT (usa archivo ya generado durante la publicación)"""
     acta = get_object_or_404(ActaMunicipal, pk=pk, activo=True)
     
     # Verificar permisos
@@ -1439,6 +1657,15 @@ def acta_txt_download(request, pk):
         )
     
     try:
+        # Usar archivo TXT ya generado si existe
+        if acta.archivo_txt and os.path.exists(acta.archivo_txt.path):
+            with open(acta.archivo_txt.path, 'r', encoding='utf-8') as txt_file:
+                response = HttpResponse(txt_file.read(), content_type='text/plain; charset=utf-8')
+                response['Content-Disposition'] = f'attachment; filename="{acta.numero_acta}.txt"'
+                return response
+        
+        # Fallback: generar TXT al vuelo si no existe el archivo guardado
+        logger.warning(f"Archivo TXT no encontrado para acta {pk}, generando al vuelo")
         from gestion_actas.generador_documentos import generar_documentos_acta_mejorados
         
         documentos = generar_documentos_acta_mejorados(acta)
@@ -1453,14 +1680,11 @@ def acta_txt_download(request, pk):
         raise Http404("No se pudo generar el archivo TXT")
         
     except Exception as e:
-        import logging
-        logger = logging.getLogger(__name__)
         logger.error(f"Error descargando TXT del acta {pk}: {str(e)}")
         raise Http404("Error al generar el archivo TXT")
 
-
 def acta_word_download(request, pk):
-    """Vista para descargar el Word"""
+    """Vista para descargar el Word (usa archivo ya generado durante la publicación)"""
     acta = get_object_or_404(ActaMunicipal, pk=pk, activo=True)
     
     # Verificar permisos
@@ -1483,6 +1707,18 @@ def acta_word_download(request, pk):
         )
     
     try:
+        # Usar archivo Word ya generado si existe
+        if acta.archivo_word and os.path.exists(acta.archivo_word.path):
+            with open(acta.archivo_word.path, 'rb') as word_file:
+                response = HttpResponse(
+                    word_file.read(), 
+                    content_type='application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+                )
+                response['Content-Disposition'] = f'attachment; filename="{acta.numero_acta}.docx"'
+                return response
+        
+        # Fallback: generar Word al vuelo si no existe el archivo guardado
+        logger.warning(f"Archivo Word no encontrado para acta {pk}, generando al vuelo")
         from gestion_actas.generador_documentos import generar_documentos_acta_mejorados
         
         documentos = generar_documentos_acta_mejorados(acta)
@@ -1500,50 +1736,10 @@ def acta_word_download(request, pk):
         raise Http404("No se pudo generar el archivo Word")
         
     except Exception as e:
-        import logging
-        logger = logging.getLogger(__name__)
         logger.error(f"Error descargando Word del acta {pk}: {str(e)}")
         raise Http404("Error al generar el archivo Word")
 
 
-def acta_pdf_view(request, pk):
-    """Vista para mostrar el PDF en el navegador"""
-    acta = get_object_or_404(ActaMunicipal, pk=pk, activo=True)
-    
-    # Verificar permisos
-    if not acta.puede_ver_usuario(request.user):
-        raise Http404("No tienes permisos para ver esta acta")
-    
-    try:
-        # Intentar usar archivo PDF existente
-        if acta.archivo_pdf and acta.archivo_pdf.path:
-            try:
-                with open(acta.archivo_pdf.path, 'rb') as pdf_file:
-                    response = HttpResponse(pdf_file.read(), content_type='application/pdf')
-                    response['Content-Disposition'] = f'inline; filename="{acta.numero_acta}.pdf"'
-                    return response
-            except FileNotFoundError:
-                pass
-        
-        # Si no hay archivo, generar uno nuevo
-        from gestion_actas.generador_documentos import generar_documentos_acta_mejorados
-        
-        documentos = generar_documentos_acta_mejorados(acta)
-        
-        if 'pdf' in documentos:
-            pdf_path = documentos['pdf']['ruta']
-            with open(pdf_path, 'rb') as pdf_file:
-                response = HttpResponse(pdf_file.read(), content_type='application/pdf')
-                response['Content-Disposition'] = f'inline; filename="{acta.numero_acta}.pdf"'
-                return response
-        
-        raise Http404("No se pudo generar el archivo PDF")
-        
-    except Exception as e:
-        import logging
-        logger = logging.getLogger(__name__)
-        logger.error(f"Error mostrando PDF del acta {pk}: {str(e)}")
-        raise Http404("Error al mostrar el archivo PDF")
 
 @csrf_exempt
 def portal_ciudadano_api(request):
@@ -2338,3 +2534,124 @@ def api_eventos_hoy(request):
         
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
+
+
+@require_http_methods(["POST"])
+@csrf_exempt
+def reset_acta_publicada(request, pk):
+    """
+    Resetea un acta publicada para volver al proceso inicial en gestor de actas.
+    Solo disponible para administradores.
+    """
+    import logging
+    logger = logging.getLogger(__name__)
+    
+    # Verificar permisos de administrador
+    logger.info(f"Usuario intentando reset: {request.user} (autenticado: {request.user.is_authenticated}, superuser: {getattr(request.user, 'is_superuser', False)}, staff: {getattr(request.user, 'is_staff', False)})")
+    
+    if not request.user.is_authenticated:
+        messages.error(request, "❌ Debes iniciar sesión para realizar esta acción")
+        return redirect('acta_detail', pk=pk)
+    
+    if not (request.user.is_superuser or request.user.is_staff):
+        messages.error(request, "❌ No tienes permisos de administrador para realizar esta acción")
+        return redirect('acta_detail', pk=pk)
+    
+    acta = get_object_or_404(ActaMunicipal, pk=pk, activo=True)
+    
+    try:
+        import os
+        
+        logger.info(f"Iniciando reset del acta {acta.numero_acta} por usuario {request.user.username}")
+        
+        # PASO 1: Eliminar archivos físicos
+        archivos_eliminados = []
+        
+        # Eliminar archivo PDF
+        if acta.archivo_pdf:
+            try:
+                if os.path.exists(acta.archivo_pdf.path):
+                    os.remove(acta.archivo_pdf.path)
+                    archivos_eliminados.append('PDF')
+                acta.archivo_pdf.delete(save=False)
+            except Exception as e:
+                logger.warning(f"Error eliminando PDF: {str(e)}")
+        
+        # Eliminar archivo Word
+        if acta.archivo_word:
+            try:
+                if os.path.exists(acta.archivo_word.path):
+                    os.remove(acta.archivo_word.path)
+                    archivos_eliminados.append('Word')
+                acta.archivo_word.delete(save=False)
+            except Exception as e:
+                logger.warning(f"Error eliminando Word: {str(e)}")
+        
+        # Eliminar archivo TXT
+        if acta.archivo_txt:
+            try:
+                if os.path.exists(acta.archivo_txt.path):
+                    os.remove(acta.archivo_txt.path)
+                    archivos_eliminados.append('TXT')
+                acta.archivo_txt.delete(save=False)
+            except Exception as e:
+                logger.warning(f"Error eliminando TXT: {str(e)}")
+        
+        # PASO 2: Resetear campos del acta en portal ciudadano
+        acta.fecha_publicacion = None
+        acta.activo = False  # Despublicar del portal ciudadano
+        acta.save()
+        
+        # PASO 3: Verificar si existe en gestor de actas y resetear estado
+        try:
+            from gestion_actas.models import GestionActa
+            acta_gestion = GestionActa.objects.filter(acta_portal=acta).first()
+            
+            if acta_gestion:
+                # Resetear al estado inicial del gestor de actas
+                from gestion_actas.models import EstadoGestionActa
+                estado_edicion = EstadoGestionActa.objects.filter(codigo='en_edicion').first()
+                
+                if estado_edicion:
+                    acta_gestion.estado = estado_edicion
+                    acta_gestion.bloqueada_edicion = False
+                    acta_gestion.fecha_enviada_revision = None
+                    acta_gestion.fecha_aprobacion_final = None
+                    acta_gestion.fecha_publicacion = None
+                    acta_gestion.acta_portal = None  # Desconectar del portal ciudadano
+                    
+                    # Limpiar observaciones de revisión
+                    acta_gestion.observaciones = "Acta reseteada para nueva edición"
+                    
+                    acta_gestion.save()
+                
+                logger.info(f"Acta {acta.numero_acta} reseteada exitosamente. Archivos eliminados: {', '.join(archivos_eliminados)}")
+                
+                messages.success(
+                    request, 
+                    f"✅ Acta {acta.numero_acta} reseteada exitosamente. "
+                    f"Archivos eliminados: {', '.join(archivos_eliminados) if archivos_eliminados else 'Ninguno'}. "
+                    f"El acta ha vuelto al estado 'En Edición' en el gestor de actas."
+                )
+            else:
+                logger.warning(f"No se encontró el acta {acta.numero_acta} en gestor de actas")
+                messages.warning(
+                    request,
+                    f"⚠️ Acta {acta.numero_acta} despublicada del portal ciudadano, "
+                    f"pero no se encontró en el gestor de actas para resetear estado."
+                )
+                
+        except Exception as e:
+            logger.error(f"Error reseteando estado en gestor de actas: {str(e)}")
+            messages.error(
+                request,
+                f"❌ Error al resetear estado en gestor de actas: {str(e)}"
+            )
+        
+        # PASO 4: Redirect de vuelta a la vista de detalle  
+        return redirect('acta_detail', pk=pk)
+        
+    except Exception as e:
+        logger.error(f"Error general en reset del acta {pk}: {str(e)}")
+        messages.error(request, f"❌ Error al resetear el acta: {str(e)}")
+        return redirect('acta_detail', pk=pk)

@@ -277,6 +277,21 @@
                     <i class="fas fa-share mr-2"></i>
                     Compartir
                   </button>
+                  
+                  {% if user.is_superuser or user.is_staff %}
+                    <!-- Botón de reset solo para administradores -->
+                    <hr>
+                    <div class="alert alert-warning mb-2">
+                      <small><i class="fas fa-shield-alt"></i> <strong>Zona de Administrador</strong></small>
+                    </div>
+                    
+                    <button type="button" 
+                            class="btn btn-danger btn-block"
+                            onclick="resetearActa({{ acta.pk }})">
+                      <i class="fas fa-undo mr-2"></i>
+                      Resetear Acta (Volver a Edición)
+                    </button>
+                  {% endif %}
                 </div>
               </div>
             </div>
@@ -363,6 +378,61 @@
         document.body.removeChild(textarea);
         toastr.success('Enlace copiado al portapapeles');
       }
+    }
+    
+    // Función para resetear acta (solo administradores)
+    function resetearActa(actaId) {
+      Swal.fire({
+        title: '¿Resetear Acta?',
+        html: `
+          <p><strong>Esta acción va a:</strong></p>
+          <ul style="text-align: left; display: inline-block;">
+            <li>❌ Despublicar el acta del portal ciudadano</li>
+            <li>🗑️ Eliminar todos los archivos físicos (PDF, Word, TXT)</li>
+            <li>✏️ Volver el estado a "En Edición" en el gestor de actas</li>
+            <li>🔄 Permitir regenerar desde cero</li>
+          </ul>
+          <br><strong style="color: #dc3545;">⚠️ Esta acción NO se puede deshacer</strong>
+        `,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#dc3545',
+        cancelButtonColor: '#6c757d',
+        confirmButtonText: 'Sí, Resetear',
+        cancelButtonText: 'Cancelar',
+        reverseButtons: true
+      }).then((result) => {
+        if (result.isConfirmed) {
+          // Mostrar loading
+          Swal.fire({
+            title: 'Procesando...',
+            text: 'Reseteando el acta, por favor espere.',
+            allowOutsideClick: false,
+            showConfirmButton: false,
+            willOpen: () => {
+              Swal.showLoading();
+            }
+          });
+          
+          // Realizar petición POST
+          const form = document.createElement('form');
+          form.method = 'POST';
+          form.action = '/acta/' + actaId + '/reset/';
+          
+          // Agregar token CSRF
+          const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]');
+          if (csrfToken) {
+            const csrfInput = document.createElement('input');
+            csrfInput.type = 'hidden';
+            csrfInput.name = 'csrfmiddlewaretoken';
+            csrfInput.value = csrfToken.value;
+            form.appendChild(csrfInput);
+          }
+          
+          document.body.appendChild(form);
+          form.submit();
+        }
+      });
     }
     
     // Mejorar experiencia de impresión

@@ -1073,11 +1073,61 @@ def _generar_documentos_publicacion(gestion_acta, acta_portal):
     """Generar documentos mejorados en múltiples formatos para descarga"""
     try:
         from .generador_documentos import generar_documentos_acta_mejorados
+        from django.core.files import File
+        from django.core.files.base import ContentFile
+        import os
         
         # Usar el nuevo sistema de generación de documentos
         documentos_generados = generar_documentos_acta_mejorados(acta_portal)
         
         logger.info(f'Documentos generados para acta {acta_portal.numero_acta}: {list(documentos_generados.keys())}')
+        
+        # Guardar archivos en los campos del modelo ActaMunicipal
+        archivos_guardados = {}
+        
+        # Guardar archivo PDF
+        if 'pdf' in documentos_generados:
+            pdf_info = documentos_generados['pdf']
+            if os.path.exists(pdf_info['ruta']):
+                with open(pdf_info['ruta'], 'rb') as pdf_file:
+                    acta_portal.archivo_pdf.save(
+                        pdf_info['nombre'],
+                        ContentFile(pdf_file.read()),
+                        save=False
+                    )
+                archivos_guardados['pdf'] = pdf_info['nombre']
+                logger.info(f'PDF guardado en modelo: {pdf_info["nombre"]}')
+        
+        # Guardar archivo Word
+        if 'word' in documentos_generados:
+            word_info = documentos_generados['word']
+            if os.path.exists(word_info['ruta']):
+                with open(word_info['ruta'], 'rb') as word_file:
+                    acta_portal.archivo_word.save(
+                        word_info['nombre'],
+                        ContentFile(word_file.read()),
+                        save=False
+                    )
+                archivos_guardados['word'] = word_info['nombre']
+                logger.info(f'Word guardado en modelo: {word_info["nombre"]}')
+        
+        # Guardar archivo TXT
+        if 'txt' in documentos_generados:
+            txt_info = documentos_generados['txt']
+            if os.path.exists(txt_info['ruta']):
+                with open(txt_info['ruta'], 'r', encoding='utf-8') as txt_file:
+                    acta_portal.archivo_txt.save(
+                        txt_info['nombre'],
+                        ContentFile(txt_file.read().encode('utf-8')),
+                        save=False
+                    )
+                archivos_guardados['txt'] = txt_info['nombre']
+                logger.info(f'TXT guardado en modelo: {txt_info["nombre"]}')
+        
+        # Guardar el modelo una sola vez con todos los archivos
+        if archivos_guardados:
+            acta_portal.save()
+            logger.info(f'Archivos guardados en ActaMunicipal {acta_portal.id}: {archivos_guardados}')
         
         return documentos_generados
         

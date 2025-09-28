@@ -117,6 +117,16 @@ class ActaMunicipal(models.Model):
         null=True, blank=True,
         help_text="Archivo PDF del acta"
     )
+    archivo_word = models.FileField(
+        upload_to=acta_upload_path,
+        null=True, blank=True,
+        help_text="Archivo Word del acta"
+    )
+    archivo_txt = models.FileField(
+        upload_to=acta_upload_path,
+        null=True, blank=True,
+        help_text="Archivo TXT del acta"
+    )
     imagen_preview = models.ImageField(
         upload_to=acta_image_upload_path, 
         null=True, blank=True,

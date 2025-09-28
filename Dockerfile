@@ -13,6 +13,7 @@ RUN apt-get update && apt-get install -y \
     ffmpeg \
     sox \
     libsox-fmt-all \
+    wkhtmltopdf \
     && rm -rf /var/lib/apt/lists/* \
     && apt-get clean
 
