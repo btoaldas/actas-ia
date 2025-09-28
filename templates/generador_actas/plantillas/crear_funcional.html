@@ -1,0 +1,311 @@
+{% extends 'layouts/base.html' %}
+
+{% block title %}{% if object %}Editar Plantilla{% else %}Nueva Plantilla{% endif %}{% endblock %}
+
+{% block content %}
+<div class="content-wrapper">
+    <div class="content-header">
+        <div class="container-fluid">
+            <div class="row mb-2">
+                <div class="col-sm-6">
+                    <h1>
+                        {% if object %}
+                            <i class="fas fa-edit"></i> Editar Plantilla de Acta
+                        {% else %}
+                            <i class="fas fa-plus"></i> Nueva Plantilla de Acta
+                        {% endif %}
+                    </h1>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <section class="content">
+        <div class="container-fluid">
+            <div class="card card-primary">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        {% if object %}
+                            ✅ EDITAR PLANTILLA - FUNCIONANDO
+                        {% else %}
+                            ✅ CREAR PLANTILLA - FUNCIONANDO
+                        {% endif %}
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <!-- Información básica -->
+                        <div class="row">
+                            <div class="col-md-8">
+                                <div class="card">
+                                    <div class="card-header bg-info">
+                                        <h4>📝 Información de la Plantilla</h4>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="form-group">
+                                            {{ form.codigo.label_tag }}
+                                            {{ form.codigo }}
+                                            <small class="form-text text-muted">{{ form.codigo.help_text }}</small>
+                                        </div>
+                                        
+                                        <div class="form-group">
+                                            {{ form.nombre.label_tag }}
+                                            {{ form.nombre }}
+                                            <small class="form-text text-muted">{{ form.nombre.help_text }}</small>
+                                        </div>
+                                        
+                                        <div class="form-group">
+                                            {{ form.descripcion.label_tag }}
+                                            {{ form.descripcion }}
+                                            <small class="form-text text-muted">{{ form.descripcion.help_text }}</small>
+                                        </div>
+                                        
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <div class="form-group">
+                                                    {{ form.tipo_acta.label_tag }}
+                                                    {{ form.tipo_acta }}
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="form-group">
+                                                    {{ form.proveedor_ia_defecto.label_tag }}
+                                                    {{ form.proveedor_ia_defecto }}
+                                                    <small class="form-text text-muted">{{ form.proveedor_ia_defecto.help_text }}</small>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="form-group">
+                                            {{ form.prompt_global.label_tag }}
+                                            {{ form.prompt_global }}
+                                            <small class="form-text text-muted">{{ form.prompt_global.help_text|safe }}</small>
+                                        </div>
+                                        
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <div class="form-group">
+                                                    {{ form.version.label_tag }}
+                                                    {{ form.version }}
+                                                    <small class="form-text text-muted">{{ form.version.help_text }}</small>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="form-check mt-4">
+                                                    {{ form.activa }}
+                                                    <label class="form-check-label" for="{{ form.activa.id_for_label }}">
+                                                        {{ form.activa.label }}
+                                                    </label>
+                                                </div>
+                                            </div>
+                                        </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="form-check mt-4">
+                                                    {{ form.activa }}
+                                                    <label for="{{ form.activa.id_for_label }}">{{ form.activa.label }}</label>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Segmentos disponibles -->
+                                <div class="card">
+                                    <div class="card-header bg-success">
+                                        <h4>🧩 Seleccionar Segmentos ({{ segmentos_disponibles.count }} disponibles)</h4>
+                                    </div>
+                                    <div class="card-body">
+                                        {% if segmentos_disponibles %}
+                                            <div class="alert alert-info">
+                                                <strong>Instrucciones:</strong> 
+                                                Marque los segmentos que desea incluir, configure orden y obligatoriedad.
+                                            </div>
+                                            
+                                            <div class="row">
+                                                {% regroup segmentos_disponibles by categoria as categorias %}
+                                                {% for categoria in categorias %}
+                                                <div class="col-md-6">
+                                                    <div class="card border-primary mb-3">
+                                                        <div class="card-header bg-primary text-white">
+                                                            <h6><i class="fas fa-folder"></i> {{ categoria.grouper|default:"Sin Categoría"|capfirst }} ({{ categoria.list|length }})</h6>
+                                                        </div>
+                                                        <div class="card-body">
+                                                            {% for segmento in categoria.list %}
+                                                                <div class="border p-3 mb-2 rounded">
+                                                                    <div class="form-check">
+                                                                        <input class="form-check-input" type="checkbox" 
+                                                                               id="seg{{ segmento.id }}" 
+                                                                               name="segmentos_seleccionados" 
+                                                                               value="{{ segmento.id }}">
+                                                                        <label class="form-check-label" for="seg{{ segmento.id }}">
+                                                                            <strong>{{ segmento.nombre }}</strong>
+                                                                            {% if segmento.descripcion %}
+                                                                                <br><small class="text-muted">{{ segmento.descripcion }}</small>
+                                                                            {% endif %}
+                                                                        </label>
+                                                                    </div>
+                                                                    
+                                                                    <div class="row mt-2">
+                                                                        <div class="col-4">
+                                                                            <label class="small">Orden:</label>
+                                                                            <input type="number" class="form-control form-control-sm" 
+                                                                                   name="orden_{{ segmento.id }}" 
+                                                                                   value="{{ forloop.counter }}" 
+                                                                                   min="1" max="50">
+                                                                        </div>
+                                                                        <div class="col-8">
+                                                                            <div class="form-check">
+                                                                                <input class="form-check-input" type="checkbox" 
+                                                                                       name="obligatorio_{{ segmento.id }}" 
+                                                                                       id="obl{{ segmento.id }}">
+                                                                                <label class="form-check-label" for="obl{{ segmento.id }}">
+                                                                                    Obligatorio
+                                                                                </label>
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            {% endfor %}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                {% endfor %}
+                                            </div>
+                                        {% else %}
+                                            <div class="alert alert-warning">
+                                                <h5>⚠️ No hay segmentos disponibles</h5>
+                                                <p>No se encontraron segmentos en la base de datos.</p>
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Panel lateral -->
+                            <div class="col-md-4">
+                                <div class="card card-info">
+                                    <div class="card-header">
+                                        <h4>📊 Estado del Sistema</h4>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="info-box">
+                                            <div class="info-box-icon bg-green">
+                                                <i class="fas fa-puzzle-piece"></i>
+                                            </div>
+                                            <div class="info-box-content">
+                                                <span class="info-box-text">Segmentos Disponibles</span>
+                                                <span class="info-box-number">{{ segmentos_disponibles.count }}</span>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="alert alert-success">
+                                            <h6><i class="fas fa-check"></i> HTML Puro</h6>
+                                            <p class="mb-0">Sin JavaScript problemático</p>
+                                        </div>
+                                        
+                                        <h6>Pasos:</h6>
+                                        <ol class="list-unstyled">
+                                            <li>✅ Complete el nombre</li>
+                                            <li>✅ Seleccione segmentos</li>
+                                            <li>✅ Configure orden</li>
+                                            <li>✅ Hacer clic en Crear</li>
+                                        </ol>
+                                    </div>
+                                </div>
+                                
+                                <div class="text-center mt-3">
+                                    <a href="{% url 'generador_actas:plantillas_lista' %}" class="btn btn-secondary">
+                                        <i class="fas fa-arrow-left"></i> Cancelar
+                                    </a>
+                                    <button type="submit" class="btn btn-success ml-2">
+                                        {% if object %}
+                                            <i class="fas fa-save"></i> Actualizar Plantilla
+                                        {% else %}
+                                            <i class="fas fa-save"></i> Crear Plantilla
+                                        {% endif %}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </section>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+console.log('✅ Template crear_funcional.html cargado');
+console.log('📊 Segmentos disponibles: {{ segmentos_disponibles.count }}');
+console.log('🔍 En modo edición:', {% if object %}true{% else %}false{% endif %});
+console.log('🔍 Tiene segmentos_actuales:', {% if segmentos_actuales %}true{% else %}false{% endif %});
+
+// Cargar segmentos actuales si estamos editando
+{% if object and segmentos_actuales %}
+const segmentosActuales = {{ segmentos_actuales|safe }};
+console.log('📝 Segmentos actuales recibidos:', segmentosActuales);
+console.log('📝 Total segmentos a preseleccionar:', segmentosActuales.length);
+{% else %}
+console.log('⚠️ No hay segmentos_actuales o no estamos en modo edición');
+{% endif %}
+
+// Configurar segmentos seleccionados al cargar la página
+document.addEventListener('DOMContentLoaded', function() {
+    {% if object and segmentos_actuales %}
+    // Preseleccionar segmentos existentes en modo edición
+    segmentosActuales.forEach(function(segmento) {
+        const checkbox = document.querySelector(`input[name="segmentos_seleccionados"][value="${segmento.id}"]`);
+        if (checkbox) {
+            checkbox.checked = true;
+            console.log(`✅ Preseleccionado segmento: ${segmento.nombre}`);
+            
+            // Establecer el orden
+            const ordenInput = document.querySelector(`input[name="orden_${segmento.id}"]`);
+            if (ordenInput) {
+                ordenInput.value = segmento.orden;
+                console.log(`📋 Orden configurado: ${segmento.nombre} = ${segmento.orden}`);
+            }
+            
+            // Establecer obligatorio
+            const obligatorioCheckbox = document.querySelector(`input[name="obligatorio_${segmento.id}"]`);
+            if (obligatorioCheckbox && segmento.obligatorio) {
+                obligatorioCheckbox.checked = true;
+                console.log(`⚠️ Marcado como obligatorio: ${segmento.nombre}`);
+            }
+        }
+    });
+    {% endif %}
+    
+    // Validación básica del formulario
+    const form = document.querySelector('form');
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            const nombre = document.querySelector('input[name="nombre"]');
+            if (!nombre || !nombre.value.trim()) {
+                alert('Por favor ingrese un nombre para la plantilla');
+                e.preventDefault();
+                return false;
+            }
+            
+            const segmentos = document.querySelectorAll('input[name="segmentos_seleccionados"]:checked');
+            console.log('Enviando plantilla con', segmentos.length, 'segmentos');
+            
+            if (segmentos.length === 0) {
+                const confirmar = confirm('{% if object %}¿Actualizar plantilla sin segmentos?{% else %}¿Crear plantilla sin segmentos?{% endif %}');
+                if (!confirmar) {
+                    e.preventDefault();
+                    return false;
+                }
+            }
+            
+            return true;
+        });
+    }
+});
+</script>
+{% endblock %}

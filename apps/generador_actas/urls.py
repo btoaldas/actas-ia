@@ -30,11 +30,31 @@ urlpatterns = [
     
     # === PLANTILLAS ===
     path('plantillas/', views.PlantillasListView.as_view(), name='plantillas_lista'),
-    path('plantillas/crear/', views.CrearPlantillaView.as_view(), name='crear_plantilla'),
+    path('plantillas/crear/', views.PlantillaCreateView.as_view(), name='crear_plantilla'),
+    path('plantillas/crear-simple/', views.crear_plantilla_simple, name='crear_plantilla_simple'),
     path('plantillas/<int:pk>/', views.PlantillaDetailView.as_view(), name='plantilla_detail'),
-    path('plantillas/<int:pk>/editar/', views.EditarPlantillaView.as_view(), name='editar_plantilla'),
+    path('plantillas/<int:pk>/editar/', views.PlantillaUpdateView.as_view(), name='editar_plantilla'),
     path('plantillas/<int:pk>/eliminar/', views.EliminarPlantillaView.as_view(), name='eliminar_plantilla'),
     path('plantillas/<int:plantilla_id>/duplicar/', views.duplicar_plantilla, name='duplicar_plantilla'),
+    
+    # === ALIASES DE PLANTILLAS (mantener compatibilidad) ===
+    path('plantillas/nuevo/', views.PlantillaListView.as_view(), name='lista_plantillas'),
+    path('plantillas/nuevo/crear/', views.PlantillaCreateView.as_view(), name='plantilla_crear'),
+    path('plantillas/nuevo/<int:pk>/editar/', views.PlantillaUpdateView.as_view(), name='plantilla_editar'),
+    path('plantillas/nuevo/<int:pk>/eliminar/', views.PlantillaDeleteView.as_view(), name='plantilla_eliminar'),
+    path('plantillas/nuevo/<int:pk>/', views.PlantillaDetailView.as_view(), name='ver_plantilla'),
+    path('plantillas/nuevo/<int:plantilla_id>/configurar/', views.configurar_segmentos_plantilla, name='configurar_segmentos_plantilla'),
+    path('plantillas/nuevo/<int:plantilla_id>/preview/', views.vista_previa_plantilla, name='vista_previa_plantilla'),
+    path('plantillas/nuevo/dashboard/', views.plantillas_dashboard, name='plantillas_dashboard'),
+    
+    # === EJECUCIÓN DE PLANTILLAS ===
+    path('ejecuciones/', views.EjecucionListView.as_view(), name='ejecuciones_lista'),
+    path('ejecuciones/<uuid:pk>/', views.EjecucionDetailView.as_view(), name='ver_ejecucion'),
+    path('plantillas/<int:plantilla_pk>/ejecutar/', views.EjecucionPlantillaCreateView.as_view(), name='plantilla_ejecutar'),
+    path('ejecuciones/<uuid:ejecucion_pk>/segmento/<int:resultado_pk>/editar/', 
+         views.editar_resultado_segmento, name='editar_resultado_segmento'),
+    path('ejecuciones/<uuid:ejecucion_pk>/generar-acta/', 
+         views.generar_acta_final, name='generar_acta_final'),
     
     # === ACTAS IA ===
     path('actas/', views.ActasListView.as_view(), name='actas_lista'),
@@ -85,6 +105,11 @@ urlpatterns = [
         
         # APIs de segmentos
         path('segmentos/probar/', views.api_probar_segmento, name='api_probar_segmento'),
+        path('segmentos-disponibles/', api_views.api_segmentos_disponibles, name='api_segmentos_disponibles'),
+        
+        # APIs Fase 2: Drag & Drop
+        path('plantillas/<int:plantilla_id>/orden-segmentos/', views.api_actualizar_orden_segmentos, name='api_actualizar_orden_segmentos'),
+        path('obtener-configuracion-segmento/<int:config_id>/', views.api_obtener_configuracion_segmento, name='api_obtener_configuracion_segmento'),
         
         # APIs de estadísticas y monitoreo
         path('dashboard/stats/', api_views.api_dashboard_stats, name='api_dashboard_stats'),

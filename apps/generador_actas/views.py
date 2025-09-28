@@ -25,10 +25,11 @@ from django.views.generic import ListView, DetailView, CreateView, UpdateView, D
 from apps.transcripcion.models import Transcripcion
 from .models import (
     ActaGenerada, ProveedorIA, PlantillaActa, 
-    SegmentoPlantilla, ConfiguracionSegmento
+    SegmentoPlantilla, ConfiguracionSegmento,
+    EjecucionPlantilla, ResultadoSegmento, ActaBorrador
 )
 from .services import GeneradorActasService, PlantillasService, EstadisticasService
-from .forms import ActaGeneradaForm, PlantillaActaForm, ConfiguracionSegmentoFormSet, ProveedorIAForm, TestProveedorForm, SegmentoPlantillaForm
+from .forms import ActaGeneradaForm, PlantillaActaForm, ConfiguracionSegmentoFormSet, ProveedorIAForm, TestProveedorForm, SegmentoPlantillaForm, PlantillaBasicaForm
 
 logger = logging.getLogger(__name__)
 
@@ -867,46 +868,7 @@ class EliminarSegmentoView(LoginRequiredMixin, DeleteView):
 
 
 # ================== VISTAS DE PLANTILLAS (EXTENDIDAS) ==================
-
-class CrearPlantillaView(LoginRequiredMixin, CreateView):
-    """Vista para crear una nueva plantilla"""
-    model = PlantillaActa
-    template_name = 'generador_actas/plantilla_form.html'
-    fields = ['codigo', 'nombre', 'descripcion', 'tipo_acta', 'prompt_global', 'proveedor_ia_defecto', 'activa']
-    success_url = reverse_lazy('generador_actas:plantillas_lista')
-    
-    def form_valid(self, form):
-        form.instance.usuario_creacion = self.request.user
-        messages.success(self.request, f'Plantilla "{form.instance.nombre}" creada exitosamente.')
-        return super().form_valid(form)
-    
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context.update({
-            'page_title': 'Crear Plantilla de Acta',
-            'breadcrumb': [
-                {'name': 'Inicio', 'url': '/'},
-                {'name': 'Generador IA', 'url': reverse('generador_actas:dashboard')},
-                {'name': 'Plantillas', 'url': reverse('generador_actas:plantillas_lista')},
-                {'name': 'Crear', 'active': True}
-            ],
-            'form_title': 'Crear Nueva Plantilla',
-            'submit_text': 'Crear Plantilla',
-            'segmentos_disponibles': SegmentoPlantilla.objects.all().order_by('categoria', 'nombre')
-        })
-        return context
-
-
-class EditarPlantillaView(LoginRequiredMixin, UpdateView):
-    """Vista para editar una plantilla"""
-    model = PlantillaActa
-    template_name = 'generador_actas/plantilla_form.html'
-    fields = ['codigo', 'nombre', 'descripcion', 'tipo_acta', 'prompt_global', 'proveedor_ia_defecto', 'activa']
-    success_url = reverse_lazy('generador_actas:plantillas_lista')
-    
-    def form_valid(self, form):
-        messages.success(self.request, f'Plantilla "{form.instance.nombre}" actualizada exitosamente.')
-        return super().form_valid(form)
+# NOTA: Las vistas principales de plantillas están más abajo en PlantillaCreateView y PlantillaUpdateView
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -944,8 +906,8 @@ class EliminarPlantillaView(LoginRequiredMixin, DeleteView):
 class CrearActaView(LoginRequiredMixin, CreateView):
     """Vista para crear una nueva acta IA"""
     model = ActaGenerada
+    form_class = ActaGeneradaForm
     template_name = 'generador_actas/acta_form.html'
-    fields = ['numero_acta', 'titulo', 'plantilla', 'transcripcion', 'proveedor_ia']
     success_url = reverse_lazy('generador_actas:actas_lista')
     
     def form_valid(self, form):
@@ -968,7 +930,7 @@ class CrearActaView(LoginRequiredMixin, CreateView):
             'submit_text': 'Crear Acta',
             'plantillas_activas': PlantillaActa.objects.filter(activa=True),
             'proveedores_activos': ProveedorIA.objects.filter(activo=True),
-            'transcripciones_disponibles': Transcripcion.objects.filter(estado='completada').order_by('-fecha_creacion')[:50]
+            'transcripciones_disponibles': Transcripcion.objects.filter(estado='completado').order_by('-fecha_creacion')[:50]
         })
         return context
 
@@ -976,8 +938,8 @@ class CrearActaView(LoginRequiredMixin, CreateView):
 class EditarActaView(LoginRequiredMixin, UpdateView):
     """Vista para editar una acta IA"""
     model = ActaGenerada
+    form_class = ActaGeneradaForm
     template_name = 'generador_actas/acta_form.html'
-    fields = ['numero_acta', 'titulo', 'plantilla', 'transcripcion', 'proveedor_ia']
     success_url = reverse_lazy('generador_actas:actas_lista')
     
     def form_valid(self, form):
@@ -999,7 +961,7 @@ class EditarActaView(LoginRequiredMixin, UpdateView):
             'submit_text': 'Actualizar Acta',
             'plantillas_activas': PlantillaActa.objects.filter(activa=True),
             'proveedores_activos': ProveedorIA.objects.filter(activo=True),
-            'transcripciones_disponibles': Transcripcion.objects.filter(estado='completada').order_by('-fecha_creacion')[:50]
+            'transcripciones_disponibles': Transcripcion.objects.filter(estado='completado').order_by('-fecha_creacion')[:50]
         })
         return context
 
@@ -2640,3 +2602,928 @@ def asistente_variables(request):
     }
     
     return render(request, 'generador_actas/segmentos/asistente_variables.html', context)
+
+
+# ============================================================================
+# VISTAS PARA PLANTILLAS - MÓDULO COMPLETO DE EJECUCIÓN
+# ============================================================================
+
+from .models import EjecucionPlantilla, ResultadoSegmento, ActaBorrador
+from .forms import (
+    PlantillaBasicaForm, PlantillaSegmentosForm, PlantillaConfiguracionForm, 
+    PlantillaEjecucionForm, SegmentoResultadoForm, ActaBorradorForm,
+    EjecucionFiltroForm
+)
+
+
+class PlantillaListView(LoginRequiredMixin, ListView):
+    """Vista de lista de plantillas con filtros y búsqueda"""
+    model = PlantillaActa
+    template_name = 'generador_actas/plantillas/lista.html'
+    context_object_name = 'plantillas'
+    paginate_by = 20
+    
+    def get_queryset(self):
+        """Filtra plantillas según parámetros de búsqueda"""
+        queryset = PlantillaActa.objects.select_related('proveedor_ia_defecto', 'usuario_creacion')
+        
+        # Filtro por término de búsqueda
+        search = self.request.GET.get('search', '').strip()
+        if search:
+            queryset = queryset.filter(
+                Q(nombre__icontains=search) |
+                Q(codigo__icontains=search) |
+                Q(descripcion__icontains=search)
+            )
+        
+        # Filtro por tipo de acta
+        tipo_acta = self.request.GET.get('tipo_acta', '').strip()
+        if tipo_acta:
+            queryset = queryset.filter(tipo_acta=tipo_acta)
+        
+        # Filtro por estado (activa/inactiva)
+        activa = self.request.GET.get('activa', '').strip()
+        if activa == '1':
+            queryset = queryset.filter(activa=True)
+        elif activa == '0':
+            queryset = queryset.filter(activa=False)
+        
+        return queryset.order_by('-fecha_actualizacion')
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context.update({
+            'page_title': 'Plantillas de Actas',
+            'search_query': self.request.GET.get('search', ''),
+            'tipo_acta_filter': self.request.GET.get('tipo_acta', ''),
+            'activa_filter': self.request.GET.get('activa', ''),
+            'tipos_acta': PlantillaActa.TIPO_ACTA,
+            'breadcrumbs': [
+                {'title': 'Generador Actas', 'url': reverse('generador_actas:dashboard')},
+                {'title': 'Plantillas', 'url': ''}
+            ]
+        })
+        return context
+
+
+class PlantillaCreateView(LoginRequiredMixin, CreateView):
+    """Vista para crear nuevas plantillas (HTML puro, sin JavaScript)"""
+    model = PlantillaActa
+    form_class = PlantillaBasicaForm
+    template_name = 'generador_actas/plantillas/crear_funcional.html'
+    
+    def form_valid(self, form):
+        """Asocia el usuario de creación y procesa segmentos seleccionados"""
+        form.instance.usuario_creacion = self.request.user
+        response = super().form_valid(form)
+        
+        # Procesar segmentos seleccionados desde checkboxes (SIN JavaScript)
+        segmentos_seleccionados = self.request.POST.getlist('segmentos_seleccionados')
+        
+        if segmentos_seleccionados:
+            try:
+                segmentos_data = []
+                
+                # Procesar cada segmento seleccionado
+                for segmento_id in segmentos_seleccionados:
+                    orden = self.request.POST.get(f'orden_{segmento_id}', 1)
+                    obligatorio = self.request.POST.get(f'obligatorio_{segmento_id}') == 'on'
+                    
+                    segmentos_data.append({
+                        'id': int(segmento_id),
+                        'orden': int(orden) if orden else 1,
+                        'obligatorio': obligatorio
+                    })
+                
+                # Ordenar por orden especificado
+                segmentos_data.sort(key=lambda x: x['orden'])
+                
+                # Procesar segmentos
+                self._procesar_segmentos_plantilla(self.object, segmentos_data)
+                
+                messages.success(
+                    self.request,
+                    f'✅ Plantilla "{form.instance.nombre}" creada exitosamente con {len(segmentos_data)} segmentos configurados.'
+                )
+                
+            except Exception as e:
+                messages.warning(
+                    self.request,
+                    f'⚠️ Plantilla "{form.instance.nombre}" creada, pero hubo un error configurando los segmentos: {str(e)}'
+                )
+        else:
+            messages.success(
+                self.request,
+                f'✅ Plantilla "{form.instance.nombre}" creada exitosamente. Puede agregar segmentos más tarde.'
+            )
+            
+        return response
+    
+    def _procesar_segmentos_plantilla(self, plantilla, segmentos):
+        """Procesa y guarda los segmentos de la plantilla"""
+        from .models import ConfiguracionSegmento, SegmentoPlantilla
+        
+        # Eliminar configuraciones existentes
+        plantilla.configuracionsegmento_set.all().delete()
+        
+        # Crear nuevas configuraciones
+        for segmento_data in segmentos:
+            try:
+                segmento = SegmentoPlantilla.objects.get(id=segmento_data['id'])
+                ConfiguracionSegmento.objects.create(
+                    plantilla=plantilla,
+                    segmento=segmento,
+                    orden=segmento_data.get('orden', 1),
+                    obligatorio=segmento_data.get('obligatorio', False),
+                    prompt_personalizado=segmento_data.get('prompt_personalizado', ''),
+                    parametros_override=segmento_data.get('parametros_override', {})
+                )
+            except SegmentoPlantilla.DoesNotExist:
+                continue
+    
+    def get_success_url(self):
+        """Redirige a configurar segmentos después de crear"""
+        return reverse('generador_actas:configurar_segmentos_plantilla', kwargs={'plantilla_id': self.object.pk})
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        
+        # Cargar segmentos disponibles de la BD
+        segmentos_disponibles = SegmentoPlantilla.objects.filter(activo=True).order_by('categoria', 'nombre')
+        
+        context.update({
+            'page_title': 'Nueva Plantilla',
+            'segmentos_disponibles': segmentos_disponibles,
+            'breadcrumbs': [
+                {'title': 'Generador Actas', 'url': reverse('generador_actas:dashboard')},
+                {'title': 'Plantillas', 'url': reverse('generador_actas:plantillas_lista')},
+                {'title': 'Nueva', 'url': ''}
+            ]
+        })
+        return context
+
+
+class PlantillaUpdateView(LoginRequiredMixin, UpdateView):
+    """Vista para editar plantillas existentes"""
+    model = PlantillaActa
+    form_class = PlantillaBasicaForm
+    template_name = 'generador_actas/plantillas/crear_funcional.html'
+    
+    def get_success_url(self):
+        return reverse('generador_actas:plantillas_lista')
+    
+    def form_valid(self, form):
+        """Actualiza la plantilla y procesa segmentos"""
+        import json
+        
+        response = super().form_valid(form)
+        
+        # Procesar datos de segmentos si se enviaron
+        segmentos_data = self.request.POST.get('segmentos_data')
+        if segmentos_data:
+            try:
+                segmentos = json.loads(segmentos_data)
+                self._procesar_segmentos_plantilla(self.object, segmentos)
+                messages.success(
+                    self.request, 
+                    f'Plantilla actualizada exitosamente con {len(segmentos)} segmentos configurados.'
+                )
+            except json.JSONDecodeError as e:
+                messages.warning(
+                    self.request,
+                    f'Plantilla actualizada, pero hubo un error procesando los segmentos: {str(e)}'
+                )
+            except Exception as e:
+                messages.warning(
+                    self.request,
+                    f'Plantilla actualizada, pero hubo un error configurando los segmentos: {str(e)}'
+                )
+        else:
+            messages.success(self.request, 'Plantilla actualizada exitosamente')
+            
+        return response
+    
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        
+        # Obtener segmentos actuales de la plantilla para precargar
+        segmentos_actuales = []
+        configuraciones = self.object.configuracionsegmento_set.select_related('segmento').order_by('orden')
+        for config in configuraciones:
+            segmentos_actuales.append({
+                'id': config.segmento.id,
+                'nombre': config.segmento.nombre,
+                'tipo': config.segmento.tipo,
+                'categoria': config.segmento.categoria,
+                'descripcion': config.segmento.descripcion,
+                'orden': config.orden,
+                'obligatorio': getattr(config, 'obligatorio', False),
+                'prompt_personalizado': config.prompt_personalizado or ''
+            })
+        
+        context.update({
+            'page_title': f'Editar Plantilla: {self.object.nombre}',
+            'segmentos_disponibles': SegmentoPlantilla.objects.filter(activo=True).order_by('categoria', 'nombre'),
+            'segmentos_actuales': json.dumps(segmentos_actuales),
+            'breadcrumbs': [
+                {'title': 'Generador Actas', 'url': reverse('generador_actas:dashboard')},
+                {'title': 'Plantillas', 'url': reverse('generador_actas:plantillas_lista')},
+                {'title': 'Editar', 'url': ''}
+            ]
+        })
+        return context
+
+
+class PlantillaDeleteView(LoginRequiredMixin, DeleteView):
+    """Vista para eliminar plantillas con confirmación"""
+    model = PlantillaActa
+    template_name = 'generador_actas/plantillas/eliminar.html'
+    success_url = reverse_lazy('generador_actas:plantillas_lista')
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        
+        # Análisis de impacto de eliminación
+        ejecuciones_count = EjecucionPlantilla.objects.filter(plantilla=self.object).count()
+        actas_generadas_count = self.object.actagenerada_set.count()
+        
+        context.update({
+            'page_title': f'Eliminar Plantilla: {self.object.nombre}',
+            'ejecuciones_count': ejecuciones_count,
+            'actas_generadas_count': actas_generadas_count,
+            'puede_eliminar': ejecuciones_count == 0 and actas_generadas_count == 0,
+            'breadcrumbs': [
+                {'title': 'Generador Actas', 'url': reverse('generador_actas:dashboard')},
+                {'title': 'Plantillas', 'url': reverse('generador_actas:plantillas_lista')},
+                {'title': 'Eliminar', 'url': ''}
+            ]
+        })
+        return context
+    
+    def delete(self, request, *args, **kwargs):
+        """Previene eliminación si hay ejecuciones/actas asociadas"""
+        self.object = self.get_object()
+        
+        # Verificar si se puede eliminar
+        ejecuciones_count = EjecucionPlantilla.objects.filter(plantilla=self.object).count()
+        actas_count = self.object.actagenerada_set.count()
+        
+        if ejecuciones_count > 0 or actas_count > 0:
+            messages.error(
+                request,
+                f'No se puede eliminar la plantilla "{self.object.nombre}" porque tiene '
+                f'{ejecuciones_count} ejecuciones y {actas_count} actas asociadas. '
+                'Considere desactivarla en su lugar.'
+            )
+            return redirect('generador_actas:plantillas_lista')
+        
+        messages.success(request, f'Plantilla "{self.object.nombre}" eliminada exitosamente')
+        return super().delete(request, *args, **kwargs)
+
+
+@login_required
+def configurar_segmentos_plantilla_old(request, pk):
+    """Vista para configurar segmentos con drag & drop"""
+    plantilla = get_object_or_404(PlantillaActa, pk=pk)
+    
+    if request.method == 'POST':
+        form = PlantillaSegmentosForm(request.POST, plantilla=plantilla)
+        
+        if form.is_valid():
+            segmentos_data = form.cleaned_data['segmentos_seleccionados']
+            
+            # Eliminar configuraciones existentes
+            ConfiguracionSegmento.objects.filter(plantilla=plantilla).delete()
+            
+            # Crear nuevas configuraciones
+            for segmento_config in segmentos_data:
+                segmento = SegmentoPlantilla.objects.get(id=segmento_config['id'])
+                ConfiguracionSegmento.objects.create(
+                    plantilla=plantilla,
+                    segmento=segmento,
+                    orden=segmento_config['orden'],
+                    obligatorio=segmento_config.get('obligatorio', False),
+                    variables_personalizadas=segmento_config.get('variables_personalizadas', {})
+                )
+            
+            messages.success(request, 'Configuración de segmentos actualizada exitosamente')
+            return redirect('generador_actas:plantillas_lista')
+    
+    else:
+        form = PlantillaSegmentosForm(plantilla=plantilla)
+    
+    # Obtener todos los segmentos disponibles para el drag & drop
+    segmentos_disponibles = SegmentoPlantilla.objects.all().order_by('categoria', 'nombre')
+    
+    context = {
+        'plantilla': plantilla,
+        'form': form,
+        'segmentos_disponibles': segmentos_disponibles,
+        'page_title': f'Configurar Segmentos: {plantilla.nombre}',
+        'breadcrumbs': [
+            {'title': 'Generador Actas', 'url': reverse('generador_actas:dashboard')},
+            {'title': 'Plantillas', 'url': reverse('generador_actas:plantillas_lista')},
+            {'title': 'Configurar Segmentos', 'url': ''}
+        ]
+    }
+    
+    return render(request, 'generador_actas/plantillas/configurar_segmentos.html', context)
+
+
+@login_required
+def plantillas_dashboard(request):
+    """Dashboard específico de plantillas con métricas"""
+    
+    # Estadísticas generales
+    total_plantillas = PlantillaActa.objects.count()
+    plantillas_activas = PlantillaActa.objects.filter(activa=True).count()
+    total_ejecuciones = EjecucionPlantilla.objects.count()
+    ejecuciones_mes = EjecucionPlantilla.objects.filter(
+        tiempo_inicio__gte=timezone.now() - timedelta(days=30)
+    ).count()
+    
+    # Plantillas más usadas
+    plantillas_populares = PlantillaActa.objects.annotate(
+        total_ejecuciones=Count('ejecuciones')
+    ).order_by('-total_ejecuciones')[:5]
+    
+    # Ejecuciones recientes
+    ejecuciones_recientes = EjecucionPlantilla.objects.select_related(
+        'plantilla', 'usuario', 'proveedor_ia_global'
+    ).order_by('-tiempo_inicio')[:10]
+    
+    # Estadísticas por estado
+    estados_stats = EjecucionPlantilla.objects.values('estado').annotate(
+        count=Count('id')
+    ).order_by('-count')
+    
+    context = {
+        'page_title': 'Dashboard de Plantillas',
+        'total_plantillas': total_plantillas,
+        'plantillas_activas': plantillas_activas,
+        'total_ejecuciones': total_ejecuciones,
+        'ejecuciones_mes': ejecuciones_mes,
+        'plantillas_populares': plantillas_populares,
+        'ejecuciones_recientes': ejecuciones_recientes,
+        'estados_stats': estados_stats,
+        'breadcrumbs': [
+            {'title': 'Generador Actas', 'url': reverse('generador_actas:dashboard')},
+            {'title': 'Dashboard Plantillas', 'url': ''}
+        ]
+    }
+    
+    return render(request, 'generador_actas/plantillas/dashboard.html', context)
+
+
+class EjecucionPlantillaCreateView(LoginRequiredMixin, CreateView):
+    """Vista para iniciar ejecución de plantilla"""
+    model = EjecucionPlantilla
+    form_class = PlantillaEjecucionForm
+    template_name = 'generador_actas/plantillas/ejecutar.html'
+    
+    def get_form_kwargs(self):
+        """Pasa la plantilla al formulario"""
+        kwargs = super().get_form_kwargs()
+        plantilla_pk = self.kwargs.get('plantilla_pk')
+        if plantilla_pk:
+            kwargs['plantilla'] = get_object_or_404(PlantillaActa, pk=plantilla_pk)
+        return kwargs
+    
+    def form_valid(self, form):
+        """Configura la ejecución y la inicia"""
+        plantilla_pk = self.kwargs.get('plantilla_pk')
+        plantilla = get_object_or_404(PlantillaActa, pk=plantilla_pk)
+        
+        form.instance.plantilla = plantilla
+        form.instance.usuario = self.request.user
+        
+        # Contar segmentos para el progreso
+        total_segmentos = plantilla.segmentos.count()
+        form.instance.progreso_total = total_segmentos
+        
+        response = super().form_valid(form)
+        
+        # TODO: Iniciar tarea Celery aquí
+        messages.success(
+            self.request,
+            f'Ejecución iniciada: "{form.instance.nombre}". '
+            'Se procesarán los segmentos en segundo plano.'
+        )
+        
+        return response
+    
+    def get_success_url(self):
+        return reverse('generador_actas:ver_ejecucion', kwargs={'pk': self.object.pk})
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        plantilla_pk = self.kwargs.get('plantilla_pk')
+        plantilla = get_object_or_404(PlantillaActa, pk=plantilla_pk)
+        
+        context.update({
+            'plantilla': plantilla,
+            'page_title': f'Ejecutar Plantilla: {plantilla.nombre}',
+            'breadcrumbs': [
+                {'title': 'Generador Actas', 'url': reverse('generador_actas:dashboard')},
+                {'title': 'Plantillas', 'url': reverse('generador_actas:plantillas_lista')},
+                {'title': 'Ejecutar', 'url': ''}
+            ]
+        })
+        return context
+
+
+class EjecucionDetailView(LoginRequiredMixin, DetailView):
+    """Vista para ver detalles de ejecución y editar resultados"""
+    model = EjecucionPlantilla
+    template_name = 'generador_actas/plantillas/ver_ejecucion.html'
+    context_object_name = 'ejecucion'
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        
+        # Obtener resultados de segmentos
+        resultados = ResultadoSegmento.objects.filter(
+            ejecucion=self.object
+        ).select_related('segmento').order_by('orden_procesamiento')
+        
+        context.update({
+            'resultados': resultados,
+            'page_title': f'Ejecución: {self.object.nombre}',
+            'breadcrumbs': [
+                {'title': 'Generador Actas', 'url': reverse('generador_actas:dashboard')},
+                {'title': 'Plantillas', 'url': reverse('generador_actas:plantillas_lista')},
+                {'title': 'Ver Ejecución', 'url': ''}
+            ]
+        })
+        return context
+
+
+class EjecucionListView(LoginRequiredMixin, ListView):
+    """Vista de lista de todas las ejecuciones con filtros"""
+    model = EjecucionPlantilla
+    template_name = 'generador_actas/plantillas/ejecuciones_lista.html'
+    context_object_name = 'ejecuciones'
+    paginate_by = 20
+    
+    def get_queryset(self):
+        """Filtra ejecuciones según parámetros"""
+        queryset = EjecucionPlantilla.objects.select_related(
+            'plantilla', 'usuario', 'proveedor_ia_global'
+        )
+        
+        # Aplicar filtros si existen
+        form = EjecucionFiltroForm(self.request.GET)
+        if form.is_valid():
+            if form.cleaned_data.get('estado'):
+                queryset = queryset.filter(estado=form.cleaned_data['estado'])
+            
+            if form.cleaned_data.get('plantilla'):
+                queryset = queryset.filter(plantilla=form.cleaned_data['plantilla'])
+            
+            if form.cleaned_data.get('usuario'):
+                queryset = queryset.filter(usuario=form.cleaned_data['usuario'])
+            
+            if form.cleaned_data.get('fecha_desde'):
+                queryset = queryset.filter(tiempo_inicio__gte=form.cleaned_data['fecha_desde'])
+            
+            if form.cleaned_data.get('fecha_hasta'):
+                fecha_hasta = form.cleaned_data['fecha_hasta']
+                # Incluir todo el día
+                fecha_hasta = fecha_hasta.replace(hour=23, minute=59, second=59)
+                queryset = queryset.filter(tiempo_inicio__lte=fecha_hasta)
+        
+        return queryset.order_by('-tiempo_inicio')
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context.update({
+            'filtro_form': EjecucionFiltroForm(self.request.GET),
+            'page_title': 'Todas las Ejecuciones',
+            'breadcrumbs': [
+                {'title': 'Generador Actas', 'url': reverse('generador_actas:dashboard')},
+                {'title': 'Ejecuciones', 'url': ''}
+            ]
+        })
+        return context
+
+
+@login_required
+def editar_resultado_segmento(request, ejecucion_pk, resultado_pk):
+    """Vista para editar resultado individual de segmento"""
+    ejecucion = get_object_or_404(EjecucionPlantilla, pk=ejecucion_pk)
+    resultado = get_object_or_404(ResultadoSegmento, pk=resultado_pk, ejecucion=ejecucion)
+    
+    if request.method == 'POST':
+        form = SegmentoResultadoForm(request.POST, instance=resultado)
+        if form.is_valid():
+            # Marcar como editado
+            resultado.marcar_como_editado(
+                form.cleaned_data['resultado_editado'], 
+                request.user
+            )
+            
+            messages.success(request, 'Resultado del segmento actualizado exitosamente')
+            return redirect('generador_actas:ver_ejecucion', pk=ejecucion.pk)
+    else:
+        form = SegmentoResultadoForm(instance=resultado)
+    
+    context = {
+        'ejecucion': ejecucion,
+        'resultado': resultado,
+        'form': form,
+        'page_title': f'Editar: {resultado.segmento.nombre}',
+        'breadcrumbs': [
+            {'title': 'Generador Actas', 'url': reverse('generador_actas:dashboard')},
+            {'title': 'Ejecuciones', 'url': reverse('generador_actas:ejecuciones_lista')},
+            {'title': ejecucion.nombre, 'url': reverse('generador_actas:ver_ejecucion', kwargs={'pk': ejecucion.pk})},
+            {'title': 'Editar Segmento', 'url': ''}
+        ]
+    }
+    
+    return render(request, 'generador_actas/plantillas/editar_resultado.html', context)
+
+
+@login_required
+def generar_acta_final(request, ejecucion_pk):
+    """Vista para generar acta final a partir de resultados editados"""
+    ejecucion = get_object_or_404(EjecucionPlantilla, pk=ejecucion_pk)
+    
+    # Verificar que todos los segmentos estén completados
+    resultados_pendientes = ejecucion.resultados.exclude(
+        estado__in=['completado', 'editado']
+    ).count()
+    
+    if resultados_pendientes > 0:
+        messages.error(
+            request,
+            f'No se puede generar el acta final. '
+            f'Hay {resultados_pendientes} segmentos aún pendientes de procesamiento.'
+        )
+        return redirect('generador_actas:ver_ejecucion', pk=ejecucion.pk)
+    
+    if request.method == 'POST':
+        # TODO: Iniciar tarea Celery para unificación final
+        messages.info(
+            request,
+            'Generando acta final. Este proceso puede tomar unos minutos...'
+        )
+        return redirect('generador_actas:ver_ejecucion', pk=ejecucion.pk)
+    
+    # Vista de confirmación
+    context = {
+        'ejecucion': ejecucion,
+        'total_segmentos': ejecucion.resultados.count(),
+        'page_title': 'Generar Acta Final',
+        'breadcrumbs': [
+            {'title': 'Generador Actas', 'url': reverse('generador_actas:dashboard')},
+            {'title': 'Ejecuciones', 'url': reverse('generador_actas:ejecuciones_lista')},
+            {'title': ejecucion.nombre, 'url': reverse('generador_actas:ver_ejecucion', kwargs={'pk': ejecucion.pk})},
+            {'title': 'Generar Acta Final', 'url': ''}
+        ]
+    }
+    
+    return render(request, 'generador_actas/plantillas/generar_acta_final.html', context)
+
+
+# ================== NUEVAS VISTAS FASE 2: DRAG & DROP + CELERY ==================
+
+@login_required
+def configurar_segmentos_plantilla(request, plantilla_id):
+    """
+    Vista para configurar segmentos de una plantilla con drag & drop
+    """
+    try:
+        plantilla = get_object_or_404(PlantillaActa, pk=plantilla_id)
+        
+        if request.method == 'POST':
+            # Procesar formulario de configuración
+            return _procesar_configuracion_segmentos(request, plantilla)
+        
+        # GET - Mostrar interfaz de configuración
+        configuraciones_existentes = ConfiguracionSegmento.objects.filter(
+            plantilla=plantilla
+        ).select_related('segmento', 'segmento__proveedor_ia').order_by('orden')
+        
+        # Obtener todos los segmentos disponibles
+        segmentos_disponibles = SegmentoPlantilla.objects.filter(
+            activo=True
+        ).select_related('proveedor_ia').order_by('categoria', 'nombre')
+        
+        # Crear diccionarios por categoría
+        segmentos_por_categoria = {}
+        for segmento in segmentos_disponibles:
+            categoria = segmento.get_categoria_display()
+            if categoria not in segmentos_por_categoria:
+                segmentos_por_categoria[categoria] = []
+            segmentos_por_categoria[categoria].append(segmento)
+        
+        # IDs de segmentos ya configurados
+        segmentos_configurados_ids = list(configuraciones_existentes.values_list('segmento_id', flat=True))
+        
+        context = {
+            'plantilla': plantilla,
+            'configuraciones': configuraciones_existentes,
+            'segmentos_disponibles': segmentos_disponibles,
+            'segmentos_por_categoria': segmentos_por_categoria,
+            'segmentos_configurados_ids': segmentos_configurados_ids,
+            'total_configuraciones': configuraciones_existentes.count(),
+            'page_title': f'Configurar Segmentos: {plantilla.nombre}',
+            'breadcrumbs': [
+                {'title': 'Generador Actas', 'url': reverse('generador_actas:dashboard')},
+                {'title': 'Plantillas', 'url': reverse('generador_actas:lista_plantillas')},
+                {'title': 'Configurar Segmentos', 'url': ''}
+            ]
+        }
+        
+        return render(request, 'generador_actas/plantillas/configurar_segmentos.html', context)
+        
+    except Exception as e:
+        logger.error(f"Error en configurar_segmentos_plantilla: {e}")
+        messages.error(request, f'Error: {str(e)}')
+        return redirect('generador_actas:dashboard')
+
+
+def _procesar_configuracion_segmentos(request, plantilla):
+    """Procesa la configuración de segmentos vía POST"""
+    try:
+        accion = request.POST.get('accion')
+        
+        if accion == 'agregar_segmento':
+            segmento_id = request.POST.get('segmento_id')
+            if segmento_id:
+                segmento = get_object_or_404(SegmentoPlantilla, pk=segmento_id)
+                
+                # Verificar que no esté ya configurado
+                if not ConfiguracionSegmento.objects.filter(plantilla=plantilla, segmento=segmento).exists():
+                    # Obtener el próximo orden
+                    ultimo_orden = ConfiguracionSegmento.objects.filter(
+                        plantilla=plantilla
+                    ).aggregate(models.Max('orden'))['orden__max'] or 0
+                    
+                    ConfiguracionSegmento.objects.create(
+                        plantilla=plantilla,
+                        segmento=segmento,
+                        orden=ultimo_orden + 1,
+                        obligatorio=False,
+                        prompt_personalizado=""
+                    )
+                    
+                    messages.success(request, f'Segmento "{segmento.nombre}" agregado exitosamente')
+                else:
+                    messages.warning(request, f'El segmento "{segmento.nombre}" ya está configurado')
+        
+        elif accion == 'remover_segmento':
+            configuracion_id = request.POST.get('configuracion_id')
+            if configuracion_id:
+                config = get_object_or_404(ConfiguracionSegmento, pk=configuracion_id, plantilla=plantilla)
+                segmento_nombre = config.segmento.nombre
+                config.delete()
+                
+                # Reordenar los segmentos restantes
+                configuraciones_restantes = ConfiguracionSegmento.objects.filter(plantilla=plantilla).order_by('orden')
+                for i, config in enumerate(configuraciones_restantes, 1):
+                    config.orden = i
+                    config.save()
+                
+                messages.success(request, f'Segmento "{segmento_nombre}" removido exitosamente')
+        
+        elif accion == 'actualizar_configuracion':
+            configuracion_id = request.POST.get('configuracion_id')
+            if configuracion_id:
+                config = get_object_or_404(ConfiguracionSegmento, pk=configuracion_id, plantilla=plantilla)
+                config.obligatorio = request.POST.get('obligatorio') == 'on'
+                config.prompt_personalizado = request.POST.get('prompt_personalizado', '')
+                config.save()
+                
+                messages.success(request, f'Configuración de "{config.segmento.nombre}" actualizada')
+        
+        return redirect('generador_actas:configurar_segmentos_plantilla', plantilla_id=plantilla.pk)
+        
+    except Exception as e:
+        logger.error(f"Error procesando configuración de segmentos: {e}")
+        messages.error(request, f'Error procesando configuración: {str(e)}')
+        return redirect('generador_actas:configurar_segmentos_plantilla', plantilla_id=plantilla.pk)
+
+
+@login_required
+@require_http_methods(["POST"])
+def api_actualizar_orden_segmentos(request, plantilla_id):
+    """
+    API endpoint para actualizar orden de segmentos via AJAX
+    """
+    plantilla = get_object_or_404(PlantillaActa, id=plantilla_id)
+    
+    # Verificar permisos
+    if not request.user.has_perm('generador_actas.change_plantillaacta'):
+        return JsonResponse({'success': False, 'error': 'Sin permisos'}, status=403)
+    
+    try:
+        data = json.loads(request.body)
+        segmentos_orden = data.get('segmentos_orden', [])
+        
+        # Validar datos
+        if not isinstance(segmentos_orden, list):
+            return JsonResponse({
+                'success': False, 
+                'error': 'Datos inválidos'
+            }, status=400)
+        
+        # Actualizar en transacción
+        with transaction.atomic():
+            updated_count = 0
+            for item in segmentos_orden:
+                segmento_id = item.get('segmento_id')
+                nuevo_orden = item.get('orden')
+                
+                if not segmento_id or not isinstance(nuevo_orden, int):
+                    continue
+                
+                try:
+                    config_segmento = ConfiguracionSegmento.objects.get(
+                        id=segmento_id,
+                        plantilla=plantilla
+                    )
+                    config_segmento.orden = nuevo_orden
+                    config_segmento.save()
+                    updated_count += 1
+                except ConfiguracionSegmento.DoesNotExist:
+                    continue
+        
+        logger.info(f"Usuario {request.user} actualizó orden de {updated_count} segmentos en plantilla {plantilla.pk}")
+        
+        return JsonResponse({
+            'success': True,
+            'message': f'Orden actualizado para {updated_count} segmentos',
+            'updated_count': updated_count
+        })
+        
+    except json.JSONDecodeError:
+        return JsonResponse({
+            'success': False,
+            'error': 'JSON inválido'
+        }, status=400)
+    except Exception as e:
+        logger.error(f"Error en api_actualizar_orden_segmentos: {e}")
+        return JsonResponse({
+            'success': False,
+            'error': 'Error interno del servidor'
+        }, status=500)
+
+
+@login_required
+@require_http_methods(["GET"])
+def api_obtener_configuracion_segmento(request, config_id):
+    """
+    API endpoint para obtener datos de configuración de un segmento
+    """
+    try:
+        config = get_object_or_404(ConfiguracionSegmento, pk=config_id)
+        
+        # Verificar permisos
+        if not request.user.has_perm('generador_actas.view_configuracionsegmento'):
+            return JsonResponse({'success': False, 'error': 'Sin permisos'}, status=403)
+        
+        return JsonResponse({
+            'success': True,
+            'configuracion': {
+                'id': config.pk,
+                'segmento_nombre': config.segmento.nombre,
+                'obligatorio': config.obligatorio,
+                'incluir_en_resumen': getattr(config, 'incluir_en_resumen', False),
+                'orden': config.orden,
+                'configuracion_adicional': getattr(config, 'configuracion_adicional', {}),
+                'segmento_tipo': config.segmento.tipo,
+                'segmento_descripcion': config.segmento.descripcion
+            }
+        })
+        
+    except Exception as e:
+        logger.error(f"Error obteniendo configuración de segmento {config_id}: {e}")
+        return JsonResponse({
+            'success': False, 
+            'error': f'Error al obtener configuración: {str(e)}'
+        }, status=500)
+        return JsonResponse({
+            'success': False,
+            'error': 'Error interno del servidor'
+        }, status=500)
+
+
+@login_required
+def vista_previa_plantilla(request, plantilla_id):
+    """
+    Vista previa de la estructura de plantilla en formato JSON
+    """
+    plantilla = get_object_or_404(PlantillaActa, id=plantilla_id)
+    
+    # Obtener estructura completa
+    configuraciones = ConfiguracionSegmento.objects.filter(
+        plantilla=plantilla
+    ).select_related('segmento', 'segmento__proveedor_ia').order_by('orden')
+    
+    # Construir JSON de estructura
+    estructura = {
+        'plantilla': {
+            'id': plantilla.pk,
+            'nombre': plantilla.nombre,
+            'descripcion': plantilla.descripcion,
+            'fecha_creacion': plantilla.fecha_creacion.isoformat() if plantilla.fecha_creacion else None,
+            'total_segmentos': configuraciones.count()
+        },
+        'segmentos': []
+    }
+    
+    for config in configuraciones:
+        segmento = config.segmento
+        segmento_data = {
+            'id': config.pk,
+            'segmento_id': segmento.pk,
+            'nombre': segmento.nombre,
+            'tipo': segmento.tipo,
+            'categoria': segmento.categoria,
+            'orden': config.orden,
+            'obligatorio': config.obligatorio,
+            'prompt_efectivo': config.prompt_efectivo,
+            'configuracion': {
+                'activo': segmento.activo,
+                'proveedor_ia': segmento.proveedor_ia.nombre if segmento.proveedor_ia else None
+            }
+        }
+        estructura['segmentos'].append(segmento_data)
+    
+    if request.headers.get('Accept') == 'application/json':
+        return JsonResponse(estructura, json_dumps_params={'indent': 2})
+    
+    # Vista HTML con JSON formateado
+    context = {
+        'plantilla': plantilla,
+        'estructura_json': json.dumps(estructura, indent=2, ensure_ascii=False),
+        'page_title': f'Vista Previa: {plantilla.nombre}',
+        'breadcrumbs': [
+            {'title': 'Generador Actas', 'url': reverse('generador_actas:dashboard')},
+            {'title': 'Plantillas', 'url': reverse('generador_actas:lista_plantillas')},
+            {'title': plantilla.nombre, 'url': reverse('generador_actas:ver_plantilla', kwargs={'pk': plantilla.pk})},
+            {'title': 'Vista Previa', 'url': ''}
+        ]
+    }
+    
+    return render(request, 'generador_actas/plantillas/vista_previa.html', context)
+
+
+# ================== VISTA SIMPLE PARA CREAR PLANTILLAS ==================
+
+@login_required
+def crear_plantilla_simple(request):
+    """Vista simple para crear plantillas sin problemas de contexto"""
+    
+    if request.method == 'POST':
+        form = PlantillaBasicaForm(request.POST)
+        if form.is_valid():
+            plantilla = form.save(commit=False)
+            plantilla.usuario_creacion = request.user
+            plantilla.save()
+            
+            # Procesar segmentos seleccionados
+            segmentos_seleccionados = request.POST.getlist('segmentos_seleccionados')
+            segmentos_creados = 0
+            
+            for segmento_id in segmentos_seleccionados:
+                try:
+                    segmento = SegmentoPlantilla.objects.get(id=segmento_id)
+                    orden = request.POST.get(f'orden_{segmento_id}', 1)
+                    obligatorio = request.POST.get(f'obligatorio_{segmento_id}') == 'on'
+                    
+                    ConfiguracionSegmento.objects.create(
+                        plantilla=plantilla,
+                        segmento=segmento,
+                        orden=int(orden),
+                        obligatorio=obligatorio
+                    )
+                    segmentos_creados += 1
+                except Exception as e:
+                    print(f'Error procesando segmento {segmento_id}: {e}')
+            
+            messages.success(
+                request, 
+                f'✅ Plantilla "{plantilla.nombre}" creada con {segmentos_creados} segmentos.'
+            )
+            return redirect('generador_actas:plantillas_lista')
+    else:
+        form = PlantillaBasicaForm()
+    
+    # Obtener segmentos disponibles
+    segmentos_disponibles = SegmentoPlantilla.objects.filter(activo=True).order_by('categoria', 'nombre')
+    
+    context = {
+        'form': form,
+        'segmentos_disponibles': segmentos_disponibles,
+        'page_title': 'Nueva Plantilla',
+        'breadcrumbs': [
+            {'title': 'Generador Actas', 'url': '/generador-actas/'},
+            {'title': 'Plantillas', 'url': '/generador-actas/plantillas/'},
+            {'title': 'Nueva', 'url': ''}
+        ]
+    }
+    
+    return render(request, 'generador_actas/plantillas/crear_funcional.html', context)
