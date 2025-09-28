@@ -179,7 +179,7 @@ class ActaDetailView(LoginRequiredMixin, DetailView):
             ActaGenerada.objects.select_related(
                 'plantilla', 'proveedor_ia', 'usuario_creacion', 
                 'transcripcion', 'transcripcion__procesamiento_audio'
-            ).prefetch_related('historial_cambios'),
+            ),
             pk=self.kwargs['pk']
         )
         return obj
@@ -203,14 +203,15 @@ class ActaDetailView(LoginRequiredMixin, DetailView):
             'breadcrumb': [
                 {'name': 'Inicio', 'url': '/'},
                 {'name': 'Generador', 'url': reverse('generador_actas:dashboard')},
-                {'name': 'Actas', 'url': reverse('generador_actas:actas_list')},
+                {'name': 'Actas', 'url': reverse('generador_actas:actas_lista')},
                 {'name': acta.numero_acta, 'active': True}
             ],
             'estado_info': estado_info,
             'segmentos_info': segmentos_info,
             'puede_editar': acta.estado in ['borrador', 'revision'],
             'puede_procesar': acta.puede_procesar,
-            'puede_exportar': acta.contenido_final or acta.contenido_borrador
+            'puede_exportar': acta.contenido_final or acta.contenido_borrador,
+            'prompt_final_info': (acta.metadatos or {}).get('procesamiento_final')
         })
         return context
 
@@ -242,16 +243,20 @@ def crear_acta_desde_transcripcion(request, transcripcion_id):
             plantilla = get_object_or_404(PlantillaActa, id=plantilla_id, activa=True)
             proveedor = get_object_or_404(ProveedorIA, id=proveedor_id, activo=True)
             
-            # Crear acta básica usando mock transcription (temporal)
+            # Crear acta básica usando transcripción real
             from django.utils import timezone
-            mock_transcripcion = None  # Temporal hasta tener transcripción real
+            
+            # Generar número de acta único
+            numero_acta = f"ACTA-{timezone.now().strftime('%Y%m%d-%H%M%S')}-{transcripcion.id}"
             
             # Crear acta básica
             acta = ActaGenerada.objects.create(
+                numero_acta=numero_acta,
                 plantilla=plantilla,
                 proveedor_ia=proveedor,
                 titulo=titulo or f"Acta generada - {timezone.now().strftime('%Y-%m-%d %H:%M')}",
-                transcripcion=mock_transcripcion,
+                transcripcion=transcripcion,  # Usar la transcripción real en lugar de None
+                fecha_sesion=timezone.now(),  # Añadimos fecha_sesion requerida
                 estado='borrador',
                 usuario_creacion=request.user
             )
@@ -371,6 +376,61 @@ def exportar_acta(request, acta_id):
         logger.error(f"Error exportando acta: {str(e)}")
         messages.error(request, f"Error exportando acta: {str(e)}")
         return redirect('generador_actas:acta_detail', pk=acta_id)
+
+
+@login_required
+@require_http_methods(["POST"])
+def revertir_acta(request, acta_id):
+    """
+    Revierte un acta al estado borrador, limpiando todo su contenido procesado
+    """
+    try:
+        acta = get_object_or_404(ActaGenerada, id=acta_id)
+        
+        # Verificar que el acta pueda ser revertida
+        if acta.estado == 'borrador':
+            return JsonResponse({
+                'success': False,
+                'message': 'El acta ya está en estado borrador'
+            })
+        
+        # Guardar estado anterior para el log
+        estado_anterior = acta.estado
+        
+        # Limpiar todos los datos del procesamiento
+        acta.estado = 'borrador'
+        acta.progreso = 0
+        acta.segmentos_procesados = {}
+        acta.historial_cambios = [{
+            'evento': 'acta_revertida',
+            'descripcion': f'Acta revertida desde estado {estado_anterior} a borrador por {request.user.username}',
+            'progreso': 0,
+            'timestamp': timezone.now().isoformat(),
+        }]
+        acta.contenido_borrador = ''
+        acta.contenido_final = ''
+        acta.contenido_html = ''
+        acta.mensajes_error = ''
+        acta.metricas_procesamiento = {}
+        acta.metadatos = {}
+        acta.task_id_celery = ''
+        acta.fecha_procesamiento = None
+        
+        acta.save()
+        
+        logger.info(f"Acta {acta.numero_acta} revertida a borrador por {request.user.username}")
+        
+        return JsonResponse({
+            'success': True,
+            'message': f'Acta {acta.numero_acta} revertida a estado borrador exitosamente'
+        })
+        
+    except Exception as e:
+        logger.error(f"Error revirtiendo acta {acta_id}: {str(e)}")
+        return JsonResponse({
+            'success': False,
+            'message': f'Error revirtiendo acta: {str(e)}'
+        })
 
 
 # ================== PLANTILLAS CRUD ==================
@@ -3004,11 +3064,41 @@ class EjecucionPlantillaCreateView(LoginRequiredMixin, CreateView):
         
         response = super().form_valid(form)
         
-        # TODO: Iniciar tarea Celery aquí
+        # Iniciar tarea Celery para procesar la plantilla
+        from .tasks import procesar_plantilla_completa_task
+        
+        # Preparar contexto para el procesamiento
+        contexto_datos = {
+            'transcripcion_id': form.instance.transcripcion.id if form.instance.transcripcion else None,
+            'variables_contexto': form.instance.variables_contexto,
+            'proveedor_ia_global': form.instance.proveedor_ia_global.id if form.instance.proveedor_ia_global else None,
+            'usuario_id': self.request.user.id,
+            'metadata_inicio': {
+                'fecha_inicio': timezone.now().isoformat(),
+                'ip_usuario': self.request.META.get('REMOTE_ADDR'),
+                'user_agent': self.request.META.get('HTTP_USER_AGENT', '')[:200]
+            }
+        }
+        
+        # Iniciar procesamiento asíncrono
+        task_result = procesar_plantilla_completa_task.delay(
+            str(form.instance.id),
+            contexto_datos
+        )
+        
+        # Actualizar la ejecución con el task_id
+        form.instance.task_id = str(task_result.id)
+        form.instance.estado = 'iniciando'
+        form.instance.save()
+        
         messages.success(
             self.request,
-            f'Ejecución iniciada: "{form.instance.nombre}". '
-            'Se procesarán los segmentos en segundo plano.'
+            f'¡Procesamiento iniciado exitosamente! 🚀<br>'
+            f'<strong>Ejecución:</strong> "{form.instance.nombre}"<br>'
+            f'<strong>Plantilla:</strong> {plantilla.nombre}<br>'
+            f'<strong>Segmentos:</strong> {total_segmentos}<br>'
+            f'<strong>Task ID:</strong> <code>{task_result.id[:8]}...</code><br><br>'
+            f'Puedes monitorear el progreso en la siguiente pantalla.'
         )
         
         return response
@@ -3039,13 +3129,34 @@ class EjecucionDetailView(LoginRequiredMixin, DetailView):
     template_name = 'generador_actas/plantillas/ver_ejecucion.html'
     context_object_name = 'ejecucion'
     
+    def get(self, request, *args, **kwargs):
+        """Maneja peticiones GET normales y AJAX"""
+        response = super().get(request, *args, **kwargs)
+        
+        # Si es petición AJAX, devolver datos JSON
+        if request.GET.get('ajax'):
+            ejecucion = self.get_object()
+            return JsonResponse({
+                'success': True,
+                'estado': ejecucion.estado,
+                'progreso_porcentaje': ejecucion.progreso_porcentaje,
+                'progreso_completado': ejecucion.progreso_completado,
+                'progreso_total': ejecucion.progreso_total,
+                'segmentos_actualizados': True,  # Por simplicidad, siempre True
+                'fecha_actualizacion': timezone.now().isoformat()
+            })
+        
+        return response
+    
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         
         # Obtener resultados de segmentos
         resultados = ResultadoSegmento.objects.filter(
             ejecucion=self.object
-        ).select_related('segmento').order_by('orden_procesamiento')
+        ).select_related(
+            'configuracion_segmento__segmento'
+        ).order_by('orden_procesamiento')
         
         context.update({
             'resultados': resultados,
@@ -3527,3 +3638,93 @@ def crear_plantilla_simple(request):
     }
     
     return render(request, 'generador_actas/plantillas/crear_funcional.html', context)
+
+
+# ============================================================================
+# VISTAS FALTANTES PARA ACTAS - AGREGADAS PARA SOLUCIONAR ERRORES 404/500
+# ============================================================================
+
+@login_required
+def preview_acta(request, pk):
+    """Vista para previsualizar un acta"""
+    try:
+        acta = get_object_or_404(ActaGenerada, pk=pk)
+        
+        # Generar preview del contenido
+        context = {
+            'acta': acta,
+            'contenido_preview': acta.contenido_borrador or "No hay contenido disponible para preview",
+            'page_title': f'Preview - {acta.numero_acta}',
+            'breadcrumb': [
+                {'name': 'Inicio', 'url': '/'},
+                {'name': 'Actas', 'url': reverse('generador_actas:actas_lista')},
+                {'name': 'Preview', 'active': True}
+            ]
+        }
+        
+        return render(request, 'generador_actas/acta_preview.html', context)
+        
+    except Exception as e:
+        messages.error(request, f"Error al generar preview: {str(e)}")
+        return redirect('generador_actas:actas_lista')
+
+
+@login_required
+@require_http_methods(["POST"])
+def generar_acta(request, pk):
+    """Vista para iniciar la generación/procesamiento de un acta"""
+    try:
+        acta = get_object_or_404(ActaGenerada, pk=pk)
+        
+        if acta.estado in ['procesando', 'procesando_segmentos', 'unificando']:
+            messages.warning(request, f"El acta {acta.numero_acta} ya está siendo procesada")
+            return redirect('generador_actas:acta_detail', pk=pk)
+        
+        # Iniciar procesamiento con Celery
+        from .tasks import procesar_generacion_acta_task
+        task = procesar_generacion_acta_task.delay(acta.id)
+        
+        # Actualizar acta con task ID
+        acta.task_id_celery = task.id
+        acta.estado = 'procesando'
+        acta.fecha_procesamiento = timezone.now()
+        acta.save()
+        
+        messages.success(request, f"Procesamiento del acta {acta.numero_acta} iniciado exitosamente")
+        return redirect('generador_actas:estado_procesamiento', acta_id=acta.id)
+        
+    except Exception as e:
+        logger.error(f"Error iniciando generación de acta {pk}: {str(e)}")
+        messages.error(request, f"Error iniciando procesamiento: {str(e)}")
+        return redirect('generador_actas:acta_detail', pk=pk)
+
+
+@login_required
+def estados_actas(request):
+    """Vista para mostrar el estado de todas las actas"""
+    try:
+        actas = ActaGenerada.objects.all().order_by('-fecha_creacion')
+        
+        # Filtros opcionales
+        estado_filtro = request.GET.get('estado')
+        if estado_filtro:
+            actas = actas.filter(estado=estado_filtro)
+        
+        context = {
+            'actas': actas,
+            'estados_choices': ActaGenerada.ESTADO_CHOICES,
+            'estado_actual': estado_filtro,
+            'page_title': 'Estados de Actas',
+            'breadcrumb': [
+                {'name': 'Inicio', 'url': '/'},
+                {'name': 'Generador', 'url': reverse('generador_actas:dashboard')},
+                {'name': 'Estados Actas', 'active': True}
+            ]
+        }
+        
+        return render(request, 'generador_actas/estados_actas.html', context)
+        
+    except Exception as e:
+        logger.error(f"Error obteniendo estados de actas: {str(e)}")
+        messages.error(request, f"Error cargando estados: {str(e)}")
+        return redirect('generador_actas:dashboard')

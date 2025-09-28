@@ -1,0 +1,384 @@
+{% extends 'layouts/base.html' %}
+{% load static %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block extra_css %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+{% endblock %}
+
+{% block content %}
+<!-- Content Header -->
+<div class="content-header">
+    <div class="container-fluid">
+        <div class="row mb-2">
+            <div class="col-sm-6">
+                <h1 class="m-0">{{ page_title }}</h1>
+            </div>
+            <div class="col-sm-6">
+                <ol class="breadcrumb float-sm-right">
+                    {% for crumb in breadcrumbs %}
+                        {% if forloop.last %}
+                            <li class="breadcrumb-item active">{{ crumb.title }}</li>
+                        {% else %}
+                            <li class="breadcrumb-item"><a href="{{ crumb.url }}">{{ crumb.title }}</a></li>
+                        {% endif %}
+                    {% endfor %}
+                </ol>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Main content -->
+<section class="content">
+    <div class="container-fluid">
+        
+        <!-- Métricas principales -->
+        <div class="row">
+            <div class="col-lg-3 col-6">
+                <div class="small-box bg-info">
+                    <div class="inner">
+                        <h3>{{ total_plantillas }}</h3>
+                        <p>Total Plantillas</p>
+                    </div>
+                    <div class="icon">
+                        <i class="fas fa-file-alt"></i>
+                    </div>
+                    <a href="{% url 'generador_actas:plantillas_lista' %}" class="small-box-footer">
+                        Ver todas <i class="fas fa-arrow-circle-right"></i>
+                    </a>
+                </div>
+            </div>
+            
+            <div class="col-lg-3 col-6">
+                <div class="small-box bg-success">
+                    <div class="inner">
+                        <h3>{{ plantillas_activas }}</h3>
+                        <p>Plantillas Activas</p>
+                    </div>
+                    <div class="icon">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                    <a href="{% url 'generador_actas:plantillas_lista' %}?activa=1" class="small-box-footer">
+                        Ver activas <i class="fas fa-arrow-circle-right"></i>
+                    </a>
+                </div>
+            </div>
+            
+            <div class="col-lg-3 col-6">
+                <div class="small-box bg-warning">
+                    <div class="inner">
+                        <h3>{{ total_ejecuciones }}</h3>
+                        <p>Total Ejecuciones</p>
+                    </div>
+                    <div class="icon">
+                        <i class="fas fa-play"></i>
+                    </div>
+                    <a href="{% url 'generador_actas:ejecuciones_lista' %}" class="small-box-footer">
+                        Ver todas <i class="fas fa-arrow-circle-right"></i>
+                    </a>
+                </div>
+            </div>
+            
+            <div class="col-lg-3 col-6">
+                <div class="small-box bg-danger">
+                    <div class="inner">
+                        <h3>{{ ejecuciones_mes }}</h3>
+                        <p>Este Mes</p>
+                    </div>
+                    <div class="icon">
+                        <i class="fas fa-calendar"></i>
+                    </div>
+                    <a href="{% url 'generador_actas:ejecuciones_lista' %}?fecha_desde={{ fecha_inicio_mes|date:'Y-m-d' }}" class="small-box-footer">
+                        Ver del mes <i class="fas fa-arrow-circle-right"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Gráficos y análisis -->
+        <div class="row">
+            <!-- Estados de ejecuciones -->
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">
+                            <i class="fas fa-chart-pie"></i>
+                            Estados de Ejecuciones
+                        </h3>
+                    </div>
+                    <div class="card-body">
+                        <canvas id="estadosChart" style="height: 300px;"></canvas>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Plantillas más populares -->
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">
+                            <i class="fas fa-star"></i>
+                            Plantillas Más Usadas
+                        </h3>
+                    </div>
+                    <div class="card-body">
+                        {% if plantillas_populares %}
+                            {% for plantilla in plantillas_populares %}
+                                <div class="progress-group">
+                                    {{ plantilla.nombre }}
+                                    <span class="float-right"><b>{{ plantilla.total_ejecuciones }}</b>/{{ total_ejecuciones }}</span>
+                                    <div class="progress progress-sm">
+                                        <div class="progress-bar bg-primary" 
+                                             style="width: {% widthratio plantilla.total_ejecuciones total_ejecuciones 100 %}%">
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        {% else %}
+                            <p class="text-muted text-center py-4">
+                                <i class="fas fa-info-circle fa-2x mb-2"></i><br>
+                                Aún no hay ejecuciones de plantillas
+                            </p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Tablas de datos -->
+        <div class="row">
+            <!-- Ejecuciones recientes -->
+            <div class="col-md-8">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">
+                            <i class="fas fa-history"></i>
+                            Ejecuciones Recientes
+                        </h3>
+                        <div class="card-tools">
+                            <a href="{% url 'generador_actas:ejecuciones_lista' %}" class="btn btn-tool">
+                                <i class="fas fa-external-link-alt"></i>
+                            </a>
+                        </div>
+                    </div>
+                    <div class="card-body p-0">
+                        {% if ejecuciones_recientes %}
+                            <div class="table-responsive">
+                                <table class="table table-striped">
+                                    <thead>
+                                        <tr>
+                                            <th>Plantilla</th>
+                                            <th>Usuario</th>
+                                            <th>Estado</th>
+                                            <th>Progreso</th>
+                                            <th>Fecha</th>
+                                            <th>Acciones</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for ejecucion in ejecuciones_recientes %}
+                                        <tr>
+                                            <td>
+                                                <strong>{{ ejecucion.plantilla.nombre }}</strong><br>
+                                                <small class="text-muted">{{ ejecucion.nombre }}</small>
+                                            </td>
+                                            <td>
+                                                {{ ejecucion.usuario.get_full_name|default:ejecucion.usuario.username }}
+                                            </td>
+                                            <td>
+                                                {% if ejecucion.estado == 'completada' %}
+                                                    <span class="badge badge-success">{{ ejecucion.get_estado_display }}</span>
+                                                {% elif ejecucion.estado == 'error' %}
+                                                    <span class="badge badge-danger">{{ ejecucion.get_estado_display }}</span>
+                                                {% elif ejecucion.estado == 'cancelada' %}
+                                                    <span class="badge badge-secondary">{{ ejecucion.get_estado_display }}</span>
+                                                {% else %}
+                                                    <span class="badge badge-warning">{{ ejecucion.get_estado_display }}</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                <div class="progress progress-xs">
+                                                    <div class="progress-bar 
+                                                        {% if ejecucion.estado == 'completada' %}bg-success
+                                                        {% elif ejecucion.estado == 'error' %}bg-danger
+                                                        {% else %}bg-primary{% endif %}" 
+                                                         style="width: {{ ejecucion.porcentaje_progreso }}%">
+                                                    </div>
+                                                </div>
+                                                <small class="text-muted">
+                                                    {{ ejecucion.progreso_actual }}/{{ ejecucion.progreso_total }}
+                                                    ({{ ejecucion.porcentaje_progreso }}%)
+                                                </small>
+                                            </td>
+                                            <td>
+                                                <small>
+                                                    {{ ejecucion.tiempo_inicio|date:"d/m/Y H:i" }}<br>
+                                                    <span class="text-muted">{{ ejecucion.duracion_formateada }}</span>
+                                                </small>
+                                            </td>
+                                            <td>
+                                                <a href="{% url 'generador_actas:ver_ejecucion' ejecucion.pk %}" 
+                                                   class="btn btn-sm btn-primary">
+                                                    <i class="fas fa-eye"></i>
+                                                </a>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        {% else %}
+                            <div class="text-center py-4">
+                                <i class="fas fa-info-circle fa-2x text-muted mb-2"></i>
+                                <p class="text-muted">No hay ejecuciones recientes</p>
+                                <a href="{% url 'generador_actas:plantillas_lista' %}" class="btn btn-primary">
+                                    <i class="fas fa-play"></i>
+                                    Ejecutar Plantilla
+                                </a>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Acciones rápidas -->
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">
+                            <i class="fas fa-bolt"></i>
+                            Acciones Rápidas
+                        </h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="list-group list-group-flush">
+                            <a href="{% url 'generador_actas:plantilla_crear' %}" 
+                               class="list-group-item list-group-item-action">
+                                <i class="fas fa-plus text-success"></i>
+                                Crear Nueva Plantilla
+                            </a>
+                            
+                            <a href="{% url 'generador_actas:plantillas_lista' %}" 
+                               class="list-group-item list-group-item-action">
+                                <i class="fas fa-list text-primary"></i>
+                                Ver Todas las Plantillas
+                            </a>
+                            
+                            <a href="{% url 'generador_actas:ejecuciones_lista' %}" 
+                               class="list-group-item list-group-item-action">
+                                <i class="fas fa-history text-info"></i>
+                                Historial de Ejecuciones
+                            </a>
+                            
+                            <a href="{% url 'generador_actas:segmentos_dashboard' %}" 
+                               class="list-group-item list-group-item-action">
+                                <i class="fas fa-puzzle-piece text-warning"></i>
+                                Gestionar Segmentos
+                            </a>
+                            
+                            <a href="#" class="list-group-item list-group-item-action" onclick="exportarPlantillas()">
+                                <i class="fas fa-download text-secondary"></i>
+                                Exportar Plantillas
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Estadísticas adicionales -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">
+                            <i class="fas fa-chart-bar"></i>
+                            Estadísticas
+                        </h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-12">
+                                <div class="info-box">
+                                    <span class="info-box-icon bg-info"><i class="fas fa-percentage"></i></span>
+                                    <div class="info-box-content">
+                                        <span class="info-box-text">Tasa de Éxito</span>
+                                        <span class="info-box-number">
+                                            {% if total_ejecuciones > 0 %}
+                                                {% widthratio ejecuciones_exitosas total_ejecuciones 100 %}%
+                                            {% else %}
+                                                0%
+                                            {% endif %}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    // Gráfico de estados
+    const ctx = document.getElementById('estadosChart').getContext('2d');
+    const estadosData = [
+        {% for estado in estados_stats %}
+            {
+                label: '{{ estado.estado|capfirst }}',
+                data: {{ estado.count }},
+                color: getColorForEstado('{{ estado.estado }}')
+            }{% if not forloop.last %},{% endif %}
+        {% endfor %}
+    ];
+    
+    new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: estadosData.map(item => item.label),
+            datasets: [{
+                data: estadosData.map(item => item.data),
+                backgroundColor: estadosData.map(item => item.color),
+                borderWidth: 2,
+                borderColor: '#fff'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            }
+        }
+    });
+    
+    // Auto-refresh cada 30 segundos
+    setInterval(function() {
+        location.reload();
+    }, 30000);
+});
+
+function getColorForEstado(estado) {
+    const colors = {
+        'completada': '#28a745',
+        'error': '#dc3545',
+        'cancelada': '#6c757d',
+        'procesando_segmentos': '#ffc107',
+        'unificando': '#17a2b8',
+        'editando_resultados': '#fd7e14',
+        'iniciada': '#007bff'
+    };
+    return colors[estado] || '#6c757d';
+}
+
+function exportarPlantillas() {
+    // TODO: Implementar exportación
+    alert('Funcionalidad de exportación próximamente disponible');
+}
+</script>
+{% endblock %}

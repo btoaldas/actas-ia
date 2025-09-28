@@ -960,3 +960,42 @@ def _get_descripcion_operacion(tipo, parametros):
         'reset_configuraciones': f"Restablecer configuraciones a valores por defecto"
     }
     return descripciones.get(tipo, f'Ejecutar operación {tipo} con parámetros: {parametros}')
+
+
+@login_required
+def api_segmentos_disponibles(request):
+    """
+    API endpoint para obtener segmentos disponibles para agregar a plantillas
+    """
+    try:
+        segmentos = SegmentoPlantilla.objects.filter(
+            activo=True
+        ).order_by('categoria', 'nombre')
+        
+        segmentos_data = []
+        for segmento in segmentos:
+            segmentos_data.append({
+                'id': segmento.id,
+                'nombre': segmento.nombre,
+                'codigo': segmento.codigo,
+                'descripcion': segmento.descripcion,
+                'categoria': segmento.categoria,
+                'tipo': segmento.tipo,
+                'formato_salida': segmento.formato_salida,
+                'requiere_proveedor_ia': segmento.tipo in ['dinamico', 'hibrido'],
+                'categoria_display': segmento.get_categoria_display(),
+                'tipo_display': segmento.get_tipo_display()
+            })
+        
+        return JsonResponse({
+            'success': True,
+            'segmentos': segmentos_data,
+            'total': len(segmentos_data)
+        })
+        
+    except Exception as e:
+        logger.error(f"Error obteniendo segmentos disponibles: {str(e)}")
+        return JsonResponse({
+            'success': False,
+            'message': 'Error al cargar segmentos disponibles'
+        })

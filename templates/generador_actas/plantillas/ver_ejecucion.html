@@ -1,0 +1,524 @@
+{% extends "layouts/base.html" %}
+{% load static %}
+
+{% block title %}{{ page_title }} - Sistema de Actas{% endblock %}
+
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'admin/css/admin.css' %}">
+    <style>
+        .ejecucion-header {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 0.375rem;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .estado-badge {
+            font-size: 1rem;
+            padding: 0.5rem 1rem;
+        }
+        
+        .estado-iniciando { background: #17a2b8; }
+        .estado-procesando { background: #ffc107; color: #000; }
+        .estado-completado { background: #28a745; }
+        .estado-error { background: #dc3545; }
+        .estado-cancelado { background: #6c757d; }
+        
+        .progress-container {
+            background: #ffffff;
+            border: 1px solid #e9ecef;
+            border-radius: 0.375rem;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .segment-card {
+            border: 1px solid #e9ecef;
+            border-radius: 0.375rem;
+            margin-bottom: 1rem;
+            transition: all 0.3s ease;
+        }
+        
+        .segment-header {
+            background: #f8f9fa;
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid #e9ecef;
+            display: flex;
+            justify-content: between;
+            align-items: center;
+        }
+        
+        .segment-content {
+            padding: 1.5rem;
+        }
+        
+        .segment-status {
+            font-size: 0.875rem;
+            padding: 0.25rem 0.75rem;
+            border-radius: 0.25rem;
+        }
+        
+        .status-pendiente { background: #e2e3e5; color: #495057; }
+        .status-procesando { background: #fff3cd; color: #856404; }
+        .status-completado { background: #d4edda; color: #155724; }
+        .status-error { background: #f8d7da; color: #721c24; }
+        
+        .segment-dinamico {
+            border-left: 4px solid #28a745;
+        }
+        
+        .segment-estatico {
+            border-left: 4px solid #6c757d;
+        }
+        
+        .resultado-preview {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 0.25rem;
+            padding: 1rem;
+            max-height: 200px;
+            overflow-y: auto;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 0.875rem;
+            white-space: pre-wrap;
+        }
+        
+        .metadata-info {
+            font-size: 0.875rem;
+            color: #6c757d;
+        }
+        
+        .task-info {
+            background: #e7f3ff;
+            border: 1px solid #b8daff;
+            border-radius: 0.375rem;
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .refresh-indicator {
+            display: none;
+            color: #28a745;
+        }
+        
+        .refresh-indicator.active {
+            display: inline-block;
+        }
+        
+        .processing-spinner {
+            width: 1rem;
+            height: 1rem;
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid #007bff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            display: inline-block;
+            margin-right: 0.5rem;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .action-buttons {
+            position: sticky;
+            top: 0;
+            background: #fff;
+            padding: 1rem 0;
+            border-bottom: 1px solid #e9ecef;
+            margin-bottom: 1.5rem;
+            z-index: 100;
+        }
+    </style>
+{% endblock %}
+
+{% block content %}
+<div class="content-wrapper">
+    <!-- Content Header -->
+    <section class="content-header">
+        <div class="container-fluid">
+            <div class="row mb-2">
+                <div class="col-sm-6">
+                    <h1>
+                        <i class="fas fa-tasks"></i>
+                        {{ page_title }}
+                    </h1>
+                </div>
+                <div class="col-sm-6">
+                    <ol class="breadcrumb float-sm-right">
+                        {% for breadcrumb in breadcrumbs %}
+                            {% if breadcrumb.url %}
+                                <li class="breadcrumb-item">
+                                    <a href="{{ breadcrumb.url }}">{{ breadcrumb.title }}</a>
+                                </li>
+                            {% else %}
+                                <li class="breadcrumb-item active">{{ breadcrumb.title }}</li>
+                            {% endif %}
+                        {% endfor %}
+                    </ol>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Main content -->
+    <section class="content">
+        <div class="container-fluid">
+            
+            <!-- Action Buttons -->
+            <div class="action-buttons">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <a href="{% url 'generador_actas:plantillas_lista' %}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left"></i>
+                            Volver a Plantillas
+                        </a>
+                        
+                        {% if ejecucion.estado == 'procesando' or ejecucion.estado == 'iniciando' %}
+                            <button type="button" class="btn btn-info ml-2" id="refreshBtn">
+                                <i class="fas fa-sync-alt refresh-indicator" id="refreshIcon"></i>
+                                <i class="fas fa-sync-alt"></i>
+                                Actualizar
+                            </button>
+                            <div class="form-check form-check-inline ml-3">
+                                <input class="form-check-input" type="checkbox" id="autoRefresh" checked>
+                                <label class="form-check-label" for="autoRefresh">
+                                    Auto-actualizar (5s)
+                                </label>
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div>
+                        {% if ejecucion.estado == 'completado' %}
+                            <a href="#" class="btn btn-success">
+                                <i class="fas fa-download"></i>
+                                Descargar Acta
+                            </a>
+                            <a href="#" class="btn btn-primary ml-2">
+                                <i class="fas fa-edit"></i>
+                                Editar Resultado
+                            </a>
+                        {% elif ejecucion.estado == 'procesando' %}
+                            <button type="button" class="btn btn-warning">
+                                <div class="processing-spinner"></div>
+                                Procesando...
+                            </button>
+                        {% elif ejecucion.estado == 'error' %}
+                            <button type="button" class="btn btn-danger">
+                                <i class="fas fa-exclamation-triangle"></i>
+                                Error
+                            </button>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Información de la Ejecución -->
+            <div class="row">
+                <div class="col-12">
+                    <div class="ejecucion-header">
+                        <div class="row">
+                            <div class="col-md-8">
+                                <h3>
+                                    <i class="fas fa-play-circle text-primary"></i>
+                                    {{ ejecucion.nombre }}
+                                    <span class="badge estado-badge estado-{{ ejecucion.estado }} ml-2">
+                                        {{ ejecucion.get_estado_display }}
+                                    </span>
+                                </h3>
+                                <p class="text-muted mb-2">
+                                    <strong>Plantilla:</strong> {{ ejecucion.plantilla.nombre }} 
+                                    <span class="text-muted">({{ ejecucion.plantilla.tipo_acta }})</span>
+                                </p>
+                                <div class="row">
+                                    <div class="col-sm-6">
+                                        <strong>Transcripción:</strong> 
+                                        {% if ejecucion.transcripcion %}
+                                            {{ ejecucion.transcripcion.titulo }}
+                                        {% else %}
+                                            <span class="text-muted">Sin transcripción</span>
+                                        {% endif %}
+                                    </div>
+                                    <div class="col-sm-6">
+                                        <strong>Proveedor IA:</strong> 
+                                        {% if ejecucion.proveedor_ia_global %}
+                                            {{ ejecucion.proveedor_ia_global.nombre }}
+                                        {% else %}
+                                            <span class="text-muted">Por defecto</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4 text-right">
+                                <div class="metadata-info">
+                                    <p class="mb-1">
+                                        <strong>Usuario:</strong> {{ ejecucion.usuario.get_full_name|default:ejecucion.usuario.username }}
+                                    </p>
+                                    <p class="mb-1">
+                                        <strong>Iniciado:</strong> {{ ejecucion.fecha_creacion|date:"d/m/Y H:i" }}
+                                    </p>
+                                    {% if ejecucion.fecha_inicio %}
+                                        <p class="mb-1">
+                                            <strong>Procesamiento:</strong> {{ ejecucion.fecha_inicio|date:"d/m/Y H:i" }}
+                                        </p>
+                                    {% endif %}
+                                    {% if ejecucion.fecha_fin %}
+                                        <p class="mb-0">
+                                            <strong>Finalizado:</strong> {{ ejecucion.fecha_fin|date:"d/m/Y H:i" }}
+                                        </p>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Progreso General -->
+            <div class="row">
+                <div class="col-12">
+                    <div class="progress-container">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <h5 class="mb-0">
+                                <i class="fas fa-chart-line"></i>
+                                Progreso General
+                            </h5>
+                            <span class="badge badge-info">
+                                {{ ejecucion.progreso_completado }}/{{ ejecucion.progreso_total }} segmentos
+                            </span>
+                        </div>
+                        
+                        <div class="progress mb-2" style="height: 25px;">
+                            <div class="progress-bar 
+                                {% if ejecucion.estado == 'completado' %}bg-success{% elif ejecucion.estado == 'error' %}bg-danger{% else %}bg-info{% endif %}" 
+                                role="progressbar" 
+                                style="width: {{ ejecucion.progreso_porcentaje }}%"
+                                aria-valuenow="{{ ejecucion.progreso_porcentaje }}" 
+                                aria-valuemin="0" 
+                                aria-valuemax="100">
+                                {{ ejecucion.progreso_porcentaje|floatformat:1 }}%
+                            </div>
+                        </div>
+                        
+                        {% if ejecucion.task_id %}
+                            <div class="task-info">
+                                <small>
+                                    <strong>Task ID:</strong> <code>{{ ejecucion.task_id }}</code>
+                                    {% if ejecucion.tiempo_estimado %}
+                                        • <strong>Tiempo Estimado:</strong> {{ ejecucion.tiempo_estimado }} min
+                                    {% endif %}
+                                </small>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Segmentos Procesados -->
+            <div class="row">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">
+                                <i class="fas fa-list-ol"></i>
+                                Segmentos Procesados
+                                <small class="text-muted">({{ resultados.count }} total)</small>
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            {% if resultados %}
+                                {% for resultado in resultados %}
+                                    <div class="segment-card {% if resultado.configuracion_segmento.segmento.tipo_procesamiento == 'dinamico' %}segment-dinamico{% else %}segment-estatico{% endif %}">
+                                        <div class="segment-header">
+                                            <div>
+                                                <h6 class="mb-0">
+                                                    <strong>{{ resultado.orden_procesamiento }}.</strong>
+                                                    {{ resultado.configuracion_segmento.segmento.nombre }}
+                                                    <span class="badge badge-sm ml-2 {% if resultado.configuracion_segmento.segmento.tipo_procesamiento == 'dinamico' %}badge-success{% else %}badge-secondary{% endif %}">
+                                                        {{ resultado.configuracion_segmento.segmento.get_tipo_procesamiento_display }}
+                                                    </span>
+                                                </h6>
+                                                {% if resultado.configuracion_segmento.segmento.descripcion %}
+                                                    <small class="text-muted">{{ resultado.configuracion_segmento.segmento.descripcion|truncatechars:80 }}</small>
+                                                {% endif %}
+                                            </div>
+                                            <div>
+                                                <span class="segment-status status-{{ resultado.estado }}">
+                                                    {% if resultado.estado == 'procesando' %}
+                                                        <div class="processing-spinner"></div>
+                                                    {% endif %}
+                                                    {{ resultado.get_estado_display }}
+                                                </span>
+                                                {% if resultado.tiempo_procesamiento %}
+                                                    <small class="text-muted ml-2">
+                                                        {{ resultado.tiempo_procesamiento|floatformat:2 }}s
+                                                    </small>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="segment-content">
+                                            {% if resultado.contenido_generado %}
+                                                <div class="mb-3">
+                                                    <strong>Resultado Generado:</strong>
+                                                    <div class="resultado-preview mt-2">{{ resultado.contenido_generado }}</div>
+                                                </div>
+                                            {% elif resultado.estado == 'procesando' %}
+                                                <div class="text-center text-muted py-3">
+                                                    <div class="processing-spinner"></div>
+                                                    Procesando segmento...
+                                                </div>
+                                            {% elif resultado.estado == 'pendiente' %}
+                                                <div class="text-center text-muted py-2">
+                                                    <i class="fas fa-hourglass-half"></i>
+                                                    En espera de procesamiento
+                                                </div>
+                                            {% endif %}
+                                            
+                                            {% if resultado.error_details %}
+                                                <div class="alert alert-danger mt-3">
+                                                    <strong>Error:</strong> {{ resultado.error_details }}
+                                                </div>
+                                            {% endif %}
+                                            
+                                            {% if resultado.metadata_procesamiento %}
+                                                <div class="mt-3">
+                                                    <details>
+                                                        <summary class="text-muted" style="cursor: pointer;">
+                                                            <small>Ver metadatos de procesamiento</small>
+                                                        </summary>
+                                                        <div class="resultado-preview mt-2">
+                                                            {{ resultado.metadata_procesamiento|pprint }}
+                                                        </div>
+                                                    </details>
+                                                </div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            {% else %}
+                                <div class="text-center text-muted py-5">
+                                    <i class="fas fa-info-circle fa-3x mb-3"></i>
+                                    <h5>No hay segmentos procesados</h5>
+                                    <p>Los segmentos aparecerán aquí conforme se vayan procesando.</p>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Variables de Contexto -->
+            {% if ejecucion.variables_contexto %}
+                <div class="row">
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header">
+                                <h6 class="card-title mb-0">
+                                    <i class="fas fa-code"></i>
+                                    Variables de Contexto
+                                </h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="resultado-preview">{{ ejecucion.variables_contexto|pprint }}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+
+        </div>
+    </section>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+    <script>
+        $(document).ready(function() {
+            let autoRefreshInterval;
+            const ejecucionId = {{ ejecucion.id }};
+            const currentEstado = '{{ ejecucion.estado }}';
+            
+            // Auto-refresh functionality
+            function startAutoRefresh() {
+                if (autoRefreshInterval) {
+                    clearInterval(autoRefreshInterval);
+                }
+                
+                autoRefreshInterval = setInterval(function() {
+                    if ($('#autoRefresh').is(':checked') && 
+                        (currentEstado === 'procesando' || currentEstado === 'iniciando')) {
+                        refreshData();
+                    }
+                }, 5000); // 5 segundos
+            }
+            
+            function stopAutoRefresh() {
+                if (autoRefreshInterval) {
+                    clearInterval(autoRefreshInterval);
+                }
+            }
+            
+            function refreshData() {
+                $('#refreshIcon').addClass('active fa-spin');
+                
+                // Hacer petición AJAX para actualizar datos
+                $.get(window.location.href + '?ajax=1', function(data) {
+                    if (data.success) {
+                        // Actualizar progreso
+                        $('.progress-bar').css('width', data.progreso_porcentaje + '%')
+                            .text(data.progreso_porcentaje.toFixed(1) + '%');
+                        
+                        $('.badge:contains("segmentos")').text(
+                            data.progreso_completado + '/' + data.progreso_total + ' segmentos'
+                        );
+                        
+                        // Si el estado cambió, recargar la página
+                        if (data.estado !== currentEstado) {
+                            window.location.reload();
+                        }
+                        
+                        // Actualizar segmentos si hay cambios
+                        if (data.segmentos_actualizados) {
+                            // Aquí podríamos actualizar segmentos específicos
+                            // Por simplicidad, recargamos la página si hay cambios importantes
+                            window.location.reload();
+                        }
+                    }
+                }).fail(function() {
+                    console.log('Error al actualizar datos');
+                }).always(function() {
+                    setTimeout(function() {
+                        $('#refreshIcon').removeClass('active fa-spin');
+                    }, 500);
+                });
+            }
+            
+            // Event handlers
+            $('#refreshBtn').on('click', function() {
+                refreshData();
+            });
+            
+            $('#autoRefresh').on('change', function() {
+                if ($(this).is(':checked')) {
+                    startAutoRefresh();
+                } else {
+                    stopAutoRefresh();
+                }
+            });
+            
+            // Iniciar auto-refresh si está en estado de procesamiento
+            if (currentEstado === 'procesando' || currentEstado === 'iniciando') {
+                startAutoRefresh();
+            }
+            
+            // Cleanup al salir de la página
+            $(window).on('beforeunload', function() {
+                stopAutoRefresh();
+            });
+        });
+    </script>
+{% endblock %}

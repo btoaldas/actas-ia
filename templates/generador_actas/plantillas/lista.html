@@ -1,0 +1,296 @@
+{% extends 'layouts/base.html' %}
+{% load static %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block content %}
+<!-- Content Header (Page header) -->
+<div class="content-header">
+    <div class="container-fluid">
+        <div class="row mb-2">
+            <div class="col-sm-6">
+                <h1 class="m-0">{{ page_title }}</h1>
+            </div>
+            <div class="col-sm-6">
+                <ol class="breadcrumb float-sm-right">
+                    {% for crumb in breadcrumbs %}
+                        {% if forloop.last %}
+                            <li class="breadcrumb-item active">{{ crumb.title }}</li>
+                        {% else %}
+                            <li class="breadcrumb-item"><a href="{{ crumb.url }}">{{ crumb.title }}</a></li>
+                        {% endif %}
+                    {% endfor %}
+                </ol>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Main content -->
+<section class="content">
+    <div class="container-fluid">
+        
+        <!-- Filtros y búsqueda -->
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">
+                    <i class="fas fa-filter"></i>
+                    Filtros y Búsqueda
+                </h3>
+                <div class="card-tools">
+                    <a href="{% url 'generador_actas:plantilla_crear' %}" class="btn btn-success btn-sm">
+                        <i class="fas fa-plus"></i>
+                        Nueva Plantilla
+                    </a>
+                </div>
+            </div>
+            <div class="card-body">
+                <form method="get" class="form-inline">
+                    <div class="form-group mr-3">
+                        <label class="sr-only" for="search">Búsqueda</label>
+                        <div class="input-group">
+                            <div class="input-group-prepend">
+                                <span class="input-group-text"><i class="fas fa-search"></i></span>
+                            </div>
+                            <input type="text" class="form-control" id="search" name="search" 
+                                   value="{{ search_query }}" placeholder="Buscar plantillas...">
+                        </div>
+                    </div>
+                    
+                    <div class="form-group mr-3">
+                        <label class="sr-only" for="tipo_acta">Tipo de Acta</label>
+                        <select name="tipo_acta" id="tipo_acta" class="form-control">
+                            <option value="">Todos los tipos</option>
+                            {% for value, display in tipos_acta %}
+                                <option value="{{ value }}" {% if tipo_acta_filter == value %}selected{% endif %}>
+                                    {{ display }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div class="form-group mr-3">
+                        <label class="sr-only" for="activa">Estado</label>
+                        <select name="activa" id="activa" class="form-control">
+                            <option value="">Todos los estados</option>
+                            <option value="1" {% if activa_filter == '1' %}selected{% endif %}>Activas</option>
+                            <option value="0" {% if activa_filter == '0' %}selected{% endif %}>Inactivas</option>
+                        </select>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary mr-2">
+                        <i class="fas fa-search"></i>
+                        Filtrar
+                    </button>
+                    
+                    <a href="{% url 'generador_actas:plantillas_lista' %}" class="btn btn-secondary">
+                        <i class="fas fa-times"></i>
+                        Limpiar
+                    </a>
+                </form>
+            </div>
+        </div>
+        
+        <!-- Lista de plantillas -->
+        <div class="row">
+            {% for plantilla in plantillas %}
+            <div class="col-lg-6 col-xl-4">
+                <div class="card card-outline {% if plantilla.activa %}card-success{% else %}card-secondary{% endif %}">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">
+                            {{ plantilla.nombre }}
+                            {% if not plantilla.activa %}
+                                <span class="badge badge-secondary ml-2">Inactiva</span>
+                            {% endif %}
+                        </h5>
+                        <div class="card-tools">
+                            <div class="dropdown">
+                                <button class="btn btn-tool" type="button" data-toggle="dropdown">
+                                    <i class="fas fa-ellipsis-v"></i>
+                                </button>
+                                <div class="dropdown-menu">
+                                    <a class="dropdown-item" href="{% url 'generador_actas:plantilla_ejecutar' plantilla.pk %}">
+                                        <i class="fas fa-play text-success"></i>
+                                        Ejecutar
+                                    </a>
+                                    <a class="dropdown-item" href="{% url 'generador_actas:plantilla_editar' plantilla.pk %}">
+                                        <i class="fas fa-edit text-primary"></i>
+                                        Editar
+                                    </a>
+                                    <a class="dropdown-item" href="{% url 'generador_actas:configurar_segmentos_plantilla' plantilla.pk %}">
+                                        <i class="fas fa-cogs text-warning"></i>
+                                        Configurar Segmentos
+                                    </a>
+                                    <div class="dropdown-divider"></div>
+                                    <a class="dropdown-item" href="#" onclick="clonarPlantilla({{ plantilla.pk }})">
+                                        <i class="fas fa-copy text-info"></i>
+                                        Clonar
+                                    </a>
+                                    <a class="dropdown-item" href="{% url 'generador_actas:plantilla_eliminar' plantilla.pk %}">
+                                        <i class="fas fa-trash text-danger"></i>
+                                        Eliminar
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <p class="text-muted">{{ plantilla.descripcion|truncatechars:100 }}</p>
+                        
+                        <div class="row">
+                            <div class="col-6">
+                                <small class="text-muted">
+                                    <i class="fas fa-file-alt"></i>
+                                    {{ plantilla.get_tipo_acta_display }}
+                                </small>
+                            </div>
+                            <div class="col-6">
+                                <small class="text-muted">
+                                    <i class="fas fa-puzzle-piece"></i>
+                                    {{ plantilla.total_segmentos }} segmento{{ plantilla.total_segmentos|pluralize }}
+                                </small>
+                            </div>
+                        </div>
+                        
+                        <div class="row mt-2">
+                            <div class="col-6">
+                                <small class="text-muted">
+                                    <i class="fas fa-robot"></i>
+                                    {{ plantilla.segmentos_dinamicos }} dinámico{{ plantilla.segmentos_dinamicos|pluralize }}
+                                </small>
+                            </div>
+                            <div class="col-6">
+                                <small class="text-muted">
+                                    <i class="fas fa-calendar"></i>
+                                    v{{ plantilla.version }}
+                                </small>
+                            </div>
+                        </div>
+                        
+                        {% if plantilla.proveedor_ia_defecto %}
+                        <div class="mt-2">
+                            <small class="text-muted">
+                                <i class="fas fa-brain"></i>
+                                IA: {{ plantilla.proveedor_ia_defecto.nombre }}
+                            </small>
+                        </div>
+                        {% endif %}
+                    </div>
+                    <div class="card-footer">
+                        <div class="d-flex justify-content-between">
+                            <small class="text-muted">
+                                Por: {{ plantilla.usuario_creacion.get_full_name|default:plantilla.usuario_creacion.username }}
+                            </small>
+                            <small class="text-muted">
+                                {{ plantilla.fecha_actualizacion|date:"d/m/Y H:i" }}
+                            </small>
+                        </div>
+                        
+                        <div class="mt-2">
+                            <a href="{% url 'generador_actas:plantilla_ejecutar' plantilla.pk %}" 
+                               class="btn btn-success btn-sm">
+                                <i class="fas fa-play"></i>
+                                Ejecutar
+                            </a>
+                            <a href="{% url 'generador_actas:plantilla_editar' plantilla.pk %}" 
+                               class="btn btn-primary btn-sm">
+                                <i class="fas fa-edit"></i>
+                                Editar
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-body text-center py-5">
+                        <i class="fas fa-file-alt fa-3x text-muted mb-3"></i>
+                        <h4>No hay plantillas disponibles</h4>
+                        <p class="text-muted">
+                            {% if search_query or tipo_acta_filter or activa_filter %}
+                                No se encontraron plantillas que coincidan con los filtros aplicados.
+                            {% else %}
+                                Aún no has creado ninguna plantilla. ¡Crea tu primera plantilla para comenzar!
+                            {% endif %}
+                        </p>
+                        <a href="{% url 'generador_actas:plantilla_crear' %}" class="btn btn-success">
+                            <i class="fas fa-plus"></i>
+                            Crear Primera Plantilla
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        
+        <!-- Paginación -->
+        {% if is_paginated %}
+        <div class="row">
+            <div class="col-12">
+                <nav aria-label="Paginación">
+                    <ul class="pagination justify-content-center">
+                        {% if page_obj.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page=1{% if search_query %}&search={{ search_query }}{% endif %}{% if tipo_acta_filter %}&tipo_acta={{ tipo_acta_filter }}{% endif %}{% if activa_filter %}&activa={{ activa_filter }}{% endif %}">
+                                    <i class="fas fa-angle-double-left"></i>
+                                </a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if tipo_acta_filter %}&tipo_acta={{ tipo_acta_filter }}{% endif %}{% if activa_filter %}&activa={{ activa_filter }}{% endif %}">
+                                    <i class="fas fa-angle-left"></i>
+                                </a>
+                            </li>
+                        {% endif %}
+                        
+                        {% for num in page_obj.paginator.page_range %}
+                            {% if page_obj.number == num %}
+                                <li class="page-item active">
+                                    <span class="page-link">{{ num }}</span>
+                                </li>
+                            {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ num }}{% if search_query %}&search={{ search_query }}{% endif %}{% if tipo_acta_filter %}&tipo_acta={{ tipo_acta_filter }}{% endif %}{% if activa_filter %}&activa={{ activa_filter }}{% endif %}">{{ num }}</a>
+                                </li>
+                            {% endif %}
+                        {% endfor %}
+                        
+                        {% if page_obj.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if tipo_acta_filter %}&tipo_acta={{ tipo_acta_filter }}{% endif %}{% if activa_filter %}&activa={{ activa_filter }}{% endif %}">
+                                    <i class="fas fa-angle-right"></i>
+                                </a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if search_query %}&search={{ search_query }}{% endif %}{% if tipo_acta_filter %}&tipo_acta={{ tipo_acta_filter }}{% endif %}{% if activa_filter %}&activa={{ activa_filter }}{% endif %}">
+                                    <i class="fas fa-angle-double-right"></i>
+                                </a>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+            </div>
+        </div>
+        {% endif %}
+        
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function clonarPlantilla(plantillaId) {
+    if (confirm('¿Desea crear una copia de esta plantilla?')) {
+        // TODO: Implementar funcionalidad de clonado
+        alert('Funcionalidad de clonado próximamente disponible');
+    }
+}
+
+// Auto-submit form cuando cambian los filtros
+$(document).ready(function() {
+    $('#tipo_acta, #activa').change(function() {
+        $(this).closest('form').submit();
+    });
+});
+</script>
+{% endblock %}

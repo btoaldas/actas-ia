@@ -3,6 +3,11 @@
 
 {% block title %}Gestión de Actas Generadas{% endblock title %}
 
+{% block extra_scripts %}
+<!-- SweetAlert2 -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+{% endblock extra_scripts %}
+
 {% block content %}
 <div class="content-wrapper">
 <!-- Content Header -->
@@ -280,6 +285,15 @@
                                                 </button>
                                             {% endif %}
                                             
+                                            {% if acta.estado != 'borrador' %}
+                                                <button type="button" class="btn btn-outline-warning btn-sm revertir-btn" 
+                                                        data-acta-id="{{ acta.pk }}"
+                                                        data-acta-numero="{{ acta.numero_acta }}"
+                                                        title="Revertir a Borrador">
+                                                    <i class="fas fa-undo"></i>
+                                                </button>
+                                            {% endif %}
+                                            
                                             <button type="button" class="btn btn-danger btn-sm" 
                                                     onclick="confirmarEliminacion({{ acta.pk }}, '{{ acta.titulo }}')" 
                                                     title="Eliminar">
@@ -516,6 +530,98 @@ function actualizarEstados() {
 
 // Verificar estados cada 30 segundos
 setInterval(actualizarEstados, 30000);
+
+// ========== REVERTIR ACTAS ==========
+document.addEventListener('DOMContentLoaded', function() {
+    // Configurar botones de revertir
+    document.querySelectorAll('.revertir-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            const actaId = this.getAttribute('data-acta-id');
+            const actaNumero = this.getAttribute('data-acta-numero');
+            
+            Swal.fire({
+                title: '¿Revertir Acta?',
+                html: `
+                    <div class="text-center">
+                        <p>¿Estás seguro de que deseas revertir el acta <strong>${actaNumero}</strong> al estado borrador?</p>
+                        <hr>
+                        <div class="alert alert-warning">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            <strong>Advertencia:</strong> Se perderá todo el contenido procesado y podrás volver a procesar el acta.
+                        </div>
+                    </div>
+                `,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#f39c12',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: '<i class="fas fa-undo"></i> Sí, Revertir',
+                cancelButtonText: '<i class="fas fa-times"></i> Cancelar',
+                reverseButtons: true
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    revertirActa(actaId, actaNumero);
+                }
+            });
+        });
+    });
+});
+
+function revertirActa(actaId, actaNumero) {
+    // Obtener token CSRF
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+    
+    // Mostrar loading
+    Swal.fire({
+        title: 'Revirtiendo Acta...',
+        html: `Revirtiendo <strong>${actaNumero}</strong> a estado borrador`,
+        icon: 'info',
+        allowOutsideClick: false,
+        showConfirmButton: false,
+        didOpen: () => {
+            Swal.showLoading();
+        }
+    });
+    
+    // Hacer petición AJAX
+    fetch(`/generador-actas/actas/${actaId}/revertir/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': csrfToken,
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({})
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            Swal.fire({
+                title: '¡Acta Revertida!',
+                text: data.message,
+                icon: 'success',
+                timer: 3000,
+                timerProgressBar: true
+            }).then(() => {
+                // Recargar la página para mostrar el cambio
+                window.location.reload();
+            });
+        } else {
+            Swal.fire({
+                title: 'Error',
+                text: data.message || 'Error al revertir el acta',
+                icon: 'error'
+            });
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        Swal.fire({
+            title: 'Error',
+            text: 'Error de conexión al revertir el acta',
+            icon: 'error'
+        });
+    });
+}
 </script>
 
 {% endblock content %}

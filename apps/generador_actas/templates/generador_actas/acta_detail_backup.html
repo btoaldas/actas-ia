@@ -1,0 +1,672 @@
+{% extends "layouts/base.html" %}
+{% load static %}
+
+{% block title %}{{ page_title }} | Generador de Actas{% endblock %}
+
+{% block stylesheets %}
+{{ block.super }}
+<link rel="stylesheet" href="{% static 'plugins/sweetalert2/sweetalert2.min.css' %}">
+<style>
+.acta-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 20px;
+}
+
+.status-card {
+    border-left: 4px solid;
+    background: #f8f9fa;
+}
+
+.status-borrador { border-left-color: #6c757d; }
+.status-en_cola { border-left-color: #17a2b8; }
+.status-procesando { border-left-color: #ffc107; }
+.status-procesando_segmentos { border-left-color: #fd7e14; }
+.status-unificando { border-left-color: #6f42c1; }
+.status-revision { border-left-color: #20c997; }
+.status-aprobado { border-left-color: #28a745; }
+.status-publicado { border-left-color: #007bff; }
+.status-error { border-left-color: #dc3545; }
+
+.segmento-card {
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    margin-bottom: 15px;
+    transition: box-shadow 0.3s ease;
+}
+
+.segmento-card:hover {
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.contenido-preview {
+    max-height: 300px;
+    overflow-y: auto;
+    background: #f8f9fa;
+    border-radius: 4px;
+    padding: 15px;
+    font-family: monospace;
+    white-space: pre-wrap;
+    line-height: 1.6;
+}
+
+.metadata-item {
+    border-bottom: 1px solid #dee2e6;
+    padding: 8px 0;
+}
+
+.metadata-item:last-child {
+    border-bottom: none;
+}
+
+.progress-realtime {
+    height: 25px;
+    font-size: 0.9rem;
+}
+
+.timeline {
+    position: relative;
+}
+
+.timeline-item {
+    margin-bottom: 20px;
+    position: relative;
+    padding-left: 40px;
+}
+
+.timeline-item::before {
+    content: '';
+    position: absolute;
+    left: 15px;
+    top: 0;
+    width: 2px;
+    height: 100%;
+    background: #dee2e6;
+}
+
+.timeline-icon {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.8rem;
+    background: white;
+    border: 2px solid #dee2e6;
+}
+
+.action-buttons {
+    position: sticky;
+    top: 20px;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="content-wrapper">
+    <!-- Content Header -->
+    <div class="content-header">
+        <div class="container-fluid">
+            <div class="row mb-2">
+                <div class="col-sm-6">
+                    <h1 class="m-0">{{ page_title }}</h1>
+                </div>
+                <div class="col-sm-6">
+                    {% if breadcrumb %}
+                    <ol class="breadcrumb float-sm-right">
+                        {% for item in breadcrumb %}
+                            {% if item.active %}
+                                <li class="breadcrumb-item active">{{ item.name }}</li>
+                            {% else %}
+                                <li class="breadcrumb-item"><a href="{{ item.url }}">{{ item.name }}</a></li>
+                            {% endif %}
+                        {% endfor %}
+                    </ol>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main content -->
+    <section class="content">
+        <div class="container-fluid">
+            
+            <!-- CSRF Token Form (Hidden) -->
+            <form style="display: none;">
+                {% csrf_token %}
+            </form>
+            
+            <!-- Header del Acta -->
+            <div class="acta-header">
+                <div class="row">
+                    <div class="col-md-8">
+                        <h2 class="mb-2">{{ acta.numero_acta }}</h2>
+                        <p class="mb-1">{{ acta.titulo }}</p>
+                        <small>
+                            <i class="fas fa-user"></i>
+                            Creado por {{ acta.usuario_creacion.get_full_name|default:acta.usuario_creacion.username }}
+                            el {{ acta.fecha_creacion|date:"d/m/Y H:i" }}
+                        </small>
+                    </div>
+                    <div class="col-md-4 text-right">
+                        <span class="badge badge-light badge-lg">
+                            {{ acta.get_estado_display }}
+                        </span>
+                        {% if acta.fecha_sesion %}
+                        <div class="mt-2">
+                            <small>
+                                <i class="fas fa-calendar"></i>
+                                Sesión: {{ acta.fecha_sesion|date:"d/m/Y" }}
+                            </small>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <!-- Información Principal -->
+                <div class="col-lg-8">
+                    
+                    <!-- Estado del Procesamiento -->
+                    <div class="card status-card status-{{ acta.estado }}">
+                        <div class="card-header">
+                            <h3 class="card-title">
+                                <i class="fas fa-info-circle"></i>
+                                Estado del Procesamiento
+                            </h3>
+                            {% if acta.estado in 'en_cola,procesando,procesando_segmentos,unificando' %}
+                            <div class="card-tools">
+                                <button class="btn btn-tool refresh-status" data-acta-id="{{ acta.pk }}">
+                                    <i class="fas fa-sync-alt"></i>
+                                </button>
+                            </div>
+                            {% endif %}
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="metadata-item">
+                                        <strong>Estado:</strong> {{ acta.get_estado_display }}
+                                    </div>
+                                    <div class="metadata-item">
+                                        <strong>Progreso:</strong> {{ acta.progreso|default:0 }}%
+                                    </div>
+                                    {% if acta.fecha_procesamiento %}
+                                    <div class="metadata-item">
+                                        <strong>Iniciado:</strong> {{ acta.fecha_procesamiento|date:"d/m/Y H:i" }}
+                                    </div>
+                                    {% endif %}
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="metadata-item">
+                                        <strong>Plantilla:</strong> {{ acta.plantilla.nombre }}
+                                    </div>
+                                    <div class="metadata-item">
+                                        <strong>Proveedor IA:</strong> {{ acta.proveedor_ia.nombre }}
+                                    </div>
+                                    {% if acta.task_id_celery %}
+                                    <div class="metadata-item">
+                                        <strong>Tarea:</strong> 
+                                        <code>{{ acta.task_id_celery|truncatechars:16 }}</code>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            
+                            {% if acta.progreso > 0 %}
+                            <div class="progress progress-realtime mt-3">
+                                <div class="progress-bar progress-bar-striped
+                                    {% if acta.estado == 'error' %}bg-danger
+                                    {% elif acta.progreso == 100 %}bg-success
+                                    {% else %}bg-primary progress-bar-animated{% endif %}"
+                                     role="progressbar"
+                                     aria-valuenow="{{ acta.progreso }}"
+                                     aria-valuemin="0"
+                                     aria-valuemax="100">
+                                    {{ acta.progreso }}%
+                                </div>
+                            </div>
+                            {% endif %}
+                            
+                            {% if acta.mensajes_error %}
+                            <div class="alert alert-danger mt-3">
+                                <strong>Error:</strong> {{ acta.mensajes_error }}
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Segmentos Procesados -->
+                    {% if segmentos_info %}
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">
+                                <i class="fas fa-puzzle-piece"></i>
+                                Segmentos Procesados ({{ segmentos_info|length }})
+                            </h3>
+                        </div>
+                        <div class="card-body">
+                            {% for segmento in segmentos_info %}
+                            <div class="segmento-card">
+                                <div class="card-header">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <h6 class="mb-0">
+                                            {{ segmento.orden }}. {{ segmento.nombre }}
+                                        </h6>
+                                        <div>
+                                            <span class="badge 
+                                                {% if segmento.tipo == 'dinamico' %}badge-primary
+                                                {% else %}badge-secondary{% endif %}">
+                                                {{ segmento.tipo|capfirst }}
+                                            </span>
+                                            {% if segmento.categoria %}
+                                            <span class="badge badge-light">{{ segmento.categoria|capfirst }}</span>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="card-body">
+                                    {% if segmento.error %}
+                                    <div class="alert alert-danger">
+                                        <strong>Error:</strong> {{ segmento.error }}
+                                    </div>
+                                    {% endif %}
+                                    
+                                    <div class="contenido-preview">{{ segmento.contenido|default:"Sin contenido" }}</div>
+                                    
+                                    {% if segmento.prompt_usado %}
+                                    <div class="mt-3">
+                                        <button class="btn btn-sm btn-outline-info" type="button" 
+                                                data-toggle="collapse" 
+                                                data-target="#prompt-{{ segmento.segmento_id }}">
+                                            <i class="fas fa-code"></i>
+                                            Ver Prompt Usado
+                                        </button>
+                                        <div class="collapse mt-2" id="prompt-{{ segmento.segmento_id }}">
+                                            <div class="card bg-light">
+                                                <div class="card-body">
+                                                    <small class="text-muted">{{ segmento.prompt_usado }}</small>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {% endif %}
+                                    
+                                    <div class="mt-2">
+                                        <small class="text-muted">
+                                            <i class="fas fa-clock"></i>
+                                            {{ segmento.timestamp|date:"d/m/Y H:i:s" }}
+                                            {% if segmento.proveedor %}
+                                            | <i class="fas fa-brain"></i> {{ segmento.proveedor }}
+                                            {% endif %}
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Contenido Final/Borrador -->
+                    {% if acta.contenido_final or acta.contenido_borrador %}
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">
+                                <i class="fas fa-file-alt"></i>
+                                {% if acta.contenido_final %}
+                                    Contenido Final
+                                {% else %}
+                                    Contenido Borrador
+                                {% endif %}
+                            </h3>
+                            <div class="card-tools">
+                                <button class="btn btn-tool" data-card-widget="maximize">
+                                    <i class="fas fa-expand"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div class="contenido-preview">{{ acta.contenido_final|default:acta.contenido_borrador }}</div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Información de la Transcripción -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">
+                                <i class="fas fa-microphone"></i>
+                                Información de la Transcripción
+                            </h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="metadata-item">
+                                        <strong>Archivo:</strong> 
+                                        {{ acta.transcripcion.procesamiento_audio.nombre_archivo|default:"Sin nombre" }}
+                                    </div>
+                                    <div class="metadata-item">
+                                        <strong>Duración:</strong> 
+                                        {% if acta.transcripcion.procesamiento_audio.duracion_segundos %}
+                                            {{ acta.transcripcion.procesamiento_audio.duracion_segundos }} segundos
+                                        {% else %}
+                                            No especificada
+                                        {% endif %}
+                                    </div>
+                                    <div class="metadata-item">
+                                        <strong>Tipo:</strong> 
+                                        {% if acta.transcripcion.procesamiento_audio.tipo_reunion %}
+                                            {{ acta.transcripcion.procesamiento_audio.tipo_reunion.nombre }}
+                                        {% else %}
+                                            No especificado
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="metadata-item">
+                                        <strong>Ubicación:</strong> 
+                                        {{ acta.transcripcion.procesamiento_audio.ubicacion|default:"No especificada" }}
+                                    </div>
+                                    <div class="metadata-item">
+                                        <strong>Procesado:</strong> 
+                                        {{ acta.transcripcion.fecha_creacion|date:"d/m/Y H:i" }}
+                                    </div>
+                                    <div class="metadata-item">
+                                        <strong>Segmentos:</strong> 
+                                        {% if acta.transcripcion.conversacion_json.conversacion %}
+                                            {{ acta.transcripcion.conversacion_json.conversacion|length }}
+                                        {% else %}
+                                            0
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- Panel Lateral -->
+                <div class="col-lg-4">
+                    
+                    <!-- Acciones -->
+                    <div class="card action-buttons">
+                        <div class="card-header">
+                            <h3 class="card-title">
+                                <i class="fas fa-cogs"></i>
+                                Acciones
+                            </h3>
+                        </div>
+                        <div class="card-body">
+                            {% if puede_procesar %}
+                            <button class="btn btn-success btn-block procesar-btn" data-acta-id="{{ acta.pk }}">
+                                <i class="fas fa-play"></i>
+                                Procesar Acta
+                            </button>
+                            {% endif %}
+                            
+                            {% if puede_exportar %}
+                            <div class="btn-group btn-block mb-2">
+                                <button type="button" class="btn btn-info dropdown-toggle" 
+                                        data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                    <i class="fas fa-download"></i>
+                                    Exportar
+                                </button>
+                                <div class="dropdown-menu">
+                                    <a class="dropdown-item" href="{% url 'generador_actas:exportar_acta' acta.pk %}?formato=txt">
+                                        <i class="fas fa-file-alt"></i> Texto (.txt)
+                                    </a>
+                                    <a class="dropdown-item" href="{% url 'generador_actas:exportar_acta' acta.pk %}?formato=pdf">
+                                        <i class="fas fa-file-pdf"></i> PDF (.pdf)
+                                    </a>
+                                    <a class="dropdown-item" href="{% url 'generador_actas:exportar_acta' acta.pk %}?formato=docx">
+                                        <i class="fas fa-file-word"></i> Word (.docx)
+                                    </a>
+                                </div>
+                            </div>
+                            {% endif %}
+                            
+                            <a href="{% url 'generador_actas:actas_lista' %}" class="btn btn-secondary btn-block">
+                                <i class="fas fa-arrow-left"></i>
+                                Volver al Listado
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- Métricas -->
+                    {% if acta.metricas_procesamiento %}
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">
+                                <i class="fas fa-chart-line"></i>
+                                Métricas de Procesamiento
+                            </h3>
+                        </div>
+                        <div class="card-body">
+                            {% for key, value in acta.metricas_procesamiento.items %}
+                            <div class="metadata-item">
+                                <strong>{{ key|capfirst }}:</strong> 
+                                {% if 'tiempo' in key %}
+                                    {{ value|floatformat:2 }}s
+                                {% else %}
+                                    {{ value }}
+                                {% endif %}
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Historial -->
+                    {% if acta.historial_cambios %}
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">
+                                <i class="fas fa-history"></i>
+                                Historial
+                            </h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="timeline">
+                                {% for evento in acta.historial_cambios %}
+                                <div class="timeline-item">
+                                    <div class="timeline-icon bg-primary">
+                                        <i class="fas fa-circle"></i>
+                                    </div>
+                                    <div>
+                                        <strong>{{ evento.descripcion|default:evento.evento|capfirst }}</strong>
+                                        {% if evento.progreso %}
+                                        <div class="progress mt-2" style="height: 5px;">
+                                            <div class="progress-bar" style="width: {{ evento.progreso }}%"></div>
+                                        </div>
+                                        <small class="text-muted">Progreso: {{ evento.progreso }}%</small>
+                                        {% endif %}
+                                        <br>
+                                        <small class="text-muted">
+                                            <i class="fas fa-clock"></i>
+                                            {{ evento.timestamp|date:"d/m/Y H:i:s" }}
+                                        </small>
+                                    </div>
+                                </div>
+                                {% empty %}
+                                <div class="text-muted">
+                                    <i class="fas fa-info-circle"></i> Sin eventos registrados
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                </div>
+            </div>
+
+        </div>
+    </section>
+</div>
+{% endblock %}
+
+{% block javascripts %}
+{{ block.super }}
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="{% static 'plugins/sweetalert2/sweetalert2.min.js' %}"></script>
+
+<script>
+$(document).ready(function() {
+    console.log('✅ Eventos de Acta cargados');
+    
+    // ========== PROCESAR ACTA ==========
+    $('.procesar-btn').off('click').on('click', function(e) {
+        e.preventDefault();
+        console.log('🚀 BOTÓN PROCESAR CLICKEADO');
+        
+        const actaId = $(this).data('acta-id');
+        const btn = $(this);
+        const csrfToken = $('[name=csrfmiddlewaretoken]').val();
+        
+        console.log('📋 Acta ID:', actaId);
+        console.log('� CSRF Token disponible:', !!csrfToken);
+        
+        if (!actaId || !csrfToken) {
+            alert('Error: Datos necesarios no encontrados (ID: ' + actaId + ', CSRF: ' + !!csrfToken + ')');
+            return;
+        }
+        
+        // Confirmación con SweetAlert
+        Swal.fire({
+            title: '¿Procesar Acta?',
+            text: 'Se iniciará el procesamiento automático con IA',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: 'Sí, procesar',
+            cancelButtonText: 'Cancelar'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                procesarActa(actaId, csrfToken, btn);
+            }
+        });
+    });
+    
+    // Función para procesar acta
+    function procesarActa(actaId, csrfToken, btn) {
+        console.log('🔄 Iniciando procesamiento...');
+        
+        // Cambiar estado del botón
+        btn.prop('disabled', true);
+        btn.html('<i class="fas fa-spinner fa-spin"></i> Procesando...');
+        
+        // Hacer petición AJAX
+        $.ajax({
+            url: '/generador-actas/actas/' + actaId + '/procesar/',
+            type: 'POST',
+            headers: {
+                'X-CSRFToken': csrfToken,
+                'Content-Type': 'application/json'
+            },
+            data: JSON.stringify({}),
+            success: function(response) {
+                console.log('✅ Respuesta del servidor:', response);
+                
+                if (response.success) {
+                    Swal.fire({
+                        title: '¡Procesamiento Iniciado!',
+                        text: response.message,
+                        icon: 'success',
+                        timer: 2000
+                    }).then(() => {
+                        location.reload();
+                    });
+                } else {
+                    console.log('❌ Error:', response.message);
+                    mostrarError(response.message);
+                    restaurarBoton(btn);
+                }
+            },
+            error: function(xhr, status, error) {
+                console.log('❌ Error AJAX:', xhr.status, xhr.responseText);
+                
+                let mensaje = 'Error de comunicación con el servidor';
+                if (xhr.responseJSON && xhr.responseJSON.message) {
+                    mensaje = xhr.responseJSON.message;
+                } else if (xhr.responseText) {
+                    mensaje = xhr.responseText;
+                }
+                
+                mostrarError(mensaje);
+                restaurarBoton(btn);
+            }
+        });
+    }
+    
+    // Función para mostrar error
+    function mostrarError(mensaje) {
+        Swal.fire({
+            title: 'Error',
+            text: mensaje,
+            icon: 'error'
+        });
+    }
+    
+    // Función para restaurar botón
+    function restaurarBoton(btn) {
+        btn.prop('disabled', false);
+        btn.html('<i class="fas fa-play"></i> Procesar Acta');
+    }
+    
+    // ========== REFRESCAR ESTADO ==========
+    $('.refresh-status').off('click').on('click', function() {
+        const actaId = $(this).data('acta-id');
+        const btn = $(this);
+        
+        btn.find('i').addClass('fa-spin');
+        
+        $.ajax({
+            url: '/generador-actas/actas/' + actaId + '/estado/',
+            method: 'GET',
+            success: function(response) {
+                if (response.success) {
+                    location.reload();
+                } else {
+                    Swal.fire('Error', 'No se pudo actualizar el estado', 'error');
+                }
+            },
+            error: function() {
+                Swal.fire('Error', 'Error comunicándose con el servidor', 'error');
+            },
+            complete: function() {
+                btn.find('i').removeClass('fa-spin');
+            }
+        });
+    });
+    
+    // ========== AUTO-REFRESH SI ESTÁ PROCESANDO ==========
+    {% if acta.estado in 'en_cola,procesando,procesando_segmentos,unificando' %}
+    console.log('🔄 Auto-refresh activado para acta en procesamiento');
+    setInterval(function() {
+        $.ajax({
+            url: '/generador-actas/actas/{{ acta.pk }}/estado/',
+            method: 'GET',
+            success: function(response) {
+                if (response.success && response.data.estado !== '{{ acta.estado }}') {
+                    console.log('🔄 Estado cambió, recargando página...');
+                    location.reload();
+                }
+            }
+        });
+    }, 10000); // Cada 10 segundos
+    {% endif %}
+    
+    console.log('🎯 Todos los eventos configurados correctamente');
+});
+</script>
+{% endblock %}

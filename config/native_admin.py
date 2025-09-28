@@ -5,7 +5,6 @@ los templates originales de Django en lugar de AdminLTE
 """
 from django.contrib.admin import AdminSite
 from django.contrib import admin
-from django.contrib.auth.models import User, Group
 from django.template.response import TemplateResponse
 from django.contrib.admin import forms as admin_forms
 
@@ -59,6 +58,10 @@ class DjangoNativeAdminSite(AdminSite):
 # Crear instancia del admin nativo
 native_admin_site = DjangoNativeAdminSite(name='native_admin')
 
-# Registrar modelos básicos de Django
+# Registrar modelos básicos de Django con lazy import
+from django.contrib.auth import get_user_model
+from django.contrib.auth.models import Group
+
+User = get_user_model()
 native_admin_site.register(User)
 native_admin_site.register(Group)

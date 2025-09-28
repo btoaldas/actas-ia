@@ -1,0 +1,40 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="content-wrapper">
+    <section class="content-header">
+        <h1>✅ PLANTILLA FUNCIONANDO</h1>
+        <p>Segmentos disponibles: {{ segmentos_disponibles.count }}</p>
+    </section>
+    
+    <section class="content">
+        <form method="post">
+            {% csrf_token %}
+            
+            <h3>Información Básica</h3>
+            {{ form.nombre.label_tag }}
+            {{ form.nombre }}
+            
+            {{ form.descripcion.label_tag }}
+            {{ form.descripcion }}
+            
+            <h3>Segmentos Disponibles ({{ segmentos_disponibles.count }})</h3>
+            {% for segmento in segmentos_disponibles %}
+                <div style="border: 1px solid #ccc; margin: 5px; padding: 10px;">
+                    <input type="checkbox" name="segmentos_seleccionados" value="{{ segmento.id }}" id="seg_{{ segmento.id }}">
+                    <label for="seg_{{ segmento.id }}">{{ segmento.nombre }}</label>
+                    <br>
+                    <small>{{ segmento.descripcion }}</small>
+                    <br>
+                    Orden: <input type="number" name="orden_{{ segmento.id }}" value="1" min="1" style="width: 60px;">
+                    <input type="checkbox" name="obligatorio_{{ segmento.id }}"> Obligatorio
+                </div>
+            {% empty %}
+                <p>❌ No hay segmentos disponibles</p>
+            {% endfor %}
+            
+            <button type="submit">Crear Plantilla</button>
+        </form>
+    </section>
+</div>
+{% endblock %}

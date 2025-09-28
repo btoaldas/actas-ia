@@ -182,6 +182,28 @@
                 </a>
             </li>
             
+            <!-- NUEVO SISTEMA DE PLANTILLAS CON EJECUCIÓN -->
+            <li class="nav-item">
+                <a href="{% url 'generador_actas:plantillas_dashboard' %}" class="nav-link {% if 'plantillas_dashboard' in request.resolver_match.url_name %} active {% endif %}">
+                    <i class="nav-icon fas fa-project-diagram"></i>
+                    <p>🎯 Dashboard Plantillas Avanzado</p>
+                </a>
+            </li>
+            
+            <li class="nav-item">
+                <a href="{% url 'generador_actas:plantilla_crear' %}" class="nav-link {% if 'plantilla_crear' in request.resolver_match.url_name %} active {% endif %}">
+                    <i class="nav-icon fas fa-plus-circle"></i>
+                    <p>⚡ Nueva Plantilla Completa</p>
+                </a>
+            </li>
+            
+            <li class="nav-item">
+                <a href="{% url 'generador_actas:ejecuciones_lista' %}" class="nav-link {% if 'ejecuciones' in segment %} active {% endif %}">
+                    <i class="nav-icon fas fa-play-circle"></i>
+                    <p>🚀 Historial de Ejecuciones</p>
+                </a>
+            </li>
+            
             <!-- Gestión de Actas IA -->
             <li class="nav-item">
                 <a href="{% url 'generador_actas:actas_lista' %}" class="nav-link {% if 'actas' in segment and 'lista' in request.resolver_match.url_name and 'generador' in request.resolver_match.url_name %} active {% endif %}">

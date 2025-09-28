@@ -1,0 +1,410 @@
+{% extends "layouts/base.html" %}
+{% load static %}
+
+{% block title %}Configurar Segmentos - Plantilla {{ plantilla.nombre }}{% endblock title %}
+
+{% block content %}
+<div class="content-wrapper">
+    <!-- Content Header -->
+    <div class="content-header">
+        <div class="container-fluid">
+            <div class="row mb-2">
+                <div class="col-sm-6">
+                    <h1>⚙️ Configurar Segmentos</h1>
+                </div>
+                <div class="col-sm-6">
+                    <ol class="breadcrumb float-sm-right">
+                        <li class="breadcrumb-item"><a href="{% url 'generador_actas:dashboard' %}">Dashboard</a></li>
+                        <li class="breadcrumb-item"><a href="{% url 'generador_actas:plantillas_lista' %}">Plantillas</a></li>
+                        <li class="breadcrumb-item active">Configurar Segmentos</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main content -->
+    <section class="content">
+        <div class="container-fluid">
+            <!-- Información de la Plantilla -->
+            <div class="row">
+                <div class="col-12">
+                    <div class="card card-primary">
+                        <div class="card-header">
+                            <h3 class="card-title">📋 Plantilla: {{ plantilla.nombre }}</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <p><strong>Descripción:</strong> {{ plantilla.descripcion|default:"Sin descripción" }}</p>
+                                    <p><strong>Estado:</strong> 
+                                        {% if plantilla.activa %}
+                                            <span class="badge badge-success">Activa</span>
+                                        {% else %}
+                                            <span class="badge badge-secondary">Inactiva</span>
+                                        {% endif %}
+                                    </p>
+                                </div>
+                                <div class="col-md-6">
+                                    <p><strong>Proveedor IA por defecto:</strong> {{ plantilla.proveedor_ia_defecto|default:"Sin asignar" }}</p>
+                                    <p><strong>Fecha de creación:</strong> {{ plantilla.fecha_creacion|date:"d/m/Y H:i" }}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Configuración de Segmentos -->
+            <div class="row">
+                <div class="col-12">
+                    <div class="card card-success">
+                        <div class="card-header">
+                            <h3 class="card-title">🔧 Configurar Segmentos de la Plantilla</h3>
+                            <div class="card-tools">
+                                <button type="button" class="btn btn-primary btn-sm" data-toggle="modal" data-target="#addSegmentoModal">
+                                    <i class="fas fa-plus"></i> Agregar Segmento
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <!-- Área de segmentos configurados -->
+                            <div id="segmentos-container">
+                                {% if configuraciones_segmentos %}
+                                    <div class="drag-drop-container" id="dragDropContainer">
+                                        {% for config in configuraciones_segmentos %}
+                                        <div class="segmento-item card" data-id="{{ config.id }}" style="margin-bottom: 10px;">
+                                            <div class="card-body">
+                                                <div class="row align-items-center">
+                                                    <div class="col-md-1">
+                                                        <div class="drag-handle text-center">
+                                                            <i class="fas fa-grip-vertical text-muted"></i>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-3">
+                                                        <strong>{{ config.segmento.nombre }}</strong>
+                                                        <br><small class="text-muted">{{ config.segmento.tipo }}</small>
+                                                    </div>
+                                                    <div class="col-md-4">
+                                                        <span class="badge badge-info">Orden: {{ config.orden }}</span>
+                                                        {% if config.obligatorio %}
+                                                            <span class="badge badge-warning">Obligatorio</span>
+                                                        {% endif %}
+                                                        {% if config.incluir_en_resumen %}
+                                                            <span class="badge badge-success">En Resumen</span>
+                                                        {% endif %}
+                                                    </div>
+                                                    <div class="col-md-4 text-right">
+                                                        <button type="button" class="btn btn-sm btn-info" onclick="editarConfiguracion({{ config.id }})">
+                                                            <i class="fas fa-edit"></i> Editar
+                                                        </button>
+                                                        <button type="button" class="btn btn-sm btn-danger" onclick="removeSegmento({{ config.id }})">
+                                                            <i class="fas fa-trash"></i> Quitar
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        {% endfor %}
+                                    </div>
+                                {% else %}
+                                    <div class="alert alert-warning">
+                                        <h5><i class="icon fas fa-exclamation-triangle"></i> Sin segmentos configurados</h5>
+                                        No hay segmentos configurados para esta plantilla. Haga clic en "Agregar Segmento" para comenzar.
+                                    </div>
+                                {% endif %}
+                            </div>
+
+                            <!-- Botones de acción -->
+                            <div class="row mt-3">
+                                <div class="col-12">
+                                    <hr>
+                                    <div class="text-center">
+                                        <a href="{% url 'generador_actas:plantillas_lista' %}" class="btn btn-secondary">
+                                            <i class="fas fa-arrow-left"></i> Volver a Plantillas
+                                        </a>
+                                        <button type="button" class="btn btn-success" onclick="guardarConfiguracion()">
+                                            <i class="fas fa-save"></i> Guardar Configuración
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+</div>
+
+<!-- Modal para agregar segmento -->
+<div class="modal fade" id="addSegmentoModal" tabindex="-1" role="dialog" aria-labelledby="addSegmentoModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-primary">
+                <h5 class="modal-title" id="addSegmentoModalLabel">
+                    <i class="fas fa-plus"></i> Agregar Segmento a la Plantilla
+                </h5>
+                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="addSegmentoForm">
+                    <div class="form-group">
+                        <label for="segmento_select">Seleccionar Segmento:</label>
+                        <select class="form-control" id="segmento_select" name="segmento_id" required>
+                            <option value="">Seleccionar segmento...</option>
+                            {% for segmento in segmentos_disponibles %}
+                                <option value="{{ segmento.id }}">{{ segmento.nombre }} - {{ segmento.tipo }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="orden_input">Orden:</label>
+                                <input type="number" class="form-control" id="orden_input" name="orden" min="1" value="1" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <div class="form-check mt-4">
+                                    <input type="checkbox" class="form-check-input" id="obligatorio_check" name="obligatorio">
+                                    <label class="form-check-label" for="obligatorio_check">
+                                        Segmento Obligatorio
+                                    </label>
+                                </div>
+                                <div class="form-check">
+                                    <input type="checkbox" class="form-check-input" id="resumen_check" name="incluir_en_resumen">
+                                    <label class="form-check-label" for="resumen_check">
+                                        Incluir en Resumen
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="configuracion_adicional">Configuración Adicional (JSON):</label>
+                        <textarea class="form-control" id="configuracion_adicional" name="configuracion_adicional" rows="3" placeholder='{"clave": "valor"}'>{}</textarea>
+                        <small class="form-text text-muted">Configuraciones específicas del segmento en formato JSON</small>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" onclick="confirmarAgregarSegmentos()">
+                    <i class="fas fa-plus"></i> Agregar Segmento
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para editar configuración -->
+<div class="modal fade" id="editConfigModal" tabindex="-1" role="dialog" aria-labelledby="editConfigModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-info">
+                <h5 class="modal-title" id="editConfigModalLabel">
+                    <i class="fas fa-edit"></i> Editar Configuración de Segmento
+                </h5>
+                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="editConfigForm">
+                    <input type="hidden" id="edit_config_id" name="config_id">
+                    
+                    <div class="form-group">
+                        <label for="edit_segmento_name">Segmento:</label>
+                        <input type="text" class="form-control" id="edit_segmento_name" readonly>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="edit_orden_input">Orden:</label>
+                                <input type="number" class="form-control" id="edit_orden_input" name="orden" min="1" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <div class="form-check mt-4">
+                                    <input type="checkbox" class="form-check-input" id="edit_obligatorio_check" name="obligatorio">
+                                    <label class="form-check-label" for="edit_obligatorio_check">
+                                        Segmento Obligatorio
+                                    </label>
+                                </div>
+                                <div class="form-check">
+                                    <input type="checkbox" class="form-check-input" id="edit_resumen_check" name="incluir_en_resumen">
+                                    <label class="form-check-label" for="edit_resumen_check">
+                                        Incluir en Resumen
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="edit_configuracion_adicional">Configuración Adicional (JSON):</label>
+                        <textarea class="form-control" id="edit_configuracion_adicional" name="configuracion_adicional" rows="3"></textarea>
+                        <small class="form-text text-muted">Configuraciones específicas del segmento en formato JSON</small>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-info" onclick="confirmarEditarConfiguracion()">
+                    <i class="fas fa-save"></i> Guardar Cambios
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content %}
+
+{% block extra_js %}
+<script>
+// Variables globales
+let plantillaId = {{ plantilla.id }};
+let csrfToken = '{{ csrf_token }}';
+
+// Funciones para manejar segmentos
+function addSegmento() {
+    $('#addSegmentoModal').modal('show');
+}
+
+function confirmarAgregarSegmentos() {
+    const form = document.getElementById('addSegmentoForm');
+    const formData = new FormData(form);
+    formData.append('accion', 'agregar');
+    formData.append('csrfmiddlewaretoken', csrfToken);
+    
+    fetch(window.location.href, {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            $('#addSegmentoModal').modal('hide');
+            location.reload(); // Recargar para mostrar los cambios
+        } else {
+            alert('Error: ' + (data.error || 'Error al agregar segmento'));
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error de conexión al agregar segmento');
+    });
+}
+
+function editarConfiguracion(configId) {
+    // Obtener datos de configuración mediante AJAX
+    fetch(`/generador-actas/api/obtener-configuracion-segmento/${configId}/`, {
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            const config = data.configuracion;
+            
+            // Llenar el modal de edición
+            document.getElementById('edit_config_id').value = config.id;
+            document.getElementById('edit_segmento_name').value = config.segmento_nombre;
+            document.getElementById('edit_orden_input').value = config.orden;
+            document.getElementById('edit_obligatorio_check').checked = config.obligatorio;
+            document.getElementById('edit_resumen_check').checked = config.incluir_en_resumen;
+            document.getElementById('edit_configuracion_adicional').value = JSON.stringify(config.configuracion_adicional, null, 2);
+            
+            $('#editConfigModal').modal('show');
+        } else {
+            alert('Error al obtener configuración: ' + (data.error || 'Error desconocido'));
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error de conexión al obtener configuración');
+    });
+}
+
+function confirmarEditarConfiguracion() {
+    const form = document.getElementById('editConfigForm');
+    const formData = new FormData(form);
+    formData.append('accion', 'editar');
+    formData.append('csrfmiddlewaretoken', csrfToken);
+    
+    fetch(window.location.href, {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            $('#editConfigModal').modal('hide');
+            location.reload(); // Recargar para mostrar los cambios
+        } else {
+            alert('Error: ' + (data.error || 'Error al editar configuración'));
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error de conexión al editar configuración');
+    });
+}
+
+function removeSegmento(configId) {
+    if (confirm('¿Está seguro de que desea quitar este segmento de la plantilla?')) {
+        const formData = new FormData();
+        formData.append('accion', 'eliminar');
+        formData.append('config_id', configId);
+        formData.append('csrfmiddlewaretoken', csrfToken);
+        
+        fetch(window.location.href, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload(); // Recargar para mostrar los cambios
+            } else {
+                alert('Error: ' + (data.error || 'Error al quitar segmento'));
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error de conexión al quitar segmento');
+        });
+    }
+}
+
+function guardarConfiguracion() {
+    alert('Configuración guardada exitosamente. Los cambios se aplicaron automáticamente.');
+}
+
+// Inicializar drag & drop si hay elementos
+document.addEventListener('DOMContentLoaded', function() {
+    const container = document.getElementById('dragDropContainer');
+    if (container && container.children.length > 0) {
+        // Aquí se puede agregar lógica de drag & drop más avanzada
+        console.log('Drag & Drop container inicializado');
+    }
+});
+</script>
+{% endblock extra_js %}

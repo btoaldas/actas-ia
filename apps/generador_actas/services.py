@@ -250,10 +250,10 @@ class GeneradorActasService:
                 raise ValidationError(f"El acta está en estado {acta.estado} y no puede ser procesada")
             
             # Importar task aquí para evitar imports circulares
-            from .tasks import procesar_acta_completa
+            from .tasks import procesar_acta_completa_real
             
             # Ejecutar tarea asíncrona
-            task = procesar_acta_completa.delay(acta.id)
+            task = procesar_acta_completa_real.delay(acta.id)
             
             # Actualizar acta con información de la tarea
             acta.task_id_celery = task.id

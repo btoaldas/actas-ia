@@ -1,0 +1,243 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block extra_css %}
+<style>
+.estado-badge {
+    font-size: 0.875rem;
+    padding: 0.375rem 0.75rem;
+}
+
+.progress-mini {
+    height: 8px;
+}
+
+.card-acta {
+    transition: transform 0.2s;
+}
+
+.card-acta:hover {
+    transform: translateY(-2px);
+}
+
+.estado-borrador { background-color: #6c757d; }
+.estado-pendiente { background-color: #ffc107; color: #000; }
+.estado-procesando { background-color: #007bff; }
+.estado-completado { background-color: #28a745; }
+.estado-error { background-color: #dc3545; }
+.estado-aprobado { background-color: #20c997; }
+.estado-publicado { background-color: #6f42c1; }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Content Header (Page header) -->
+<div class="content-header">
+    <div class="container-fluid">
+        <div class="row mb-2">
+            <div class="col-sm-6">
+                <h1 class="m-0">{{ page_title }}</h1>
+            </div>
+            <div class="col-sm-6">
+                <ol class="breadcrumb float-sm-right">
+                    {% for crumb in breadcrumb %}
+                        {% if crumb.active %}
+                            <li class="breadcrumb-item active">{{ crumb.name }}</li>
+                        {% else %}
+                            <li class="breadcrumb-item"><a href="{{ crumb.url }}">{{ crumb.name }}</a></li>
+                        {% endif %}
+                    {% endfor %}
+                </ol>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Main content -->
+<section class="content">
+    <div class="container-fluid">
+        <!-- Filtros -->
+        <div class="row mb-3">
+            <div class="col-md-12">
+                <div class="card">
+                    <div class="card-body">
+                        <form method="GET" class="form-inline">
+                            <div class="form-group mr-3">
+                                <label for="estado" class="mr-2">Filtrar por Estado:</label>
+                                <select name="estado" id="estado" class="form-control form-control-sm">
+                                    <option value="">Todos</option>
+                                    {% for key, label in estados_choices %}
+                                        <option value="{{ key }}" {% if key == estado_actual %}selected{% endif %}>
+                                            {{ label }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <button type="submit" class="btn btn-primary btn-sm">
+                                <i class="fas fa-filter"></i> Filtrar
+                            </button>
+                            <a href="{% url 'generador_actas:estados_actas' %}" class="btn btn-secondary btn-sm ml-2">
+                                <i class="fas fa-times"></i> Limpiar
+                            </a>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Lista de Actas -->
+        <div class="row">
+            {% for acta in actas %}
+                <div class="col-md-6 col-lg-4 mb-3">
+                    <div class="card card-acta">
+                        <div class="card-header">
+                            <h6 class="card-title mb-0">
+                                <i class="fas fa-file-alt"></i>
+                                {{ acta.numero_acta }}
+                            </h6>
+                            <span class="badge estado-badge estado-{{ acta.estado }}">
+                                {{ acta.get_estado_display }}
+                            </span>
+                        </div>
+                        <div class="card-body">
+                            <h6>{{ acta.titulo|truncatechars:50 }}</h6>
+                            
+                            <!-- Progreso -->
+                            {% if acta.estado in 'procesando,procesando_segmentos,unificando' %}
+                                <div class="mb-2">
+                                    <div class="progress progress-mini">
+                                        <div class="progress-bar" style="width: {{ acta.progreso }}%"></div>
+                                    </div>
+                                    <small class="text-muted">{{ acta.progreso }}% completado</small>
+                                </div>
+                            {% endif %}
+                            
+                            <!-- Información básica -->
+                            <div class="text-muted small">
+                                <div><strong>Plantilla:</strong> {{ acta.plantilla.nombre|truncatechars:30 }}</div>
+                                <div><strong>Fecha Sesión:</strong> {{ acta.fecha_sesion|date:"d/m/Y" }}</div>
+                                <div><strong>Creado:</strong> {{ acta.fecha_creacion|date:"d/m/Y H:i" }}</div>
+                                
+                                {% if acta.fecha_procesamiento %}
+                                    <div><strong>Procesamiento:</strong> {{ acta.fecha_procesamiento|date:"d/m/Y H:i" }}</div>
+                                {% endif %}
+                                
+                                {% if acta.usuario_creacion %}
+                                    <div><strong>Usuario:</strong> {{ acta.usuario_creacion.username }}</div>
+                                {% endif %}
+                            </div>
+                            
+                            <!-- Errores (si existen) -->
+                            {% if acta.mensajes_error %}
+                                <div class="alert alert-danger alert-sm mt-2">
+                                    <small>{{ acta.mensajes_error|truncatechars:100 }}</small>
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div class="card-footer">
+                            <div class="btn-group btn-group-sm btn-block">
+                                <a href="{% url 'generador_actas:acta_detail' acta.pk %}" 
+                                   class="btn btn-info">
+                                    <i class="fas fa-eye"></i> Ver
+                                </a>
+                                
+                                {% if acta.estado == 'borrador' %}
+                                    <form method="post" action="{% url 'generador_actas:generar_acta' acta.pk %}" class="d-inline">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-success btn-sm" title="Generar">
+                                            <i class="fas fa-play"></i>
+                                        </button>
+                                    </form>
+                                {% endif %}
+                                
+                                {% if acta.estado in 'procesando,procesando_segmentos,unificando' %}
+                                    <a href="{% url 'generador_actas:estado_procesamiento' acta.id %}" 
+                                       class="btn btn-warning" title="Monitorear">
+                                        <i class="fas fa-chart-line"></i>
+                                    </a>
+                                {% endif %}
+                                
+                                <a href="{% url 'generador_actas:editar_acta' acta.pk %}" 
+                                   class="btn btn-secondary" title="Editar">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% empty %}
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-body text-center">
+                            <i class="fas fa-file-alt fa-3x text-muted mb-3"></i>
+                            <h4>No hay actas</h4>
+                            <p class="text-muted">
+                                {% if estado_actual %}
+                                    No se encontraron actas con el estado "{{ estado_actual }}"
+                                {% else %}
+                                    No se han creado actas todavía
+                                {% endif %}
+                            </p>
+                            <a href="{% url 'generador_actas:crear_acta' %}" class="btn btn-primary">
+                                <i class="fas fa-plus"></i> Crear Nueva Acta
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+        
+        <!-- Resumen estadístico -->
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5><i class="fas fa-chart-pie"></i> Resumen por Estados</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            {% for key, label in estados_choices %}
+                                {% with actas|length as total_actas %}
+                                {% with actas|dictsort:'estado'|dictsortreversed:'estado' as actas_por_estado %}
+                                    <div class="col-md-2 col-sm-4 col-6 text-center mb-2">
+                                        <div class="info-box">
+                                            <span class="info-box-icon estado-{{ key }}">
+                                                <i class="fas fa-file-alt"></i>
+                                            </span>
+                                            <div class="info-box-content">
+                                                <span class="info-box-text">{{ label }}</span>
+                                                <span class="info-box-number">
+                                                    {{ actas|dictsort:'estado'|dictsortreversed:'estado'|length }}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                {% endwith %}
+                                {% endwith %}
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+{% block extra_js %}
+<script>
+// Auto-refresh para actas en procesamiento
+$(document).ready(function() {
+    var procesandoCount = $('.estado-procesando, .estado-procesando_segmentos, .estado-unificando').length;
+    
+    if (procesandoCount > 0) {
+        setTimeout(function() {
+            window.location.reload();
+        }, 30000); // Refresh cada 30 segundos si hay actas procesando
+    }
+});
+</script>
+{% endblock %}
+
+{% endblock %}

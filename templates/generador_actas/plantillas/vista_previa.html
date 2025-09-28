@@ -1,0 +1,399 @@
+{% extends "layouts/base.html" %}
+{% load static %}
+
+{% block title %}{{ page_title }} - Sistema Actas IA{% endblock %}
+
+{% block extra_css %}
+    <style>
+        .json-preview {
+            background: #2d3748;
+            color: #f7fafc;
+            border-radius: 8px;
+            padding: 20px;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 0.9em;
+            line-height: 1.5;
+            overflow-x: auto;
+            max-height: 600px;
+            overflow-y: auto;
+            border: 1px solid #e2e8f0;
+        }
+        
+        .json-key {
+            color: #68d391;
+            font-weight: bold;
+        }
+        
+        .json-string {
+            color: #f6ad55;
+        }
+        
+        .json-number {
+            color: #9f7aea;
+        }
+        
+        .json-boolean {
+            color: #63b3ed;
+        }
+        
+        .json-null {
+            color: #a0aec0;
+        }
+        
+        .copy-button {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        
+        .copy-button:hover {
+            background: rgba(255,255,255,0.2);
+        }
+        
+        .stats-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-top: 15px;
+        }
+        
+        .stat-item {
+            text-align: center;
+            padding: 15px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 6px;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        
+        .stat-number {
+            font-size: 2em;
+            font-weight: bold;
+            display: block;
+        }
+        
+        .stat-label {
+            font-size: 0.9em;
+            opacity: 0.8;
+            margin-top: 5px;
+        }
+        
+        .preview-controls {
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .format-selector {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .format-selector .btn {
+            padding: 8px 16px;
+            font-size: 0.9em;
+        }
+    </style>
+{% endblock %}
+
+{% block content %}
+    <!-- Breadcrumb -->
+    <div class="content-header">
+        <div class="container-fluid">
+            <div class="row mb-2">
+                <div class="col-sm-6">
+                    <h1>{{ page_title }}</h1>
+                </div>
+                <div class="col-sm-6">
+                    <ol class="breadcrumb float-sm-right">
+                        {% for crumb in breadcrumbs %}
+                            {% if forloop.last %}
+                                <li class="breadcrumb-item active">{{ crumb.title }}</li>
+                            {% else %}
+                                <li class="breadcrumb-item">
+                                    <a href="{{ crumb.url }}">{{ crumb.title }}</a>
+                                </li>
+                            {% endif %}
+                        {% endfor %}
+                    </ol>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Contenido principal -->
+    <section class="content">
+        <div class="container-fluid">
+            
+            <!-- Estadísticas -->
+            <div class="row">
+                <div class="col-12">
+                    <div class="stats-card">
+                        <h4><i class="fas fa-chart-bar mr-2"></i>Resumen de la Plantilla</h4>
+                        <div class="stats-grid">
+                            <div class="stat-item">
+                                <span class="stat-number">{{ estructura.segmentos|length }}</span>
+                                <div class="stat-label">Segmentos Totales</div>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-number">
+                                    {% with estructura.segmentos|length as total %}
+                                        {% if total > 0 %}
+                                            {{ estructura.segmentos|length|floatformat:0 }}
+                                        {% else %}
+                                            0
+                                        {% endif %}
+                                    {% endwith %}
+                                </span>
+                                <div class="stat-label">Segmentos Activos</div>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-number">{{ plantilla.version }}</span>
+                                <div class="stat-label">Versión</div>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-number">
+                                    {% if plantilla.activa %}
+                                        <i class="fas fa-check-circle text-success"></i>
+                                    {% else %}
+                                        <i class="fas fa-times-circle text-danger"></i>
+                                    {% endif %}
+                                </span>
+                                <div class="stat-label">Estado</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Controles -->
+            <div class="row">
+                <div class="col-12">
+                    <div class="preview-controls">
+                        <div>
+                            <h5 class="mb-0"><i class="fas fa-code mr-2"></i>Estructura JSON de la Plantilla</h5>
+                            <p class="text-muted mb-0">Vista previa de la configuración completa</p>
+                        </div>
+                        <div>
+                            <div class="format-selector">
+                                <button type="button" class="btn btn-outline-primary btn-sm active" onclick="showFormat('json')">
+                                    <i class="fas fa-code mr-1"></i>JSON
+                                </button>
+                                <button type="button" class="btn btn-outline-info btn-sm" onclick="showFormat('table')">
+                                    <i class="fas fa-table mr-1"></i>Tabla
+                                </button>
+                                <button type="button" class="btn btn-outline-success btn-sm" onclick="copyToClipboard()">
+                                    <i class="fas fa-copy mr-1"></i>Copiar
+                                </button>
+                                <a href="{% url 'generador_actas:configurar_segmentos_plantilla' plantilla.pk %}" class="btn btn-secondary btn-sm">
+                                    <i class="fas fa-arrow-left mr-1"></i>Volver
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Vista JSON -->
+            <div class="row" id="json-view">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-body position-relative">
+                            <button class="copy-button" onclick="copyToClipboard()" title="Copiar JSON">
+                                <i class="fas fa-copy"></i>
+                            </button>
+                            <pre class="json-preview" id="json-content">{{ estructura_json }}</pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Vista Tabla -->
+            <div class="row" id="table-view" style="display: none;">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title"><i class="fas fa-table mr-2"></i>Segmentos en Formato Tabla</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-striped table-hover">
+                                    <thead class="thead-dark">
+                                        <tr>
+                                            <th>Orden</th>
+                                            <th>Nombre</th>
+                                            <th>Tipo</th>
+                                            <th>Categoría</th>
+                                            <th>Estado</th>
+                                            <th>Proveedor IA</th>
+                                            <th>Acciones</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for segmento in estructura.segmentos %}
+                                            <tr>
+                                                <td>
+                                                    <span class="badge badge-primary">{{ segmento.orden }}</span>
+                                                </td>
+                                                <td>
+                                                    <strong>{{ segmento.nombre }}</strong>
+                                                </td>
+                                                <td>
+                                                    <span class="badge 
+                                                        {% if segmento.tipo == 'estatico' %}badge-secondary
+                                                        {% elif segmento.tipo == 'dinamico' %}badge-primary
+                                                        {% else %}badge-info{% endif %}">
+                                                        {{ segmento.tipo|title }}
+                                                    </span>
+                                                </td>
+                                                <td>{{ segmento.categoria|title }}</td>
+                                                <td>
+                                                    {% if segmento.configuracion.activo %}
+                                                        <span class="badge badge-success">
+                                                            <i class="fas fa-check"></i> Activo
+                                                        </span>
+                                                    {% else %}
+                                                        <span class="badge badge-warning">
+                                                            <i class="fas fa-pause"></i> Inactivo
+                                                        </span>
+                                                    {% endif %}
+                                                </td>
+                                                <td>
+                                                    {% if segmento.configuracion.proveedor_ia %}
+                                                        <span class="badge badge-success">
+                                                            <i class="fas fa-robot"></i> 
+                                                            {{ segmento.configuracion.proveedor_ia }}
+                                                        </span>
+                                                    {% else %}
+                                                        <span class="text-muted">Sin proveedor</span>
+                                                    {% endif %}
+                                                </td>
+                                                <td>
+                                                    <button class="btn btn-outline-primary btn-sm" 
+                                                            title="Ver detalles"
+                                                            onclick="showSegmentDetails({{ segmento.id }})">
+                                                        <i class="fas fa-eye"></i>
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        {% empty %}
+                                            <tr>
+                                                <td colspan="7" class="text-center text-muted">
+                                                    No hay segmentos configurados
+                                                </td>
+                                            </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </section>
+{% endblock %}
+
+{% block extra_js %}
+    <script>
+        // Función para cambiar formato de vista
+        function showFormat(format) {
+            // Actualizar botones activos
+            document.querySelectorAll('.format-selector .btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            // Mostrar/ocultar vistas
+            if (format === 'json') {
+                document.getElementById('json-view').style.display = 'block';
+                document.getElementById('table-view').style.display = 'none';
+            } else if (format === 'table') {
+                document.getElementById('json-view').style.display = 'none';
+                document.getElementById('table-view').style.display = 'block';
+            }
+        }
+        
+        // Función para copiar JSON al portapapeles
+        async function copyToClipboard() {
+            try {
+                const jsonContent = document.getElementById('json-content').textContent;
+                await navigator.clipboard.writeText(jsonContent);
+                
+                // Mostrar feedback visual
+                const button = event.target.closest('button');
+                const originalHTML = button.innerHTML;
+                button.innerHTML = '<i class="fas fa-check text-success"></i>';
+                
+                setTimeout(() => {
+                    button.innerHTML = originalHTML;
+                }, 2000);
+                
+                // Toast notification
+                if (typeof toastr !== 'undefined') {
+                    toastr.success('JSON copiado al portapapeles');
+                }
+            } catch (err) {
+                console.error('Error al copiar:', err);
+                if (typeof toastr !== 'undefined') {
+                    toastr.error('Error al copiar JSON');
+                }
+            }
+        }
+        
+        // Función para mostrar detalles de segmento
+        function showSegmentDetails(segmentId) {
+            // TODO: Implementar modal con detalles del segmento
+            alert('Mostrar detalles del segmento ID: ' + segmentId);
+        }
+        
+        // Sintaxis highlighting básico para JSON
+        document.addEventListener('DOMContentLoaded', function() {
+            highlightJSON();
+        });
+        
+        function highlightJSON() {
+            const jsonContent = document.getElementById('json-content');
+            if (!jsonContent) return;
+            
+            let content = jsonContent.textContent;
+            
+            // Colorear claves
+            content = content.replace(/"([^"]+)":/g, '<span class="json-key">"$1"</span>:');
+            
+            // Colorear strings
+            content = content.replace(/:\s*"([^"]*)"/g, ': <span class="json-string">"$1"</span>');
+            
+            // Colorear números
+            content = content.replace(/:\s*(\d+(?:\.\d+)?)/g, ': <span class="json-number">$1</span>');
+            
+            // Colorear booleans
+            content = content.replace(/:\s*(true|false)/g, ': <span class="json-boolean">$1</span>');
+            
+            // Colorear null
+            content = content.replace(/:\s*null/g, ': <span class="json-null">null</span>');
+            
+            jsonContent.innerHTML = content;
+        }
+    </script>
+{% endblock %}

@@ -1,0 +1,476 @@
+{% extends "layouts/base.html" %}
+{% load static %}
+
+{% block title %}{{ page_title }} - Sistema de Actas{% endblock %}
+
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'admin/css/admin.css' %}">
+    <link rel="stylesheet" href="{% static 'plugins/select2/css/select2.min.css' %}">
+    <link rel="stylesheet" href="{% static 'plugins/select2-bootstrap4-theme/select2-bootstrap4.min.css' %}">
+    <style>
+        .plantilla-info {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 0.375rem;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .segmentos-preview {
+            max-height: 300px;
+            overflow-y: auto;
+            background: #ffffff;
+            border: 1px solid #dee2e6;
+            border-radius: 0.375rem;
+            padding: 1rem;
+        }
+        
+        .segmento-item {
+            padding: 0.5rem;
+            margin-bottom: 0.5rem;
+            background: #f8f9fa;
+            border-left: 3px solid #007bff;
+            border-radius: 0.25rem;
+        }
+        
+        .segmento-dinamico {
+            border-left-color: #28a745;
+        }
+        
+        .segmento-estatico {
+            border-left-color: #6c757d;
+        }
+        
+        .proceso-info {
+            background: #e7f3ff;
+            border: 1px solid #b8daff;
+            border-radius: 0.375rem;
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .json-textarea {
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 0.875rem;
+        }
+        
+        .form-section {
+            border: 1px solid #e9ecef;
+            border-radius: 0.375rem;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            background: #ffffff;
+        }
+        
+        .section-title {
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: #495057;
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid #e9ecef;
+        }
+        
+        .processing-warning {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            color: #856404;
+            padding: 1rem;
+            border-radius: 0.375rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .btn-ejecutar {
+            font-size: 1.125rem;
+            padding: 0.75rem 2rem;
+        }
+    </style>
+{% endblock %}
+
+{% block content %}
+<div class="content-wrapper">
+    <!-- Content Header -->
+    <section class="content-header">
+        <div class="container-fluid">
+            <div class="row mb-2">
+                <div class="col-sm-6">
+                    <h1>
+                        <i class="fas fa-play-circle"></i>
+                        {{ page_title }}
+                    </h1>
+                </div>
+                <div class="col-sm-6">
+                    <ol class="breadcrumb float-sm-right">
+                        {% for breadcrumb in breadcrumbs %}
+                            {% if breadcrumb.url %}
+                                <li class="breadcrumb-item">
+                                    <a href="{{ breadcrumb.url }}">{{ breadcrumb.title }}</a>
+                                </li>
+                            {% else %}
+                                <li class="breadcrumb-item active">{{ breadcrumb.title }}</li>
+                            {% endif %}
+                        {% endfor %}
+                    </ol>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Main content -->
+    <section class="content">
+        <div class="container-fluid">
+            
+            <!-- Información de la Plantilla -->
+            <div class="row">
+                <div class="col-12">
+                    <div class="plantilla-info">
+                        <div class="row">
+                            <div class="col-md-8">
+                                <h4>
+                                    <i class="fas fa-file-alt text-primary"></i>
+                                    {{ plantilla.nombre }}
+                                </h4>
+                                <p class="text-muted mb-2">{{ plantilla.descripcion }}</p>
+                                <div class="row">
+                                    <div class="col-sm-6">
+                                        <strong>Tipo de Acta:</strong> {{ plantilla.tipo_acta }}
+                                    </div>
+                                    <div class="col-sm-6">
+                                        <strong>Total Segmentos:</strong> 
+                                        <span class="badge badge-info">{{ plantilla.segmentos.count }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4 text-right">
+                                {% if plantilla.proveedor_ia_defecto %}
+                                    <p class="mb-1">
+                                        <strong>IA por Defecto:</strong><br>
+                                        <span class="badge badge-success">{{ plantilla.proveedor_ia_defecto.nombre }}</span>
+                                    </p>
+                                {% endif %}
+                                <p class="mb-0 text-muted">
+                                    <small>Creada: {{ plantilla.fecha_creacion|date:"d/m/Y H:i" }}</small>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Información del Proceso -->
+            <div class="row">
+                <div class="col-12">
+                    <div class="proceso-info">
+                        <h5><i class="fas fa-info-circle"></i> Proceso de Generación de Acta</h5>
+                        <p class="mb-2">
+                            El sistema procesará <strong>{{ plantilla.segmentos.count }} segmentos</strong> 
+                            en el siguiente orden:
+                        </p>
+                        <ol class="mb-0">
+                            <li><strong>Segmentos Dinámicos:</strong> Se procesarán usando IA con datos de la transcripción</li>
+                            <li><strong>Segmentos Estáticos:</strong> Se insertarán directamente sin procesamiento</li>
+                            <li><strong>Compilación Final:</strong> Se generará el documento completo</li>
+                        </ol>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Previsualización de Segmentos -->
+            <div class="row">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">
+                                <i class="fas fa-list"></i>
+                                Segmentos a Procesar
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="segmentos-preview">
+                                {% for config in plantilla.configuracionsegmento_set.all %}
+                                    <div class="segmento-item {% if config.segmento.tipo_procesamiento == 'dinamico' %}segmento-dinamico{% else %}segmento-estatico{% endif %}">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <div>
+                                                <strong>{{ config.orden }}. {{ config.segmento.nombre }}</strong>
+                                                <span class="badge {% if config.segmento.tipo_procesamiento == 'dinamico' %}badge-success{% else %}badge-secondary{% endif %} ml-2">
+                                                    {{ config.segmento.get_tipo_procesamiento_display }}
+                                                </span>
+                                            </div>
+                                            <div>
+                                                {% if config.segmento.tipo_procesamiento == 'dinamico' %}
+                                                    <i class="fas fa-magic text-success" title="Procesado con IA"></i>
+                                                {% else %}
+                                                    <i class="fas fa-file-text text-secondary" title="Contenido estático"></i>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                        {% if config.segmento.descripcion %}
+                                            <p class="text-muted mb-0 mt-1"><small>{{ config.segmento.descripcion|truncatechars:100 }}</small></p>
+                                        {% endif %}
+                                    </div>
+                                {% empty %}
+                                    <div class="text-center text-muted py-4">
+                                        <i class="fas fa-exclamation-triangle"></i>
+                                        <p class="mb-0">Esta plantilla no tiene segmentos configurados</p>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Formulario de Ejecución -->
+            <div class="row">
+                <div class="col-12">
+                    <form method="post" id="ejecutarForm">
+                        {% csrf_token %}
+                        
+                        <!-- Configuración Básica -->
+                        <div class="form-section">
+                            <h4 class="section-title">
+                                <i class="fas fa-cog"></i>
+                                Configuración de Ejecución
+                            </h4>
+                            
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="{{ form.nombre.id_for_label }}">
+                                            <strong>{{ form.nombre.label }}</strong>
+                                            <span class="text-danger">*</span>
+                                        </label>
+                                        {{ form.nombre }}
+                                        {% if form.nombre.errors %}
+                                            <div class="text-danger mt-1">
+                                                {% for error in form.nombre.errors %}
+                                                    <small>{{ error }}</small>
+                                                {% endfor %}
+                                            </div>
+                                        {% endif %}
+                                        {% if form.nombre.help_text %}
+                                            <small class="form-text text-muted">{{ form.nombre.help_text }}</small>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="{{ form.proveedor_ia_global.id_for_label }}">
+                                            <strong>{{ form.proveedor_ia_global.label }}</strong>
+                                            <span class="text-danger">*</span>
+                                        </label>
+                                        {{ form.proveedor_ia_global }}
+                                        {% if form.proveedor_ia_global.errors %}
+                                            <div class="text-danger mt-1">
+                                                {% for error in form.proveedor_ia_global.errors %}
+                                                    <small>{{ error }}</small>
+                                                {% endfor %}
+                                            </div>
+                                        {% endif %}
+                                        {% if form.proveedor_ia_global.help_text %}
+                                            <small class="form-text text-muted">{{ form.proveedor_ia_global.help_text|safe }}</small>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Fuente de Datos -->
+                        <div class="form-section">
+                            <h4 class="section-title">
+                                <i class="fas fa-microphone"></i>
+                                Fuente de Datos
+                            </h4>
+                            
+                            <div class="form-group">
+                                <label for="{{ form.transcripcion.id_for_label }}">
+                                    <strong>{{ form.transcripcion.label }}</strong>
+                                    <span class="text-danger">*</span>
+                                </label>
+                                {{ form.transcripcion }}
+                                {% if form.transcripcion.errors %}
+                                    <div class="text-danger mt-1">
+                                        {% for error in form.transcripcion.errors %}
+                                            <small>{{ error }}</small>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                                {% if form.transcripcion.help_text %}
+                                    <small class="form-text text-muted">{{ form.transcripcion.help_text }}</small>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Variables de Contexto -->
+                        <div class="form-section">
+                            <h4 class="section-title">
+                                <i class="fas fa-code"></i>
+                                Variables de Contexto (Opcional)
+                            </h4>
+                            
+                            <div class="form-group">
+                                <label for="{{ form.variables_contexto.id_for_label }}">
+                                    <strong>{{ form.variables_contexto.label }}</strong>
+                                </label>
+                                {{ form.variables_contexto }}
+                                {% if form.variables_contexto.errors %}
+                                    <div class="text-danger mt-1">
+                                        {% for error in form.variables_contexto.errors %}
+                                            <small>{{ error }}</small>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                                {% if form.variables_contexto.help_text %}
+                                    <small class="form-text text-muted">{{ form.variables_contexto.help_text|safe }}</small>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="alert alert-info">
+                                <h6><i class="fas fa-lightbulb"></i> Ejemplos de Variables de Contexto:</h6>
+                                <code>
+                                    {<br>
+                                    &nbsp;&nbsp;"fecha_sesion": "{{ 'now'|date:'Y-m-d' }}",<br>
+                                    &nbsp;&nbsp;"lugar": "Sala de Sesiones Municipal",<br>
+                                    &nbsp;&nbsp;"tipo_reunion": "Sesión Ordinaria",<br>
+                                    &nbsp;&nbsp;"numero_acta": "001-2025",<br>
+                                    &nbsp;&nbsp;"presidente": "Alcalde Municipal",<br>
+                                    &nbsp;&nbsp;"secretario": "Secretario General"<br>
+                                    }
+                                </code>
+                            </div>
+                        </div>
+
+                        <!-- Advertencia de Procesamiento -->
+                        <div class="processing-warning">
+                            <h6><i class="fas fa-exclamation-triangle"></i> Importante</h6>
+                            <ul class="mb-0">
+                                <li>El procesamiento puede tomar varios minutos dependiendo del número de segmentos</li>
+                                <li>Puedes monitorear el progreso en la siguiente pantalla</li>
+                                <li>Los segmentos estáticos se procesarán instantáneamente</li>
+                                <li>Los segmentos dinámicos requerirán procesamiento con IA</li>
+                            </ul>
+                        </div>
+
+                        <!-- Botones de Acción -->
+                        <div class="form-section">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <a href="{% url 'generador_actas:plantillas_lista' %}" class="btn btn-secondary">
+                                        <i class="fas fa-arrow-left"></i>
+                                        Cancelar
+                                    </a>
+                                    <a href="{% url 'generador_actas:plantilla_detail' plantilla.pk %}" class="btn btn-outline-info ml-2">
+                                        <i class="fas fa-eye"></i>
+                                        Ver Plantilla
+                                    </a>
+                                </div>
+                                <div class="col-md-6 text-right">
+                                    <button type="submit" class="btn btn-success btn-ejecutar" id="btnEjecutar">
+                                        <i class="fas fa-play"></i>
+                                        Iniciar Procesamiento
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </section>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+    <script src="{% static 'plugins/select2/js/select2.full.min.js' %}"></script>
+    
+    <script>
+        $(document).ready(function() {
+            // Inicializar Select2
+            $('.select2').select2({
+                theme: 'bootstrap4',
+                width: '100%'
+            });
+            
+            // Validación del formulario
+            $('#ejecutarForm').on('submit', function(e) {
+                const nombre = $('#id_nombre').val().trim();
+                const transcripcion = $('#id_transcripcion').val();
+                const proveedorIA = $('#id_proveedor_ia_global').val();
+                
+                // Validar campos requeridos
+                if (!nombre) {
+                    e.preventDefault();
+                    alert('Por favor, ingresa un nombre para la ejecución');
+                    $('#id_nombre').focus();
+                    return false;
+                }
+                
+                if (!transcripcion) {
+                    e.preventDefault();
+                    alert('Por favor, selecciona una transcripción');
+                    $('#id_transcripcion').focus();
+                    return false;
+                }
+                
+                if (!proveedorIA) {
+                    e.preventDefault();
+                    alert('Por favor, selecciona un proveedor de IA');
+                    $('#id_proveedor_ia_global').focus();
+                    return false;
+                }
+                
+                // Validar JSON de variables de contexto
+                const variablesContexto = $('#id_variables_contexto').val().trim();
+                if (variablesContexto) {
+                    try {
+                        JSON.parse(variablesContexto);
+                    } catch (error) {
+                        e.preventDefault();
+                        alert('Las variables de contexto deben ser un JSON válido');
+                        $('#id_variables_contexto').focus();
+                        return false;
+                    }
+                }
+                
+                // Confirmar ejecución
+                const confirmMessage = `¿Estás seguro de iniciar el procesamiento?\n\n` +
+                    `• Plantilla: {{ plantilla.nombre }}\n` +
+                    `• Segmentos: {{ plantilla.segmentos.count }}\n` +
+                    `• Transcripción: ${$('#id_transcripcion option:selected').text()}\n` +
+                    `• IA: ${$('#id_proveedor_ia_global option:selected').text()}`;
+                
+                if (!confirm(confirmMessage)) {
+                    e.preventDefault();
+                    return false;
+                }
+                
+                // Deshabilitar botón y mostrar loading
+                $('#btnEjecutar')
+                    .prop('disabled', true)
+                    .html('<i class="fas fa-spinner fa-spin"></i> Iniciando Procesamiento...');
+                
+                return true;
+            });
+            
+            // Formatear JSON automáticamente
+            $('#id_variables_contexto').on('blur', function() {
+                const content = $(this).val().trim();
+                if (content && content !== '{}') {
+                    try {
+                        const parsed = JSON.parse(content);
+                        const formatted = JSON.stringify(parsed, null, 2);
+                        $(this).val(formatted);
+                    } catch (error) {
+                        // Silently ignore invalid JSON during typing
+                    }
+                }
+            });
+            
+            // Limpiar variables de contexto
+            $('#limpiarVariables').on('click', function() {
+                $('#id_variables_contexto').val('{}');
+            });
+        });
+    </script>
+{% endblock %}

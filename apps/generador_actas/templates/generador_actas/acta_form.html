@@ -179,39 +179,42 @@
                                     <div class="row">
                                         <div class="col-md-6">
                                             <div class="form-group">
-                                                <label for="{{ form.proveedor_ia_usado.id_for_label }}">
-                                                    Proveedor IA Utilizado
+                                                <label for="{{ form.transcripcion.id_for_label }}">
+                                                    Transcripción de Audio <span class="text-danger">*</span>
                                                 </label>
-                                                {{ form.proveedor_ia_usado }}
-                                                {% if form.proveedor_ia_usado.errors %}
-                                                    <div class="text-danger">{{ form.proveedor_ia_usado.errors }}</div>
+                                                {{ form.transcripcion }}
+                                                <small class="form-text text-muted">
+                                                    {{ form.transcripcion.help_text }}
+                                                </small>
+                                                {% if form.transcripcion.errors %}
+                                                    <div class="text-danger">{{ form.transcripcion.errors }}</div>
                                                 {% endif %}
                                             </div>
                                         </div>
                                         <div class="col-md-6">
                                             <div class="form-group">
-                                                <label for="{{ form.prioridad.id_for_label }}">
-                                                    Prioridad
+                                                <label for="{{ form.proveedor_ia.id_for_label }}">
+                                                    Proveedor de IA <span class="text-danger">*</span>
                                                 </label>
-                                                {{ form.prioridad }}
-                                                {% if form.prioridad.errors %}
-                                                    <div class="text-danger">{{ form.prioridad.errors }}</div>
+                                                {{ form.proveedor_ia }}
+                                                <small class="form-text text-muted">
+                                                    {{ form.proveedor_ia.help_text }}
+                                                </small>
+                                                {% if form.proveedor_ia.errors %}
+                                                    <div class="text-danger">{{ form.proveedor_ia.errors }}</div>
                                                 {% endif %}
                                             </div>
                                         </div>
                                     </div>
-
-                                    <div class="form-group">
-                                        <label for="{{ form.metadatos_procesamiento.id_for_label }}">
-                                            Metadatos de Procesamiento (JSON)
-                                        </label>
-                                        {{ form.metadatos_procesamiento }}
-                                        <small class="form-text text-muted">
-                                            Información técnica del procesamiento en formato JSON.
-                                        </small>
-                                        {% if form.metadatos_procesamiento.errors %}
-                                            <div class="text-danger">{{ form.metadatos_procesamiento.errors }}</div>
-                                        {% endif %}
+                                    
+                                    <div class="alert alert-info">
+                                        <h6><i class="fas fa-info-circle"></i> Información de Procesamiento:</h6>
+                                        <p class="mb-1">
+                                            <strong>Transcripción:</strong> Selecciona la transcripción de audio completada que será procesada.
+                                        </p>
+                                        <p class="mb-0">
+                                            <strong>Proveedor IA:</strong> Selecciona el proveedor de inteligencia artificial que procesará la transcripción según la plantilla elegida.
+                                        </p>
                                     </div>
                                 </div>
                             </div>

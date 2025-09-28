@@ -1,0 +1,369 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Nueva Plantilla - Actas IA{% endblock %}
+
+{% block extra_css %}
+<style>
+.wizard-step {
+    padding: 15px;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    margin: 0 5px;
+}
+.wizard-step.active {
+    border-color: #007bff;
+    background-color: #f8f9ff;
+}
+.form-wizard {
+    margin-bottom: 30px;
+}
+.segmento-checkbox {
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    padding: 15px;
+    margin-bottom: 15px;
+}
+.segmento-checkbox:hover {
+    border-color: #007bff;
+    background-color: #f8f9ff;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="content-wrapper">
+    <section class="content-header">
+        <div class="container-fluid">
+            <div class="row mb-2">
+                <div class="col-sm-6">
+                    <h1>
+                        <i class="fas fa-plus"></i>
+                        {{ page_title }}
+                    </h1>
+                </div>
+                <div class="col-sm-6">
+                    <ol class="breadcrumb float-sm-right">
+                        {% for breadcrumb in breadcrumbs %}
+                            {% if forloop.last %}
+                                <li class="breadcrumb-item active">{{ breadcrumb.title }}</li>
+                            {% else %}
+                                <li class="breadcrumb-item"><a href="{{ breadcrumb.url }}">{{ breadcrumb.title }}</a></li>
+                            {% endif %}
+                        {% endfor %}
+                    </ol>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="content">
+        <div class="container-fluid">
+            <div class="card card-primary">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <i class="fas fa-file-alt"></i>
+                        Configurar Nueva Plantilla
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <!-- Steps indicator -->
+                    <div class="form-wizard mb-4">
+                        <div class="wizard-steps d-flex">
+                            <div class="wizard-step active flex-fill text-center">
+                                <i class="fas fa-info-circle fa-2x mb-2"></i>
+                                <div><strong>Paso 1</strong></div>
+                                <div>Información Básica</div>
+                            </div>
+                            <div class="wizard-step flex-fill text-center">
+                                <i class="fas fa-puzzle-piece fa-2x mb-2"></i>
+                                <div><strong>Paso 2</strong></div>
+                                <div>Seleccionar Segmentos</div>
+                            </div>
+                            <div class="wizard-step flex-fill text-center">
+                                <i class="fas fa-check fa-2x mb-2"></i>
+                                <div><strong>Paso 3</strong></div>
+                                <div>Finalizar</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Formulario HTML puro (sin JavaScript) -->
+                    <form method="post" class="needs-validation" novalidate>
+                        {% csrf_token %}
+                        
+                        <div class="row">
+                            <!-- Información básica -->
+                            <div class="col-md-8">
+                                <div class="card card-outline card-primary">
+                                    <div class="card-header">
+                                        <h3 class="card-title">
+                                            <i class="fas fa-info-circle"></i>
+                                            Información Básica
+                                        </h3>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="form-group">
+                                            {{ form.nombre.label_tag }}
+                                            {{ form.nombre }}
+                                            {% if form.nombre.errors %}
+                                                <div class="invalid-feedback d-block">
+                                                    {{ form.nombre.errors.0 }}
+                                                </div>
+                                            {% endif %}
+                                        </div>
+                                        
+                                        <div class="form-group">
+                                            {{ form.descripcion.label_tag }}
+                                            {{ form.descripcion }}
+                                            {% if form.descripcion.errors %}
+                                                <div class="invalid-feedback d-block">
+                                                    {{ form.descripcion.errors.0 }}
+                                                </div>
+                                            {% endif %}
+                                        </div>
+                                        
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <div class="form-group">
+                                                    {{ form.tipo_acta.label_tag }}
+                                                    {{ form.tipo_acta }}
+                                                    {% if form.tipo_acta.errors %}
+                                                        <div class="invalid-feedback d-block">
+                                                            {{ form.tipo_acta.errors.0 }}
+                                                        </div>
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="form-group">
+                                                    {{ form.proveedor_ia_defecto.label_tag }}
+                                                    {{ form.proveedor_ia_defecto }}
+                                                    {% if form.proveedor_ia_defecto.errors %}
+                                                        <div class="invalid-feedback d-block">
+                                                            {{ form.proveedor_ia_defecto.errors.0 }}
+                                                        </div>
+                                                    {% endif %}
+                                                    <div class="help-block">
+                                                        Proveedor IA que se usará por defecto (opcional)
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="form-group">
+                                            <div class="form-check">
+                                                {{ form.activa }}
+                                                <label class="form-check-label" for="{{ form.activa.id_for_label }}">
+                                                    {{ form.activa.label }}
+                                                </label>
+                                            </div>
+                                            {% if form.activa.errors %}
+                                                <div class="invalid-feedback d-block">
+                                                    {{ form.activa.errors.0 }}
+                                                </div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Selección de Segmentos (HTML puro, sin JavaScript) -->
+                                <div class="card card-outline card-success">
+                                    <div class="card-header">
+                                        <h3 class="card-title">
+                                            <i class="fas fa-puzzle-piece"></i>
+                                            Seleccionar Segmentos de la Plantilla
+                                        </h3>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="alert alert-info">
+                                            <h6><i class="fas fa-info-circle"></i> Instrucciones:</h6>
+                                            <p class="mb-1">• Marque las casillas de los segmentos que desea incluir</p>
+                                            <p class="mb-1">• Use los campos de orden para definir la secuencia (1, 2, 3...)</p>
+                                            <p class="mb-0">• Los segmentos aparecerán en el acta según el orden indicado</p>
+                                        </div>
+                                        
+                                        <!-- Segmentos agrupados por categoría -->
+                                        {% regroup segmentos_disponibles by categoria as segmentos_por_categoria %}
+                                        
+                                        {% if segmentos_disponibles %}
+                                            <div class="row">
+                                                {% for categoria in segmentos_por_categoria %}
+                                                <div class="col-md-6 mb-4">
+                                                    <div class="card border-primary">
+                                                        <div class="card-header bg-primary text-white">
+                                                            <h6 class="mb-0">
+                                                                <i class="fas fa-folder"></i> 
+                                                                {% if categoria.grouper %}
+                                                                    {{ categoria.grouper|capfirst }}
+                                                                {% else %}
+                                                                    Otros Segmentos
+                                                                {% endif %}
+                                                                ({{ categoria.list|length }})
+                                                            </h6>
+                                                        </div>
+                                                        <div class="card-body">
+                                                            {% for segmento in categoria.list %}
+                                                            <div class="segmento-checkbox">
+                                                                <div class="custom-control custom-checkbox">
+                                                                    <input type="checkbox" 
+                                                                           class="custom-control-input" 
+                                                                           id="segmento_{{ segmento.id }}"
+                                                                           name="segmentos_seleccionados" 
+                                                                           value="{{ segmento.id }}">
+                                                                    <label class="custom-control-label" for="segmento_{{ segmento.id }}">
+                                                                        <strong>{{ segmento.nombre }}</strong>
+                                                                        {% if segmento.descripcion %}
+                                                                            <br><small class="text-muted">{{ segmento.descripcion }}</small>
+                                                                        {% endif %}
+                                                                        <br>
+                                                                        <span class="badge badge-info badge-sm">{{ segmento.tipo|capfirst }}</span>
+                                                                        <span class="badge badge-secondary badge-sm">ID: {{ segmento.id }}</span>
+                                                                    </label>
+                                                                </div>
+                                                                
+                                                                <!-- Controles de orden y obligatorio -->
+                                                                <div class="row mt-2">
+                                                                    <div class="col-4">
+                                                                        <label class="small text-muted">Orden:</label>
+                                                                        <input type="number" 
+                                                                               class="form-control form-control-sm" 
+                                                                               name="orden_{{ segmento.id }}"
+                                                                               value="{{ forloop.counter }}"
+                                                                               min="1" 
+                                                                               max="99"
+                                                                               placeholder="1">
+                                                                    </div>
+                                                                    <div class="col-8">
+                                                                        <label class="small text-muted">Obligatorio:</label>
+                                                                        <div class="form-check">
+                                                                            <input class="form-check-input" 
+                                                                                   type="checkbox" 
+                                                                                   name="obligatorio_{{ segmento.id }}"
+                                                                                   id="obligatorio_{{ segmento.id }}">
+                                                                            <label class="form-check-label small" for="obligatorio_{{ segmento.id }}">
+                                                                                Es obligatorio
+                                                                            </label>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                            {% endfor %}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                {% endfor %}
+                                            </div>
+                                        {% else %}
+                                            <div class="alert alert-warning">
+                                                <h6><i class="fas fa-exclamation-triangle"></i> Sin Segmentos Disponibles</h6>
+                                                <p class="mb-0">No hay segmentos disponibles en la base de datos. Por favor contacte al administrador.</p>
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Panel de ayuda -->
+                            <div class="col-md-4">
+                                <div class="card card-outline card-info">
+                                    <div class="card-header">
+                                        <h3 class="card-title">
+                                            <i class="fas fa-question-circle"></i>
+                                            Ayuda
+                                        </h3>
+                                    </div>
+                                    <div class="card-body">
+                                        <h6>¿Qué es una plantilla?</h6>
+                                        <p class="small">Una plantilla define la estructura de un acta municipal, especificando qué segmentos incluir y en qué orden.</p>
+                                        
+                                        <h6>Tipos de segmentos:</h6>
+                                        <ul class="small">
+                                            <li><strong>Estático:</strong> Contenido fijo</li>
+                                            <li><strong>Dinámico:</strong> Generado por IA</li>
+                                            <li><strong>Híbrido:</strong> Combina ambos</li>
+                                        </ul>
+                                        
+                                        <h6>Orden y obligatoriedad:</h6>
+                                        <p class="small">Use el campo "Orden" para definir la secuencia de los segmentos. Marque "Obligatorio" para segmentos que siempre deben incluirse.</p>
+                                        
+                                        <div class="alert alert-info">
+                                            <strong>Tip:</strong> Puede crear la plantilla ahora y agregar más segmentos después.
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="card card-outline card-warning">
+                                    <div class="card-header">
+                                        <h3 class="card-title">
+                                            <i class="fas fa-chart-bar"></i>
+                                            Estadísticas
+                                        </h3>
+                                    </div>
+                                    <div class="card-body">
+                                        <p><strong>Segmentos disponibles:</strong> {{ segmentos_disponibles.count }} </p>
+                                        <p><strong>Categorías:</strong> 
+                                            {% regroup segmentos_disponibles by categoria as cats %}
+                                            {{ cats|length }}
+                                        </p>
+                                        
+                                        <div class="progress mb-2">
+                                            <div class="progress-bar bg-success" style="width: 33%"></div>
+                                        </div>
+                                        <small>Paso 1 de 3 completado</small>
+                                    </div>
+                                </div>
+                                
+                                <!-- Botones de acción -->
+                                <div class="text-center">
+                                    <a href="{% url 'generador_actas:plantillas_lista' %}" class="btn btn-secondary">
+                                        <i class="fas fa-arrow-left"></i>
+                                        Cancelar
+                                    </a>
+                                    <button type="submit" class="btn btn-success ml-3">
+                                        <i class="fas fa-save"></i>
+                                        Crear Plantilla
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </section>
+</div>
+{% endblock content %}
+
+{% block extra_js %}
+<!-- Sin JavaScript complejo - Solo validación básica -->
+<script>
+console.log('✅ Plantilla crear_simple.html cargada');
+console.log('📊 Segmentos disponibles:', {{ segmentos_disponibles.count }});
+
+// Validación básica del formulario
+document.querySelector('form').addEventListener('submit', function(e) {
+    const nombre = document.querySelector('input[name="nombre"]').value.trim();
+    
+    if (!nombre) {
+        alert('Por favor ingrese un nombre para la plantilla');
+        e.preventDefault();
+        return false;
+    }
+    
+    // Contar segmentos seleccionados
+    const segmentosSeleccionados = document.querySelectorAll('input[name="segmentos_seleccionados"]:checked');
+    console.log('📋 Creando plantilla con', segmentosSeleccionados.length, 'segmentos seleccionados');
+    
+    if (segmentosSeleccionados.length === 0) {
+        const confirmar = confirm('¿Crear la plantilla sin segmentos? Podrá agregarlos después.');
+        if (!confirmar) {
+            e.preventDefault();
+            return false;
+        }
+    }
+    
+    return true;
+});
+</script>
+{% endblock extra_js %}

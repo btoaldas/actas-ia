@@ -62,10 +62,14 @@ urlpatterns = [
     path('actas/<int:pk>/', views.ActaDetailView.as_view(), name='acta_detail'),
     path('actas/<int:pk>/editar/', views.EditarActaView.as_view(), name='editar_acta'),
     path('actas/<int:pk>/eliminar/', views.EliminarActaView.as_view(), name='eliminar_acta'),
+    path('actas/<int:pk>/preview/', views.preview_acta, name='acta_preview'),  # ✅ URL faltante
+    path('actas/<int:pk>/generar/', views.generar_acta, name='generar_acta'),  # ✅ URL faltante
+    path('actas/estados/', views.estados_actas, name='estados_actas'),  # ✅ URL faltante
     path('actas/crear/<int:transcripcion_id>/', views.crear_acta_desde_transcripcion, name='crear_acta_desde_transcripcion'),
     path('actas/<int:acta_id>/procesar/', views.procesar_acta, name='procesar_acta'),
     path('actas/<int:acta_id>/estado/', views.estado_procesamiento, name='estado_procesamiento'),
     path('actas/<int:acta_id>/exportar/', views.exportar_acta, name='exportar_acta'),
+    path('actas/<int:acta_id>/revertir/', views.revertir_acta, name='revertir_acta'),
     
     # === CONFIGURACION ===
     path('configuracion/', views.ConfiguracionView.as_view(), name='configuracion'),

@@ -6,7 +6,7 @@ Versión simplificada sin campos inexistentes
 from django.contrib import admin
 from .models import (
     ProveedorIA, SegmentoPlantilla, PlantillaActa, 
-    ConfiguracionSegmento, ActaGenerada
+    ConfiguracionSegmento, ActaGenerada, EjecucionPlantilla, ResultadoSegmento
 )
 
 
@@ -135,3 +135,19 @@ class ActaGeneradaAdmin(admin.ModelAdmin):
     search_fields = ['numero_acta', 'titulo']
     readonly_fields = ['fecha_creacion', 'fecha_actualizacion']
     date_hierarchy = 'fecha_creacion'
+
+
+@admin.register(EjecucionPlantilla)
+class EjecucionPlantillaAdmin(admin.ModelAdmin):
+    """Administración de Ejecuciones de Plantilla"""
+    list_display = ['nombre', 'plantilla', 'estado']
+    list_filter = ['estado', 'plantilla']
+    search_fields = ['nombre']
+
+
+@admin.register(ResultadoSegmento)
+class ResultadoSegmentoAdmin(admin.ModelAdmin):
+    """Administración de Resultados de Segmento"""
+    list_display = ['ejecucion', 'orden_procesamiento', 'estado']
+    list_filter = ['estado']
+    search_fields = ['ejecucion__nombre']

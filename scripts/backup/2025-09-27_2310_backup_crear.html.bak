@@ -1,0 +1,808 @@
+{% extends 'layouts/base.html' %}
+{% load static %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block extra_css %}
+<style>
+.form-wizard {
+    border: 1px solid #dee2e6;
+    border-radius: 0.25rem;
+}
+
+.wizard-steps {
+    background: #f8f9fa;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.wizard-step {
+    padding: 1rem 1.5rem;
+    border-right: 1px solid #dee2e6;
+    position: relative;
+}
+
+.wizard-step:last-child {
+    border-right: none;
+}
+
+.wizard-step.active {
+    background: #007bff;
+    color: white;
+}
+
+.wizard-step.completed {
+    background: #28a745;
+    color: white;
+}
+
+.wizard-content {
+    padding: 2rem;
+}
+
+.help-block {
+    font-size: 0.875rem;
+    color: #6c757d;
+    margin-top: 0.25rem;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="content-wrapper">
+<!-- Content Header -->
+<div class="content-header">
+    <div class="container-fluid">
+        <div class="row mb-2">
+            <div class="col-sm-6">
+                <h1 class="m-0">{{ page_title }}</h1>
+            </div>
+            <div class="col-sm-6">
+                <ol class="breadcrumb float-sm-right">
+                    {% for crumb in breadcrumbs %}
+                        {% if forloop.last %}
+                            <li class="breadcrumb-item active">{{ crumb.title }}</li>
+                        {% else %}
+                            <li class="breadcrumb-item"><a href="{{ crumb.url }}">{{ crumb.title }}</a></li>
+                        {% endif %}
+                    {% endfor %}
+                </ol>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Main content -->
+<section class="content">
+    <div class="container-fluid">
+        
+        <!-- Wizard de creación -->
+        <div class="card">
+            <div class="card-body">
+                
+                <!-- Steps indicator -->
+                <div class="form-wizard mb-4">
+                    <div class="wizard-steps d-flex">
+                        <div class="wizard-step active flex-fill text-center">
+                            <i class="fas fa-info-circle fa-2x mb-2"></i>
+                            <div><strong>Paso 1</strong></div>
+                            <div>Información Básica</div>
+                        </div>
+                        <div class="wizard-step flex-fill text-center">
+                            <i class="fas fa-puzzle-piece fa-2x mb-2"></i>
+                            <div><strong>Paso 2</strong></div>
+                            <div>Configurar Segmentos</div>
+                        </div>
+                        <div class="wizard-step flex-fill text-center">
+                            <i class="fas fa-check fa-2x mb-2"></i>
+                            <div><strong>Paso 3</strong></div>
+                            <div>Finalizar</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Formulario -->
+                <form method="post" class="needs-validation" novalidate>
+                    {% csrf_token %}
+                    
+                    <div class="row">
+                        <!-- Información básica -->
+                        <div class="col-md-8">
+                            <div class="card card-outline card-primary">
+                                <div class="card-header">
+                                    <h3 class="card-title">
+                                        <i class="fas fa-info-circle"></i>
+                                        Información Básica
+                                    </h3>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="form-group">
+                                                {{ form.codigo.label_tag }}
+                                                {{ form.codigo }}
+                                                {% if form.codigo.errors %}
+                                                    <div class="invalid-feedback d-block">
+                                                        {{ form.codigo.errors.0 }}
+                                                    </div>
+                                                {% endif %}
+                                                <div class="help-block">
+                                                    Código único e identificativo (ej: PLANTILLA-ORD-001)
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="form-group">
+                                                {{ form.version.label_tag }}
+                                                {{ form.version }}
+                                                {% if form.version.errors %}
+                                                    <div class="invalid-feedback d-block">
+                                                        {{ form.version.errors.0 }}
+                                                    </div>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="form-group">
+                                        {{ form.nombre.label_tag }}
+                                        {{ form.nombre }}
+                                        {% if form.nombre.errors %}
+                                            <div class="invalid-feedback d-block">
+                                                {{ form.nombre.errors.0 }}
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                    
+                                    <div class="form-group">
+                                        {{ form.descripcion.label_tag }}
+                                        {{ form.descripcion }}
+                                        {% if form.descripcion.errors %}
+                                            <div class="invalid-feedback d-block">
+                                                {{ form.descripcion.errors.0 }}
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                    
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="form-group">
+                                                {{ form.tipo_acta.label_tag }}
+                                                {{ form.tipo_acta }}
+                                                {% if form.tipo_acta.errors %}
+                                                    <div class="invalid-feedback d-block">
+                                                        {{ form.tipo_acta.errors.0 }}
+                                                    </div>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="form-group">
+                                                {{ form.proveedor_ia_defecto.label_tag }}
+                                                {{ form.proveedor_ia_defecto }}
+                                                {% if form.proveedor_ia_defecto.errors %}
+                                                    <div class="invalid-feedback d-block">
+                                                        {{ form.proveedor_ia_defecto.errors.0 }}
+                                                    </div>
+                                                {% endif %}
+                                                <div class="help-block">
+                                                    Proveedor IA que se usará por defecto (opcional)
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="form-group">
+                                        <div class="form-check">
+                                            {{ form.activa }}
+                                            <label class="form-check-label" for="{{ form.activa.id_for_label }}">
+                                                {{ form.activa.label }}
+                                            </label>
+                                        </div>
+                                        {% if form.activa.errors %}
+                                            <div class="invalid-feedback d-block">
+                                                {{ form.activa.errors.0 }}
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Campo oculto para segmentos JSON -->
+                            <input type="hidden" id="id_segmentos_json" name="segmentos_json" value="">
+                            
+                            <!-- Segmentos de la Plantilla (INTERFAZ LINEAL) -->
+                            <div class="card card-outline card-success">
+                                <div class="card-header">
+                                    <h3 class="card-title">
+                                        <i class="fas fa-puzzle-piece"></i>
+                                        Segmentos de la Plantilla
+                                    </h3>
+                                </div>
+                                <div class="card-body">
+                                    <div class="alert alert-info">
+                                        <h6><i class="fas fa-info-circle"></i> Instrucciones:</h6>
+                                        <p class="mb-1">• Seleccione los segmentos que formarán parte de esta plantilla</p>
+                                        <p class="mb-1">• Use los botones de ordenamiento para cambiar la secuencia</p>
+                                        <p class="mb-0">• Los segmentos seleccionados aparecerán en el orden indicado en el acta final</p>
+                                    </div>
+                                    
+                                    <!-- SECCIÓN: SELECCIONAR SEGMENTOS -->
+                                    <div class="row mb-4">
+                                        <div class="col-12">
+                                            <h5><i class="fas fa-hand-pointer text-primary"></i> 1. Seleccionar Segmentos</h5>
+                                            <p class="text-muted small">Haga clic en los segmentos que desea incluir en su plantilla:</p>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Grid de segmentos disponibles -->
+                                    <div class="row" id="segmentos-disponibles">
+                                        {% regroup segmentos_disponibles by categoria as segmentos_agrupados %}
+                                        
+                                        <div class="col-12 mb-3">
+                                            <div class="row">
+                                                {% for grupo in segmentos_agrupados %}
+                                                <div class="col-md-6 mb-4">
+                                                    <h6 class="text-primary">
+                                                        <i class="fas fa-list"></i> 
+                                                        {{ grupo.grouper|default:"Sin categoría"|capfirst }}
+                                                    </h6>
+                                                    <div class="list-group">
+                                                        {% for segmento in grupo.list %}
+                                                        <button type="button" class="list-group-item list-group-item-action segmento-disponible"
+                                                                data-id="{{ segmento.id }}"
+                                                                data-codigo="{{ segmento.codigo }}" 
+                                                                data-nombre="{{ segmento.nombre }}" 
+                                                                data-categoria="{{ segmento.categoria }}"
+                                                                data-tipo="{{ segmento.tipo }}"
+                                                                data-descripcion="{{ segmento.descripcion }}">
+                                                            <div class="d-flex justify-content-between align-items-center">
+                                                                <div>
+                                                                    <strong>{{ segmento.nombre }}</strong>
+                                                                    <small class="d-block text-muted">{{ segmento.descripcion|truncatechars:80 }}</small>
+                                                                    <span class="badge badge-info badge-sm">{{ segmento.get_tipo_display|default:segmento.tipo }}</span>
+                                                                </div>
+                                                                <i class="fas fa-plus-circle text-success"></i>
+                                                            </div>
+                                                        </button>
+                                                        {% endfor %}
+                                                    </div>
+                                                </div>
+                                                {% empty %}
+                                                <div class="col-12">
+                                                    <div class="alert alert-warning">
+                                                        <i class="fas fa-exclamation-triangle"></i>
+                                                        No hay segmentos disponibles. Por favor, cree segmentos desde el módulo correspondiente.
+                                                    </div>
+                                                </div>
+                                                {% endfor %}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <hr>
+                                    
+                                    <!-- SECCIÓN: SEGMENTOS SELECCIONADOS -->
+                                    <div class="row">
+                                        <div class="col-12">
+                                            <h5><i class="fas fa-list-ol text-warning"></i> 2. Segmentos Seleccionados (Orden de aparición)</h5>
+                                            <p class="text-muted small">Los segmentos aparecerán en el acta en este orden:</p>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Lista de segmentos seleccionados -->
+                                    <div id="segmentos-seleccionados">
+                                        <div class="text-center text-muted py-5" id="segmentos-empty">
+                                            <i class="fas fa-arrow-up fa-3x mb-3 text-info"></i>
+                                            <h5>No hay segmentos seleccionados</h5>
+                                            <p>Seleccione segmentos de la lista de arriba para comenzar</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Prompt de unificación -->
+                            <div class="card card-outline card-warning">
+                                <div class="card-header">
+                                    <h3 class="card-title">
+                                        <i class="fas fa-robot"></i>
+                                        Prompt de Unificación Final
+                                    </h3>
+                                </div>
+                                <div class="card-body">
+                                    <div class="form-group">
+                                        {{ form.prompt_global.label_tag }}
+                                        {{ form.prompt_global }}
+                                        {% if form.prompt_global.errors %}
+                                            <div class="invalid-feedback d-block">
+                                                {{ form.prompt_global.errors.0 }}
+                                            </div>
+                                        {% endif %}
+                                        <div class="help-block">
+                                            {{ form.prompt_global.help_text|safe }}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Panel lateral con ayuda -->
+                        <div class="col-md-4">
+                            <div class="card card-outline card-info">
+                                <div class="card-header">
+                                    <h3 class="card-title">
+                                        <i class="fas fa-question-circle"></i>
+                                        Ayuda y Consejos
+                                    </h3>
+                                </div>
+                                <div class="card-body">
+                                    <h5><i class="fas fa-lightbulb text-warning"></i> Consejos</h5>
+                                    <ul class="list-unstyled">
+                                        <li class="mb-2">
+                                            <i class="fas fa-check-circle text-success"></i>
+                                            Use códigos descriptivos y únicos
+                                        </li>
+                                        <li class="mb-2">
+                                            <i class="fas fa-check-circle text-success"></i>
+                                            El nombre debe ser claro y específico
+                                        </li>
+                                        <li class="mb-2">
+                                            <i class="fas fa-check-circle text-success"></i>
+                                            Describa el propósito de la plantilla
+                                        </li>
+                                        <li class="mb-2">
+                                            <i class="fas fa-check-circle text-success"></i>
+                                            El prompt de unificación es clave para la calidad final
+                                        </li>
+                                    </ul>
+                                    
+                                    <hr>
+                                    
+                                    <h6><i class="fas fa-code text-info"></i> Variables Disponibles</h6>
+                                    <small class="text-muted">
+                                        En el prompt de unificación puede usar:
+                                    </small>
+                                    <ul class="list-unstyled small">
+                                        <li><code>{segmentos}</code> - Resultados procesados</li>
+                                        <li><code>{transcripcion}</code> - Transcripción original</li>
+                                        <li><code>{fecha}</code> - Fecha de la sesión</li>
+                                        <li><code>{participantes}</code> - Lista de participantes</li>
+                                        <li><code>{tipo_reunion}</code> - Tipo de reunión</li>
+                                    </ul>
+                                </div>
+                            </div>
+                            
+                            <!-- Vista previa -->
+                            <div class="card card-outline card-secondary">
+                                <div class="card-header">
+                                    <h3 class="card-title">
+                                        <i class="fas fa-eye"></i>
+                                        Vista Previa
+                                    </h3>
+                                </div>
+                                <div class="card-body">
+                                    <div id="preview-content">
+                                        <p class="text-muted">
+                                            <i class="fas fa-info-circle"></i>
+                                            Complete los campos para ver una vista previa
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Botones de acción -->
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="card">
+                                <div class="card-footer text-center">
+                                    <a href="{% url 'generador_actas:plantillas_lista' %}" class="btn btn-secondary">
+                                        <i class="fas fa-times"></i>
+                                        Cancelar
+                                    </a>
+                                    <button type="submit" class="btn btn-success ml-3">
+                                        <i class="fas fa-save"></i>
+                                        Crear Plantilla
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                </form>
+            </div>
+        </div>
+    </div>
+</section>
+
+</div>
+
+{% endblock %}
+<div class="modal fade" id="modalEditarSegmento" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-info">
+                <h5 class="modal-title">
+                    <i class="fas fa-edit"></i> Editar Configuración del Segmento
+                </h5>
+                <button type="button" class="close text-white" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="edit-segmento-id">
+                
+                <div class="form-group">
+                    <label>Segmento:</label>
+                    <input type="text" class="form-control" id="edit-segmento-nombre" readonly>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label>Orden:</label>
+                            <input type="number" class="form-control" id="edit-orden" min="1" value="1">
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group mt-4">
+                            <div class="form-check">
+                                <input type="checkbox" class="form-check-input" id="edit-obligatorio">
+                                <label class="form-check-label" for="edit-obligatorio">
+                                    Segmento obligatorio
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label>Prompt personalizado (opcional):</label>
+                    <textarea class="form-control" id="edit-prompt-personalizado" rows="3" placeholder="Deje vacío para usar el prompt por defecto del segmento"></textarea>
+                    <small class="form-text text-muted">
+                        Si especifica un prompt personalizado, se usará en lugar del prompt por defecto del segmento.
+                    </small>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-info" id="btn-guardar-edicion">
+                    <i class="fas fa-save"></i> Guardar Cambios
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para seleccionar tipo de segmento -->
+<div class="modal fade" id="modal-seleccionar-segmento" tabindex="-1" role="dialog" aria-labelledby="modalSeleccionarSegmentoLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-primary">
+                <h4 class="modal-title" id="modalSeleccionarSegmentoLabel">
+                    <i class="fas fa-puzzle-piece"></i>
+                    Seleccionar Tipo de Segmento
+                </h4>
+                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-12">
+                        <p class="mb-4">Seleccione el tipo de segmento que desea agregar a la plantilla:</p>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <!-- Segmentos básicos -->
+                    <div class="col-md-6 mb-3">
+                        <div class="card h-100 border-primary">
+                            <div class="card-header bg-light">
+                                <h6 class="mb-0"><i class="fas fa-file-text text-primary"></i> Segmentos Básicos</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="list-group list-group-flush">
+                                    <button type="button" 
+                                            class="list-group-item list-group-item-action btn-seleccionar-tipo-segmento"
+                                            data-tipo="titulo"
+                                            data-nombre="Título del Acta"
+                                            data-descripcion="Título principal del acta municipal">
+                                        <strong>Título del Acta</strong>
+                                        <small class="d-block text-muted">Título principal del acta municipal</small>
+                                    </button>
+                                    
+                                    <button type="button" 
+                                            class="list-group-item list-group-item-action btn-seleccionar-tipo-segmento"
+                                            data-tipo="fecha_hora"
+                                            data-nombre="Fecha y Hora"
+                                            data-descripcion="Información de fecha y hora de la reunión">
+                                        <strong>Fecha y Hora</strong>
+                                        <small class="d-block text-muted">Información de fecha y hora de la reunión</small>
+                                    </button>
+                                    
+                                    <button type="button" 
+                                            class="list-group-item list-group-item-action btn-seleccionar-tipo-segmento"
+                                            data-tipo="lugar"
+                                            data-nombre="Lugar de la Reunión"
+                                            data-descripcion="Ubicación donde se realiza la reunión">
+                                        <strong>Lugar de la Reunión</strong>
+                                        <small class="d-block text-muted">Ubicación donde se realiza la reunión</small>
+                                    </button>
+                                    
+                                    <button type="button" 
+                                            class="list-group-item list-group-item-action btn-seleccionar-tipo-segmento"
+                                            data-tipo="participantes"
+                                            data-nombre="Lista de Participantes"
+                                            data-descripcion="Personas presentes en la reunión">
+                                        <strong>Lista de Participantes</strong>
+                                        <small class="d-block text-muted">Personas presentes en la reunión</small>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Segmentos de contenido -->
+                    <div class="col-md-6 mb-3">
+                        <div class="card h-100 border-success">
+                            <div class="card-header bg-light">
+                                <h6 class="mb-0"><i class="fas fa-comments text-success"></i> Contenido de la Reunión</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="list-group list-group-flush">
+                                    <button type="button" 
+                                            class="list-group-item list-group-item-action btn-seleccionar-tipo-segmento"
+                                            data-tipo="orden_dia"
+                                            data-nombre="Orden del Día"
+                                            data-descripcion="Agenda y puntos a tratar">
+                                        <strong>Orden del Día</strong>
+                                        <small class="d-block text-muted">Agenda y puntos a tratar</small>
+                                    </button>
+                                    
+                                    <button type="button" 
+                                            class="list-group-item list-group-item-action btn-seleccionar-tipo-segmento"
+                                            data-tipo="desarrollo"
+                                            data-nombre="Desarrollo de la Reunión"
+                                            data-descripcion="Contenido principal y discusiones">
+                                        <strong>Desarrollo de la Reunión</strong>
+                                        <small class="d-block text-muted">Contenido principal y discusiones</small>
+                                    </button>
+                                    
+                                    <button type="button" 
+                                            class="list-group-item list-group-item-action btn-seleccionar-tipo-segmento"
+                                            data-tipo="acuerdos"
+                                            data-nombre="Acuerdos y Decisiones"
+                                            data-descripcion="Resoluciones y compromisos adoptados">
+                                        <strong>Acuerdos y Decisiones</strong>
+                                        <small class="d-block text-muted">Resoluciones y compromisos adoptados</small>
+                                    </button>
+                                    
+                                    <button type="button" 
+                                            class="list-group-item list-group-item-action btn-seleccionar-tipo-segmento"
+                                            data-tipo="firmas"
+                                            data-nombre="Firmas y Validaciones"
+                                            data-descripcion="Espacios para firmas de autoridades">
+                                        <strong>Firmas y Validaciones</strong>
+                                        <small class="d-block text-muted">Espacios para firmas de autoridades</small>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                    <i class="fas fa-times"></i> Cancelar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+console.log('Inicializando interfaz lineal de plantillas...');
+
+// Variables globales
+window.segmentosSeleccionados = [];
+
+// Función para agregar segmento (interfaz lineal)
+window.agregarSegmento = function(id, codigo, nombre, categoria, tipo, descripcion, element) {
+    console.log('Agregando segmento:', { id, codigo, nombre, categoria, tipo, descripcion });
+    
+    // Verificar si ya está seleccionado por ID
+    var yaSeleccionado = window.segmentosSeleccionados.find(s => s.id === id);
+    if (yaSeleccionado) {
+        alert('Este segmento ya está seleccionado');
+        return;
+    }
+    
+    // Crear objeto segmento
+    var segmento = {
+        id: parseInt(id),
+        codigo: codigo,
+        nombre: nombre,
+        categoria: categoria,
+        tipo: tipo,
+        descripcion: descripcion,
+        orden: window.segmentosSeleccionados.length + 1
+    };
+    
+    // Agregar a la lista
+    window.segmentosSeleccionados.push(segmento);
+    
+    // Actualizar interfaz visual
+    actualizarListaSegmentos();
+    
+    // Marcar botón como seleccionado
+    element.classList.add('list-group-item-success');
+    element.querySelector('.fa-plus-circle').className = 'fas fa-check-circle text-white';
+    element.disabled = true;
+    
+    // Actualizar campo oculto
+    var hiddenField = document.getElementById('id_segmentos_json');
+    if (hiddenField) {
+        hiddenField.value = JSON.stringify(window.segmentosSeleccionados);
+        console.log('Campo JSON actualizado:', hiddenField.value);
+    }
+    
+    console.log('Total segmentos seleccionados:', window.segmentosSeleccionados.length);
+};
+
+// Función para eliminar segmento
+window.eliminarSegmento = function(index) {
+    var segmento = window.segmentosSeleccionados[index];
+    console.log('Eliminando segmento:', segmento);
+    
+    if (confirm('¿Está seguro de quitar "' + segmento.nombre + '" de la plantilla?')) {
+        // Remover de la lista
+        window.segmentosSeleccionados.splice(index, 1);
+        
+        // Reordenar
+        window.segmentosSeleccionados.forEach(function(seg, i) {
+            seg.orden = i + 1;
+        });
+        
+        // Actualizar interfaz
+        actualizarListaSegmentos();
+        
+        // Reactivar botón correspondiente
+        var botones = document.querySelectorAll('.segmento-disponible[data-tipo="' + segmento.tipo + '"]');
+        botones.forEach(function(btn) {
+            btn.classList.remove('list-group-item-success');
+            btn.disabled = false;
+            btn.querySelector('.fa-check-circle').className = 'fas fa-plus-circle text-success';
+        });
+        
+        // Actualizar campo oculto
+        var hiddenField = document.getElementById('id_segmentos_json');
+        if (hiddenField) {
+            hiddenField.value = JSON.stringify(window.segmentosSeleccionados);
+        }
+        
+        console.log('Segmento eliminado. Total:', window.segmentosSeleccionados.length);
+    }
+};
+
+// Función para mover segmento
+window.moverSegmento = function(index, direccion) {
+    var newIndex = index + direccion;
+    if (newIndex < 0 || newIndex >= window.segmentosSeleccionados.length) return;
+    
+    // Intercambiar elementos
+    var temp = window.segmentosSeleccionados[index];
+    window.segmentosSeleccionados[index] = window.segmentosSeleccionados[newIndex];
+    window.segmentosSeleccionados[newIndex] = temp;
+    
+    // Actualizar orden
+    window.segmentosSeleccionados.forEach(function(seg, i) {
+        seg.orden = i + 1;
+    });
+    
+    // Actualizar interfaz
+    actualizarListaSegmentos();
+    
+    // Actualizar campo oculto
+    var hiddenField = document.getElementById('id_segmentos_json');
+    if (hiddenField) {
+        hiddenField.value = JSON.stringify(window.segmentosSeleccionados);
+    }
+    
+    console.log('Segmento movido de posición', index, 'a', newIndex);
+};
+
+// Función para actualizar la lista visual
+window.actualizarListaSegmentos = function() {
+    var lista = document.getElementById('segmentos-seleccionados');
+    if (!lista) {
+        console.error('Contenedor segmentos-seleccionados no encontrado');
+        return;
+    }
+    
+    lista.innerHTML = '';
+    
+    if (window.segmentosSeleccionados.length === 0) {
+        // Mostrar mensaje vacío
+        lista.innerHTML = `
+            <div class="text-center text-muted py-5" id="segmentos-empty">
+                <i class="fas fa-arrow-up fa-3x mb-3 text-info"></i>
+                <h5>No hay segmentos seleccionados</h5>
+                <p>Seleccione segmentos de la lista de arriba para comenzar</p>
+            </div>
+        `;
+    } else {
+        // Mostrar segmentos
+        window.segmentosSeleccionados.forEach(function(segmento, index) {
+            var item = document.createElement('div');
+            item.className = 'card mb-2 border-primary';
+            
+            item.innerHTML = `
+                <div class="card-body py-2">
+                    <div class="row align-items-center">
+                        <div class="col-md-1 text-center">
+                            <span class="badge badge-primary badge-pill h5 mb-0">${index + 1}</span>
+                        </div>
+                        <div class="col-md-7">
+                            <h6 class="mb-1"><strong>${segmento.nombre}</strong></h6>
+                            <small class="text-muted">${segmento.descripcion}</small>
+                            <br><span class="badge badge-info mt-1">${segmento.tipo}</span>
+                        </div>
+                        <div class="col-md-4 text-right">
+                            <div class="btn-group btn-group-sm">
+                                <button type="button" class="btn btn-outline-primary" onclick="moverSegmento(${index}, -1)" 
+                                        ${index === 0 ? 'disabled' : ''} title="Subir">
+                                    <i class="fas fa-arrow-up"></i>
+                                </button>
+                                <button type="button" class="btn btn-outline-primary" onclick="moverSegmento(${index}, 1)" 
+                                        ${index === window.segmentosSeleccionados.length - 1 ? 'disabled' : ''} title="Bajar">
+                                    <i class="fas fa-arrow-down"></i>
+                                </button>
+                                <button type="button" class="btn btn-outline-danger" onclick="eliminarSegmento(${index})" title="Quitar">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            lista.appendChild(item);
+        });
+    }
+};
+
+// Inicialización cuando DOM esté listo
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Configurando interfaz lineal...');
+    
+    // Configurar todos los botones de segmentos disponibles
+    var botonesSegmentos = document.querySelectorAll('.segmento-disponible');
+    console.log('Botones de segmentos encontrados:', botonesSegmentos.length);
+    
+    botonesSegmentos.forEach(function(btn, index) {
+        var id = btn.dataset.id;
+        var codigo = btn.dataset.codigo;
+        var nombre = btn.dataset.nombre;
+        var categoria = btn.dataset.categoria;
+        var tipo = btn.dataset.tipo;
+        var descripcion = btn.dataset.descripcion;
+        
+        console.log(`Configurando botón ${index + 1}: ${nombre} (${codigo})`);
+        
+        btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            console.log('Click en segmento:', nombre);
+            agregarSegmento(id, codigo, nombre, categoria, tipo, descripcion, this);
+        });
+    });
+    
+    console.log('Interfaz lineal configurada exitosamente');
+});
+
+</script>
+{% endblock %}

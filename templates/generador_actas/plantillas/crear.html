@@ -1,0 +1,274 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Nueva Plantilla - Actas IA{% endblock %}
+
+{% block extra_css %}
+<style>
+.segmento-checkbox {
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    padding: 15px;
+    margin-bottom: 15px;
+    background-color: #f9f9f9;
+}
+.segmento-checkbox:hover {
+    border-color: #007bff;
+    background-color: #f0f8ff;
+}
+.card-categoria {
+    max-height: 400px;
+    overflow-y: auto;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="content-wrapper">
+    <section class="content-header">
+        <div class="container-fluid">
+            <div class="row mb-2">
+                <div class="col-sm-6">
+                    <h1>
+                        <i class="fas fa-plus"></i>
+                        Nueva Plantilla de Acta
+                    </h1>
+                </div>
+                <div class="col-sm-6">
+                    <ol class="breadcrumb float-sm-right">
+                        {% for crumb in breadcrumbs %}
+                            {% if forloop.last %}
+                                <li class="breadcrumb-item active">{{ crumb.title }}</li>
+                            {% else %}
+                                <li class="breadcrumb-item"><a href="{{ crumb.url }}">{{ crumb.title }}</a></li>
+                            {% endif %}
+                        {% endfor %}
+                    </ol>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="content">
+        <div class="container-fluid">
+            <form method="post">
+                {% csrf_token %}
+                
+                <div class="row">
+                    <!-- Información básica -->
+                    <div class="col-md-8">
+                        <div class="card card-primary">
+                            <div class="card-header">
+                                <h3 class="card-title">
+                                    <i class="fas fa-info-circle"></i>
+                                    Información de la Plantilla
+                                </h3>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            {{ form.nombre.label_tag }}
+                                            {{ form.nombre }}
+                                            {% if form.nombre.errors %}
+                                                <div class="text-danger">{{ form.nombre.errors.0 }}</div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            {{ form.tipo_acta.label_tag }}
+                                            {{ form.tipo_acta }}
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="form-group">
+                                    {{ form.descripcion.label_tag }}
+                                    {{ form.descripcion }}
+                                </div>
+                                
+                                <div class="form-group">
+                                    <div class="form-check">
+                                        {{ form.activa }}
+                                        <label class="form-check-label" for="{{ form.activa.id_for_label }}">
+                                            {{ form.activa.label }}
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Selección de Segmentos -->
+                        <div class="card card-success">
+                            <div class="card-header">
+                                <h3 class="card-title">
+                                    <i class="fas fa-puzzle-piece"></i>
+                                    Seleccionar Segmentos ({{ segmentos_disponibles.count }} disponibles)
+                                </h3>
+                            </div>
+                            <div class="card-body">
+                                {% if segmentos_disponibles %}
+                                    <div class="alert alert-info">
+                                        <i class="fas fa-info-circle"></i>
+                                        Seleccione los segmentos que desea incluir en esta plantilla. 
+                                        Puede configurar el orden y si son obligatorios.
+                                    </div>
+                                    
+                                    <div class="row">
+                                        {% regroup segmentos_disponibles by categoria as segmentos_por_categoria %}
+                                        {% for categoria in segmentos_por_categoria %}
+                                        <div class="col-md-6 mb-3">
+                                            <div class="card border-primary card-categoria">
+                                                <div class="card-header bg-primary text-white">
+                                                    <h6 class="mb-0">
+                                                        <i class="fas fa-folder"></i>
+                                                        {{ categoria.grouper|default:"Otros"|capfirst }}
+                                                        <span class="badge badge-light">{{ categoria.list|length }}</span>
+                                                    </h6>
+                                                </div>
+                                                <div class="card-body">
+                                                    {% for segmento in categoria.list %}
+                                                    <div class="segmento-checkbox">
+                                                        <div class="custom-control custom-checkbox">
+                                                            <input type="checkbox" 
+                                                                   class="custom-control-input" 
+                                                                   id="seg_{{ segmento.id }}"
+                                                                   name="segmentos_seleccionados" 
+                                                                   value="{{ segmento.id }}">
+                                                            <label class="custom-control-label" for="seg_{{ segmento.id }}">
+                                                                <strong>{{ segmento.nombre }}</strong>
+                                                                {% if segmento.descripcion %}
+                                                                    <br><small class="text-muted">{{ segmento.descripcion }}</small>
+                                                                {% endif %}
+                                                            </label>
+                                                        </div>
+                                                        
+                                                        <div class="row mt-2">
+                                                            <div class="col-4">
+                                                                <label class="small">Orden:</label>
+                                                                <input type="number" 
+                                                                       class="form-control form-control-sm" 
+                                                                       name="orden_{{ segmento.id }}"
+                                                                       value="{{ forloop.counter }}"
+                                                                       min="1" max="50"
+                                                                       title="Orden del segmento">
+                                                            </div>
+                                                            <div class="col-8">
+                                                                <div class="form-check mt-4">
+                                                                    <input class="form-check-input" 
+                                                                           type="checkbox" 
+                                                                           name="obligatorio_{{ segmento.id }}"
+                                                                           id="obl_{{ segmento.id }}">
+                                                                    <label class="form-check-label" for="obl_{{ segmento.id }}">
+                                                                        Obligatorio
+                                                                    </label>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    {% endfor %}
+                                                </div>
+                                            </div>
+                                        </div>
+                                        {% endfor %}
+                                    </div>
+                                {% else %}
+                                    <div class="alert alert-warning">
+                                        <i class="fas fa-exclamation-triangle"></i>
+                                        No hay segmentos disponibles en la base de datos.
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Panel lateral -->
+                    <div class="col-md-4">
+                        <div class="card card-info">
+                            <div class="card-header">
+                                <h3 class="card-title">
+                                    <i class="fas fa-info-circle"></i>
+                                    Información
+                                </h3>
+                            </div>
+                            <div class="card-body">
+                                <div class="info-box">
+                                    <div class="info-box-icon bg-info">
+                                        <i class="fas fa-puzzle-piece"></i>
+                                    </div>
+                                    <div class="info-box-content">
+                                        <span class="info-box-text">Segmentos Disponibles</span>
+                                        <span class="info-box-number">{{ segmentos_disponibles.count }}</span>
+                                    </div>
+                                </div>
+                                
+                                <div class="alert alert-success">
+                                    <h6><i class="fas fa-check-circle"></i> HTML Puro</h6>
+                                    <p class="mb-0">Interfaz sin JavaScript problemático</p>
+                                </div>
+                                
+                                <h6>Instrucciones:</h6>
+                                <ul class="list-unstyled">
+                                    <li><i class="fas fa-check text-success"></i> Complete el nombre de la plantilla</li>
+                                    <li><i class="fas fa-check text-success"></i> Seleccione los segmentos deseados</li>
+                                    <li><i class="fas fa-check text-success"></i> Configure orden y obligatoriedad</li>
+                                    <li><i class="fas fa-check text-success"></i> Haga click en Crear</li>
+                                </ul>
+                            </div>
+                        </div>
+                        
+                        <div class="text-center">
+                            <a href="{% url 'generador_actas:plantillas_lista' %}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left"></i>
+                                Cancelar
+                            </a>
+                            <button type="submit" class="btn btn-success ml-2">
+                                <i class="fas fa-save"></i>
+                                Crear Plantilla
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </section>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+console.log('✅ Plantilla HTML limpia cargada');
+console.log('📊 Segmentos disponibles: {{ segmentos_disponibles.count }}');
+
+// Validación básica del formulario
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.querySelector('form');
+    
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            const nombre = document.querySelector('input[name="nombre"]');
+            
+            if (!nombre || !nombre.value.trim()) {
+                alert('Por favor ingrese un nombre para la plantilla');
+                e.preventDefault();
+                return false;
+            }
+            
+            const segmentosSeleccionados = document.querySelectorAll('input[name="segmentos_seleccionados"]:checked');
+            console.log('📋 Creando plantilla con', segmentosSeleccionados.length, 'segmentos seleccionados');
+            
+            if (segmentosSeleccionados.length === 0) {
+                const confirmar = confirm('¿Crear la plantilla sin segmentos? Podrá agregarlos después.');
+                if (!confirmar) {
+                    e.preventDefault();
+                    return false;
+                }
+            }
+            
+            return true;
+        });
+    }
+});
+</script>
+{% endblock %}

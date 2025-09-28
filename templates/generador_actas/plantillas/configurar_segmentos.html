@@ -1,0 +1,577 @@
+{% extends "layouts/base.html" %}
+{% load static %}
+
+{% block title %}{{ page_title }} - Sistema Actas IA{% endblock %}
+
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'css/plantillas-drag-drop.css' %}">
+    <style>
+        .segmento-item {
+            background: white;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        
+        .segmento-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        
+        .segmento-info {
+            flex: 1;
+            margin-left: 15px;
+        }
+        
+        .segmento-meta {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        .config-panel {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #6c757d;
+            background: #f8f9fa;
+            border: 2px dashed #dee2e6;
+            border-radius: 8px;
+        }
+        
+        .empty-state i {
+            font-size: 3em;
+            margin-bottom: 15px;
+            opacity: 0.5;
+        }
+        
+        .controls-panel {
+            background: white;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+    </style>
+{% endblock %}
+
+{% block content %}
+    <!-- Breadcrumb -->
+    <div class="content-header">
+        <div class="container-fluid">
+            <div class="row mb-2">
+                <div class="col-sm-6">
+                    <h1>{{ page_title }}</h1>
+                </div>
+                <div class="col-sm-6">
+                    <ol class="breadcrumb float-sm-right">
+                        {% for crumb in breadcrumbs %}
+                            {% if forloop.last %}
+                                <li class="breadcrumb-item active">{{ crumb.title }}</li>
+                            {% else %}
+                                <li class="breadcrumb-item">
+                                    <a href="{{ crumb.url }}">{{ crumb.title }}</a>
+                                </li>
+                            {% endif %}
+                        {% endfor %}
+                    </ol>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Contenido principal -->
+    <section class="content">
+        <div class="container-fluid">
+            
+            <!-- Panel de información -->
+            <div class="row">
+                <div class="col-12">
+                    <div class="config-panel">
+                        <div class="row">
+                            <div class="col-md-8">
+                                <h4><i class="fas fa-puzzle-piece mr-2"></i>{{ plantilla.nombre }}</h4>
+                                <p class="text-muted mb-0">{{ plantilla.descripcion }}</p>
+                            </div>
+                            <div class="col-md-4 text-right">
+                                <div class="info-stats">
+                                    <div class="stat-item">
+                                        <span class="badge badge-primary">{{ configuraciones.count }} Segmentos</span>
+                                    </div>
+                                    <div class="stat-item mt-2">
+                                        <span class="badge badge-info">{{ plantilla.get_tipo_acta_display }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Controles principales -->
+            <div class="row">
+                <div class="col-12">
+                    <div class="controls-panel">
+                        <div class="row align-items-center">
+                            <div class="col-md-6">
+                                <h5 class="mb-0"><i class="fas fa-sort mr-2"></i>Organizar Segmentos</h5>
+                                <p class="text-muted mb-0">Arrastra los segmentos para cambiar su orden</p>
+                            </div>
+                            <div class="col-md-6 text-right">
+                                <button type="button" class="btn btn-outline-secondary btn-sm" onclick="resetOrder()">
+                                    <i class="fas fa-undo mr-1"></i>Restaurar Original
+                                </button>
+                                <button type="button" class="btn btn-outline-primary btn-sm" onclick="previewStructure()">
+                                    <i class="fas fa-eye mr-1"></i>Vista Previa
+                                </button>
+                                <a href="{% url 'generador_actas:lista_plantillas' %}" class="btn btn-secondary btn-sm">
+                                    <i class="fas fa-arrow-left mr-1"></i>Volver
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Contenedor de segmentos con drag & drop -->
+            <div class="row">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title"><i class="fas fa-list-ol mr-2"></i>Segmentos de la Plantilla</h3>
+                        </div>
+                        <div class="card-body">
+                            
+                            {% if configuraciones %}
+                                <div id="segmentos-container" 
+                                     class="segmentos-container has-items"
+                                     data-drag-drop="true" 
+                                     data-api-endpoint="{% url 'generador_actas:api_actualizar_orden_segmentos' plantilla.pk %}"
+                                     data-csrf-token="{{ csrf_token }}">
+                                    
+                                    {% for config in configuraciones %}
+                                        <div class="segmento-item" 
+                                             data-segmento-id="{{ config.pk }}" 
+                                             data-orden="{{ config.orden }}"
+                                             draggable="true">
+                                            
+                                            <!-- Handle de arrastrar -->
+                                            <div class="drag-handle" 
+                                                 title="Arrastra para reordenar"
+                                                 aria-label="Mover segmento {{ config.segmento.nombre }}">
+                                                <i class="fas fa-grip-vertical"></i>
+                                            </div>
+                                            
+                                            <!-- Número de orden -->
+                                            <div class="orden-badge">{{ config.orden }}</div>
+                                            
+                                            <!-- Información del segmento -->
+                                            <div class="segmento-content">
+                                                <div class="segmento-header">
+                                                    <div class="segmento-info">
+                                                        <h5>{{ config.segmento.nombre }}</h5>
+                                                        <p>{{ config.segmento.descripcion|truncatewords:15 }}</p>
+                                                        
+                                                        <div class="segmento-meta">
+                                                            <span class="badge 
+                                                                {% if config.segmento.tipo == 'estatico' %}badge-secondary
+                                                                {% elif config.segmento.tipo == 'dinamico' %}badge-primary
+                                                                {% else %}badge-info{% endif %}">
+                                                                {{ config.segmento.get_tipo_display }}
+                                                            </span>
+                                                            
+                                                            <span class="badge badge-outline-dark">
+                                                                {{ config.segmento.get_categoria_display }}
+                                                            </span>
+                                                            
+                                                            {% if config.obligatorio %}
+                                                                <span class="badge badge-warning">
+                                                                    <i class="fas fa-asterisk"></i> Obligatorio
+                                                                </span>
+                                                            {% endif %}
+                                                            
+                                                            {% if config.segmento.proveedor_ia %}
+                                                                <span class="badge badge-success">
+                                                                    <i class="fas fa-robot"></i> {{ config.segmento.proveedor_ia.nombre }}
+                                                                </span>
+                                                            {% endif %}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                
+                                                <!-- Prompt preview (si es dinámico) -->
+                                                {% if config.segmento.tipo != 'estatico' and config.prompt_efectivo %}
+                                                    <div class="prompt-preview">
+                                                        <small class="text-muted">
+                                                            <strong>Prompt:</strong> 
+                                                            {{ config.prompt_efectivo|truncatewords:20 }}
+                                                        </small>
+                                                    </div>
+                                                {% endif %}
+                                            </div>
+                                            
+                                            <!-- Controles del segmento -->
+                                            <div class="segmento-controls">
+                                                <button type="button" 
+                                                        class="btn btn-outline-primary btn-sm"
+                                                        title="Editar configuración"
+                                                        onclick="editarConfiguracion({{ config.pk }})">
+                                                    <i class="fas fa-edit"></i>
+                                                </button>
+                                                
+                                                <button type="button" 
+                                                        class="btn btn-outline-info btn-sm"
+                                                        title="Vista previa"
+                                                        onclick="previewSegmento({{ config.segmento.pk }})">
+                                                    <i class="fas fa-eye"></i>
+                                                </button>
+                                                
+                                                {% if not config.obligatorio %}
+                                                    <button type="button" 
+                                                            class="btn btn-outline-danger btn-sm"
+                                                            title="Quitar de plantilla"
+                                                            onclick="removeSegmento({{ config.pk }})">
+                                                        <i class="fas fa-minus"></i>
+                                                    </button>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                                
+                                <!-- Panel de acciones -->
+                                <div class="mt-4 text-center">
+                                    <button type="button" class="btn btn-success" onclick="addSegmento()">
+                                        <i class="fas fa-plus mr-2"></i>Añadir Segmento
+                                    </button>
+                                    
+                                    <button type="button" class="btn btn-outline-primary ml-2" onclick="plantillasDragDrop.guardarOrden()">
+                                        <i class="fas fa-save mr-2"></i>Guardar Orden
+                                    </button>
+                                </div>
+                            {% else %}
+                                <!-- Estado vacío -->
+                                <div class="empty-state">
+                                    <i class="fas fa-puzzle-piece"></i>
+                                    <h5>Sin Segmentos Configurados</h5>
+                                    <p>Esta plantilla aún no tiene segmentos asignados.</p>
+                                    <button type="button" class="btn btn-primary" onclick="addSegmento()">
+                                        <i class="fas fa-plus mr-2"></i>Añadir Primer Segmento
+                                    </button>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Modal para agregar segmentos -->
+    <div class="modal fade" id="addSegmentoModal" tabindex="-1" role="dialog">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fas fa-plus-circle mr-2"></i>Agregar Segmentos a la Plantilla
+                    </h5>
+                    <button type="button" class="close" data-dismiss="modal">
+                        <span>&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        {% for categoria, segmentos in segmentos_por_categoria.items %}
+                        <div class="col-md-6 mb-4">
+                            <h6 class="text-primary">
+                                <i class="fas fa-folder-open mr-1"></i>{{ categoria }}
+                            </h6>
+                            <div class="segmentos-categoria">
+                                {% for segmento in segmentos %}
+                                    {% if segmento.pk not in segmentos_configurados_ids %}
+                                    <div class="segmento-disponible" data-segmento-id="{{ segmento.pk }}">
+                                        <div class="custom-control custom-checkbox">
+                                            <input type="checkbox" class="custom-control-input" 
+                                                   id="segmento_{{ segmento.pk }}" 
+                                                   value="{{ segmento.pk }}">
+                                            <label class="custom-control-label" for="segmento_{{ segmento.pk }}">
+                                                <strong>{{ segmento.nombre }}</strong>
+                                                <br>
+                                                <small class="text-muted">{{ segmento.descripcion|truncatewords:10 }}</small>
+                                                <br>
+                                                <span class="badge 
+                                                    {% if segmento.tipo == 'estatico' %}badge-secondary
+                                                    {% elif segmento.tipo == 'dinamico' %}badge-primary  
+                                                    {% else %}badge-info{% endif %} mr-1">
+                                                    {{ segmento.get_tipo_display }}
+                                                </span>
+                                                {% if segmento.proveedor_ia %}
+                                                <span class="badge badge-success">
+                                                    <i class="fas fa-robot"></i> {{ segmento.proveedor_ia.nombre }}
+                                                </span>
+                                                {% endif %}
+                                            </label>
+                                        </div>
+                                    </div>
+                                    {% endif %}
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle mr-2"></i>
+                        <strong>Consejo:</strong> Puedes seleccionar múltiples segmentos. Se añadirán al final de la plantilla en el orden mostrado.
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                        <i class="fas fa-times mr-1"></i>Cancelar
+                    </button>
+                    <button type="button" class="btn btn-primary" onclick="confirmarAgregarSegmentos()">
+                        <i class="fas fa-plus mr-1"></i>Agregar Seleccionados
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para editar configuración de segmento -->
+    <div class="modal fade" id="editConfigModal" tabindex="-1" role="dialog">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fas fa-edit mr-2"></i>Editar Configuración del Segmento
+                    </h5>
+                    <button type="button" class="close" data-dismiss="modal">
+                        <span>&times;</span>
+                    </button>
+                </div>
+                <form id="editConfigForm">
+                    <div class="modal-body">
+                        <input type="hidden" id="edit_config_id">
+                        
+                        <div class="form-group">
+                            <div class="custom-control custom-checkbox">
+                                <input type="checkbox" class="custom-control-input" id="edit_obligatorio">
+                                <label class="custom-control-label" for="edit_obligatorio">
+                                    <strong>Segmento obligatorio</strong>
+                                    <br><small class="text-muted">Este segmento debe estar presente en todas las actas</small>
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="edit_prompt_personalizado">Prompt Personalizado (opcional)</label>
+                            <textarea class="form-control" id="edit_prompt_personalizado" rows="4" 
+                                      placeholder="Deja en blanco para usar el prompt por defecto del segmento"></textarea>
+                            <small class="form-text text-muted">
+                                Si proporcionas un prompt personalizado, este tendrá prioridad sobre el prompt por defecto del segmento.
+                            </small>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                            <i class="fas fa-times mr-1"></i>Cancelar
+                        </button>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save mr-1"></i>Guardar Cambios
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block extra_js %}
+    <script src="{% static 'js/plantillas-drag-drop.js' %}"></script>
+    <script>
+        // Inicializar sistema drag & drop
+        let plantillasDragDrop;
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            const container = document.getElementById('segmentos-container');
+            if (container) {
+                const apiEndpoint = container.dataset.apiEndpoint;
+                const csrfToken = container.dataset.csrfToken;
+                
+                plantillasDragDrop = new PlantillasDragDrop('segmentos-container', apiEndpoint, csrfToken);
+            }
+        });
+        
+        // Funciones de control
+        function resetOrder() {
+            if (confirm('¿Restaurar el orden original de los segmentos?')) {
+                location.reload();
+            }
+        }
+        
+        function previewStructure() {
+            const url = "{% url 'generador_actas:vista_previa_plantilla' plantilla.pk %}";
+            window.open(url, '_blank', 'width=800,height=600,scrollbars=yes');
+        }
+        
+        function editarConfiguracion(configId) {
+            // Cargar datos de configuración actual via AJAX
+            fetch(`/generador-actas/api/configuracion-segmento/${configId}/`, {
+                method: 'GET',
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Llenar modal con datos actuales
+                    document.getElementById('edit_config_id').value = configId;
+                    document.getElementById('edit_obligatorio').checked = data.obligatorio;
+                    document.getElementById('edit_prompt_personalizado').value = data.prompt_personalizado;
+                    
+                    // Mostrar modal
+                    $('#editConfigModal').modal('show');
+                } else {
+                    alert('Error cargando configuración: ' + data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error de conexión al cargar configuración');
+            });
+        }
+        
+        function previewSegmento(segmentoId) {
+            // Abrir vista previa en nueva ventana
+            const url = `/generador-actas/segmentos/${segmentoId}/`;
+            window.open(url, '_blank', 'width=800,height=600,scrollbars=yes');
+        }
+        
+        function removeSegmento(configId) {
+            if (confirm('¿Estás seguro de quitar este segmento de la plantilla?')) {
+                // Enviar request de eliminación
+                const formData = new FormData();
+                formData.append('accion', 'remover_segmento');
+                formData.append('configuracion_id', configId);
+                formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+                
+                fetch(window.location.href, {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => {
+                    if (response.ok) {
+                        location.reload(); // Recargar página para mostrar cambios
+                    } else {
+                        alert('Error eliminando segmento');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Error de conexión');
+                });
+            }
+        }
+        
+        function addSegmento() {
+            $('#addSegmentoModal').modal('show');
+        }
+        
+        function confirmarAgregarSegmentos() {
+            const checkboxes = document.querySelectorAll('#addSegmentoModal input[type="checkbox"]:checked');
+            const segmentosIds = Array.from(checkboxes).map(cb => cb.value);
+            
+            if (segmentosIds.length === 0) {
+                alert('Por favor selecciona al menos un segmento');
+                return;
+            }
+            
+            // Enviar cada segmento seleccionado
+            const promises = segmentosIds.map(segmentoId => {
+                const formData = new FormData();
+                formData.append('accion', 'agregar_segmento');
+                formData.append('segmento_id', segmentoId);
+                formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+                
+                return fetch(window.location.href, {
+                    method: 'POST',
+                    body: formData
+                });
+            });
+            
+            Promise.all(promises)
+                .then(responses => {
+                    $('#addSegmentoModal').modal('hide');
+                    location.reload(); // Recargar para mostrar nuevos segmentos
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Error agregando segmentos');
+                });
+        }
+        
+        // Manejar formulario de edición de configuración
+        document.addEventListener('DOMContentLoaded', function() {
+            const editForm = document.getElementById('editConfigForm');
+            if (editForm) {
+                editForm.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    
+                    const configId = document.getElementById('edit_config_id').value;
+                    const formData = new FormData();
+                    formData.append('accion', 'actualizar_configuracion');
+                    formData.append('configuracion_id', configId);
+                    formData.append('obligatorio', document.getElementById('edit_obligatorio').checked ? 'on' : '');
+                    formData.append('prompt_personalizado', document.getElementById('edit_prompt_personalizado').value);
+                    formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+                    
+                    fetch(window.location.href, {
+                        method: 'POST',
+                        body: formData
+                    })
+                    .then(response => {
+                        if (response.ok) {
+                            $('#editConfigModal').modal('hide');
+                            location.reload();
+                        } else {
+                            alert('Error actualizando configuración');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert('Error de conexión');
+                    });
+                });
+            }
+        });
+        
+        // Feedback visual mejorado
+        document.addEventListener('DOMContentLoaded', function() {
+            // Añadir tooltips
+            $('[title]').tooltip();
+            
+            // Efectos hover mejorados
+            $('.segmento-item').hover(
+                function() { $(this).addClass('hover-effect'); },
+                function() { $(this).removeClass('hover-effect'); }
+            );
+        });
+    </script>
+{% endblock %}

@@ -18,3 +18,9 @@ class GeneradorActasConfig(AppConfig):
             import apps.generador_actas.signals
         except ImportError:
             pass
+            
+        # Importar tareas para registro en Celery
+        try:
+            import apps.generador_actas.tasks
+        except ImportError:
+            pass

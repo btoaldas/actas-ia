@@ -805,9 +805,13 @@ class ActaGenerada(models.Model):
         return reverse('generador_actas:detalle_acta', kwargs={'pk': self.pk})
     
     def save(self, *args, **kwargs):
+        # Asegurar que fecha_sesion tenga un valor
+        if not self.fecha_sesion:
+            self.fecha_sesion = timezone.now()
+        
         # Generar número de acta si no existe
         if not self.numero_acta:
-            year = self.fecha_sesion.year if self.fecha_sesion else timezone.now().year
+            year = self.fecha_sesion.year
             last_acta = ActaGenerada.objects.filter(
                 numero_acta__startswith=f"ACTA-{year}-"
             ).order_by('-numero_acta').first()
@@ -1068,3 +1072,311 @@ class LogOperacion(models.Model):
     
     def __str__(self):
         return f"{self.operacion.titulo} - {self.nivel}: {self.mensaje[:50]}"
+
+
+class EjecucionPlantilla(models.Model):
+    """Registro de cada ejecución de una plantilla para generar un acta"""
+    ESTADO_EJECUCION = [
+        ('iniciada', 'Iniciada'),
+        ('procesando_segmentos', 'Procesando Segmentos'),
+        ('editando_resultados', 'Editando Resultados'),
+        ('unificando', 'Unificando Acta'),
+        ('completada', 'Completada'),
+        ('error', 'Error'),
+        ('cancelada', 'Cancelada'),
+    ]
+    
+    # Identificación
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    nombre = models.CharField(max_length=200, help_text="Nombre descriptivo de la ejecución")
+    
+    # Relaciones principales
+    plantilla = models.ForeignKey(PlantillaActa, on_delete=models.CASCADE, related_name='ejecuciones')
+    usuario = models.ForeignKey(User, on_delete=models.PROTECT, related_name='ejecuciones_plantillas')
+    transcripcion = models.ForeignKey('audio_processing.ProcesamientoAudio', on_delete=models.CASCADE, 
+                                    null=True, blank=True, help_text="Transcripción utilizada como fuente")
+    
+    # Configuración de ejecución
+    proveedor_ia_global = models.ForeignKey(ProveedorIA, on_delete=models.PROTECT, 
+                                          help_text="IA utilizada para todos los segmentos")
+    variables_contexto = models.JSONField(default=dict, blank=True, 
+                                        help_text="Variables específicas para esta ejecución")
+    configuracion_overrides = models.JSONField(default=dict, blank=True,
+                                              help_text="Sobrescribir configuración por segmento")
+    
+    # Estado y progreso
+    estado = models.CharField(max_length=50, choices=ESTADO_EJECUCION, default='iniciada')
+    progreso_actual = models.IntegerField(default=0, help_text="Segmentos procesados")
+    progreso_total = models.IntegerField(default=0, help_text="Total de segmentos")
+    
+    # Metadatos de procesamiento
+    tiempo_inicio = models.DateTimeField(auto_now_add=True)
+    tiempo_fin = models.DateTimeField(null=True, blank=True)
+    tiempo_total_segundos = models.IntegerField(null=True, blank=True)
+    
+    # Resultados y errores
+    resultados_parciales = models.JSONField(default=dict, blank=True,
+                                          help_text="Resumen de resultados por segmento")
+    errores = models.JSONField(default=list, blank=True, help_text="Errores encontrados")
+    logs_procesamiento = models.TextField(blank=True, help_text="Logs detallados del proceso")
+    
+    # Configuración de unificación
+    prompt_unificacion_override = models.TextField(blank=True, 
+                                                 help_text="Override del prompt de unificación")
+    resultado_unificacion = models.TextField(blank=True, help_text="Acta unificada generada")
+    
+    class Meta:
+        verbose_name = "Ejecución de Plantilla"
+        verbose_name_plural = "Ejecuciones de Plantillas"
+        ordering = ['-tiempo_inicio']
+        indexes = [
+            models.Index(fields=['estado', '-tiempo_inicio']),
+            models.Index(fields=['usuario', '-tiempo_inicio']),
+            models.Index(fields=['plantilla', '-tiempo_inicio']),
+        ]
+    
+    def __str__(self):
+        return f"{self.nombre} - {self.plantilla.nombre} ({self.get_estado_display()})"
+    
+    def get_absolute_url(self):
+        return reverse('generador_actas:ver_ejecucion', kwargs={'pk': self.pk})
+    
+    @property
+    def duracion_formateada(self):
+        """Duración formateada de la ejecución"""
+        if not self.tiempo_total_segundos:
+            return "En proceso"
+        
+        horas = self.tiempo_total_segundos // 3600
+        minutos = (self.tiempo_total_segundos % 3600) // 60
+        segundos = self.tiempo_total_segundos % 60
+        
+        if horas > 0:
+            return f"{horas}h {minutos}m {segundos}s"
+        elif minutos > 0:
+            return f"{minutos}m {segundos}s"
+        else:
+            return f"{segundos}s"
+    
+    @property
+    def porcentaje_progreso(self):
+        """Progreso como porcentaje"""
+        if self.progreso_total == 0:
+            return 0
+        return int((self.progreso_actual / self.progreso_total) * 100)
+    
+    def marcar_completada(self):
+        """Marca la ejecución como completada y calcula tiempos"""
+        self.estado = 'completada'
+        self.tiempo_fin = timezone.now()
+        if self.tiempo_inicio:
+            delta = self.tiempo_fin - self.tiempo_inicio
+            self.tiempo_total_segundos = int(delta.total_seconds())
+        self.save()
+    
+    def agregar_error(self, error_mensaje, segmento=None):
+        """Agrega un error al log de errores"""
+        error_info = {
+            'timestamp': timezone.now().isoformat(),
+            'mensaje': error_mensaje,
+            'segmento': segmento.codigo if segmento else None
+        }
+        if not self.errores:
+            self.errores = []
+        self.errores.append(error_info)
+        self.save()
+
+
+class ResultadoSegmento(models.Model):
+    """Resultado del procesamiento de cada segmento dentro de una ejecución"""
+    ESTADO_RESULTADO = [
+        ('pendiente', 'Pendiente'),
+        ('procesando', 'Procesando'),
+        ('completado', 'Completado'),
+        ('editado', 'Editado Manualmente'),
+        ('error', 'Error'),
+        ('omitido', 'Omitido'),
+    ]
+    
+    # Relaciones
+    ejecucion = models.ForeignKey(EjecucionPlantilla, on_delete=models.CASCADE, related_name='resultados')
+    segmento = models.ForeignKey(SegmentoPlantilla, on_delete=models.CASCADE)
+    
+    # Configuración utilizada
+    orden_procesamiento = models.IntegerField(help_text="Orden en que se procesó")
+    proveedor_ia_usado = models.ForeignKey(ProveedorIA, on_delete=models.PROTECT, null=True, blank=True)
+    prompt_usado = models.TextField(help_text="Prompt final enviado a la IA")
+    configuracion_ia = models.JSONField(default=dict, blank=True, help_text="Parámetros IA utilizados")
+    
+    # Resultados
+    estado = models.CharField(max_length=50, choices=ESTADO_RESULTADO, default='pendiente')
+    resultado_crudo = models.TextField(blank=True, help_text="Respuesta cruda de la IA")
+    resultado_procesado = models.TextField(blank=True, help_text="Resultado limpio y procesado")
+    resultado_editado = models.TextField(blank=True, help_text="Versión editada manualmente")
+    
+    # Metadatos de procesamiento
+    tiempo_procesamiento = models.DateTimeField(null=True, blank=True)
+    tiempo_total_ms = models.IntegerField(null=True, blank=True, help_text="Tiempo de procesamiento en ms")
+    tokens_utilizados = models.IntegerField(null=True, blank=True, help_text="Tokens consumidos")
+    costo_estimado = models.DecimalField(max_digits=10, decimal_places=6, null=True, blank=True)
+    
+    # Control de versiones y edición
+    version_resultado = models.IntegerField(default=1, help_text="Versión del resultado")
+    usuario_ultima_edicion = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+    fecha_ultima_edicion = models.DateTimeField(auto_now=True)
+    
+    # Metadatos adicionales
+    metadatos_ia = models.JSONField(default=dict, blank=True, help_text="Metadatos de respuesta IA")
+    notas_edicion = models.TextField(blank=True, help_text="Notas del usuario sobre ediciones")
+    
+    class Meta:
+        verbose_name = "Resultado de Segmento"
+        verbose_name_plural = "Resultados de Segmentos"
+        ordering = ['ejecucion', 'orden_procesamiento']
+        unique_together = ['ejecucion', 'segmento']
+        indexes = [
+            models.Index(fields=['ejecucion', 'orden_procesamiento']),
+            models.Index(fields=['estado']),
+            models.Index(fields=['segmento']),
+        ]
+    
+    def __str__(self):
+        return f"{self.segmento.nombre} - {self.ejecucion.nombre} ({self.get_estado_display()})"
+    
+    @property
+    def resultado_final(self):
+        """Obtiene el resultado final (editado si existe, sino procesado)"""
+        return self.resultado_editado or self.resultado_procesado or self.resultado_crudo
+    
+    @property
+    def fue_editado(self):
+        """Indica si el resultado fue editado manualmente"""
+        return bool(self.resultado_editado and self.usuario_ultima_edicion)
+    
+    def marcar_como_editado(self, nuevo_contenido, usuario):
+        """Marca el resultado como editado manualmente"""
+        self.resultado_editado = nuevo_contenido
+        self.usuario_ultima_edicion = usuario
+        self.estado = 'editado'
+        self.version_resultado += 1
+        self.save()
+
+
+class ActaBorrador(models.Model):
+    """Acta borrador generada a partir de una ejecución de plantilla"""
+    ESTADO_BORRADOR = [
+        ('generando', 'Generando'),
+        ('borrador', 'Borrador'),
+        ('revision', 'En Revisión'),
+        ('aprobado', 'Aprobado'),
+        ('publicado', 'Publicado'),
+        ('archivado', 'Archivado'),
+    ]
+    
+    FORMATO_SALIDA = [
+        ('html', 'HTML'),
+        ('markdown', 'Markdown'),
+        ('docx', 'Word Document'),
+        ('pdf', 'PDF'),
+    ]
+    
+    # Identificación
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    titulo = models.CharField(max_length=300, help_text="Título del acta generada")
+    numero_acta = models.CharField(max_length=50, blank=True, help_text="Número oficial del acta")
+    
+    # Relaciones
+    ejecucion = models.OneToOneField(EjecucionPlantilla, on_delete=models.CASCADE, related_name='acta_borrador')
+    usuario_creacion = models.ForeignKey(User, on_delete=models.PROTECT, related_name='actas_borradores_creadas')
+    
+    # Contenido del acta
+    contenido_html = models.TextField(help_text="Contenido del acta en HTML")
+    contenido_markdown = models.TextField(blank=True, help_text="Versión Markdown del acta")
+    resumen_ejecutivo = models.TextField(blank=True, help_text="Resumen ejecutivo del acta")
+    
+    # Metadatos del documento
+    fecha_acta = models.DateField(help_text="Fecha oficial del acta")
+    lugar_sesion = models.CharField(max_length=200, blank=True, help_text="Lugar donde se realizó la sesión")
+    participantes = models.JSONField(default=list, blank=True, help_text="Lista de participantes")
+    
+    # Estado y workflow
+    estado = models.CharField(max_length=50, choices=ESTADO_BORRADOR, default='borrador')
+    version = models.CharField(max_length=20, default='1.0')
+    
+    # Control de versiones
+    fecha_creacion = models.DateTimeField(auto_now_add=True)
+    fecha_ultima_modificacion = models.DateTimeField(auto_now=True)
+    usuario_ultima_modificacion = models.ForeignKey(User, on_delete=models.SET_NULL, 
+                                                   null=True, blank=True,
+                                                   related_name='actas_borradores_modificadas')
+    
+    # Configuración de formato
+    formato_preferido = models.CharField(max_length=20, choices=FORMATO_SALIDA, default='html')
+    configuracion_formato = models.JSONField(default=dict, blank=True, 
+                                           help_text="Configuración específica de formato")
+    
+    # Archivos generados
+    archivo_pdf = models.FileField(upload_to='actas/pdf/', blank=True, null=True)
+    archivo_docx = models.FileField(upload_to='actas/docx/', blank=True, null=True)
+    
+    # Metadatos de calidad y procesamiento
+    calidad_estimada = models.FloatField(null=True, blank=True, help_text="Calidad estimada del acta (0-1)")
+    tiempo_generacion_segundos = models.IntegerField(null=True, blank=True)
+    
+    # Comentarios y revisiones
+    comentarios_revision = models.TextField(blank=True, help_text="Comentarios de revisión")
+    historial_cambios = models.JSONField(default=list, blank=True, help_text="Historial de cambios")
+    
+    class Meta:
+        verbose_name = "Acta Borrador"
+        verbose_name_plural = "Actas Borrador"
+        ordering = ['-fecha_creacion']
+        indexes = [
+            models.Index(fields=['estado', '-fecha_creacion']),
+            models.Index(fields=['usuario_creacion', '-fecha_creacion']),
+            models.Index(fields=['fecha_acta']),
+        ]
+    
+    def __str__(self):
+        return f"{self.titulo} - {self.numero_acta} ({self.get_estado_display()})"
+    
+    def get_absolute_url(self):
+        return reverse('generador_actas:ver_acta_borrador', kwargs={'pk': self.pk})
+    
+    @property
+    def tiempo_generacion_formateado(self):
+        """Tiempo de generación formateado"""
+        if not self.tiempo_generacion_segundos:
+            return "No disponible"
+        
+        minutos = self.tiempo_generacion_segundos // 60
+        segundos = self.tiempo_generacion_segundos % 60
+        
+        if minutos > 0:
+            return f"{minutos}m {segundos}s"
+        else:
+            return f"{segundos}s"
+    
+    def generar_numero_acta(self):
+        """Genera un número de acta automático si no existe"""
+        if not self.numero_acta:
+            fecha = self.fecha_acta or timezone.now().date()
+            año = fecha.year
+            # Contar actas del mismo año
+            count = ActaBorrador.objects.filter(fecha_acta__year=año).count()
+            self.numero_acta = f"ACTA-{año}-{count + 1:03d}"
+            self.save()
+    
+    def agregar_cambio_historial(self, usuario, descripcion, tipo_cambio='modificacion'):
+        """Agrega un cambio al historial"""
+        cambio = {
+            'timestamp': timezone.now().isoformat(),
+            'usuario': usuario.username,
+            'tipo': tipo_cambio,
+            'descripcion': descripcion,
+            'version': self.version
+        }
+        if not self.historial_cambios:
+            self.historial_cambios = []
+        self.historial_cambios.append(cambio)
+        self.save()

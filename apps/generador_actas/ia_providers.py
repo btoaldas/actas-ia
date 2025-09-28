@@ -564,6 +564,27 @@ class DeepSeekProvider(BaseIAProvider):
         
         return True, ""
     
+    def formatear_contexto(self, contexto: Dict[str, Any] = None) -> str:
+        """Formatea el contexto para incluirlo en el prompt"""
+        if not contexto:
+            return ""
+        
+        if 'transcripcion_completa' in contexto:
+            # Formatear transcripción para ser más legible
+            transcripcion = contexto['transcripcion_completa']
+            texto_formateado = []
+            
+            for i, segmento in enumerate(transcripcion):
+                tiempo = segmento.get('inicio', 0)
+                hablante = segmento.get('hablante', f'Participante_{i+1}')
+                texto = segmento.get('texto', '')
+                texto_formateado.append(f"[{hablante}] ({tiempo:.1f}s): {texto}")
+            
+            return "\n".join(texto_formateado)
+        
+        # Para otros tipos de contexto, convertir a JSON legible
+        return json.dumps(contexto, ensure_ascii=False, indent=2)
+    
     def procesar_prompt(self, prompt: str, contexto: Dict[str, Any] = None) -> Dict[str, Any]:
         """
         Procesa el prompt usando DeepSeek

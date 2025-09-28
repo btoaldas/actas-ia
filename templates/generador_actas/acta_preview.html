@@ -1,0 +1,159 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block extra_css %}
+<style>
+.preview-content {
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 0.375rem;
+    padding: 2rem;
+    min-height: 400px;
+    font-family: 'Times New Roman', serif;
+    line-height: 1.6;
+}
+
+.preview-header {
+    text-align: center;
+    border-bottom: 2px solid #333;
+    padding-bottom: 1rem;
+    margin-bottom: 2rem;
+}
+
+.preview-actions {
+    position: sticky;
+    top: 20px;
+    background: white;
+    padding: 1rem;
+    border-radius: 0.375rem;
+    box-shadow: 0 0.125rem 0.25rem rgba(0,0,0,0.075);
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Content Header (Page header) -->
+<div class="content-header">
+    <div class="container-fluid">
+        <div class="row mb-2">
+            <div class="col-sm-6">
+                <h1 class="m-0">{{ page_title }}</h1>
+            </div>
+            <div class="col-sm-6">
+                <ol class="breadcrumb float-sm-right">
+                    {% for crumb in breadcrumb %}
+                        {% if crumb.active %}
+                            <li class="breadcrumb-item active">{{ crumb.name }}</li>
+                        {% else %}
+                            <li class="breadcrumb-item"><a href="{{ crumb.url }}">{{ crumb.name }}</a></li>
+                        {% endif %}
+                    {% endfor %}
+                </ol>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Main content -->
+<section class="content">
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Preview Content -->
+            <div class="col-md-9">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">
+                            <i class="fas fa-eye"></i>
+                            Vista Previa - {{ acta.numero_acta }}
+                        </h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="preview-content">
+                            <div class="preview-header">
+                                <h2>{{ acta.titulo }}</h2>
+                                <p><strong>Número:</strong> {{ acta.numero_acta }}</p>
+                                <p><strong>Fecha Sesión:</strong> {{ acta.fecha_sesion|date:"d/m/Y H:i" }}</p>
+                            </div>
+                            
+                            <div class="preview-body">
+                                {% if acta.contenido_html %}
+                                    {{ acta.contenido_html|safe }}
+                                {% else %}
+                                    <div class="text-muted">
+                                        <h4>Contenido no disponible</h4>
+                                        <p>{{ contenido_preview }}</p>
+                                        
+                                        {% if acta.estado == 'borrador' %}
+                                            <div class="alert alert-info">
+                                                <i class="fas fa-info-circle"></i>
+                                                Esta acta está en estado borrador. Para generar el contenido final, 
+                                                inicie el procesamiento.
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Actions Sidebar -->
+            <div class="col-md-3">
+                <div class="preview-actions">
+                    <h5><i class="fas fa-cogs"></i> Acciones</h5>
+                    
+                    <!-- Estado -->
+                    <div class="mb-3">
+                        <span class="badge badge-{{ acta.estado_display_class }}">
+                            {{ acta.get_estado_display }}
+                        </span>
+                    </div>
+                    
+                    <!-- Botones de acción -->
+                    <div class="btn-group-vertical btn-block">
+                        <a href="{% url 'generador_actas:editar_acta' acta.pk %}" 
+                           class="btn btn-warning btn-sm">
+                            <i class="fas fa-edit"></i> Editar
+                        </a>
+                        
+                        {% if acta.estado == 'borrador' %}
+                            <form method="post" action="{% url 'generador_actas:generar_acta' acta.pk %}" class="d-inline">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-success btn-sm btn-block">
+                                    <i class="fas fa-play"></i> Generar Contenido
+                                </button>
+                            </form>
+                        {% endif %}
+                        
+                        {% if acta.estado == 'aprobado' %}
+                            <a href="{% url 'generador_actas:exportar_acta' acta.id %}" 
+                               class="btn btn-primary btn-sm">
+                                <i class="fas fa-download"></i> Exportar
+                            </a>
+                        {% endif %}
+                        
+                        <a href="{% url 'generador_actas:actas_lista' %}" 
+                           class="btn btn-secondary btn-sm">
+                            <i class="fas fa-arrow-left"></i> Volver a Lista
+                        </a>
+                    </div>
+                    
+                    <!-- Información adicional -->
+                    <div class="mt-3">
+                        <h6>Detalles</h6>
+                        <small class="text-muted">
+                            <strong>Plantilla:</strong> {{ acta.plantilla.nombre }}<br>
+                            <strong>Transcripción:</strong> {{ acta.transcripcion.id }}<br>
+                            <strong>Creado:</strong> {{ acta.fecha_creacion|date:"d/m/Y H:i" }}<br>
+                            <strong>Progreso:</strong> {{ acta.progreso }}%
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

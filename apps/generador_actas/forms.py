@@ -8,7 +8,10 @@ from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.forms import inlineformset_factory
 
-from .models import ActaGenerada, PlantillaActa, SegmentoPlantilla, ConfiguracionSegmento, ProveedorIA
+from .models import (
+    ActaGenerada, PlantillaActa, SegmentoPlantilla, ConfiguracionSegmento, ProveedorIA,
+    EjecucionPlantilla, ResultadoSegmento, ActaBorrador
+)
 
 
 
@@ -60,12 +63,12 @@ class TestProveedorForm(forms.Form):
 
 class ActaGeneradaForm(forms.ModelForm):
     """
-    Formulario para crear y editar actas generadas
+    Formulario completo para crear y editar actas generadas
     """
     class Meta:
         model = ActaGenerada
         fields = [
-            'numero_acta', 'titulo', 'plantilla'
+            'numero_acta', 'titulo', 'plantilla', 'transcripcion', 'proveedor_ia'
         ]
         widgets = {
             'numero_acta': forms.TextInput(attrs={
@@ -76,13 +79,39 @@ class ActaGeneradaForm(forms.ModelForm):
                 'class': 'form-control',
                 'placeholder': 'Título descriptivo del acta'
             }),
-            'plantilla': forms.Select(attrs={'class': 'form-control'})
+            'plantilla': forms.Select(attrs={'class': 'form-control'}),
+            'transcripcion': forms.Select(attrs={
+                'class': 'form-control',
+                'data-placeholder': 'Seleccionar transcripción...'
+            }),
+            'proveedor_ia': forms.Select(attrs={
+                'class': 'form-control',
+                'data-placeholder': 'Seleccionar proveedor IA...'
+            })
         }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         # Filtrar solo plantillas activas
         self.fields['plantilla'].queryset = PlantillaActa.objects.filter(activa=True)
+        
+        # Filtrar solo proveedores activos
+        self.fields['proveedor_ia'].queryset = ProveedorIA.objects.filter(activo=True)
+        
+        # Filtrar solo transcripciones completadas
+        from apps.transcripcion.models import Transcripcion
+        self.fields['transcripcion'].queryset = Transcripcion.objects.filter(
+            estado='completado'  # Cambiado de 'completada' a 'completado'
+        ).order_by('-fecha_creacion')
+        
+        # Configurar campos opcionales
+        self.fields['numero_acta'].required = False
+        self.fields['transcripcion'].empty_label = "Seleccionar transcripción..."
+        self.fields['proveedor_ia'].empty_label = "Seleccionar proveedor IA..."
+        
+        # Ayudas contextuales
+        self.fields['transcripcion'].help_text = "Transcripción de audio que será procesada para generar el acta"
+        self.fields['proveedor_ia'].help_text = "Proveedor de IA que procesará la transcripción"
 
 
 class PlantillaActaForm(forms.ModelForm):
@@ -1307,3 +1336,382 @@ class VariablesSegmentoForm(forms.Form):
             variables.update(variables_adicionales)
         
         return variables
+
+
+# ============================================================================
+# FORMULARIOS PARA PLANTILLAS - MÓDULO COMPLETO DE EJECUCIÓN
+# ============================================================================
+
+class PlantillaBasicaForm(forms.ModelForm):
+    """Formulario para datos básicos de plantilla"""
+    
+    class Meta:
+        model = PlantillaActa
+        fields = ['codigo', 'nombre', 'descripcion', 'tipo_acta', 'prompt_global', 
+                  'proveedor_ia_defecto', 'activa', 'version']
+        widgets = {
+            'codigo': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Código único (ej: PLANTILLA-ORD-001)'
+            }),
+            'nombre': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Nombre descriptivo de la plantilla'
+            }),
+            'descripcion': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 3,
+                'placeholder': 'Descripción del propósito y uso de esta plantilla'
+            }),
+            'tipo_acta': forms.Select(attrs={'class': 'form-control'}),
+            'prompt_global': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 8,
+                'placeholder': 'Prompt para la unificación final del acta. Use {segmentos} para incluir los resultados procesados.'
+            }),
+            'proveedor_ia_defecto': forms.Select(attrs={
+                'class': 'form-control',
+                'data-placeholder': 'Seleccionar proveedor IA por defecto'
+            }),
+            'activa': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'version': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': '1.0'
+            })
+        }
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['proveedor_ia_defecto'].queryset = ProveedorIA.objects.filter(activo=True)
+        self.fields['proveedor_ia_defecto'].empty_label = "Sin proveedor por defecto"
+        
+        # Ayudas contextuales
+        self.fields['prompt_global'].help_text = """
+        Prompt para unificar todos los segmentos procesados. Variables disponibles:<br>
+        • {segmentos} - Resultados de todos los segmentos<br>
+        • {transcripcion} - Transcripción original<br>
+        • {fecha} - Fecha de la sesión<br>
+        • {participantes} - Lista de participantes
+        """
+
+
+class PlantillaSegmentosForm(forms.Form):
+    """Formulario para gestión drag & drop de segmentos"""
+    segmentos_seleccionados = forms.CharField(
+        widget=forms.HiddenInput(),
+        required=False,
+        help_text="JSON con la configuración de segmentos"
+    )
+    
+    def __init__(self, *args, **kwargs):
+        plantilla = kwargs.pop('plantilla', None)
+        super().__init__(*args, **kwargs)
+        
+        # Preparar datos para el frontend
+        if plantilla:
+            configuraciones = plantilla.segmentos_ordenados
+            segmentos_data = []
+            for config in configuraciones:
+                segmentos_data.append({
+                    'id': config.segmento.id,
+                    'nombre': config.segmento.nombre,
+                    'tipo': config.segmento.tipo,
+                    'categoria': config.segmento.categoria,
+                    'orden': config.orden,
+                    'obligatorio': config.obligatorio,
+                    'variables_personalizadas': config.variables_personalizadas
+                })
+            
+            self.initial['segmentos_seleccionados'] = json.dumps(segmentos_data)
+    
+    def clean_segmentos_seleccionados(self):
+        """Valida y procesa la configuración de segmentos"""
+        segmentos_json = self.cleaned_data.get('segmentos_seleccionados', '[]')
+        
+        try:
+            segmentos_data = json.loads(segmentos_json)
+        except json.JSONDecodeError:
+            raise ValidationError("Formato de datos de segmentos inválido")
+        
+        if not isinstance(segmentos_data, list):
+            raise ValidationError("Los datos de segmentos deben ser una lista")
+        
+        # Validar estructura de cada segmento
+        for i, segmento in enumerate(segmentos_data):
+            required_fields = ['id', 'orden']
+            for field in required_fields:
+                if field not in segmento:
+                    raise ValidationError(f"El segmento {i+1} no tiene el campo requerido: {field}")
+            
+            # Verificar que el segmento existe
+            try:
+                SegmentoPlantilla.objects.get(id=segmento['id'])
+            except SegmentoPlantilla.DoesNotExist:
+                raise ValidationError(f"El segmento con ID {segmento['id']} no existe")
+        
+        return segmentos_data
+
+
+class PlantillaConfiguracionForm(forms.Form):
+    """Formulario para configuración avanzada de la plantilla"""
+    configuracion_procesamiento = forms.JSONField(
+        required=False,
+        widget=forms.Textarea(attrs={
+            'class': 'form-control',
+            'rows': 8,
+            'placeholder': 'Configuración adicional en formato JSON'
+        }),
+        help_text="Configuración avanzada de procesamiento (JSON)"
+    )
+    
+    variables_globales = forms.JSONField(
+        required=False,
+        widget=forms.Textarea(attrs={
+            'class': 'form-control',
+            'rows': 4,
+            'placeholder': '{"variable": "valor"}'
+        }),
+        help_text="Variables globales disponibles para todos los segmentos"
+    )
+    
+    timeout_global = forms.IntegerField(
+        required=False,
+        initial=300,
+        widget=forms.NumberInput(attrs={
+            'class': 'form-control',
+            'min': '30',
+            'max': '1800'
+        }),
+        help_text="Timeout global en segundos (30-1800)"
+    )
+    
+    reintentos_maximos = forms.IntegerField(
+        required=False,
+        initial=3,
+        widget=forms.NumberInput(attrs={
+            'class': 'form-control',
+            'min': '1',
+            'max': '10'
+        }),
+        help_text="Número máximo de reintentos por segmento"
+    )
+
+
+class PlantillaEjecucionForm(forms.ModelForm):
+    """Formulario para iniciar ejecución de plantilla"""
+    
+    class Meta:
+        model = EjecucionPlantilla
+        fields = ['nombre', 'transcripcion', 'proveedor_ia_global', 'variables_contexto']
+        widgets = {
+            'nombre': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Nombre para esta ejecución (ej: Acta Sesión Ordinaria 2025-01-15)'
+            }),
+            'transcripcion': forms.Select(attrs={
+                'class': 'form-control select2',
+                'data-placeholder': 'Seleccionar transcripción procesada'
+            }),
+            'proveedor_ia_global': forms.Select(attrs={
+                'class': 'form-control',
+                'data-placeholder': 'Seleccionar IA para todos los segmentos'
+            }),
+            'variables_contexto': forms.Textarea(attrs={
+                'class': 'form-control json-textarea',
+                'rows': 6,
+                'placeholder': '{"fecha_sesion": "2025-01-15", "lugar": "Sala de Sesiones", "tipo_reunion": "Ordinaria"}'
+            })
+        }
+    
+    def __init__(self, *args, **kwargs):
+        plantilla = kwargs.pop('plantilla', None)
+        super().__init__(*args, **kwargs)
+        
+        # Filtrar transcripciones completadas
+        from apps.audio_processing.models import ProcesamientoAudio
+        self.fields['transcripcion'].queryset = ProcesamientoAudio.objects.filter(
+            estado='completado'
+        ).order_by('-created_at')
+        
+        # Filtrar proveedores activos
+        self.fields['proveedor_ia_global'].queryset = ProveedorIA.objects.filter(activo=True)
+        
+        # Pre-llenar con proveedor por defecto
+        if plantilla and plantilla.proveedor_ia_defecto:
+            self.fields['proveedor_ia_global'].initial = plantilla.proveedor_ia_defecto
+        
+        # Ayudas y validaciones
+        self.fields['transcripcion'].help_text = "Transcripción que se usará como fuente de datos para todos los segmentos"
+        self.fields['proveedor_ia_global'].help_text = "Este proveedor procesará TODOS los segmentos dinámicos"
+        self.fields['variables_contexto'].help_text = """
+        Variables específicas para esta ejecución (JSON). Ejemplos:<br>
+        • fecha_sesion, lugar, tipo_reunion<br>
+        • participantes, presidente, secretario<br>
+        • numero_acta, departamento
+        """
+    
+    def clean_variables_contexto(self):
+        """Valida que las variables de contexto sean JSON válido"""
+        variables = self.cleaned_data.get('variables_contexto', '{}')
+        
+        if not variables:
+            return {}
+        
+        try:
+            if isinstance(variables, str):
+                variables_dict = json.loads(variables)
+            else:
+                variables_dict = variables
+        except (json.JSONDecodeError, TypeError):
+            raise ValidationError("Las variables de contexto deben ser un JSON válido")
+        
+        if not isinstance(variables_dict, dict):
+            raise ValidationError("Las variables de contexto deben ser un objeto JSON")
+        
+        return variables_dict
+
+
+class SegmentoResultadoForm(forms.ModelForm):
+    """Formulario para editar resultados de segmentos"""
+    
+    class Meta:
+        model = ResultadoSegmento
+        fields = ['resultado_editado', 'notas_edicion']
+        widgets = {
+            'resultado_editado': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 12,
+                'id': 'editor-tinymce'
+            }),
+            'notas_edicion': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 3,
+                'placeholder': 'Notas sobre los cambios realizados...'
+            })
+        }
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        
+        # Pre-llenar con el resultado actual
+        if self.instance and self.instance.pk:
+            self.fields['resultado_editado'].initial = self.instance.resultado_final
+            
+        self.fields['resultado_editado'].help_text = """
+        Editor de contenido del segmento. Puede editar libremente el texto generado por IA.
+        """
+        self.fields['notas_edicion'].help_text = "Opcional: Notas sobre los cambios realizados"
+
+
+class ActaBorradorForm(forms.ModelForm):
+    """Formulario para editar acta borrador final"""
+    
+    class Meta:
+        model = ActaBorrador
+        fields = ['titulo', 'numero_acta', 'fecha_acta', 'lugar_sesion', 
+                  'participantes', 'contenido_html', 'resumen_ejecutivo', 
+                  'comentarios_revision']
+        widgets = {
+            'titulo': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Título del acta'
+            }),
+            'numero_acta': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Número oficial del acta (auto-generado si vacío)'
+            }),
+            'fecha_acta': forms.DateInput(attrs={
+                'class': 'form-control',
+                'type': 'date'
+            }),
+            'lugar_sesion': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Lugar donde se realizó la sesión'
+            }),
+            'participantes': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 4,
+                'placeholder': '["Participante 1", "Participante 2"]'
+            }),
+            'contenido_html': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 20,
+                'id': 'editor-acta-final'
+            }),
+            'resumen_ejecutivo': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 6,
+                'placeholder': 'Resumen ejecutivo de los puntos principales...'
+            }),
+            'comentarios_revision': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 4,
+                'placeholder': 'Comentarios de revisión...'
+            })
+        }
+    
+    def clean_participantes(self):
+        """Valida que participantes sea una lista JSON válida"""
+        participantes = self.cleaned_data.get('participantes', '[]')
+        
+        if isinstance(participantes, str):
+            try:
+                participantes_list = json.loads(participantes)
+            except json.JSONDecodeError:
+                raise ValidationError("Los participantes deben estar en formato JSON válido")
+        else:
+            participantes_list = participantes
+        
+        if not isinstance(participantes_list, list):
+            raise ValidationError("Los participantes deben ser una lista")
+        
+        return participantes_list
+
+
+class EjecucionFiltroForm(forms.Form):
+    """Formulario para filtrar ejecuciones en el dashboard"""
+    
+    ESTADO_CHOICES = [('', 'Todos los estados')] + EjecucionPlantilla.ESTADO_EJECUCION
+    
+    estado = forms.ChoiceField(
+        choices=ESTADO_CHOICES,
+        required=False,
+        widget=forms.Select(attrs={'class': 'form-control'})
+    )
+    
+    plantilla = forms.ModelChoiceField(
+        queryset=PlantillaActa.objects.filter(activa=True),
+        required=False,
+        empty_label="Todas las plantillas",
+        widget=forms.Select(attrs={'class': 'form-control'})
+    )
+    
+    usuario = forms.ModelChoiceField(
+        queryset=None,  # Se define en __init__
+        required=False,
+        empty_label="Todos los usuarios",
+        widget=forms.Select(attrs={'class': 'form-control'})
+    )
+    
+    fecha_desde = forms.DateField(
+        required=False,
+        widget=forms.DateInput(attrs={
+            'class': 'form-control',
+            'type': 'date'
+        })
+    )
+    
+    fecha_hasta = forms.DateField(
+        required=False,
+        widget=forms.DateInput(attrs={
+            'class': 'form-control',
+            'type': 'date'
+        })
+    )
+    
+    def __init__(self, *args, **kwargs):
+        from django.contrib.auth.models import User
+        super().__init__(*args, **kwargs)
+        self.fields['usuario'].queryset = User.objects.filter(
+            ejecuciones_plantillas__isnull=False
+        ).distinct().order_by('username')

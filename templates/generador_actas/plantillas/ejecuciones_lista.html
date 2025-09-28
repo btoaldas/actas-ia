@@ -1,0 +1,196 @@
+{% extends 'layouts/base.html' %}
+{% load static %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block content %}
+<!-- Content Header -->
+<div class="content-header">
+    <div class="container-fluid">
+        <div class="row mb-2">
+            <div class="col-sm-6">
+                <h1 class="m-0">{{ page_title }}</h1>
+            </div>
+            <div class="col-sm-6">
+                <ol class="breadcrumb float-sm-right">
+                    {% for crumb in breadcrumbs %}
+                        {% if forloop.last %}
+                            <li class="breadcrumb-item active">{{ crumb.title }}</li>
+                        {% else %}
+                            <li class="breadcrumb-item"><a href="{{ crumb.url }}">{{ crumb.title }}</a></li>
+                        {% endif %}
+                    {% endfor %}
+                </ol>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Main content -->
+<section class="content">
+    <div class="container-fluid">
+        
+        <!-- Filtros -->
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">
+                    <i class="fas fa-filter"></i>
+                    Filtros
+                </h3>
+            </div>
+            <div class="card-body">
+                <form method="get" class="form-inline">
+                    {{ filtro_form.as_p }}
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-search"></i>
+                        Filtrar
+                    </button>
+                    <a href="{% url 'generador_actas:ejecuciones_lista' %}" class="btn btn-secondary ml-2">
+                        <i class="fas fa-times"></i>
+                        Limpiar
+                    </a>
+                </form>
+            </div>
+        </div>
+        
+        <!-- Lista de ejecuciones -->
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">
+                    <i class="fas fa-list"></i>
+                    Ejecuciones
+                </h3>
+            </div>
+            <div class="card-body p-0">
+                {% if ejecuciones %}
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Plantilla</th>
+                                    <th>Usuario</th>
+                                    <th>Estado</th>
+                                    <th>Progreso</th>
+                                    <th>Fecha</th>
+                                    <th>Duración</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for ejecucion in ejecuciones %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ ejecucion.plantilla.nombre }}</strong><br>
+                                        <small class="text-muted">{{ ejecucion.nombre }}</small>
+                                    </td>
+                                    <td>
+                                        {{ ejecucion.usuario.get_full_name|default:ejecucion.usuario.username }}
+                                    </td>
+                                    <td>
+                                        {% if ejecucion.estado == 'completada' %}
+                                            <span class="badge badge-success">{{ ejecucion.get_estado_display }}</span>
+                                        {% elif ejecucion.estado == 'error' %}
+                                            <span class="badge badge-danger">{{ ejecucion.get_estado_display }}</span>
+                                        {% elif ejecucion.estado == 'cancelada' %}
+                                            <span class="badge badge-secondary">{{ ejecucion.get_estado_display }}</span>
+                                        {% else %}
+                                            <span class="badge badge-warning">{{ ejecucion.get_estado_display }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="progress progress-xs">
+                                            <div class="progress-bar 
+                                                {% if ejecucion.estado == 'completada' %}bg-success
+                                                {% elif ejecucion.estado == 'error' %}bg-danger
+                                                {% else %}bg-primary{% endif %}" 
+                                                 style="width: {{ ejecucion.porcentaje_progreso }}%">
+                                            </div>
+                                        </div>
+                                        <small class="text-muted">
+                                            {{ ejecucion.progreso_actual }}/{{ ejecucion.progreso_total }}
+                                            ({{ ejecucion.porcentaje_progreso }}%)
+                                        </small>
+                                    </td>
+                                    <td>
+                                        <small>
+                                            {{ ejecucion.tiempo_inicio|date:"d/m/Y H:i" }}
+                                        </small>
+                                    </td>
+                                    <td>
+                                        <small>{{ ejecucion.duracion_formateada }}</small>
+                                    </td>
+                                    <td>
+                                        <a href="{% url 'generador_actas:ver_ejecucion' ejecucion.pk %}" 
+                                           class="btn btn-sm btn-primary">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-info-circle fa-3x text-muted mb-3"></i>
+                        <h4>No hay ejecuciones</h4>
+                        <p class="text-muted">
+                            No se encontraron ejecuciones con los filtros aplicados.
+                        </p>
+                        <a href="{% url 'generador_actas:plantillas_lista' %}" class="btn btn-primary">
+                            <i class="fas fa-play"></i>
+                            Ejecutar Plantilla
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Paginación -->
+        {% if is_paginated %}
+        <div class="d-flex justify-content-center">
+            <nav>
+                <ul class="pagination">
+                    {% if page_obj.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page=1">Primera</a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.previous_page_number }}">Anterior</a>
+                        </li>
+                    {% endif %}
+                    
+                    <li class="page-item active">
+                        <span class="page-link">{{ page_obj.number }}</span>
+                    </li>
+                    
+                    {% if page_obj.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.next_page_number }}">Siguiente</a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}">Última</a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        </div>
+        {% endif %}
+        
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    // Auto-refresh cada 30 segundos para ejecuciones en proceso
+    setInterval(function() {
+        // Solo refrescar si hay ejecuciones en proceso
+        if ($('.badge-warning').length > 0) {
+            location.reload();
+        }
+    }, 30000);
+});
+</script>
+{% endblock %}

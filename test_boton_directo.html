@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TEST BOTÓN PROCESAR ACTA - DIRECTO</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; background: #f0f0f0; }
+        .container { max-width: 800px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px; }
+        h1 { color: #28a745; }
+        .btn { padding: 15px 25px; background: #28a745; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; margin: 10px; }
+        .btn:disabled { background: #6c757d; cursor: not-allowed; }
+        #log { background: #f8f9fa; padding: 15px; border-radius: 5px; font-family: monospace; height: 400px; overflow-y: auto; border: 1px solid #ddd; }
+        .success { color: green; }
+        .error { color: red; }
+        .info { color: blue; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 TEST DIRECTO - BOTÓN PROCESAR ACTA</h1>
+        <p><strong>Acta ID:</strong> 16 | <strong>Estado:</strong> borrador</p>
+        
+        <button id="btnProcesar" class="btn" onclick="testProcesarActa()">
+            🚀 PROCESAR ACTA 16
+        </button>
+        
+        <button class="btn" onclick="testConexion()" style="background: #17a2b8;">
+            🔍 Test Conexión
+        </button>
+        
+        <button class="btn" onclick="limpiarLog()" style="background: #6c757d;">
+            🧹 Limpiar Log
+        </button>
+        
+        <h3>Log de Depuración:</h3>
+        <div id="log"></div>
+    </div>
+
+    <script>
+        function log(mensaje, tipo = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const logDiv = document.getElementById('log');
+            logDiv.innerHTML += `<div class="${tipo}">[${timestamp}] ${mensaje}</div>`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+            console.log(mensaje);
+        }
+        
+        function limpiarLog() {
+            document.getElementById('log').innerHTML = '';
+        }
+        
+        async function testConexion() {
+            log('🔍 Probando conexión al servidor...', 'info');
+            
+            try {
+                const response = await fetch('http://localhost:8000/generador-actas/actas/16/', {
+                    method: 'GET',
+                    credentials: 'same-origin'
+                });
+                
+                if (response.ok) {
+                    log('✅ Conexión exitosa - Status: ' + response.status, 'success');
+                    const text = await response.text();
+                    
+                    // Buscar CSRF token
+                    const csrfMatch = text.match(/name="csrfmiddlewaretoken" value="([^"]+)"/);
+                    if (csrfMatch) {
+                        log('✅ CSRF Token encontrado: ' + csrfMatch[1].substring(0, 20) + '...', 'success');
+                        window.csrfToken = csrfMatch[1];
+                    } else {
+                        log('❌ CSRF Token NO encontrado', 'error');
+                    }
+                    
+                    // Buscar botón procesar
+                    if (text.includes('procesar-btn')) {
+                        log('✅ Botón procesar-btn encontrado en HTML', 'success');
+                    } else {
+                        log('❌ Botón procesar-btn NO encontrado en HTML', 'error');
+                    }
+                } else {
+                    log('❌ Error de conexión - Status: ' + response.status, 'error');
+                }
+            } catch (error) {
+                log('❌ Error de red: ' + error.message, 'error');
+            }
+        }
+        
+        async function testProcesarActa() {
+            log('🚀 INICIANDO TEST DE PROCESAMIENTO...', 'info');
+            
+            const boton = document.getElementById('btnProcesar');
+            boton.disabled = true;
+            boton.innerHTML = '⏳ Procesando...';
+            
+            // Si no tenemos CSRF token, intentar obtenerlo
+            if (!window.csrfToken) {
+                log('🔍 Obteniendo CSRF token...', 'info');
+                await testConexion();
+            }
+            
+            if (!window.csrfToken) {
+                log('❌ No se pudo obtener CSRF token', 'error');
+                boton.disabled = false;
+                boton.innerHTML = '🚀 PROCESAR ACTA 14';
+                return;
+            }
+            
+            try {
+                log('📡 Enviando petición POST...', 'info');
+                log('🔑 CSRF Token: ' + window.csrfToken.substring(0, 20) + '...', 'info');
+                
+                const response = await fetch('http://localhost:8000/generador-actas/actas/16/procesar/', {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': window.csrfToken,
+                        'Content-Type': 'application/json'
+                    },
+                    credentials: 'same-origin',
+                    body: JSON.stringify({})
+                });
+                
+                log('📡 Respuesta Status: ' + response.status, response.ok ? 'success' : 'error');
+                
+                const data = await response.json();
+                log('📋 Datos recibidos: ' + JSON.stringify(data, null, 2), data.success ? 'success' : 'error');
+                
+                if (data.success) {
+                    log('🎉 ¡ÉXITO! Procesamiento iniciado', 'success');
+                    boton.innerHTML = '✅ ¡PROCESADO!';
+                    
+                    setTimeout(() => {
+                        window.open('http://localhost:8000/generador-actas/actas/16/', '_blank');
+                    }, 2000);
+                } else {
+                    log('❌ Error del servidor: ' + data.message, 'error');
+                    boton.disabled = false;
+                    boton.innerHTML = '🚀 PROCESAR ACTA 16';
+                }
+            } catch (error) {
+                log('❌ Error de petición: ' + error.message, 'error');
+                boton.disabled = false;
+                boton.innerHTML = '🚀 PROCESAR ACTA 16';
+            }
+        }
+        
+        // Auto-ejecutar test de conexión al cargar
+        window.addEventListener('load', function() {
+            log('🎯 Página cargada - Ejecutando test inicial...', 'info');
+            testConexion();
+        });
+    </script>
+</body>
+</html>
