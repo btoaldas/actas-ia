@@ -2252,9 +2252,17 @@ Genera una versión unificada manteniendo toda la información importante pero m
 """
 
                 respuesta_ia_unificacion = ia_provider.generar_respuesta(prompt_unificacion)
-                respuesta_texto = respuesta_ia_unificacion.get('contenido', '') if isinstance(respuesta_ia_unificacion, dict) else str(respuesta_ia_unificacion)
-                if respuesta_texto and len(respuesta_texto.strip()) > 100:
-                    contenido_unificado = respuesta_texto.strip()
+                
+                # Extraer contenido de la respuesta de manera robusta
+                if isinstance(respuesta_ia_unificacion, dict):
+                    respuesta_texto = respuesta_ia_unificacion.get('contenido') or respuesta_ia_unificacion.get('respuesta') or respuesta_ia_unificacion.get('text') or ''
+                else:
+                    respuesta_texto = str(respuesta_ia_unificacion) if respuesta_ia_unificacion else ''
+                
+                # Limpiar y validar el contenido
+                respuesta_texto = respuesta_texto.strip() if respuesta_texto else ''
+                if respuesta_texto and len(respuesta_texto) > 100:
+                    contenido_unificado = respuesta_texto
                     logger.info(f"✅ Contenido mejorado con IA: {len(contenido_unificado)} caracteres")
 
                     acta.historial_cambios.append({
