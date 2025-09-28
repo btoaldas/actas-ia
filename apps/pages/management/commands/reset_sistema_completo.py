@@ -134,13 +134,26 @@ class Command(BaseCommand):
         self.stdout.write(f'🗑️ {archivos_eliminados} archivos físicos eliminados')
     
     def _reset_gestion_actas(self):
-        """Resetea TODA la gestión de actas al estado inicial"""
-        self.stdout.write('🔄 Reseteando gestión de actas...')
+        """ELIMINA TODAS las actas de gestión manual y resetea al estado inicial"""
+        self.stdout.write('🔄 Eliminando gestión de actas...')
         
         try:
             from gestion_actas.models import GestionActa, EstadoGestionActa, ProcesoRevision
             
-            # Obtener o crear estado inicial
+            # Contar actas en gestión antes de eliminar
+            total_gestion = GestionActa.objects.count()
+            self.stdout.write(f'📊 Actas en gestión a ELIMINAR: {total_gestion}')
+            
+            # Eliminar TODOS los procesos de revisión primero
+            procesos_revision = ProcesoRevision.objects.count()
+            ProcesoRevision.objects.all().delete()
+            self.stdout.write(f'🗑️ Eliminados {procesos_revision} procesos de revisión')
+            
+            # ELIMINAR COMPLETAMENTE todas las actas de gestión
+            GestionActa.objects.all().delete()
+            self.stdout.write(f'🔥 ELIMINADAS {total_gestion} actas de gestión manual')
+            
+            # Obtener o crear estado inicial para futuras actas
             estado_inicial, created = EstadoGestionActa.objects.get_or_create(
                 codigo='en_edicion',
                 defaults={
@@ -156,40 +169,7 @@ class Command(BaseCommand):
             )
             
             if created:
-                self.stdout.write('📝 Estado "En Edición" creado')
-            
-            # Contar actas en gestión
-            total_gestion = GestionActa.objects.count()
-            self.stdout.write(f'📊 Actas en gestión a resetear: {total_gestion}')
-            
-            # Eliminar TODOS los procesos de revisión
-            procesos_revision = ProcesoRevision.objects.count()
-            ProcesoRevision.objects.all().delete()
-            self.stdout.write(f'🗑️ Eliminados {procesos_revision} procesos de revisión')
-            
-            # Resetear TODAS las actas en gestión
-            for gestion in GestionActa.objects.all():
-                gestion.estado = estado_inicial
-                gestion.bloqueada_edicion = False
-                gestion.contenido_editado = ""
-                gestion.observaciones = "🔥 SISTEMA RESETEADO - Listo para edición/depuración"
-                
-                # Limpiar fechas
-                gestion.fecha_enviada_revision = None
-                gestion.fecha_aprobacion_final = None
-                gestion.fecha_publicacion = None
-                
-                # Resetear versión y cambios
-                gestion.version = 1
-                gestion.cambios_realizados = {}
-                
-                # Desconectar del portal
-                gestion.acta_portal = None
-                gestion.usuario_editor = None
-                
-                gestion.save()
-            
-            self.stdout.write(f'✅ {total_gestion} actas en gestión reseteadas')
+                self.stdout.write('📝 Estado "En Edición" preparado para nuevas actas')
             
         except ImportError:
             self.stdout.write('⚠️ Módulo gestion_actas no disponible')
