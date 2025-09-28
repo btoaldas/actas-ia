@@ -1,5 +1,6 @@
 {% extends "layouts/base.html" %}
 {% load static %}
+{% load content_filters %}
 
 {% block title %}{{ acta.titulo }} - Portal Ciudadano {% endblock title %}
 
@@ -7,6 +8,103 @@
   <!-- SweetAlert2 -->
   <link rel="stylesheet" href="{% static 'plugins/sweetalert2/sweetalert2.min.css' %}">
   <link rel="stylesheet" href="{% static 'plugins/sweetalert2-theme-bootstrap-4/bootstrap-4.min.css' %}">
+  
+  <!-- Estilos para contenido HTML renderizado -->
+  <style>
+    .contenido-html-renderizado {
+      line-height: 1.6;
+      font-size: 14px;
+    }
+    
+    .contenido-html-renderizado h1,
+    .contenido-html-renderizado h2,
+    .contenido-html-renderizado h3,
+    .contenido-html-renderizado h4,
+    .contenido-html-renderizado h5,
+    .contenido-html-renderizado h6 {
+      color: #495057;
+      margin-top: 1.5rem;
+      margin-bottom: 0.8rem;
+      font-weight: 600;
+    }
+    
+    .contenido-html-renderizado h1 { font-size: 1.5rem; }
+    .contenido-html-renderizado h2 { font-size: 1.3rem; }
+    .contenido-html-renderizado h3 { font-size: 1.2rem; }
+    .contenido-html-renderizado h4 { font-size: 1.1rem; }
+    .contenido-html-renderizado h5 { font-size: 1.05rem; }
+    .contenido-html-renderizado h6 { font-size: 1rem; }
+    
+    .contenido-html-renderizado p {
+      margin-bottom: 0.8rem;
+      text-align: justify;
+    }
+    
+    .contenido-html-renderizado ul,
+    .contenido-html-renderizado ol {
+      margin-bottom: 0.8rem;
+      padding-left: 2rem;
+    }
+    
+    .contenido-html-renderizado li {
+      margin-bottom: 0.3rem;
+    }
+    
+    .contenido-html-renderizado strong,
+    .contenido-html-renderizado b {
+      color: #2c3e50;
+      font-weight: 600;
+    }
+    
+    .contenido-html-renderizado em,
+    .contenido-html-renderizado i {
+      font-style: italic;
+      color: #6c757d;
+    }
+    
+    .contenido-html-renderizado blockquote {
+      border-left: 4px solid #007bff;
+      padding-left: 1rem;
+      margin: 1rem 0;
+      background-color: #f8f9fa;
+      padding: 0.8rem 1rem;
+      border-radius: 4px;
+    }
+    
+    .contenido-html-renderizado table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 1rem 0;
+    }
+    
+    .contenido-html-renderizado table th,
+    .contenido-html-renderizado table td {
+      border: 1px solid #dee2e6;
+      padding: 0.5rem;
+      text-align: left;
+    }
+    
+    .contenido-html-renderizado table th {
+      background-color: #f8f9fa;
+      font-weight: 600;
+    }
+    
+    .contenido-html-renderizado hr {
+      margin: 1.5rem 0;
+      border: none;
+      border-top: 2px solid #e9ecef;
+    }
+    
+    /* Estilos para texto en mayúsculas y minúsculas */
+    .contenido-html-renderizado .texto-mayusculas {
+      text-transform: uppercase;
+      font-weight: 600;
+    }
+    
+    .contenido-html-renderizado .texto-centrado {
+      text-align: center;
+    }
+  </style>
 {% endblock extrastyle %}
 
 {% block bodyclass %} hold-transition sidebar-mini layout-fixed layout-navbar-fixed layout-footer-fixed {% endblock bodyclass %}
@@ -210,8 +308,8 @@
                   </div>
                 </div>
                 <div class="card-body" style="max-height: 500px; overflow-y: auto;">
-                  <div class="text-justify">
-                    {{ contenido_limpio|linebreaks }}
+                  <div class="text-justify contenido-html-renderizado">
+                    {{ acta.contenido|safe_html_content }}
                   </div>
                 </div>
               </div>
