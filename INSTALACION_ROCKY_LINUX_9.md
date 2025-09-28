@@ -354,6 +354,8 @@ docker compose logs actas_postgres
 
 ## 🗄️ Paso 9: Configurar la Base de Datos
 
+### Opción A: Instalación Limpia (Desde Cero)
+
 ```bash
 # Esperar a que PostgreSQL esté completamente listo
 echo "Esperando que PostgreSQL esté listo..."
@@ -376,6 +378,33 @@ docker compose exec actas_web python manage.py collectstatic --noinput
 
 # (OPCIONAL) Cargar datos de demostración
 # docker compose exec actas_web python manage.py loaddata fixtures/demo_data.json
+```
+
+### Opción B: Restaurar Backup Desde Desarrollo ⭐ RECOMENDADO
+
+Si tienes un backup de la base de datos desde tu entorno de desarrollo:
+
+```bash
+# 1. Transferir archivo backup al servidor (usando SCP)
+# scp backup_bd_rocky_linux_XXXXXXXX_XXXXXX.sql root@TU_IP_SERVIDOR:/opt/actas-ia/
+
+# 2. Verificar que PostgreSQL esté listo
+docker compose exec actas_postgres pg_isready -U admin_actas
+
+# 3. Crear base de datos limpia
+docker compose exec actas_postgres psql -U admin_actas -c "CREATE DATABASE actas_municipales_pastaza;"
+
+# 4. Restaurar backup (cambiar por tu archivo específico)
+cat backup_bd_rocky_linux_*.sql | docker compose exec -T actas_postgres psql -U admin_actas -d actas_municipales_pastaza
+
+# 5. Ejecutar migraciones por si acaso
+docker compose exec actas_web python manage.py migrate
+
+# 6. Recopilar archivos estáticos
+docker compose exec actas_web python manage.py collectstatic --noinput
+
+echo "✅ Base de datos restaurada desde backup de desarrollo"
+echo "📋 Ver guía completa: GUIA_BACKUP_RESTAURACION_ROCKY.md"
 ```
 
 ---
