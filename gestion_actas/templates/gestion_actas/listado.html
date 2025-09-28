@@ -6,6 +6,9 @@
 {% block extrastyle %}
 <link rel="stylesheet" href="{% static 'gestion_actas/css/gestion_actas.css' %}">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+<!-- SweetAlert2 -->
+<link rel="stylesheet" href="{% static 'plugins/sweetalert2/sweetalert2.min.css' %}">
+<link rel="stylesheet" href="{% static 'plugins/sweetalert2-theme-bootstrap-4/bootstrap-4.min.css' %}"
 <style>
 .card-acta {
     transition: all 0.3s ease;
@@ -198,6 +201,47 @@
         </form>
     </div>
 </div>
+
+<!-- Panel de Administración (Solo Superadmin) -->
+{% if user.is_superuser %}
+<div class="card card-outline card-danger">
+    <div class="card-header bg-danger">
+        <h3 class="card-title text-white">
+            <i class="fas fa-shield-alt"></i> 
+            Panel de Superadministración
+        </h3>
+        <div class="card-tools">
+            <button type="button" class="btn btn-tool text-white" data-card-widget="collapse">
+                <i class="fas fa-minus"></i>
+            </button>
+        </div>
+    </div>
+    
+    <div class="card-body">
+        <div class="alert alert-warning">
+            <h5><i class="icon fas fa-exclamation-triangle"></i> ZONA PELIGROSA</h5>
+            Las acciones de este panel son <strong>destructivas e irreversibles</strong>. 
+            Usar solo para reiniciar completamente el sistema.
+        </div>
+        
+        <button type="button" class="btn btn-danger btn-lg" onclick="resetearSistemaCompleto()">
+            <i class="fas fa-fire"></i>
+            <strong>RESET TOTAL DEL SISTEMA</strong>
+        </button>
+        
+        <p class="mt-2 text-muted">
+            <small>
+                <strong>Esta acción:</strong><br>
+                • Elimina TODAS las actas del portal ciudadano<br>
+                • Resetea TODA la gestión al estado "Edición/Depuración"<br>
+                • Borra TODOS los archivos y procesamientos<br>
+                • Limpia registros de auditoría y descargas<br>
+                • <strong class="text-danger">NO se puede deshacer</strong>
+            </small>
+        </p>
+    </div>
+</div>
+{% endif %}
 
 <!-- Listado de Actas -->
 <div class="card card-outline card-info">
@@ -508,6 +552,9 @@
 {% endblock %}
 
 {% block extra_scripts %}
+<!-- SweetAlert2 -->
+<script src="{% static 'plugins/sweetalert2/sweetalert2.min.js' %}"></script>
+
 <script>
 $(document).ready(function() {
     // Inicializar tooltips
@@ -561,6 +608,92 @@ function confirmarPublicacion(actaId, tituloActa) {
         document.body.appendChild(form);
         form.submit();
     }
+}
+
+// Función para resetear sistema completo (solo superadmin)
+function resetearSistemaCompleto() {
+    Swal.fire({
+        title: '🔥🔥🔥 RESET TOTAL DEL SISTEMA',
+        html: `
+            <div style="text-align: left;">
+                <p><strong>⚠️ PELIGRO MÁXIMO: Esta acción eliminará:</strong></p>
+                <ul style="display: inline-block; text-align: left;">
+                    <li>🔥 <strong>TODAS</strong> las actas del portal ciudadano</li>
+                    <li>🧹 <strong>TODO</strong> el contenido procesado</li>
+                    <li>🗑️ <strong>TODOS</strong> los archivos físicos (PDF, Word, TXT)</li>
+                    <li>📅 <strong>TODAS</strong> las fechas de aprobación y publicación</li>
+                    <li>🎵 <strong>TODO</strong> el procesamiento de audio</li>
+                    <li>👁️ <strong>TODOS</strong> los registros de visualización y descarga</li>
+                    <li>🔄 <strong>RESETEA</strong> gestión de actas a "Edición/Depuración"</li>
+                </ul>
+                <div style="background: #fff3cd; padding: 10px; border-radius: 5px; margin: 10px 0;">
+                    <strong>🎯 RESULTADO:</strong> Sistema completamente limpio, 
+                    como recién instalado, listo para usar desde cero.
+                </div>
+                <div style="background: #f8d7da; padding: 10px; border-radius: 5px; color: #721c24;">
+                    <strong>💀 ESTA ACCIÓN NO SE PUEDE DESHACER</strong>
+                </div>
+            </div>
+        `,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#dc3545',
+        cancelButtonColor: '#6c757d',
+        confirmButtonText: '🔥 SÍ, RESETEAR TODO EL SISTEMA',
+        cancelButtonText: 'Cancelar',
+        reverseButtons: true,
+        width: '600px'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            // Confirmación adicional por ser tan destructivo
+            Swal.fire({
+                title: '🚨 CONFIRMACIÓN FINAL',
+                text: 'Escriba "CONFIRMO" para proceder con el reset total:',
+                input: 'text',
+                inputPlaceholder: 'Escriba: CONFIRMO',
+                showCancelButton: true,
+                confirmButtonColor: '#dc3545',
+                confirmButtonText: '🔥 EJECUTAR RESET TOTAL',
+                cancelButtonText: 'Cancelar',
+                inputValidator: (value) => {
+                    if (value !== 'CONFIRMO') {
+                        return 'Debe escribir exactamente "CONFIRMO" para continuar'
+                    }
+                }
+            }).then((confirmResult) => {
+                if (confirmResult.isConfirmed) {
+                    // Mostrar loading
+                    Swal.fire({
+                        title: '🔥 EJECUTANDO RESET TOTAL...',
+                        html: 'Eliminando toda la información del sistema.<br>Esto puede tomar varios segundos...',
+                        allowOutsideClick: false,
+                        showConfirmButton: false,
+                        willOpen: () => {
+                            Swal.showLoading();
+                        }
+                    });
+                    
+                    // Ejecutar reset
+                    const form = document.createElement('form');
+                    form.method = 'POST';
+                    form.action = '/admin/reset-sistema-completo/';
+                    
+                    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value || 
+                                     '{{ csrf_token }}';
+                    if (csrfToken) {
+                        const csrfInput = document.createElement('input');
+                        csrfInput.type = 'hidden';
+                        csrfInput.name = 'csrfmiddlewaretoken';
+                        csrfInput.value = csrfToken;
+                        form.appendChild(csrfInput);
+                    }
+                    
+                    document.body.appendChild(form);
+                    form.submit();
+                }
+            });
+        }
+    });
 }
 </script>
 {% endblock %}

@@ -2751,3 +2751,68 @@ def reset_acta_publicada(request, pk):
         logger.error(f"💥 ERROR GENERAL en reset completo del acta {pk}: {str(e)}")
         messages.error(request, f"💥 Error crítico al resetear el acta: {str(e)}")
         return redirect('portal_ciudadano')
+
+
+@csrf_protect
+def reset_sistema_completo_admin(request):
+    """
+    RESET TOTAL DEL SISTEMA: Resetea TODAS las actas y toda la BD
+    al estado de listado en gestión de actas en "edición/depuración"
+    Solo disponible para superadministradores
+    """
+    import logging
+    logger = logging.getLogger(__name__)
+    
+    # Verificar permisos de SUPERADMIN (solo superusuarios)
+    if not request.user.is_authenticated or not request.user.is_superuser:
+        messages.error(request, "❌ Solo superadministradores pueden ejecutar el reset total del sistema")
+        return redirect('index')
+    
+    if request.method == 'POST':
+        try:
+            logger.info(f"🔥🔥🔥 INICIANDO RESET TOTAL DEL SISTEMA por {request.user.username}")
+            
+            # Ejecutar el comando de reset usando call_command
+            from django.core.management import call_command
+            from io import StringIO
+            import sys
+            
+            # Capturar output del comando
+            old_stdout = sys.stdout
+            sys.stdout = StringIO()
+            
+            try:
+                # Ejecutar comando de reset completo
+                call_command('reset_sistema_completo', confirm=True, verbosity=2)
+                comando_output = sys.stdout.getvalue()
+                
+                logger.info(f"✅ Reset sistema completo ejecutado exitosamente")
+                logger.info(f"Output: {comando_output}")
+                
+                messages.success(
+                    request,
+                    f"🔥🔥🔥 RESET TOTAL DEL SISTEMA EXITOSO\n\n"
+                    f"✅ TODAS las actas reseteadas al estado inicial\n"
+                    f"✅ Portal ciudadano completamente limpio\n"
+                    f"✅ Gestión de actas en estado 'Edición/Depuración'\n"
+                    f"✅ Registros de auditoría y procesamiento limpiados\n"
+                    f"✅ Archivos físicos eliminados\n\n"
+                    f"🎯 Sistema completamente reseteado - Listo para usar desde cero"
+                )
+                
+            except Exception as e:
+                logger.error(f"Error ejecutando comando reset: {str(e)}")
+                messages.error(request, f"❌ Error ejecutando reset: {str(e)}")
+            
+            finally:
+                sys.stdout = old_stdout
+            
+        except Exception as e:
+            logger.error(f"💥 ERROR CRÍTICO en reset total del sistema: {str(e)}")
+            messages.error(request, f"💥 Error crítico en reset total: {str(e)}")
+    
+    # Redirect a gestión de actas o página principal
+    try:
+        return redirect('gestion_actas:listar_actas')
+    except:
+        return redirect('index')

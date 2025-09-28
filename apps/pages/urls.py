@@ -58,6 +58,10 @@ urlpatterns = [
     path('acta/<int:pk>/txt/', views.acta_txt_download, name='acta_txt_download'),
     path('acta/<int:pk>/word/', views.acta_word_download, name='acta_word_download'),
     path('acta/<int:pk>/reset/', views.reset_acta_publicada, name='reset_acta_publicada'),
+    
+    # Reset COMPLETO del sistema (solo superadmin)
+    path('admin/reset-sistema-completo/', views.reset_sistema_completo_admin, name='reset_sistema_completo'),
+    
     path('api/portal-ciudadano/', views.portal_ciudadano_api, name='portal_ciudadano_api'),
 
     path('iframe/', views.iframe, name='iframe'),

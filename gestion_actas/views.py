@@ -277,7 +277,8 @@ def listado_actas(request):
         'breadcrumbs': [
             {'title': 'Inicio', 'url': '/'},
             {'title': 'Gestión de Actas', 'active': True}
-        ]
+        ],
+        'is_superuser': request.user.is_superuser if request.user.is_authenticated else False
     }
     
     return render(request, 'gestion_actas/listado.html', context)
