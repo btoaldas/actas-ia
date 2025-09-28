@@ -183,52 +183,6 @@ ConfiguracionSegmentoFormSet = inlineformset_factory(
 )
 
 
-class SegmentoPlantillaForm(forms.ModelForm):
-    """
-    Formulario para crear y editar segmentos de plantillas
-    """
-    class Meta:
-        model = SegmentoPlantilla
-        fields = [
-            'codigo', 'nombre', 'descripcion', 'categoria', 'tipo', 'prompt_ia'
-        ]
-        widgets = {
-            'codigo': forms.TextInput(attrs={
-                'class': 'form-control',
-                'placeholder': 'Código único del segmento'
-            }),
-            'nombre': forms.TextInput(attrs={
-                'class': 'form-control',
-                'placeholder': 'Nombre del segmento'
-            }),
-            'descripcion': forms.Textarea(attrs={
-                'class': 'form-control',
-                'rows': 3,
-                'placeholder': 'Descripción del propósito del segmento'
-            }),
-            'categoria': forms.Select(attrs={'class': 'form-control'}),
-            'tipo': forms.Select(attrs={'class': 'form-control'}),
-            'prompt_ia': forms.Textarea(attrs={
-                'class': 'form-control',
-                'rows': 6,
-                'placeholder': 'Prompt base para generar este segmento con IA'
-            })
-        }
-
-    def clean_codigo(self):
-        codigo = self.cleaned_data.get('codigo')
-        if codigo:
-            # Verificar unicidad excluyendo la instancia actual
-            queryset = SegmentoPlantilla.objects.filter(codigo=codigo)
-            if self.instance.pk:
-                queryset = queryset.exclude(pk=self.instance.pk)
-            
-            if queryset.exists():
-                raise ValidationError("Ya existe un segmento con este código")
-        
-        return codigo
-
-
 class ProveedorIAForm(forms.ModelForm):
     """
     Formulario completo para configurar proveedores de IA
@@ -679,218 +633,509 @@ class BusquedaPlantillasForm(forms.Form):
 # ==================== FORMULARIOS PARA SEGMENTOS DE PLANTILLA ====================
 
 class SegmentoPlantillaForm(forms.ModelForm):
-    """Formulario para crear y editar segmentos de plantilla"""
+    """Formulario mejorado y user-friendly para crear y editar segmentos de plantilla"""
+    
+    # Campo personalizado para estructura JSON
+    estructura_json_helper = forms.CharField(
+        required=False,
+        widget=forms.Textarea(attrs={
+            'class': 'form-control',
+            'rows': 6,
+            'placeholder': '''Ejemplo de estructura JSON esperada:
+{
+  "titulo": "string",
+  "cuerpo": "string", 
+  "integrantes": ["string"],
+  "votaciones": [
+    {"tema": "string", "resultado": "string"}
+  ]
+}'''
+        }),
+        help_text="Define la estructura JSON que esperas recibir de la IA (opcional pero recomendado)"
+    )
     
     class Meta:
         model = SegmentoPlantilla
         fields = [
+            # Identificación básica
             'codigo', 'nombre', 'descripcion', 'categoria', 'tipo',
-            'prompt_ia', 'proveedor_ia', 'estructura_json', 'componentes',
-            'parametros_entrada', 'variables_personalizadas',
-            'orden_defecto', 'reutilizable', 'obligatorio', 'activo'
+            
+            # Configuración de contenido estático
+            'contenido_estatico', 'formato_salida',
+            
+            # Configuración de IA (dinámicos)
+            'prompt_ia', 'prompt_sistema', 'proveedor_ia',
+            
+            # Estructura y validación
+            'estructura_json', 'validaciones_salida', 'formato_validacion',
+            
+            # Configuración de entrada
+            'parametros_entrada', 'variables_personalizadas', 'contexto_requerido',
+            
+            # Comportamiento
+            'orden_defecto', 'reutilizable', 'obligatorio', 'activo',
+            
+            # Configuraciones avanzadas
+            'longitud_maxima', 'tiempo_limite_ia', 'reintentos_ia'
         ]
         widgets = {
+            # Identificación básica - Mejorada
             'codigo': forms.TextInput(attrs={
                 'class': 'form-control',
-                'placeholder': 'Código único del segmento (ej: ENCAB_001)'
+                'placeholder': 'Ej: TITULO_ACTA, PARTICIPANTES, RESUMEN_EJECUTIVO',
+                'pattern': '[A-Z0-9_]+',
+                'title': 'Solo mayúsculas, números y guiones bajos',
+                'data-toggle': 'tooltip',
+                'data-placement': 'top',
+                'data-original-title': 'Código único que identifica al segmento'
             }),
             'nombre': forms.TextInput(attrs={
                 'class': 'form-control',
-                'placeholder': 'Nombre descriptivo del segmento'
+                'placeholder': 'Título descriptivo y claro del segmento',
+                'maxlength': '200'
             }),
             'descripcion': forms.Textarea(attrs={
                 'class': 'form-control',
                 'rows': 3,
-                'placeholder': 'Describe el propósito y función de este segmento'
+                'placeholder': 'Explica brevemente qué hace este segmento y cuándo se usa'
             }),
-            'categoria': forms.Select(attrs={'class': 'form-control'}),
+            'categoria': forms.Select(attrs={
+                'class': 'form-control'
+            }),
             'tipo': forms.Select(attrs={
                 'class': 'form-control',
-                'onchange': 'toggleCamposIA(this.value)'
+                'data-toggle': 'tooltip',
+                'data-placement': 'top',
+                'data-original-title': 'Estático: texto fijo | Dinámico: procesado con IA | Híbrido: ambos'
             }),
+            
+            # Contenido estático - MEJORADO
+            'contenido_estatico': forms.Textarea(attrs={
+                'class': 'form-control contenido-estatico-field',
+                'rows': 10,
+                'placeholder': '''📝 Contenido estático del segmento:
+
+• Usa {{variables}} para datos dinámicos como {{fecha}}, {{numero_acta}}
+• Puedes usar formato HTML básico: <strong>, <em>, <br>
+• Para centrar texto: <center>contenido</center>
+• Para listas: <ul><li>item</li></ul>
+
+Ejemplo completo:
+<center><strong>ACTA N° {{numero_acta}}</strong></center>
+<br>
+Reunión: {{tipo_reunion}}
+Fecha: {{fecha}}
+<br>
+Participantes:
+{{lista_participantes}}''',
+                'data-toggle': 'tooltip',
+                'data-placement': 'top',
+                'data-html': 'true',
+                'data-original-title': 'Contenido fijo con variables dinámicas {{}} y HTML básico'
+            }),
+            'formato_salida': forms.Select(attrs={
+                'class': 'form-control'
+            }),
+            
+            # Configuración IA - MEJORADO
             'prompt_ia': forms.Textarea(attrs={
-                'class': 'form-control prompt-field',
-                'rows': 8,
-                'placeholder': 'Prompt para procesamiento con IA (solo para segmentos dinámicos)'
+                'class': 'form-control prompt-ia-field',
+                'rows': 12,
+                'placeholder': '''🤖 Prompt para IA (Instrucciones claras y específicas):
+
+IMPORTANTE: Siempre termina con esta instrucción:
+"Responde únicamente en formato JSON válido, sin contexto adicional, sin explicaciones, sin resúmenes, directamente el JSON estructurado."
+
+Ejemplo de prompt completo:
+
+---
+Analiza la transcripción adjunta y genera el segmento de participantes del acta municipal.
+
+Necesito:
+- titulo: Título de la sección (ej: "PARTICIPANTES")
+- cuerpo: Lista detallada de participantes con sus roles
+- integrantes: Array de nombres completos
+- votaciones: Si hubo votaciones, incluir tema y resultado
+
+Usa la información de la transcripción para extraer nombres, cargos y roles de cada participante.
+
+Responde únicamente en formato JSON válido, sin contexto adicional, sin explicaciones, sin resúmenes, directamente el JSON estructurado.
+---''',
+                'data-toggle': 'tooltip',
+                'data-placement': 'top',
+                'data-html': 'true',
+                'data-original-title': 'Instrucciones para que la IA genere este segmento. Sé específico sobre qué necesitas.'
+            }),
+            'prompt_sistema': forms.Textarea(attrs={
+                'class': 'form-control prompt-sistema-field',
+                'rows': 4,
+                'placeholder': 'Prompt de sistema específico (opcional). Override del prompt global del proveedor.'
             }),
             'proveedor_ia': forms.Select(attrs={
-                'class': 'form-control proveedor-field'
+                'class': 'form-control proveedor-ia-field'
             }),
+            
+            # Estructura y validación
             'estructura_json': forms.Textarea(attrs={
                 'class': 'form-control json-field',
                 'rows': 6,
-                'placeholder': '{"campo1": "valor", "campo2": ["lista", "valores"]}'
+                'placeholder': 'Estructura esperada del resultado (JSON):\n\n{\n  "titulo": "string",\n  "contenido": "text",\n  "items": ["lista", "elementos"]\n}'
             }),
-            'componentes': forms.Textarea(attrs={
+            'validaciones_salida': forms.Textarea(attrs={
                 'class': 'form-control json-field',
                 'rows': 4,
-                'placeholder': '{"texto": "contenido", "variables": ["var1", "var2"]}'
+                'placeholder': 'Validaciones a aplicar:\n\n[\n  {"tipo": "longitud_minima", "valor": 50},\n  {"tipo": "contiene_texto", "valor": "ACTA"}\n]'
             }),
+            'formato_validacion': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Patrón regex (opcional): ^[A-Z].*\\.$'
+            }),
+            
+            # Configuración de entrada
             'parametros_entrada': forms.Textarea(attrs={
                 'class': 'form-control json-field',
-                'rows': 3,
-                'placeholder': '["param1", "param2", "param3"]'
+                'rows': 4,
+                'placeholder': 'Parámetros requeridos:\n\n["transcripcion", "participantes", "fecha", "lugar"]'
             }),
             'variables_personalizadas': forms.Textarea(attrs={
                 'class': 'form-control json-field',
                 'rows': 5,
-                'placeholder': '{"fecha": "2025-01-01", "lugar": "Sala Principal"}'
+                'placeholder': 'Variables personalizables:\n\n{\n  "municipio": "Pastaza",\n  "provincia": "Pastaza",\n  "cargo_autoridad": "Alcalde"\n}'
             }),
+            'contexto_requerido': forms.Textarea(attrs={
+                'class': 'form-control json-field',
+                'rows': 3,
+                'placeholder': '["audio_transcription", "speaker_diarization", "participants_list"]'
+            }),
+            
+            # Comportamiento
             'orden_defecto': forms.NumberInput(attrs={
                 'class': 'form-control',
                 'min': '0',
-                'step': '1'
+                'max': '999',
+                'step': '1',
+                'placeholder': '0'
             }),
-            'reutilizable': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
-            'obligatorio': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
-            'activo': forms.CheckboxInput(attrs={'class': 'form-check-input'})
+            'reutilizable': forms.CheckboxInput(attrs={
+                'class': 'form-check-input'
+            }),
+            'obligatorio': forms.CheckboxInput(attrs={
+                'class': 'form-check-input'
+            }),
+            'activo': forms.CheckboxInput(attrs={
+                'class': 'form-check-input'
+            }),
+            
+            # Configuraciones avanzadas
+            'longitud_maxima': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'min': '1',
+                'step': '1',
+                'placeholder': 'Ej: 5000 (caracteres)'
+            }),
+            'tiempo_limite_ia': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'min': '10',
+                'max': '300',
+                'step': '5',
+                'placeholder': '60'
+            }),
+            'reintentos_ia': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'min': '0',
+                'max': '5',
+                'step': '1',
+                'placeholder': '2'
+            })
         }
     
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # Filtrar solo proveedores IA activos
-        self.fields['proveedor_ia'].queryset = ProveedorIA.objects.filter(activo=True)
-        self.fields['proveedor_ia'].required = False
         
-        # Configurar campos requeridos según el tipo
+        # VALORES INICIALES para campos requeridos
+        if not self.instance.pk:  # Solo para nuevos segmentos
+            self.fields['formato_salida'].initial = 'html'
+            self.fields['orden_defecto'].initial = 10
+            self.fields['tiempo_limite_ia'].initial = 60
+            self.fields['reintentos_ia'].initial = 2
+            self.fields['activo'].initial = True
+            self.fields['reutilizable'].initial = True
+            self.fields['obligatorio'].initial = False
+        
+        # Filtrar solo proveedores activos para el campo ModelChoiceField
+        self.fields['proveedor_ia'].queryset = ProveedorIA.objects.filter(activo=True)
+        self.fields['proveedor_ia'].empty_label = "Seleccionar proveedor IA..."
+        
+        # Configurar campos requeridos basados en tipo
         if self.instance and self.instance.pk:
-            if self.instance.es_dinamico:
-                self.fields['prompt_ia'].required = True
-                self.fields['proveedor_ia'].required = True
+            self._configurar_campos_requeridos()
+        
+        # Ayuda contextual
+        self.fields['codigo'].help_text = "Código único identificador (MAYÚSCULAS_CON_GUIONES)"
+        self.fields['tipo'].help_text = "Estático: contenido fijo | Dinámico: procesado con IA | Híbrido: ambos"
+        self.fields['categoria'].help_text = "Categoría funcional del segmento dentro del acta"
+        self.fields['orden_defecto'].help_text = "Orden sugerido en plantillas (menor número = primero)"
+        self.fields['tiempo_limite_ia'].help_text = "Tiempo máximo en segundos para procesamiento IA"
+        self.fields['reintentos_ia'].help_text = "Número de reintentos en caso de error de IA"
     
-    def clean_estructura_json(self):
-        """Validar que el JSON de estructura sea válido"""
-        estructura = self.cleaned_data.get('estructura_json')
-        if estructura:
-            try:
-                if isinstance(estructura, str):
-                    json.loads(estructura)
-            except json.JSONDecodeError:
-                raise ValidationError("La estructura JSON no es válida")
-        return estructura
-    
-    def clean_componentes(self):
-        """Validar que el JSON de componentes sea válido"""
-        componentes = self.cleaned_data.get('componentes')
-        if componentes:
-            try:
-                if isinstance(componentes, str):
-                    json.loads(componentes)
-            except json.JSONDecodeError:
-                raise ValidationError("Los componentes JSON no son válidos")
-        return componentes
-    
-    def clean_parametros_entrada(self):
-        """Validar que los parámetros de entrada sean válidos"""
-        parametros = self.cleaned_data.get('parametros_entrada')
-        if parametros:
-            try:
-                if isinstance(parametros, str):
-                    parsed = json.loads(parametros)
-                    if not isinstance(parsed, list):
-                        raise ValidationError("Los parámetros de entrada deben ser una lista")
-            except json.JSONDecodeError:
-                raise ValidationError("Los parámetros de entrada JSON no son válidos")
-        return parametros
-    
-    def clean_variables_personalizadas(self):
-        """Validar que las variables personalizadas sean válidas"""
-        variables = self.cleaned_data.get('variables_personalizadas')
-        if variables:
-            try:
-                if isinstance(variables, str):
-                    parsed = json.loads(variables)
-                    if not isinstance(parsed, dict):
-                        raise ValidationError("Las variables personalizadas deben ser un objeto JSON")
-            except json.JSONDecodeError:
-                raise ValidationError("Las variables personalizadas JSON no son válidas")
-        return variables
+    def _configurar_campos_requeridos(self):
+        """Configura campos requeridos basado en el tipo de segmento"""
+        if hasattr(self.instance, 'es_estatico') and self.instance.es_estatico:
+            self.fields['contenido_estatico'].required = True
+            self.fields['prompt_ia'].required = False
+            self.fields['proveedor_ia'].required = False
+        elif hasattr(self.instance, 'es_dinamico') and self.instance.es_dinamico:
+            self.fields['prompt_ia'].required = True
+            self.fields['proveedor_ia'].required = True
+            self.fields['contenido_estatico'].required = False
+        elif hasattr(self.instance, 'es_hibrido') and self.instance.es_hibrido:
+            self.fields['contenido_estatico'].required = True
+            # Prompt IA opcional para híbridos
     
     def clean(self):
         """Validación global del formulario"""
         cleaned_data = super().clean()
         tipo = cleaned_data.get('tipo')
-        prompt_ia = cleaned_data.get('prompt_ia')
+        contenido_estatico = cleaned_data.get('contenido_estatico', '').strip()
+        prompt_ia = cleaned_data.get('prompt_ia', '').strip()
         proveedor_ia = cleaned_data.get('proveedor_ia')
         
-        # Validaciones para segmentos dinámicos
-        if tipo in ['dinamico', 'hibrido']:
-            if not prompt_ia or not prompt_ia.strip():
-                self.add_error('prompt_ia', 'El prompt IA es obligatorio para segmentos dinámicos')
-            
+        # Validaciones por tipo
+        if tipo == 'estatico':
+            if not contenido_estatico:
+                self.add_error('contenido_estatico', 'Los segmentos estáticos requieren contenido estático.')
+        
+        elif tipo == 'dinamico':
+            if not prompt_ia:
+                self.add_error('prompt_ia', 'Los segmentos dinámicos requieren un prompt de IA.')
             if not proveedor_ia:
-                self.add_error('proveedor_ia', 'Debe seleccionar un proveedor IA para segmentos dinámicos')
+                self.add_error('proveedor_ia', 'Los segmentos dinámicos requieren un proveedor de IA.')
+        
+        elif tipo == 'hibrido':
+            if not contenido_estatico:
+                self.add_error('contenido_estatico', 'Los segmentos híbridos requieren contenido estático base.')
+        
+        # Validar JSON fields
+        campos_json = [
+            ('estructura_json', 'estructura_json'),
+            ('validaciones_salida', 'validaciones_salida'), 
+            ('parametros_entrada', 'parametros_entrada'),
+            ('variables_personalizadas', 'variables_personalizadas'),
+            ('contexto_requerido', 'contexto_requerido')
+        ]
+        
+        for campo, campo_clean in campos_json:
+            valor = cleaned_data.get(campo_clean, '')
+            if valor and valor.strip():
+                try:
+                    json.loads(valor)
+                except json.JSONDecodeError as e:
+                    self.add_error(campo_clean, f'JSON inválido: {str(e)}')
         
         return cleaned_data
+    
+    def clean_codigo(self):
+        """Validación del código único"""
+        codigo = self.cleaned_data.get('codigo', '').strip().upper()
+        
+        if not codigo:
+            raise ValidationError("El código es obligatorio")
+        
+        # Verificar formato
+        import re
+        if not re.match(r'^[A-Z0-9_]+$', codigo):
+            raise ValidationError("El código solo puede contener mayúsculas, números y guiones bajos")
+        
+        # Verificar unicidad excluyendo la instancia actual
+        queryset = SegmentoPlantilla.objects.filter(codigo=codigo)
+        if self.instance.pk:
+            queryset = queryset.exclude(pk=self.instance.pk)
+        
+        if queryset.exists():
+            raise ValidationError(f"Ya existe un segmento con el código '{codigo}'")
+        
+        return codigo
+    
+    def clean_longitud_maxima(self):
+        """Validación de longitud máxima"""
+        longitud = self.cleaned_data.get('longitud_maxima')
+        if longitud is not None and longitud <= 0:
+            raise ValidationError("La longitud máxima debe ser mayor que 0")
+        return longitud
+    
+    def clean_tiempo_limite_ia(self):
+        """Validación del tiempo límite de IA"""
+        tiempo = self.cleaned_data.get('tiempo_limite_ia', 60)
+        if tiempo < 10 or tiempo > 300:
+            raise ValidationError("El tiempo límite debe estar entre 10 y 300 segundos")
+        return tiempo
+    
+    def clean_reintentos_ia(self):
+        """Validación de reintentos de IA"""
+        reintentos = self.cleaned_data.get('reintentos_ia', 2)
+        if reintentos < 0 or reintentos > 5:
+            raise ValidationError("Los reintentos deben estar entre 0 y 5")
+        return reintentos
+    
+    def save(self, commit=True):
+        """Guardar con procesamiento adicional y valores por defecto"""
+        instance = super().save(commit=False)
+        
+        # VALORES POR DEFECTO para campos requeridos
+        if not hasattr(instance, 'formato_salida') or not instance.formato_salida:
+            instance.formato_salida = 'html'
+        
+        if not hasattr(instance, 'orden_defecto') or instance.orden_defecto is None:
+            instance.orden_defecto = 10
+        
+        if not hasattr(instance, 'tiempo_limite_ia') or instance.tiempo_limite_ia is None:
+            instance.tiempo_limite_ia = 60
+        
+        if not hasattr(instance, 'reintentos_ia') or instance.reintentos_ia is None:
+            instance.reintentos_ia = 2
+        
+        # Normalizar campos JSON vacíos
+        if not instance.estructura_json:
+            instance.estructura_json = {}
+        if not instance.validaciones_salida:
+            instance.validaciones_salida = []
+        if not instance.parametros_entrada:
+            instance.parametros_entrada = []
+        if not instance.variables_personalizadas:
+            instance.variables_personalizadas = {}
+        if not instance.contexto_requerido:
+            instance.contexto_requerido = []
+        
+        # Limpiar campos según tipo
+        if instance.tipo == 'estatico':
+            instance.prompt_ia = ''
+            instance.prompt_sistema = ''
+            instance.proveedor_ia = None
+        elif instance.tipo == 'dinamico':
+            instance.contenido_estatico = ''
+        
+        if commit:
+            instance.save()
+            
+        return instance
 
 
 class SegmentoFiltroForm(forms.Form):
-    """Formulario para filtrar segmentos de plantilla"""
+    """Formulario mejorado para filtrar y buscar segmentos de plantilla"""
     
     ORDENAMIENTO_CHOICES = [
         ('nombre', 'Nombre (A-Z)'),
         ('-nombre', 'Nombre (Z-A)'),
-        ('categoria', 'Categoría (A-Z)'),
-        ('-categoria', 'Categoría (Z-A)'),
-        ('tipo', 'Tipo (A-Z)'),
-        ('-tipo', 'Tipo (Z-A)'),
-        ('total_usos', 'Menos usados'),
-        ('-total_usos', 'Más usados'),
+        ('categoria', 'Categoría'),
+        ('-fecha_actualizacion', 'Más recientes'),
         ('fecha_creacion', 'Más antiguos'),
-        ('-fecha_creacion', 'Más recientes'),
-        ('fecha_actualizacion', 'Menos actualizados'),
-        ('-fecha_actualizacion', 'Más actualizados'),
-        ('orden_defecto', 'Orden por defecto'),
-        ('-tiempo_promedio_procesamiento', 'Más lentos'),
+        ('-total_usos', 'Más usados'),
+        ('total_usos', 'Menos usados'),
+        ('-tasa_exito', 'Mayor tasa éxito'),
         ('tiempo_promedio_procesamiento', 'Más rápidos'),
+        ('orden_defecto', 'Orden por defecto'),
     ]
     
+    ESTADO_CHOICES = [
+        ('', 'Todos los estados'),
+        ('true', 'Solo activos'),
+        ('false', 'Solo inactivos'),
+    ]
+    
+    REUTILIZABLE_CHOICES = [
+        ('', 'Todos'),
+        ('true', 'Reutilizables'),
+        ('false', 'No reutilizables'),
+    ]
+    
+    SALUD_CHOICES = [
+        ('', 'Todos'),
+        ('excelente', 'Excelente'),
+        ('bueno', 'Bueno'),
+        ('regular', 'Regular'),
+        ('problematico', 'Problemático'),
+        ('sin_uso', 'Sin uso'),
+    ]
+    
+    # Búsqueda
     buscar = forms.CharField(
         required=False,
         widget=forms.TextInput(attrs={
             'class': 'form-control',
-            'placeholder': 'Buscar por nombre, código o descripción...'
+            'placeholder': 'Buscar por nombre, código o descripción...',
+            'data-toggle': 'tooltip',
+            'data-placement': 'top',
+            'title': 'Busca en nombre, código y descripción'
         })
     )
     
+    # Filtros por categoría
     categoria = forms.ChoiceField(
+        required=False,
         choices=[('', 'Todas las categorías')] + SegmentoPlantilla.CATEGORIA_SEGMENTO,
-        required=False,
         widget=forms.Select(attrs={'class': 'form-control'})
     )
     
+    # Filtros por tipo
     tipo = forms.ChoiceField(
-        choices=[('', 'Todos los tipos')] + SegmentoPlantilla.TIPO_SEGMENTO,
         required=False,
+        choices=[('', 'Todos los tipos')] + SegmentoPlantilla.TIPO_SEGMENTO,
         widget=forms.Select(attrs={'class': 'form-control'})
     )
     
+    # Filtro por proveedor IA
     proveedor_ia = forms.ModelChoiceField(
-        queryset=ProveedorIA.objects.filter(activo=True),
         required=False,
+        queryset=ProveedorIA.objects.filter(activo=True),
         empty_label="Todos los proveedores",
         widget=forms.Select(attrs={'class': 'form-control'})
     )
     
+    # Filtros de estado
     activo = forms.ChoiceField(
-        choices=[('', 'Todos'), ('true', 'Activos'), ('false', 'Inactivos')],
         required=False,
+        choices=ESTADO_CHOICES,
         widget=forms.Select(attrs={'class': 'form-control'})
     )
     
     reutilizable = forms.ChoiceField(
-        choices=[('', 'Todos'), ('true', 'Reutilizables'), ('false', 'No reutilizables')],
         required=False,
+        choices=REUTILIZABLE_CHOICES,
         widget=forms.Select(attrs={'class': 'form-control'})
     )
     
     obligatorio = forms.ChoiceField(
-        choices=[('', 'Todos'), ('true', 'Obligatorios'), ('false', 'Opcionales')],
         required=False,
+        choices=REUTILIZABLE_CHOICES,  # Misma estructura
         widget=forms.Select(attrs={'class': 'form-control'})
     )
     
+    # Filtro por estado de salud
+    estado_salud = forms.ChoiceField(
+        required=False,
+        choices=SALUD_CHOICES,
+        widget=forms.Select(attrs={'class': 'form-control'})
+    )
+    
+    # Filtros por uso
+    solo_con_errores = forms.BooleanField(
+        required=False,
+        widget=forms.CheckboxInput(attrs={'class': 'form-check-input'})
+    )
+    
+    solo_sin_uso = forms.BooleanField(
+        required=False,
+        widget=forms.CheckboxInput(attrs={'class': 'form-check-input'})
+    )
+    
+    configuracion_incompleta = forms.BooleanField(
+        required=False,
+        widget=forms.CheckboxInput(attrs={'class': 'form-check-input'})
+    )
+    
+    # Ordenamiento
     ordenar_por = forms.ChoiceField(
+        required=False,
         choices=ORDENAMIENTO_CHOICES,
         initial='-fecha_actualizacion',
         widget=forms.Select(attrs={'class': 'form-control'})

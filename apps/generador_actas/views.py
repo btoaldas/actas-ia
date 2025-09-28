@@ -11,7 +11,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import ValidationError, PermissionDenied
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
-from django.db import transaction
+from django.db import transaction, models
 from django.db.models import Q, Count, Sum
 from django.http import JsonResponse, HttpResponse, Http404
 from django.shortcuts import render, get_object_or_404, redirect
@@ -28,7 +28,7 @@ from .models import (
     SegmentoPlantilla, ConfiguracionSegmento
 )
 from .services import GeneradorActasService, PlantillasService, EstadisticasService
-from .forms import ActaGeneradaForm, PlantillaActaForm, ConfiguracionSegmentoFormSet, ProveedorIAForm, TestProveedorForm
+from .forms import ActaGeneradaForm, PlantillaActaForm, ConfiguracionSegmentoFormSet, ProveedorIAForm, TestProveedorForm, SegmentoPlantillaForm
 
 logger = logging.getLogger(__name__)
 
@@ -801,8 +801,8 @@ class SegmentoDetailView(LoginRequiredMixin, DetailView):
 class CrearSegmentoView(LoginRequiredMixin, CreateView):
     """Vista para crear un nuevo segmento"""
     model = SegmentoPlantilla
+    form_class = SegmentoPlantillaForm  # ¡USAR EL FORMULARIO PERSONALIZADO!
     template_name = 'generador_actas/segmentos/crear.html'
-    fields = ['codigo', 'nombre', 'descripcion', 'categoria', 'tipo', 'prompt_ia', 'estructura_json', 'componentes', 'parametros_entrada']
     success_url = reverse_lazy('generador_actas:lista_segmentos')
     
     def form_valid(self, form):
@@ -829,8 +829,8 @@ class CrearSegmentoView(LoginRequiredMixin, CreateView):
 class EditarSegmentoView(LoginRequiredMixin, UpdateView):
     """Vista para editar un segmento"""
     model = SegmentoPlantilla
+    form_class = SegmentoPlantillaForm  # ¡USAR EL FORMULARIO PERSONALIZADO!
     template_name = 'generador_actas/segmentos/crear.html'
-    fields = ['codigo', 'nombre', 'descripcion', 'categoria', 'tipo', 'prompt_ia', 'estructura_json', 'componentes', 'parametros_entrada']
     success_url = reverse_lazy('generador_actas:lista_segmentos')
     
     def form_valid(self, form):
@@ -1986,74 +1986,127 @@ def test_proveedor_ia(request):
 
 @login_required
 def segmentos_dashboard(request):
-    """Dashboard principal de segmentos de plantilla"""
+    """Dashboard mejorado de segmentos de plantilla con métricas avanzadas"""
     try:
+        from django.db.models import Avg, Sum, Count, Max, Min, Q, F, Case, When, FloatField
+        
         # Métricas básicas
-        total_segmentos = SegmentoPlantilla.objects.count()
-        segmentos_activos = SegmentoPlantilla.objects.filter(activo=True).count()
-        segmentos_dinamicos = SegmentoPlantilla.objects.filter(tipo__in=['dinamico', 'hibrido']).count()
-        segmentos_estaticos = SegmentoPlantilla.objects.filter(tipo='estatico').count()
+        stats_basicas = SegmentoPlantilla.objects.aggregate(
+            total_segmentos=Count('id'),
+            activos=Count('id', filter=Q(activo=True)),
+            inactivos=Count('id', filter=Q(activo=False)),
+            estaticos=Count('id', filter=Q(tipo='estatico')),
+            dinamicos=Count('id', filter=Q(tipo='dinamico')),
+            hibridos=Count('id', filter=Q(tipo='hibrido')),
+        )
         
-        # Métricas de uso
-        total_usos = SegmentoPlantilla.objects.aggregate(
-            total=Sum('total_usos')
-        )['total'] or 0
+        # Métricas de uso y rendimiento
+        stats_uso = SegmentoPlantilla.objects.aggregate(
+            total_usos=Sum('total_usos') or 0,
+            total_errores=Sum('total_errores') or 0,
+            tiempo_promedio_global=Avg('tiempo_promedio_procesamiento') or 0.0,
+            tasa_exito_promedio=Avg('tasa_exito') or 0.0,
+            ultimo_uso=Max('ultima_prueba'),
+        )
         
-        segmentos_con_uso = SegmentoPlantilla.objects.filter(total_usos__gt=0).count()
-        segmentos_sin_uso = total_segmentos - segmentos_con_uso
-        
-        # Promedio de tiempo de procesamiento
-        tiempo_promedio_global = SegmentoPlantilla.objects.filter(
-            tiempo_promedio_procesamiento__gt=0
-        ).aggregate(
-            promedio=Sum('tiempo_promedio_procesamiento') / Count('id')
-        )['promedio'] or 0
-        
-        # Distribución por categoría
-        distribucion_categoria = SegmentoPlantilla.objects.values('categoria').annotate(
+        # Distribución por categorías con estadísticas
+        distribucion_categoria = SegmentoPlantilla.objects.values(
+            'categoria'
+        ).annotate(
             total=Count('id'),
             activos=Count('id', filter=Q(activo=True)),
-            usos=Sum('total_usos')
+            usos=Sum('total_usos') or 0,
+            errores=Sum('total_errores') or 0,
+            tiempo_promedio=Avg('tiempo_promedio_procesamiento') or 0.0,
+            tasa_exito=Avg('tasa_exito') or 0.0
         ).order_by('-total')
         
-        # Distribución por tipo
-        distribucion_tipo = SegmentoPlantilla.objects.values('tipo').annotate(
+        # Agregar display names para categorías
+        categoria_names = dict(SegmentoPlantilla.CATEGORIA_SEGMENTO)
+        for item in distribucion_categoria:
+            item['categoria_display'] = categoria_names.get(item['categoria'], item['categoria'])
+            # Calcular tasa de error
+            if item['usos'] > 0:
+                item['tasa_error'] = round((item['errores'] / item['usos']) * 100, 1)
+            else:
+                item['tasa_error'] = 0.0
+        
+        # Distribución por tipos con estadísticas
+        distribucion_tipo = SegmentoPlantilla.objects.values(
+            'tipo'
+        ).annotate(
             total=Count('id'),
             activos=Count('id', filter=Q(activo=True)),
-            usos=Sum('total_usos')
+            usos=Sum('total_usos') or 0,
+            errores=Sum('total_errores') or 0,
+            tiempo_promedio=Avg('tiempo_promedio_procesamiento') or 0.0
         ).order_by('-total')
         
-        # Segmentos más usados
+        # Agregar display names para tipos
+        tipo_names = dict(SegmentoPlantilla.TIPO_SEGMENTO)
+        for item in distribucion_tipo:
+            item['tipo_display'] = tipo_names.get(item['tipo'], item['tipo'])
+        
+        # Segmentos más usados con detalles
         segmentos_populares = SegmentoPlantilla.objects.filter(
             total_usos__gt=0
-        ).order_by('-total_usos')[:10]
+        ).select_related('proveedor_ia', 'usuario_creacion').order_by('-total_usos', '-tasa_exito')[:10]
         
-        # Segmentos recientes
+        # Segmentos recientes con configuración
         segmentos_recientes = SegmentoPlantilla.objects.select_related(
             'proveedor_ia', 'usuario_creacion'
+        ).annotate(
+            esta_configurado_calc=Case(
+                When(Q(tipo='estatico') & Q(contenido_estatico__isnull=False) & ~Q(contenido_estatico=''), then=True),
+                When(Q(tipo='dinamico') & Q(prompt_ia__isnull=False) & ~Q(prompt_ia='') & Q(proveedor_ia__isnull=False), then=True),
+                When(Q(tipo='hibrido') & Q(contenido_estatico__isnull=False) & ~Q(contenido_estatico=''), then=True),
+                default=False,
+                output_field=models.BooleanField()
+            )
         ).order_by('-fecha_creacion')[:10]
         
-        # Segmentos problemáticos (con errores recientes)
-        segmentos_con_errores = SegmentoPlantilla.objects.filter(
-            ultimo_resultado_prueba__icontains='error'
-        ).order_by('-ultima_prueba')[:5]
+        # Segmentos con problemas
+        segmentos_problemas = SegmentoPlantilla.objects.filter(
+            Q(tasa_exito__lt=80) | Q(total_errores__gt=0) | Q(ultimo_resultado_prueba__icontains='error')
+        ).select_related('proveedor_ia').order_by('-total_errores', 'tasa_exito')[:5]
+        
+        # Segmentos sin configurar
+        segmentos_incompletos = SegmentoPlantilla.objects.filter(
+            Q(Q(tipo='estatico') & (Q(contenido_estatico='') | Q(contenido_estatico__isnull=True))) |
+            Q(Q(tipo='dinamico') & (Q(prompt_ia='') | Q(prompt_ia__isnull=True) | Q(proveedor_ia__isnull=True))) |
+            Q(Q(tipo='hibrido') & (Q(contenido_estatico='') | Q(contenido_estatico__isnull=True)))
+        ).select_related('usuario_creacion')[:5]
+        
+        # Proveedores IA más utilizados
+        proveedores_stats = ProveedorIA.objects.filter(
+            segmentoplantilla__isnull=False
+        ).annotate(
+            segmentos_count=Count('segmentoplantilla'),
+            usos_totales=Sum('segmentoplantilla__total_usos'),
+            errores_totales=Sum('segmentoplantilla__total_errores')
+        ).filter(segmentos_count__gt=0).order_by('-usos_totales')[:5]
+        
+        # Estadísticas de salud general
+        total_con_uso = stats_basicas['total_segmentos'] - SegmentoPlantilla.objects.filter(total_usos=0).count()
         
         context = {
-            'metricas': {
-                'total_segmentos': total_segmentos,
-                'segmentos_activos': segmentos_activos,
-                'segmentos_dinamicos': segmentos_dinamicos,
-                'segmentos_estaticos': segmentos_estaticos,
-                'total_usos': total_usos,
-                'segmentos_con_uso': segmentos_con_uso,
-                'segmentos_sin_uso': segmentos_sin_uso,
-                'tiempo_promedio_global': round(tiempo_promedio_global, 2),
+            'stats': {
+                **stats_basicas,
+                **stats_uso,
+                'total_con_uso': total_con_uso,
+                'total_sin_uso': stats_basicas['total_segmentos'] - total_con_uso,
+                'porcentaje_activos': round((stats_basicas['activos'] / max(stats_basicas['total_segmentos'], 1)) * 100, 1),
+                'porcentaje_con_uso': round((total_con_uso / max(stats_basicas['total_segmentos'], 1)) * 100, 1),
+                'tiempo_promedio_global': round(stats_uso['tiempo_promedio_global'], 2),
+                'tasa_exito_promedio': round(stats_uso['tasa_exito_promedio'], 1),
             },
             'distribucion_categoria': distribucion_categoria,
             'distribucion_tipo': distribucion_tipo,
             'segmentos_populares': segmentos_populares,
             'segmentos_recientes': segmentos_recientes,
-            'segmentos_con_errores': segmentos_con_errores,
+            'segmentos_problemas': segmentos_problemas,
+            'segmentos_incompletos': segmentos_incompletos,
+            'proveedores_stats': proveedores_stats,
             'page_title': 'Dashboard de Segmentos',
             'breadcrumbs': [
                 {'title': 'Generador Actas', 'url': reverse('generador_actas:dashboard')},
@@ -2065,20 +2118,20 @@ def segmentos_dashboard(request):
         
     except Exception as e:
         logger.error(f"Error en dashboard_segmentos: {str(e)}")
-        messages.error(request, "Error al cargar el dashboard de segmentos")
+        messages.error(request, f"Error al cargar el dashboard de segmentos: {str(e)}")
         return redirect('generador_actas:dashboard')
 
 
 @login_required 
 def lista_segmentos(request):
-    """Lista de segmentos con filtros y paginación"""
+    """Lista mejorada de segmentos con filtros avanzados y paginación"""
     from .forms import SegmentoFiltroForm
     
     try:
         form = SegmentoFiltroForm(request.GET)
         segmentos_qs = SegmentoPlantilla.objects.select_related(
             'proveedor_ia', 'usuario_creacion'
-        )
+        ).prefetch_related()
         
         # Aplicar filtros si el formulario es válido
         if form.is_valid():
@@ -2107,30 +2160,59 @@ def lista_segmentos(request):
             if proveedor_ia:
                 segmentos_qs = segmentos_qs.filter(proveedor_ia=proveedor_ia)
             
-            # Filtro por estado activo
+            # Filtros de estado
             activo = form.cleaned_data.get('activo')
             if activo == 'true':
                 segmentos_qs = segmentos_qs.filter(activo=True)
             elif activo == 'false':
                 segmentos_qs = segmentos_qs.filter(activo=False)
             
-            # Filtro por reutilizable
             reutilizable = form.cleaned_data.get('reutilizable')
             if reutilizable == 'true':
                 segmentos_qs = segmentos_qs.filter(reutilizable=True)
             elif reutilizable == 'false':
                 segmentos_qs = segmentos_qs.filter(reutilizable=False)
             
-            # Filtro por obligatorio
             obligatorio = form.cleaned_data.get('obligatorio')
             if obligatorio == 'true':
                 segmentos_qs = segmentos_qs.filter(obligatorio=True)
             elif obligatorio == 'false':
                 segmentos_qs = segmentos_qs.filter(obligatorio=False)
             
+            # Filtros avanzados
+            estado_salud = form.cleaned_data.get('estado_salud')
+            if estado_salud:
+                if estado_salud == 'sin_uso':
+                    segmentos_qs = segmentos_qs.filter(total_usos=0)
+                elif estado_salud == 'excelente':
+                    segmentos_qs = segmentos_qs.filter(total_usos__gt=0, total_errores=0)
+                elif estado_salud == 'bueno':
+                    segmentos_qs = segmentos_qs.filter(total_usos__gt=0, tasa_exito__gte=85, tasa_exito__lt=95)
+                elif estado_salud == 'regular':
+                    segmentos_qs = segmentos_qs.filter(total_usos__gt=0, tasa_exito__gte=70, tasa_exito__lt=85)
+                elif estado_salud == 'problematico':
+                    segmentos_qs = segmentos_qs.filter(total_usos__gt=0, tasa_exito__lt=70)
+            
+            # Filtros especiales
+            if form.cleaned_data.get('solo_con_errores'):
+                segmentos_qs = segmentos_qs.filter(total_errores__gt=0)
+            
+            if form.cleaned_data.get('solo_sin_uso'):
+                segmentos_qs = segmentos_qs.filter(total_usos=0)
+            
+            if form.cleaned_data.get('configuracion_incompleta'):
+                segmentos_qs = segmentos_qs.filter(
+                    Q(Q(tipo='estatico') & (Q(contenido_estatico='') | Q(contenido_estatico__isnull=True))) |
+                    Q(Q(tipo='dinamico') & (Q(prompt_ia='') | Q(prompt_ia__isnull=True) | Q(proveedor_ia__isnull=True))) |
+                    Q(Q(tipo='hibrido') & (Q(contenido_estatico='') | Q(contenido_estatico__isnull=True)))
+                )
+            
             # Ordenamiento
             ordenar_por = form.cleaned_data.get('ordenar_por', '-fecha_actualizacion')
-            segmentos_qs = segmentos_qs.order_by(ordenar_por)
+            if ordenar_por and ordenar_por.strip():  # Verificar que no esté vacío
+                segmentos_qs = segmentos_qs.order_by(ordenar_por)
+            else:
+                segmentos_qs = segmentos_qs.order_by('-fecha_actualizacion')
         else:
             segmentos_qs = segmentos_qs.order_by('-fecha_actualizacion')
         
@@ -2145,14 +2227,21 @@ def lista_segmentos(request):
         except EmptyPage:
             segmentos = paginator.page(paginator.num_pages)
         
-        # Estadísticas rápidas para la vista
+        # Estadísticas de la consulta actual
         total_filtrados = segmentos_qs.count()
+        stats_filtros = {
+            'total_filtrados': total_filtrados,
+            'total_activos': segmentos_qs.filter(activo=True).count(),
+            'total_dinamicos': segmentos_qs.filter(tipo='dinamico').count(),
+            'total_con_uso': segmentos_qs.filter(total_usos__gt=0).count(),
+            'total_con_errores': segmentos_qs.filter(total_errores__gt=0).count(),
+        }
         
         context = {
             'segmentos': segmentos,
             'form': form,
-            'total_filtrados': total_filtrados,
-            'page_title': 'Segmentos de Plantilla',
+            'stats_filtros': stats_filtros,
+            'page_title': 'Lista de Segmentos',
             'breadcrumbs': [
                 {'title': 'Generador Actas', 'url': reverse('generador_actas:dashboard')},
                 {'title': 'Segmentos', 'url': reverse('generador_actas:segmentos_dashboard')},
@@ -2164,7 +2253,7 @@ def lista_segmentos(request):
         
     except Exception as e:
         logger.error(f"Error en lista_segmentos: {str(e)}")
-        messages.error(request, "Error al cargar la lista de segmentos")
+        messages.error(request, f"Error al cargar la lista de segmentos: {str(e)}")
         return redirect('generador_actas:segmentos_dashboard')
 
 
@@ -2206,29 +2295,104 @@ def crear_segmento(request):
 
 @login_required
 def detalle_segmento(request, pk):
-    """Ver detalles de un segmento"""
-    segmento = get_object_or_404(SegmentoPlantilla, pk=pk)
-    
-    # Historial de uso reciente (simulado - en el futuro se podría tener una tabla de logs)
-    historial_uso = []
-    
-    context = {
-        'segmento': segmento,
-        'historial_uso': historial_uso,
-        'page_title': f'Segmento: {segmento.nombre}',
-        'breadcrumbs': [
-            {'title': 'Generador Actas', 'url': reverse('generador_actas:dashboard')},
-            {'title': 'Segmentos', 'url': reverse('generador_actas:segmentos_dashboard')},
-            {'title': segmento.nombre, 'url': ''}
-        ]
-    }
-    
-    return render(request, 'generador_actas/segmentos/detalle.html', context)
+    """Vista detallada mejorada de un segmento con métricas y configuración"""
+    try:
+        segmento = get_object_or_404(SegmentoPlantilla.objects.select_related(
+            'proveedor_ia', 'usuario_creacion'
+        ), pk=pk)
+        
+        # Calcular métricas de rendimiento
+        metricas = {
+            'estado_salud': segmento.estado_salud,
+            'esta_configurado': segmento.esta_configurado,
+            'configuracion_ia_valida': segmento.configuracion_ia_valida,
+            'porcentaje_exito': round(segmento.tasa_exito, 1),
+            'tiempo_promedio': round(segmento.tiempo_promedio_procesamiento, 2),
+            'total_procesados': segmento.total_usos,
+            'total_errores': segmento.total_errores,
+        }
+        
+        # Variables disponibles
+        variables_disponibles = segmento.variables_disponibles
+        
+        # Plantillas que usan este segmento
+        plantillas_usando = PlantillaActa.objects.filter(
+            configuracionsegmento__segmento=segmento
+        ).select_related().distinct()
+        
+        # Información de configuración
+        config_info = {
+            'tiene_contenido_estatico': segmento.tiene_contenido_estatico,
+            'tiene_prompt_ia': segmento.tiene_prompt,
+            'proveedor_configurado': segmento.proveedor_ia and segmento.proveedor_ia.esta_configurado if segmento.proveedor_ia else False,
+            'estructura_definida': bool(segmento.estructura_json),
+            'validaciones_activas': len(segmento.validaciones_salida) if segmento.validaciones_salida else 0,
+            'parametros_entrada': len(segmento.parametros_entrada) if segmento.parametros_entrada else 0,
+        }
+        
+        # Problemas detectados
+        problemas = []
+        if not segmento.esta_configurado:
+            if segmento.es_estatico and not segmento.tiene_contenido_estatico:
+                problemas.append("Segmento estático sin contenido definido")
+            elif segmento.es_dinamico:
+                if not segmento.tiene_prompt:
+                    problemas.append("Segmento dinámico sin prompt de IA")
+                if not segmento.proveedor_ia:
+                    problemas.append("Segmento dinámico sin proveedor IA asignado")
+                elif not segmento.proveedor_ia.esta_configurado:
+                    problemas.append("Proveedor IA no está correctamente configurado")
+            elif segmento.es_hibrido and not segmento.tiene_contenido_estatico:
+                problemas.append("Segmento híbrido sin contenido estático base")
+        
+        if segmento.tasa_exito < 70 and segmento.total_usos > 0:
+            problemas.append(f"Baja tasa de éxito ({segmento.tasa_exito:.1f}%)")
+        
+        if segmento.tiempo_promedio_procesamiento > 30:
+            problemas.append(f"Tiempo de procesamiento elevado ({segmento.tiempo_promedio_procesamiento:.1f}s)")
+        
+        # Recomendaciones
+        recomendaciones = []
+        if segmento.total_usos == 0:
+            recomendaciones.append("Considera probar este segmento para verificar su funcionamiento")
+        
+        if segmento.es_dinamico and not segmento.estructura_json:
+            recomendaciones.append("Define una estructura JSON esperada para mejorar la consistencia")
+        
+        if segmento.es_dinamico and not segmento.validaciones_salida:
+            recomendaciones.append("Agrega validaciones de salida para asegurar la calidad del resultado")
+        
+        if segmento.reutilizable and len(plantillas_usando) == 0:
+            recomendaciones.append("Este segmento reutilizable no está siendo usado en ninguna plantilla")
+        
+        context = {
+            'segmento': segmento,
+            'object': segmento,  # Para compatibilidad con templates
+            'metricas': metricas,
+            'variables_disponibles': variables_disponibles,
+            'plantillas_usando': plantillas_usando,
+            'config_info': config_info,
+            'problemas': problemas,
+            'recomendaciones': recomendaciones,
+            'page_title': f'Segmento: {segmento.nombre}',
+            'breadcrumbs': [
+                {'title': 'Generador Actas', 'url': reverse('generador_actas:dashboard')},
+                {'title': 'Segmentos', 'url': reverse('generador_actas:segmentos_dashboard')},
+                {'title': segmento.nombre, 'url': ''}
+            ]
+        }
+        
+        return render(request, 'generador_actas/segmentos/detalle.html', context)
+        
+    except Exception as e:
+        logger.error(f"Error en detalle_segmento {pk}: {str(e)}")
+        messages.error(request, f"Error al cargar el detalle del segmento: {str(e)}")
+        return redirect('generador_actas:lista_segmentos')
 
 
 @login_required
 def editar_segmento(request, pk):
-    """Editar segmento existente"""
+    """Editar segmento existente con formulario mejorado"""
     from .forms import SegmentoPlantillaForm
     
     segmento = get_object_or_404(SegmentoPlantilla, pk=pk)

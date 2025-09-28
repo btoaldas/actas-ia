@@ -1,0 +1,443 @@
+/* CSS para módulo de Segmentos de Actas */
+.segmentos-dashboard {
+    background: #f8f9fa;
+    min-height: calc(100vh - 200px);
+}
+
+/* Cards de estadísticas */
+.stats-card {
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    transition: transform 0.3s, box-shadow 0.3s;
+}
+
+.stats-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 5px 20px rgba(0,0,0,0.15);
+}
+
+.stats-icon {
+    font-size: 2.5rem;
+    opacity: 0.8;
+}
+
+/* Progress bars personalizadas */
+.progress-custom {
+    height: 8px;
+    border-radius: 10px;
+    background: rgba(0,0,0,0.1);
+}
+
+.progress-custom .progress-bar {
+    border-radius: 10px;
+}
+
+/* Badges de tipo de segmento */
+.badge-estatico {
+    background: linear-gradient(45deg, #28a745, #20c997);
+}
+
+.badge-dinamico {
+    background: linear-gradient(45deg, #007bff, #6610f2);
+}
+
+.badge-hibrido {
+    background: linear-gradient(45deg, #ffc107, #fd7e14);
+}
+
+/* Lista de segmentos */
+.segmento-card {
+    border-radius: 8px;
+    transition: all 0.3s;
+    border-left: 4px solid #007bff;
+    margin-bottom: 20px;
+}
+
+.segmento-card:hover {
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    transform: translateY(-2px);
+}
+
+.segmento-estatico {
+    border-left-color: #28a745;
+}
+
+.segmento-dinamico {
+    border-left-color: #007bff;
+}
+
+.segmento-hibrido {
+    border-left-color: #ffc107;
+}
+
+/* Estados de configuración */
+.estado-configurado {
+    color: #28a745;
+    font-weight: bold;
+}
+
+.estado-incompleto {
+    color: #dc3545;
+    font-weight: bold;
+}
+
+.estado-parcial {
+    color: #ffc107;
+    font-weight: bold;
+}
+
+/* Métricas en cards */
+.metric-small {
+    font-size: 0.85em;
+    color: #6c757d;
+}
+
+.metric-number {
+    font-size: 1.2em;
+    font-weight: bold;
+    color: #495057;
+}
+
+/* Filtros */
+.filter-card {
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.filter-toggle {
+    cursor: pointer;
+    transition: color 0.3s;
+}
+
+.filter-toggle:hover {
+    color: #007bff;
+}
+
+/* Formulario de segmentos */
+.form-section {
+    background: #fff;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    padding: 20px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+.form-section h4 {
+    color: #495057;
+    border-bottom: 2px solid #007bff;
+    padding-bottom: 10px;
+    margin-bottom: 20px;
+    font-weight: 600;
+}
+
+/* Campos dinámicos */
+.dynamic-fields,
+.static-fields,
+.hybrid-fields {
+    display: none;
+    opacity: 0;
+    transition: opacity 0.3s;
+}
+
+.show-fields {
+    display: block !important;
+    opacity: 1;
+}
+
+/* Editor de código */
+.code-editor {
+    font-family: 'Courier New', monospace;
+    min-height: 120px;
+    border: 1px solid #ced4da;
+    border-radius: 0.375rem;
+    padding: 0.75rem;
+    font-size: 0.875em;
+    line-height: 1.5;
+}
+
+.code-editor:focus {
+    border-color: #80bdff;
+    box-shadow: 0 0 0 0.2rem rgba(0,123,255,0.25);
+    outline: 0;
+}
+
+.json-editor {
+    font-family: 'Courier New', monospace;
+    min-height: 80px;
+    border: 1px solid #ced4da;
+    border-radius: 0.375rem;
+    padding: 0.75rem;
+    font-size: 0.875em;
+    line-height: 1.5;
+}
+
+/* Vista previa de variables */
+.variable-preview {
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 0.375rem;
+    padding: 15px;
+    margin-top: 15px;
+}
+
+.variable-tag {
+    display: inline-block;
+    background: #007bff;
+    color: white;
+    padding: 4px 12px;
+    margin: 3px;
+    border-radius: 15px;
+    font-size: 0.8em;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.variable-tag:hover {
+    background: #0056b3;
+    transform: scale(1.05);
+}
+
+/* Timeline para auditoría */
+.timeline-item {
+    border-left: 2px solid #dee2e6;
+    padding-left: 15px;
+    margin-bottom: 15px;
+    position: relative;
+}
+
+.timeline-item::before {
+    content: '';
+    width: 10px;
+    height: 10px;
+    background: #007bff;
+    border: 2px solid #fff;
+    border-radius: 50%;
+    position: absolute;
+    left: -6px;
+    top: 5px;
+    box-shadow: 0 0 0 2px #dee2e6;
+}
+
+/* Detalle de segmento */
+.detail-card {
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    margin-bottom: 20px;
+}
+
+.detail-card .card-header {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border-bottom: 1px solid #dee2e6;
+    font-weight: 600;
+}
+
+.metric-card {
+    text-align: center;
+}
+
+.metric-card .info-box {
+    border-radius: 8px;
+    margin-bottom: 10px;
+}
+
+.metric-card .info-box-icon {
+    border-radius: 8px 0 0 8px;
+}
+
+/* Código preview */
+.code-preview {
+    background: #f4f4f4;
+    border-left: 4px solid #007bff;
+    padding: 15px;
+    border-radius: 4px;
+    font-family: 'Courier New', monospace;
+    white-space: pre-wrap;
+    max-height: 300px;
+    overflow-y: auto;
+    font-size: 0.875em;
+    line-height: 1.4;
+}
+
+/* Status badges */
+.status-badge {
+    font-size: 0.9em;
+    padding: 0.5em 1em;
+    border-radius: 20px;
+}
+
+/* Configuración de salud */
+.config-status-ok {
+    color: #28a745;
+    font-weight: bold;
+}
+
+.config-status-warning {
+    color: #ffc107;
+    font-weight: bold;
+}
+
+.config-status-error {
+    color: #dc3545;
+    font-weight: bold;
+}
+
+/* Help text */
+.help-text-custom {
+    font-size: 0.875em;
+    color: #6c757d;
+    margin-top: 5px;
+    font-style: italic;
+}
+
+/* Tabs personalización */
+.nav-tabs .nav-link {
+    border: 1px solid transparent;
+    border-radius: 0.375rem 0.375rem 0 0;
+    color: #495057;
+    font-weight: 500;
+    transition: all 0.3s;
+}
+
+.nav-tabs .nav-link:hover {
+    border-color: #e9ecef #e9ecef #dee2e6;
+    color: #007bff;
+}
+
+.nav-tabs .nav-link.active {
+    color: #007bff;
+    background-color: #fff;
+    border-color: #dee2e6 #dee2e6 #fff;
+    font-weight: 600;
+}
+
+.tab-content {
+    border: 1px solid #dee2e6;
+    border-top: none;
+    padding: 30px;
+    background: #fff;
+    border-radius: 0 0 0.375rem 0.375rem;
+}
+
+/* Form checks inline */
+.form-check-inline {
+    margin-right: 20px;
+    margin-bottom: 10px;
+}
+
+.form-check-label {
+    font-weight: 500;
+    margin-left: 5px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .stats-card {
+        margin-bottom: 20px;
+    }
+    
+    .segmento-card {
+        margin-bottom: 15px;
+    }
+    
+    .form-section {
+        padding: 15px;
+    }
+    
+    .tab-content {
+        padding: 20px;
+    }
+    
+    .timeline-item {
+        padding-left: 10px;
+    }
+}
+
+/* Animaciones */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.fade-in {
+    animation: fadeIn 0.5s ease-out;
+}
+
+/* Loading states */
+.loading {
+    position: relative;
+    pointer-events: none;
+    opacity: 0.7;
+}
+
+.loading::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 20px;
+    height: 20px;
+    margin: -10px 0 0 -10px;
+    border: 2px solid #007bff;
+    border-top-color: transparent;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* Tooltips personalizados */
+.custom-tooltip {
+    position: relative;
+    display: inline-block;
+    cursor: help;
+}
+
+.custom-tooltip::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #333;
+    color: #fff;
+    padding: 5px 10px;
+    border-radius: 4px;
+    font-size: 0.75em;
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s;
+    z-index: 1000;
+}
+
+.custom-tooltip:hover::after {
+    opacity: 1;
+}
+
+/* Empty states */
+.empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: #6c757d;
+}
+
+.empty-state i {
+    font-size: 4rem;
+    margin-bottom: 20px;
+    opacity: 0.5;
+}
+
+.empty-state h4 {
+    color: #495057;
+    margin-bottom: 15px;
+}
+
+.empty-state p {
+    max-width: 400px;
+    margin: 0 auto;
+    line-height: 1.6;
+}

@@ -1,0 +1,591 @@
+{% extends 'base_admin.html' %}
+{% load static %}
+{% load widget_tweaks %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'generador_actas/css/segmentos.css' %}">
+<style>
+.form-section {
+    margin-bottom: 30px;
+    border: 1px solid #dee2e6;
+    border-radius: 0.375rem;
+    padding: 20px;
+}
+.form-section h4 {
+    color: #495057;
+    border-bottom: 1px solid #dee2e6;
+    padding-bottom: 10px;
+    margin-bottom: 20px;
+}
+.dynamic-fields { display: none; }
+.static-fields { display: none; }
+.hybrid-fields { display: none; }
+.show-fields { display: block; }
+
+.variable-preview {
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 0.375rem;
+    padding: 10px;
+    margin-top: 10px;
+}
+.variable-tag {
+    display: inline-block;
+    background: #007bff;
+    color: white;
+    padding: 2px 8px;
+    margin: 2px;
+    border-radius: 12px;
+    font-size: 0.8em;
+    cursor: pointer;
+}
+.variable-tag:hover {
+    background: #0056b3;
+}
+
+.code-editor {
+    font-family: 'Courier New', monospace;
+    min-height: 120px;
+}
+.json-editor {
+    font-family: 'Courier New', monospace;
+    min-height: 80px;
+}
+
+.help-text-custom {
+    font-size: 0.875em;
+    color: #6c757d;
+    margin-top: 5px;
+}
+
+.form-check-inline {
+    margin-right: 20px;
+}
+
+.tab-content {
+    border: 1px solid #dee2e6;
+    border-top: none;
+    padding: 20px;
+}
+
+.nav-tabs .nav-link {
+    border: 1px solid transparent;
+    border-radius: 0.375rem 0.375rem 0 0;
+}
+</style>
+{% endblock %}
+
+{% block content_header %}
+<div class="content-header">
+    <div class="container-fluid">
+        <div class="row mb-2">
+            <div class="col-sm-6">
+                <h1><i class="fas fa-{% if object %}edit{% else %}plus{% endif %}"></i> {{ page_title }}</h1>
+            </div>
+            <div class="col-sm-6">
+                <ol class="breadcrumb float-sm-right">
+                    {% for breadcrumb in breadcrumbs %}
+                        {% if breadcrumb.url %}
+                            <li class="breadcrumb-item"><a href="{{ breadcrumb.url }}">{{ breadcrumb.title }}</a></li>
+                        {% else %}
+                            <li class="breadcrumb-item active">{{ breadcrumb.title }}</li>
+                        {% endif %}
+                    {% endfor %}
+                </ol>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <form method="post" id="form-segmento">
+        {% csrf_token %}
+        
+        <!-- Navegación por Tabs -->
+        <ul class="nav nav-tabs" id="segmento-tabs" role="tablist">
+            <li class="nav-item">
+                <a class="nav-link active" id="basicos-tab" data-toggle="tab" href="#basicos" role="tab">
+                    <i class="fas fa-info-circle"></i> Información Básica
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" id="contenido-tab" data-toggle="tab" href="#contenido" role="tab">
+                    <i class="fas fa-file-code"></i> Contenido
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" id="configuracion-tab" data-toggle="tab" href="#configuracion" role="tab">
+                    <i class="fas fa-cogs"></i> Configuración
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" id="avanzado-tab" data-toggle="tab" href="#avanzado" role="tab">
+                    <i class="fas fa-sliders-h"></i> Opciones Avanzadas
+                </a>
+            </li>
+        </ul>
+
+        <div class="tab-content" id="segmento-tabContent">
+            <!-- Tab: Información Básica -->
+            <div class="tab-pane fade show active" id="basicos" role="tabpanel">
+                <div class="row">
+                    <div class="col-md-8">
+                        <div class="form-section">
+                            <h4><i class="fas fa-tag"></i> Identificación</h4>
+                            
+                            <div class="form-group">
+                                <label for="{{ form.nombre.id_for_label }}" class="required">{{ form.nombre.label }}:</label>
+                                {{ form.nombre|add_class:"form-control" }}
+                                {% if form.nombre.help_text %}
+                                    <div class="help-text-custom">{{ form.nombre.help_text }}</div>
+                                {% endif %}
+                                {{ form.nombre.errors }}
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="{{ form.codigo.id_for_label }}" class="required">{{ form.codigo.label }}:</label>
+                                        {{ form.codigo|add_class:"form-control" }}
+                                        {% if form.codigo.help_text %}
+                                            <div class="help-text-custom">{{ form.codigo.help_text }}</div>
+                                        {% endif %}
+                                        {{ form.codigo.errors }}
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="{{ form.categoria.id_for_label }}" class="required">{{ form.categoria.label }}:</label>
+                                        {{ form.categoria|add_class:"form-control" }}
+                                        {{ form.categoria.errors }}
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="{{ form.descripcion.id_for_label }}">{{ form.descripcion.label }}:</label>
+                                {{ form.descripcion|add_class:"form-control" }}
+                                {% if form.descripcion.help_text %}
+                                    <div class="help-text-custom">{{ form.descripcion.help_text }}</div>
+                                {% endif %}
+                                {{ form.descripcion.errors }}
+                            </div>
+                        </div>
+
+                        <div class="form-section">
+                            <h4><i class="fas fa-cog"></i> Tipo y Configuración</h4>
+                            
+                            <div class="form-group">
+                                <label class="required">{{ form.tipo.label }}:</label><br>
+                                {% for choice in form.tipo %}
+                                    <div class="form-check form-check-inline">
+                                        {{ choice.tag }}
+                                        <label class="form-check-label" for="{{ choice.id_for_label }}">
+                                            {{ choice.choice_label }}
+                                        </label>
+                                    </div>
+                                {% endfor %}
+                                {% if form.tipo.help_text %}
+                                    <div class="help-text-custom">{{ form.tipo.help_text }}</div>
+                                {% endif %}
+                                {{ form.tipo.errors }}
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <div class="form-group">
+                                        <label for="{{ form.orden.id_for_label }}">{{ form.orden.label }}:</label>
+                                        {{ form.orden|add_class:"form-control" }}
+                                        {{ form.orden.errors }}
+                                    </div>
+                                </div>
+                                <div class="col-md-8">
+                                    <div class="form-group">
+                                        <label>Opciones:</label><br>
+                                        <div class="form-check form-check-inline">
+                                            {{ form.activo }}
+                                            <label class="form-check-label" for="{{ form.activo.id_for_label }}">
+                                                {{ form.activo.label }}
+                                            </label>
+                                        </div>
+                                        <div class="form-check form-check-inline">
+                                            {{ form.obligatorio }}
+                                            <label class="form-check-label" for="{{ form.obligatorio.id_for_label }}">
+                                                {{ form.obligatorio.label }}
+                                            </label>
+                                        </div>
+                                        <div class="form-check form-check-inline">
+                                            {{ form.reutilizable }}
+                                            <label class="form-check-label" for="{{ form.reutilizable.id_for_label }}">
+                                                {{ form.reutilizable.label }}
+                                            </label>
+                                        </div>
+                                        <div class="form-check form-check-inline">
+                                            {{ form.requiere_aprobacion }}
+                                            <label class="form-check-label" for="{{ form.requiere_aprobacion.id_for_label }}">
+                                                {{ form.requiere_aprobacion.label }}
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-4">
+                        <div class="card">
+                            <div class="card-header">
+                                <h3 class="card-title"><i class="fas fa-info-circle"></i> Ayuda</h3>
+                            </div>
+                            <div class="card-body">
+                                <p><strong>Tipos de Segmento:</strong></p>
+                                <ul class="list-unstyled">
+                                    <li><i class="fas fa-file-alt text-success"></i> <strong>Estático:</strong> Contenido fijo con variables</li>
+                                    <li><i class="fas fa-robot text-primary"></i> <strong>Dinámico:</strong> Generado por IA</li>
+                                    <li><i class="fas fa-layer-group text-warning"></i> <strong>Híbrido:</strong> Combina ambos</li>
+                                </ul>
+                                
+                                <p><strong>Categorías:</strong></p>
+                                <ul class="small">
+                                    <li><strong>Encabezado:</strong> Título, fecha, lugar</li>
+                                    <li><strong>Asistencia:</strong> Lista de participantes</li>
+                                    <li><strong>Contenido:</strong> Cuerpo principal</li>
+                                    <li><strong>Resoluciones:</strong> Decisiones tomadas</li>
+                                    <li><strong>Cierre:</strong> Firmas y clausura</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab: Contenido -->
+            <div class="tab-pane fade" id="contenido" role="tabpanel">
+                <!-- Contenido Estático -->
+                <div class="static-fields">
+                    <div class="form-section">
+                        <h4><i class="fas fa-file-alt"></i> Contenido Estático</h4>
+                        
+                        <div class="form-group">
+                            <label for="{{ form.contenido_estatico.id_for_label }}">{{ form.contenido_estatico.label }}:</label>
+                            {{ form.contenido_estatico|add_class:"form-control code-editor" }}
+                            {% if form.contenido_estatico.help_text %}
+                                <div class="help-text-custom">{{ form.contenido_estatico.help_text }}</div>
+                            {% endif %}
+                            {{ form.contenido_estatico.errors }}
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="{{ form.variables_disponibles.id_for_label }}">{{ form.variables_disponibles.label }}:</label>
+                            {{ form.variables_disponibles|add_class:"form-control json-editor" }}
+                            {% if form.variables_disponibles.help_text %}
+                                <div class="help-text-custom">{{ form.variables_disponibles.help_text }}</div>
+                            {% endif %}
+                            {{ form.variables_disponibles.errors }}
+                            
+                            <!-- Vista previa de variables -->
+                            <div class="variable-preview">
+                                <strong>Variables comunes:</strong>
+                                <div id="variables-preview">
+                                    <span class="variable-tag" onclick="insertarVariable('fecha')">fecha</span>
+                                    <span class="variable-tag" onclick="insertarVariable('hora')">hora</span>
+                                    <span class="variable-tag" onclick="insertarVariable('lugar')">lugar</span>
+                                    <span class="variable-tag" onclick="insertarVariable('presidente')">presidente</span>
+                                    <span class="variable-tag" onclick="insertarVariable('secretario')">secretario</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Contenido Dinámico -->
+                <div class="dynamic-fields">
+                    <div class="form-section">
+                        <h4><i class="fas fa-robot"></i> Configuración IA</h4>
+                        
+                        <div class="form-group">
+                            <label for="{{ form.proveedor_ia.id_for_label }}" class="required">{{ form.proveedor_ia.label }}:</label>
+                            {{ form.proveedor_ia|add_class:"form-control" }}
+                            {{ form.proveedor_ia.errors }}
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="{{ form.prompt_ia.id_for_label }}" class="required">{{ form.prompt_ia.label }}:</label>
+                            {{ form.prompt_ia|add_class:"form-control code-editor" }}
+                            {% if form.prompt_ia.help_text %}
+                                <div class="help-text-custom">{{ form.prompt_ia.help_text }}</div>
+                            {% endif %}
+                            {{ form.prompt_ia.errors }}
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="{{ form.formato_salida.id_for_label }}">{{ form.formato_salida.label }}:</label>
+                                    {{ form.formato_salida|add_class:"form-control json-editor" }}
+                                    {% if form.formato_salida.help_text %}
+                                        <div class="help-text-custom">{{ form.formato_salida.help_text }}</div>
+                                    {% endif %}
+                                    {{ form.formato_salida.errors }}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="{{ form.validaciones_salida.id_for_label }}">{{ form.validaciones_salida.label }}:</label>
+                                    {{ form.validaciones_salida|add_class:"form-control json-editor" }}
+                                    {% if form.validaciones_salida.help_text %}
+                                        <div class="help-text-custom">{{ form.validaciones_salida.help_text }}</div>
+                                    {% endif %}
+                                    {{ form.validaciones_salida.errors }}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab: Configuración -->
+            <div class="tab-pane fade" id="configuracion" role="tabpanel">
+                <div class="dynamic-fields">
+                    <div class="form-section">
+                        <h4><i class="fas fa-sliders-h"></i> Parámetros de IA</h4>
+                        
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label for="{{ form.temperatura.id_for_label }}">{{ form.temperatura.label }}:</label>
+                                    {{ form.temperatura|add_class:"form-control" }}
+                                    {% if form.temperatura.help_text %}
+                                        <div class="help-text-custom">{{ form.temperatura.help_text }}</div>
+                                    {% endif %}
+                                    {{ form.temperatura.errors }}
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label for="{{ form.max_tokens.id_for_label }}">{{ form.max_tokens.label }}:</label>
+                                    {{ form.max_tokens|add_class:"form-control" }}
+                                    {{ form.max_tokens.errors }}
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label for="{{ form.tiempo_limite_ia.id_for_label }}">{{ form.tiempo_limite_ia.label }}:</label>
+                                    {{ form.tiempo_limite_ia|add_class:"form-control" }}
+                                    {{ form.tiempo_limite_ia.errors }}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="{{ form.reintentos_fallidos.id_for_label }}">{{ form.reintentos_fallidos.label }}:</label>
+                                    {{ form.reintentos_fallidos|add_class:"form-control" }}
+                                    {{ form.reintentos_fallidos.errors }}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="{{ form.configuraciones_adicionales.id_for_label }}">{{ form.configuraciones_adicionales.label }}:</label>
+                                    {{ form.configuraciones_adicionales|add_class:"form-control json-editor" }}
+                                    {% if form.configuraciones_adicionales.help_text %}
+                                        <div class="help-text-custom">{{ form.configuraciones_adicionales.help_text }}</div>
+                                    {% endif %}
+                                    {{ form.configuraciones_adicionales.errors }}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab: Avanzado -->
+            <div class="tab-pane fade" id="avanzado" role="tabpanel">
+                <div class="form-section">
+                    <h4><i class="fas fa-chart-line"></i> Métricas y Seguimiento</h4>
+                    
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label for="{{ form.total_usos.id_for_label }}">{{ form.total_usos.label }}:</label>
+                                {{ form.total_usos|add_class:"form-control" }}
+                                {{ form.total_usos.errors }}
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label for="{{ form.total_errores.id_for_label }}">{{ form.total_errores.label }}:</label>
+                                {{ form.total_errores|add_class:"form-control" }}
+                                {{ form.total_errores.errors }}
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label for="{{ form.tasa_exito.id_for_label }}">{{ form.tasa_exito.label }}:</label>
+                                {{ form.tasa_exito|add_class:"form-control" }}
+                                {{ form.tasa_exito.errors }}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="{{ form.tiempo_promedio_procesamiento.id_for_label }}">{{ form.tiempo_promedio_procesamiento.label }}:</label>
+                                {{ form.tiempo_promedio_procesamiento|add_class:"form-control" }}
+                                {{ form.tiempo_promedio_procesamiento.errors }}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="{{ form.estado_salud.id_for_label }}">{{ form.estado_salud.label }}:</label>
+                                {{ form.estado_salud|add_class:"form-control" }}
+                                {{ form.estado_salud.errors }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <h4><i class="fas fa-exclamation-triangle"></i> Gestión de Errores</h4>
+                    
+                    <div class="form-group">
+                        <label for="{{ form.ultimo_error.id_for_label }}">{{ form.ultimo_error.label }}:</label>
+                        {{ form.ultimo_error|add_class:"form-control" }}
+                        {{ form.ultimo_error.errors }}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Botones de Acción -->
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-footer">
+                        <button type="submit" class="btn btn-primary" name="action" value="guardar">
+                            <i class="fas fa-save"></i> Guardar
+                        </button>
+                        
+                        <button type="submit" class="btn btn-success" name="action" value="guardar_y_probar">
+                            <i class="fas fa-vial"></i> Guardar y Probar
+                        </button>
+                        
+                        <a href="{% url 'generador_actas:lista_segmentos' %}" class="btn btn-secondary">
+                            <i class="fas fa-times"></i> Cancelar
+                        </a>
+                        
+                        {% if object %}
+                        <a href="{% url 'generador_actas:detalle_segmento' object.pk %}" class="btn btn-info">
+                            <i class="fas fa-eye"></i> Ver Detalle
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    // Control de visibilidad de campos según tipo
+    function toggleFieldsByType() {
+        const tipo = $('input[name="tipo"]:checked').val();
+        
+        // Ocultar todos los campos específicos
+        $('.static-fields, .dynamic-fields, .hybrid-fields').removeClass('show-fields');
+        
+        // Mostrar campos según el tipo
+        if (tipo === 'estatico') {
+            $('.static-fields').addClass('show-fields');
+        } else if (tipo === 'dinamico') {
+            $('.dynamic-fields').addClass('show-fields');
+        } else if (tipo === 'hibrido') {
+            $('.static-fields, .dynamic-fields').addClass('show-fields');
+        }
+    }
+    
+    // Inicializar y manejar cambios de tipo
+    toggleFieldsByType();
+    $('input[name="tipo"]').change(toggleFieldsByType);
+    
+    // Generar código automáticamente desde el nombre
+    $('#id_nombre').on('input', function() {
+        if (!$('#id_codigo').val()) {
+            let codigo = $(this).val()
+                .toLowerCase()
+                .replace(/[^a-z0-9]+/g, '_')
+                .replace(/^_+|_+$/g, '');
+            $('#id_codigo').val(codigo);
+        }
+    });
+    
+    // Validación de formulario
+    $('#form-segmento').on('submit', function(e) {
+        const tipo = $('input[name="tipo"]:checked').val();
+        let valid = true;
+        
+        // Validaciones específicas por tipo
+        if (tipo === 'estatico') {
+            if (!$('#id_contenido_estatico').val().trim()) {
+                alert('El contenido estático es requerido para segmentos estáticos');
+                $('#contenido-tab').click();
+                $('#id_contenido_estatico').focus();
+                valid = false;
+            }
+        } else if (tipo === 'dinamico') {
+            if (!$('#id_proveedor_ia').val()) {
+                alert('El proveedor IA es requerido para segmentos dinámicos');
+                $('#contenido-tab').click();
+                $('#id_proveedor_ia').focus();
+                valid = false;
+            }
+            if (!$('#id_prompt_ia').val().trim()) {
+                alert('El prompt IA es requerido para segmentos dinámicos');
+                $('#contenido-tab').click();
+                $('#id_prompt_ia').focus();
+                valid = false;
+            }
+        }
+        
+        if (!valid) {
+            e.preventDefault();
+            return false;
+        }
+    });
+});
+
+// Función para insertar variables en contenido estático
+function insertarVariable(variable) {
+    const textarea = document.getElementById('id_contenido_estatico');
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const text = textarea.value;
+    const before = text.substring(0, start);
+    const after = text.substring(end, text.length);
+    
+    textarea.value = before + '{{' + variable + '}}' + after;
+    textarea.selectionStart = textarea.selectionEnd = start + variable.length + 4;
+    textarea.focus();
+}
+
+// Auto-resize para textareas
+$('textarea').on('input', function() {
+    this.style.height = 'auto';
+    this.style.height = (this.scrollHeight) + 'px';
+});
+
+// Tooltips
+$(function () {
+    $('[data-toggle="tooltip"]').tooltip()
+});
+</script>
+{% endblock %}

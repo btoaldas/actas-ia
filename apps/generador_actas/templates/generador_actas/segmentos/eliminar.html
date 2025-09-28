@@ -1,0 +1,404 @@
+{% extends 'base_admin.html' %}
+{% load static %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'generador_actas/css/segmentos.css' %}">
+<style>
+.delete-warning {
+    background: linear-gradient(135deg, #fff5f5 0%, #fed7d7 100%);
+    border: 1px solid #fc8181;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 20px;
+}
+
+.delete-icon {
+    font-size: 4rem;
+    color: #e53e3e;
+    margin-bottom: 20px;
+}
+
+.impact-card {
+    border-left: 4px solid #e53e3e;
+    background: #fff;
+    margin-bottom: 15px;
+}
+
+.usage-list {
+    max-height: 200px;
+    overflow-y: auto;
+    border: 1px solid #e2e8f0;
+    border-radius: 4px;
+    padding: 10px;
+}
+
+.danger-text {
+    color: #e53e3e;
+    font-weight: 600;
+}
+
+.safe-text {
+    color: #38a169;
+    font-weight: 600;
+}
+
+.confirmation-box {
+    background: #f7fafc;
+    border: 2px dashed #cbd5e0;
+    border-radius: 8px;
+    padding: 20px;
+    text-align: center;
+}
+</style>
+{% endblock %}
+
+{% block content_header %}
+<div class="content-header">
+    <div class="container-fluid">
+        <div class="row mb-2">
+            <div class="col-sm-6">
+                <h1><i class="fas fa-trash text-danger"></i> {{ page_title }}</h1>
+            </div>
+            <div class="col-sm-6">
+                <ol class="breadcrumb float-sm-right">
+                    {% for breadcrumb in breadcrumbs %}
+                        {% if breadcrumb.url %}
+                            <li class="breadcrumb-item"><a href="{{ breadcrumb.url }}">{{ breadcrumb.title }}</a></li>
+                        {% else %}
+                            <li class="breadcrumb-item active">{{ breadcrumb.title }}</li>
+                        {% endif %}
+                    {% endfor %}
+                </ol>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <!-- Advertencia Principal -->
+            <div class="delete-warning text-center">
+                <i class="fas fa-exclamation-triangle delete-icon"></i>
+                <h3 class="danger-text">¿Estás seguro de que deseas eliminar este segmento?</h3>
+                <p class="lead">Esta acción no se puede deshacer y puede afectar el funcionamiento del sistema.</p>
+            </div>
+
+            <!-- Información del Segmento -->
+            <div class="card mb-4">
+                <div class="card-header bg-light">
+                    <h4 class="mb-0">
+                        <i class="fas fa-info-circle"></i> Información del Segmento
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <dl>
+                                <dt>Nombre:</dt>
+                                <dd><strong>{{ object.nombre }}</strong></dd>
+                                
+                                <dt>Código:</dt>
+                                <dd><code>{{ object.codigo }}</code></dd>
+                                
+                                <dt>Categoría:</dt>
+                                <dd>
+                                    <span class="badge badge-secondary">{{ object.get_categoria_display }}</span>
+                                </dd>
+                                
+                                <dt>Tipo:</dt>
+                                <dd>
+                                    <span class="badge badge-{% if object.tipo == 'estatico' %}success{% elif object.tipo == 'dinamico' %}primary{% else %}warning{% endif %}">
+                                        {% if object.tipo == 'estatico' %}
+                                            <i class="fas fa-file-alt"></i> Estático
+                                        {% elif object.tipo == 'dinamico' %}
+                                            <i class="fas fa-robot"></i> Dinámico
+                                        {% else %}
+                                            <i class="fas fa-layer-group"></i> Híbrido
+                                        {% endif %}
+                                    </span>
+                                </dd>
+                            </dl>
+                        </div>
+                        <div class="col-md-6">
+                            <dl>
+                                <dt>Estado:</dt>
+                                <dd>
+                                    {% if object.activo %}
+                                        <span class="badge badge-success">Activo</span>
+                                    {% else %}
+                                        <span class="badge badge-secondary">Inactivo</span>
+                                    {% endif %}
+                                </dd>
+                                
+                                <dt>Total de Usos:</dt>
+                                <dd>
+                                    <strong class="{% if object.total_usos > 0 %}danger-text{% else %}safe-text{% endif %}">
+                                        {{ object.total_usos }} veces
+                                    </strong>
+                                </dd>
+                                
+                                <dt>Creado por:</dt>
+                                <dd>{{ object.usuario_creacion.get_full_name|default:object.usuario_creacion.username }}</dd>
+                                
+                                <dt>Fecha de creación:</dt>
+                                <dd>{{ object.fecha_creacion|date:"d/m/Y H:i" }}</dd>
+                            </dl>
+                        </div>
+                    </div>
+                    
+                    {% if object.descripcion %}
+                    <div class="mt-3">
+                        <dt>Descripción:</dt>
+                        <dd>{{ object.descripcion|linebreaksbr }}</dd>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Análisis de Impacto -->
+            <div class="card impact-card mb-4">
+                <div class="card-header bg-danger text-white">
+                    <h4 class="mb-0">
+                        <i class="fas fa-exclamation-triangle"></i> Análisis de Impacto
+                    </h4>
+                </div>
+                <div class="card-body">
+                    {% if impacto.plantillas_afectadas %}
+                        <div class="alert alert-danger">
+                            <h5><i class="fas fa-file-alt"></i> Plantillas Afectadas ({{ impacto.plantillas_afectadas|length }})</h5>
+                            <p>Este segmento está siendo usado en las siguientes plantillas:</p>
+                            <div class="usage-list">
+                                {% for plantilla in impacto.plantillas_afectadas %}
+                                    <div class="mb-2">
+                                        <i class="fas fa-file-alt text-danger"></i>
+                                        <strong>{{ plantilla.nombre }}</strong>
+                                        <small class="text-muted">({{ plantilla.total_usos }} usos)</small>
+                                        <br>
+                                        <small>{{ plantilla.descripcion|truncatewords:10 }}</small>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                            <div class="mt-3">
+                                <strong class="danger-text">
+                                    ⚠️ Eliminar este segmento puede causar errores en estas plantillas
+                                </strong>
+                            </div>
+                        </div>
+                    {% endif %}
+
+                    {% if impacto.actas_generadas %}
+                        <div class="alert alert-warning">
+                            <h5><i class="fas fa-file-contract"></i> Actas Generadas ({{ impacto.actas_generadas|length }})</h5>
+                            <p>Este segmento ha sido usado para generar {{ impacto.actas_generadas|length }} actas:</p>
+                            <div class="usage-list">
+                                {% for acta in impacto.actas_generadas %}
+                                    <div class="mb-2">
+                                        <i class="fas fa-file-contract text-warning"></i>
+                                        <strong>{{ acta.titulo }}</strong>
+                                        <small class="text-muted">({{ acta.fecha_creacion|date:"d/m/Y" }})</small>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                            <div class="mt-3">
+                                <strong class="text-warning">
+                                    ⚠️ Las actas ya generadas no se verán afectadas
+                                </strong>
+                            </div>
+                        </div>
+                    {% endif %}
+
+                    {% if impacto.configuraciones_relacionadas %}
+                        <div class="alert alert-info">
+                            <h5><i class="fas fa-cogs"></i> Configuraciones Relacionadas</h5>
+                            <ul class="mb-0">
+                                {% for config in impacto.configuraciones_relacionadas %}
+                                    <li>{{ config }}</li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    {% endif %}
+
+                    {% if not impacto.plantillas_afectadas and not impacto.actas_generadas and not impacto.configuraciones_relacionadas %}
+                        <div class="alert alert-success">
+                            <h5><i class="fas fa-check-circle"></i> Seguro para Eliminar</h5>
+                            <p class="mb-0 safe-text">
+                                Este segmento no está siendo usado actualmente y puede eliminarse sin riesgo.
+                            </p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Formulario de Confirmación -->
+            <div class="card">
+                <div class="card-body">
+                    <div class="confirmation-box">
+                        <form method="post">
+                            {% csrf_token %}
+                            
+                            {% if impacto.plantillas_afectadas %}
+                                <div class="form-group">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="confirm_impact" name="confirm_impact" required>
+                                        <label class="form-check-label danger-text" for="confirm_impact">
+                                            Entiendo que eliminar este segmento puede afectar {{ impacto.plantillas_afectadas|length }} plantilla{{ impacto.plantillas_afectadas|length|pluralize }}
+                                        </label>
+                                    </div>
+                                </div>
+                            {% endif %}
+
+                            <div class="form-group">
+                                <label for="confirm_name" class="font-weight-bold">
+                                    Para confirmar, escriba el nombre del segmento: <code>{{ object.nombre }}</code>
+                                </label>
+                                <input type="text" class="form-control text-center" id="confirm_name" name="confirm_name" 
+                                       placeholder="Escribir: {{ object.nombre }}" required>
+                            </div>
+
+                            <div class="form-group">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="confirm_delete" name="confirm_delete" required>
+                                    <label class="form-check-label danger-text" for="confirm_delete">
+                                        Confirmo que deseo eliminar permanentemente este segmento
+                                    </label>
+                                </div>
+                            </div>
+
+                            <hr>
+
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <button type="submit" class="btn btn-danger btn-lg btn-block" id="btn-eliminar" disabled>
+                                        <i class="fas fa-trash"></i> Eliminar Permanentemente
+                                    </button>
+                                </div>
+                                <div class="col-md-6">
+                                    <a href="{% url 'generador_actas:detalle_segmento' object.pk %}" class="btn btn-secondary btn-lg btn-block">
+                                        <i class="fas fa-times"></i> Cancelar
+                                    </a>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Alternativas -->
+            {% if alternativas %}
+            <div class="card mt-4">
+                <div class="card-header bg-info text-white">
+                    <h4 class="mb-0">
+                        <i class="fas fa-lightbulb"></i> Alternativas Recomendadas
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <p>En lugar de eliminar, considera estas opciones:</p>
+                    <ul class="list-unstyled">
+                        <li class="mb-2">
+                            <a href="{% url 'generador_actas:editar_segmento' object.pk %}" class="btn btn-outline-primary btn-sm">
+                                <i class="fas fa-edit"></i> Desactivar en lugar de eliminar
+                            </a>
+                            <small class="text-muted ml-2">Mantiene el historial pero impide su uso futuro</small>
+                        </li>
+                        <li class="mb-2">
+                            <a href="{% url 'generador_actas:clonar_segmento' object.pk %}" class="btn btn-outline-info btn-sm">
+                                <i class="fas fa-clone"></i> Crear una versión modificada
+                            </a>
+                            <small class="text-muted ml-2">Copia el segmento con cambios antes de eliminar</small>
+                        </li>
+                        <li class="mb-2">
+                            <a href="{% url 'generador_actas:exportar_segmento' object.pk %}" class="btn btn-outline-success btn-sm">
+                                <i class="fas fa-download"></i> Exportar antes de eliminar
+                            </a>
+                            <small class="text-muted ml-2">Guarda una copia de respaldo</small>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    // Variables para validación
+    const nombreOriginal = "{{ object.nombre }}";
+    const $confirmName = $('#confirm_name');
+    const $confirmDelete = $('#confirm_delete');
+    const $confirmImpact = $('#confirm_impact');
+    const $btnEliminar = $('#btn-eliminar');
+    
+    // Función para validar formulario
+    function validarFormulario() {
+        let nombreValido = $confirmName.val().trim() === nombreOriginal;
+        let deleteConfirmado = $confirmDelete.is(':checked');
+        let impactConfirmado = $confirmImpact.length === 0 || $confirmImpact.is(':checked');
+        
+        $btnEliminar.prop('disabled', !(nombreValido && deleteConfirmado && impactConfirmado));
+        
+        // Cambiar estilo del botón según validación
+        if (nombreValido && deleteConfirmado && impactConfirmado) {
+            $btnEliminar.removeClass('btn-secondary').addClass('btn-danger');
+        } else {
+            $btnEliminar.removeClass('btn-danger').addClass('btn-secondary');
+        }
+    }
+    
+    // Event listeners
+    $confirmName.on('input', validarFormulario);
+    $confirmDelete.on('change', validarFormulario);
+    $confirmImpact.on('change', validarFormulario);
+    
+    // Validación inicial
+    validarFormulario();
+    
+    // Prevenir envío accidental
+    $('form').on('submit', function(e) {
+        if ($btnEliminar.prop('disabled')) {
+            e.preventDefault();
+            alert('Por favor, complete todas las validaciones requeridas.');
+            return false;
+        }
+        
+        // Confirmación final
+        return confirm('¿Está completamente seguro de que desea eliminar este segmento? Esta acción NO se puede deshacer.');
+    });
+    
+    // Highlighting de nombre mientras se escribe
+    $confirmName.on('input', function() {
+        const valor = $(this).val().trim();
+        if (valor === nombreOriginal) {
+            $(this).removeClass('is-invalid').addClass('is-valid');
+        } else if (valor.length > 0) {
+            $(this).removeClass('is-valid').addClass('is-invalid');
+        } else {
+            $(this).removeClass('is-valid is-invalid');
+        }
+    });
+});
+
+// Función para mostrar/ocultar detalles de impacto
+function toggleImpactDetails(elemento) {
+    const details = elemento.nextElementSibling;
+    const icon = elemento.querySelector('i');
+    
+    if (details.style.display === 'none') {
+        details.style.display = 'block';
+        icon.classList.remove('fa-chevron-down');
+        icon.classList.add('fa-chevron-up');
+    } else {
+        details.style.display = 'none';
+        icon.classList.remove('fa-chevron-up');
+        icon.classList.add('fa-chevron-down');
+    }
+}
+</script>
+{% endblock %}

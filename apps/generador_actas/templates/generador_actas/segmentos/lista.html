@@ -1,0 +1,455 @@
+{% extends 'base_admin.html' %}
+{% load static %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'generador_actas/css/segmentos.css' %}">
+<style>
+.filter-card {
+    margin-bottom: 20px;
+}
+.segmento-card {
+    transition: all 0.3s;
+    border-left: 4px solid #007bff;
+}
+.segmento-card:hover {
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    transform: translateY(-2px);
+}
+.segmento-estatico { border-left-color: #28a745; }
+.segmento-dinamico { border-left-color: #007bff; }
+.segmento-hibrido { border-left-color: #ffc107; }
+
+.badge-tipo { font-size: 0.75em; }
+.metric-small { font-size: 0.85em; color: #6c757d; }
+
+.estado-configurado { color: #28a745; }
+.estado-incompleto { color: #dc3545; }
+.estado-parcial { color: #ffc107; }
+</style>
+{% endblock %}
+
+{% block content_header %}
+<div class="content-header">
+    <div class="container-fluid">
+        <div class="row mb-2">
+            <div class="col-sm-6">
+                <h1><i class="fas fa-list"></i> {{ page_title }}</h1>
+            </div>
+            <div class="col-sm-6">
+                <ol class="breadcrumb float-sm-right">
+                    {% for breadcrumb in breadcrumbs %}
+                        {% if breadcrumb.url %}
+                            <li class="breadcrumb-item"><a href="{{ breadcrumb.url }}">{{ breadcrumb.title }}</a></li>
+                        {% else %}
+                            <li class="breadcrumb-item active">{{ breadcrumb.title }}</li>
+                        {% endif %}
+                    {% endfor %}
+                </ol>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Barra de Acciones -->
+    <div class="row mb-3">
+        <div class="col-md-6">
+            <a href="{% url 'generador_actas:crear_segmento' %}" class="btn btn-primary">
+                <i class="fas fa-plus"></i> Crear Segmento
+            </a>
+            <a href="{% url 'generador_actas:segmentos_dashboard' %}" class="btn btn-info">
+                <i class="fas fa-chart-bar"></i> Dashboard
+            </a>
+        </div>
+        <div class="col-md-6 text-right">
+            <div class="btn-group" role="group">
+                <button type="button" class="btn btn-outline-secondary" onclick="toggleFilters()">
+                    <i class="fas fa-filter"></i> Filtros
+                </button>
+                <button type="button" class="btn btn-outline-secondary" onclick="exportarSegmentos()">
+                    <i class="fas fa-download"></i> Exportar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Estadísticas Rápidas -->
+    <div class="row mb-3">
+        <div class="col-md-3">
+            <div class="info-box">
+                <span class="info-box-icon bg-info"><i class="fas fa-list"></i></span>
+                <div class="info-box-content">
+                    <span class="info-box-text">Total Filtrados</span>
+                    <span class="info-box-number">{{ stats_filtros.total_filtrados }}</span>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="info-box">
+                <span class="info-box-icon bg-success"><i class="fas fa-check-circle"></i></span>
+                <div class="info-box-content">
+                    <span class="info-box-text">Activos</span>
+                    <span class="info-box-number">{{ stats_filtros.total_activos }}</span>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="info-box">
+                <span class="info-box-icon bg-primary"><i class="fas fa-robot"></i></span>
+                <div class="info-box-content">
+                    <span class="info-box-text">Dinámicos</span>
+                    <span class="info-box-number">{{ stats_filtros.total_dinamicos }}</span>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="info-box">
+                <span class="info-box-icon bg-warning"><i class="fas fa-chart-line"></i></span>
+                <div class="info-box-content">
+                    <span class="info-box-text">Con Uso</span>
+                    <span class="info-box-number">{{ stats_filtros.total_con_uso }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Panel de Filtros -->
+    <div id="filtros-panel" class="card filter-card" style="display: none;">
+        <div class="card-header">
+            <h3 class="card-title"><i class="fas fa-search"></i> Filtros de Búsqueda</h3>
+        </div>
+        <div class="card-body">
+            <form method="get" id="form-filtros">
+                <div class="row">
+                    <!-- Búsqueda General -->
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label>Buscar:</label>
+                            {{ form.buscar }}
+                        </div>
+                    </div>
+                    
+                    <!-- Ordenamiento -->
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label>Ordenar por:</label>
+                            {{ form.ordenar_por }}
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <!-- Categoría -->
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label>Categoría:</label>
+                            {{ form.categoria }}
+                        </div>
+                    </div>
+                    
+                    <!-- Tipo -->
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label>Tipo:</label>
+                            {{ form.tipo }}
+                        </div>
+                    </div>
+                    
+                    <!-- Proveedor IA -->
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label>Proveedor IA:</label>
+                            {{ form.proveedor_ia }}
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <!-- Estados -->
+                    <div class="col-md-3">
+                        <div class="form-group">
+                            <label>Estado:</label>
+                            {{ form.activo }}
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-3">
+                        <div class="form-group">
+                            <label>Reutilizable:</label>
+                            {{ form.reutilizable }}
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-3">
+                        <div class="form-group">
+                            <label>Estado Salud:</label>
+                            {{ form.estado_salud }}
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-3">
+                        <div class="form-group">
+                            <label>Filtros Especiales:</label>
+                            <div class="form-check">
+                                {{ form.solo_con_errores }}
+                                <label class="form-check-label">Solo con errores</label>
+                            </div>
+                            <div class="form-check">
+                                {{ form.solo_sin_uso }}
+                                <label class="form-check-label">Solo sin uso</label>
+                            </div>
+                            <div class="form-check">
+                                {{ form.configuracion_incompleta }}
+                                <label class="form-check-label">Config. incompleta</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-search"></i> Aplicar Filtros
+                    </button>
+                    <a href="{% url 'generador_actas:lista_segmentos' %}" class="btn btn-secondary">
+                        <i class="fas fa-times"></i> Limpiar
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Lista de Segmentos -->
+    <div class="row">
+        {% for segmento in segmentos %}
+        <div class="col-lg-6 col-xl-4">
+            <div class="card segmento-card segmento-{{ segmento.tipo }}">
+                <div class="card-header">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">
+                            <a href="{% url 'generador_actas:detalle_segmento' segmento.pk %}" class="text-decoration-none">
+                                {{ segmento.nombre }}
+                            </a>
+                        </h5>
+                        <div class="dropdown">
+                            <button class="btn btn-sm btn-outline-secondary dropdown-toggle" 
+                                    type="button" data-toggle="dropdown">
+                                <i class="fas fa-ellipsis-v"></i>
+                            </button>
+                            <div class="dropdown-menu">
+                                <a class="dropdown-item" href="{% url 'generador_actas:detalle_segmento' segmento.pk %}">
+                                    <i class="fas fa-eye"></i> Ver Detalle
+                                </a>
+                                <a class="dropdown-item" href="{% url 'generador_actas:editar_segmento' segmento.pk %}">
+                                    <i class="fas fa-edit"></i> Editar
+                                </a>
+                                {% if segmento.es_dinamico %}
+                                <a class="dropdown-item" href="{% url 'generador_actas:probar_segmento' %}?segmento={{ segmento.pk }}">
+                                    <i class="fas fa-vial"></i> Probar
+                                </a>
+                                {% endif %}
+                                <div class="dropdown-divider"></div>
+                                <a class="dropdown-item text-danger" href="{% url 'generador_actas:eliminar_segmento' segmento.pk %}">
+                                    <i class="fas fa-trash"></i> Eliminar
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card-body">
+                    <!-- Información Básica -->
+                    <p class="card-text text-muted">{{ segmento.descripcion|truncatewords:15 }}</p>
+                    
+                    <!-- Badges y Estados -->
+                    <div class="mb-3">
+                        <span class="badge badge-{{ segmento.tipo }} badge-tipo">
+                            {% if segmento.tipo == 'estatico' %}
+                                <i class="fas fa-file-alt"></i> Estático
+                            {% elif segmento.tipo == 'dinamico' %}
+                                <i class="fas fa-robot"></i> Dinámico
+                            {% else %}
+                                <i class="fas fa-layer-group"></i> Híbrido
+                            {% endif %}
+                        </span>
+                        
+                        <span class="badge badge-secondary">{{ segmento.get_categoria_display }}</span>
+                        
+                        {% if segmento.obligatorio %}
+                            <span class="badge badge-warning">Obligatorio</span>
+                        {% endif %}
+                        
+                        {% if segmento.reutilizable %}
+                            <span class="badge badge-info">Reutilizable</span>
+                        {% endif %}
+                        
+                        {% if not segmento.activo %}
+                            <span class="badge badge-dark">Inactivo</span>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Estado de Configuración -->
+                    <div class="mb-2">
+                        {% if segmento.esta_configurado %}
+                            <i class="fas fa-check-circle estado-configurado"></i>
+                            <span class="text-success">Configurado</span>
+                        {% else %}
+                            <i class="fas fa-exclamation-circle estado-incompleto"></i>
+                            <span class="text-danger">Incompleto</span>
+                        {% endif %}
+                        
+                        {% if segmento.es_dinamico and segmento.proveedor_ia %}
+                            | <strong>IA:</strong> {{ segmento.proveedor_ia.nombre }}
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Métricas -->
+                    <div class="metric-small">
+                        <div class="row text-center">
+                            <div class="col-4">
+                                <strong>{{ segmento.total_usos }}</strong><br>
+                                <small>Usos</small>
+                            </div>
+                            <div class="col-4">
+                                <strong>{{ segmento.tasa_exito|floatformat:1 }}%</strong><br>
+                                <small>Éxito</small>
+                            </div>
+                            <div class="col-4">
+                                <strong>{{ segmento.tiempo_promedio_procesamiento|floatformat:1 }}s</strong><br>
+                                <small>Tiempo</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card-footer text-muted">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <small>
+                            <i class="fas fa-user"></i> {{ segmento.usuario_creacion.get_full_name|default:segmento.usuario_creacion.username }}
+                        </small>
+                        <small>
+                            <i class="fas fa-clock"></i> {{ segmento.fecha_actualizacion|timesince }}
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body text-center">
+                    <i class="fas fa-search fa-3x text-muted mb-3"></i>
+                    <h4 class="text-muted">No se encontraron segmentos</h4>
+                    <p class="text-muted">
+                        {% if request.GET %}
+                            No hay segmentos que coincidan con los filtros aplicados.
+                            <br>
+                            <a href="{% url 'generador_actas:lista_segmentos' %}" class="btn btn-primary mt-2">
+                                <i class="fas fa-times"></i> Limpiar Filtros
+                            </a>
+                        {% else %}
+                            No hay segmentos creados aún.
+                            <br>
+                            <a href="{% url 'generador_actas:crear_segmento' %}" class="btn btn-primary mt-2">
+                                <i class="fas fa-plus"></i> Crear Primer Segmento
+                            </a>
+                        {% endif %}
+                    </p>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Paginación -->
+    {% if segmentos.has_other_pages %}
+    <div class="row">
+        <div class="col-12">
+            <nav aria-label="Paginación de segmentos">
+                <ul class="pagination justify-content-center">
+                    {% if segmentos.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ segmentos.previous_page_number }}">
+                                <i class="fas fa-chevron-left"></i> Anterior
+                            </a>
+                        </li>
+                    {% endif %}
+                    
+                    {% for num in segmentos.paginator.page_range %}
+                        {% if num == segmentos.number %}
+                            <li class="page-item active">
+                                <span class="page-link">{{ num }}</span>
+                            </li>
+                        {% elif num > segmentos.number|add:'-3' and num < segmentos.number|add:'3' %}
+                            <li class="page-item">
+                                <a class="page-link" href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ num }}">
+                                    {{ num }}
+                                </a>
+                            </li>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if segmentos.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ segmentos.next_page_number }}">
+                                Siguiente <i class="fas fa-chevron-right"></i>
+                            </a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function toggleFilters() {
+    const panel = document.getElementById('filtros-panel');
+    if (panel.style.display === 'none' || panel.style.display === '') {
+        panel.style.display = 'block';
+        // Scroll suave al panel
+        panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    } else {
+        panel.style.display = 'none';
+    }
+}
+
+function exportarSegmentos() {
+    // Implementar exportación de segmentos
+    alert('Funcionalidad de exportación en desarrollo');
+}
+
+// Aplicar filtros automáticamente al cambiar dropdown
+$(document).ready(function() {
+    $('#form-filtros select, #form-filtros input[type="checkbox"]').change(function() {
+        // Auto-submit en cambios de select y checkbox
+        // $('#form-filtros').submit();
+    });
+    
+    // Búsqueda en tiempo real con debounce
+    let searchTimeout;
+    $('#form-filtros input[type="text"]').on('input', function() {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(function() {
+            // $('#form-filtros').submit();
+        }, 1000);
+    });
+    
+    // Mostrar filtros si hay parámetros GET
+    {% if request.GET %}
+        document.getElementById('filtros-panel').style.display = 'block';
+    {% endif %}
+});
+
+// Tooltips para badges y métricas
+$(function () {
+    $('[data-toggle="tooltip"]').tooltip()
+});
+</script>
+{% endblock %}

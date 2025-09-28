@@ -1,6 +1,6 @@
 """
 Tareas Celery para operaciones asíncronas del módulo Generador de Actas
-Incluye backup, exportación, reinicio de servicios, etc.
+Incluye backup, exportación, procesamiento de segmentos, etc.
 """
 import os
 import json
@@ -8,6 +8,7 @@ import subprocess
 import zipfile
 import tempfile
 import shutil
+import time
 from datetime import datetime, timedelta
 from pathlib import Path
 from celery import shared_task
@@ -23,6 +24,184 @@ from .models import (
     OperacionSistema, ProveedorIA, PlantillaActa, ConfiguracionSistema,
     SegmentoPlantilla, ActaGenerada
 )
+from .services import GeneradorActasService, PlantillasService
+
+
+@shared_task(bind=True, max_retries=2)
+def procesar_segmento_dinamico(self, segmento_id, contexto, opciones=None):
+    """
+    Procesa un segmento dinámico usando IA de manera asíncrona
+    """
+    if opciones is None:
+        opciones = {}
+    
+    try:
+        # Obtener el segmento
+        segmento = SegmentoPlantilla.objects.get(id=segmento_id)
+        
+        if not segmento.es_dinamico:
+            return {
+                'exito': False,
+                'error': 'El segmento no es dinámico',
+                'segmento_id': segmento_id
+            }
+        
+        if not segmento.esta_configurado:
+            return {
+                'exito': False,
+                'error': 'El segmento no está correctamente configurado',
+                'segmento_id': segmento_id
+            }
+        
+        tiempo_inicio = time.time()
+        
+        # Generar prompt completo
+        prompt_completo = segmento.generar_prompt_completo(contexto)
+        
+        # Procesar con el proveedor IA
+        proveedor = segmento.proveedor_ia
+        config = proveedor.obtener_configuracion_completa()
+        
+        # Simular llamada a IA (reemplazar con llamada real según proveedor)
+        resultado = _simular_llamada_ia(prompt_completo, config, segmento)
+        
+        tiempo_fin = time.time()
+        tiempo_procesamiento = tiempo_fin - tiempo_inicio
+        
+        # Validar resultado
+        errores_validacion = segmento.validar_resultado(resultado)
+        
+        if errores_validacion:
+            segmento.actualizar_metricas_uso(
+                tiempo_procesamiento=tiempo_procesamiento,
+                exito=False,
+                error=f"Errores de validación: {'; '.join(errores_validacion)}"
+            )
+            return {
+                'exito': False,
+                'error': f"Errores de validación: {'; '.join(errores_validacion)}",
+                'resultado_parcial': resultado,
+                'tiempo_procesamiento': tiempo_procesamiento,
+                'segmento_id': segmento_id
+            }
+        
+        # Actualizar métricas
+        segmento.actualizar_metricas_uso(
+            tiempo_procesamiento=tiempo_procesamiento,
+            exito=True
+        )
+        
+        return {
+            'exito': True,
+            'resultado': resultado,
+            'tiempo_procesamiento': tiempo_procesamiento,
+            'segmento_id': segmento_id,
+            'prompt_usado': prompt_completo[:500] + "..." if len(prompt_completo) > 500 else prompt_completo
+        }
+    
+    except SegmentoPlantilla.DoesNotExist:
+        return {
+            'exito': False,
+            'error': f'Segmento con ID {segmento_id} no encontrado',
+            'segmento_id': segmento_id
+        }
+    except Exception as e:
+        # Actualizar métricas de error si el segmento existe
+        try:
+            segmento = SegmentoPlantilla.objects.get(id=segmento_id)
+            segmento.actualizar_metricas_uso(exito=False, error=str(e))
+        except:
+            pass
+        
+        return {
+            'exito': False,
+            'error': str(e),
+            'segmento_id': segmento_id
+        }
+
+
+def _simular_llamada_ia(prompt, config, segmento):
+    """
+    Simulación de llamada a IA - reemplazar con integración real
+    """
+    # Simular tiempo de procesamiento
+    time.sleep(1)
+    
+    # Simular respuesta basada en el tipo de segmento
+    if 'participantes' in segmento.categoria.lower():
+        return """
+        **PARTICIPANTES**
+        
+        1. Dr. Juan Pérez González - Alcalde
+        2. Ing. María García López - Secretaria Municipal  
+        3. Lic. Carlos Ruiz Mendoza - Director de Planificación
+        4. Eco. Ana Martínez Silva - Directora Financiera
+        
+        **QUÓRUM:** Se verifica la asistencia del 80% de los miembros convocados.
+        """
+    
+    elif 'resumen' in segmento.categoria.lower():
+        return """
+        En la presente sesión se trataron los siguientes temas principales:
+        
+        1. **Aprobación del Presupuesto Municipal 2025**: Se presentó y aprobó por unanimidad el presupuesto para el próximo período fiscal.
+        
+        2. **Proyecto de Mejoramiento Vial**: Se discutió la propuesta para el mejoramiento de las vías del sector norte de la ciudad.
+        
+        3. **Convenio Interinstitucional**: Se autorizó la suscripción de convenio con la Universidad Local para proyectos de investigación.
+        
+        Las decisiones adoptadas reflejan el compromiso con el desarrollo sostenible del municipio.
+        """
+    
+    elif 'titulo' in segmento.categoria.lower() or 'encabezado' in segmento.categoria.lower():
+        return f"""
+        ACTA DE SESIÓN ORDINARIA N° 001-2025
+        GOBIERNO AUTÓNOMO DESCENTRALIZADO MUNICIPAL DE PASTAZA
+        """
+    
+    else:
+        return f"""
+        Contenido generado para segmento: {segmento.nombre}
+        
+        Este es un resultado de ejemplo del procesamiento con IA.
+        El contenido real dependería de la configuración específica del prompt
+        y los datos de contexto proporcionados.
+        
+        Categoría: {segmento.get_categoria_display()}
+        Tipo: {segmento.get_tipo_display()}
+        """
+
+
+@shared_task(bind=True)
+def probar_segmento_masivo(self, segmento_ids, contexto_prueba):
+    """
+    Prueba múltiples segmentos de manera asíncrona
+    """
+    resultados = []
+    
+    for segmento_id in segmento_ids:
+        try:
+            resultado = procesar_segmento_dinamico.apply_async(
+                args=[segmento_id, contexto_prueba, {'es_prueba': True}]
+            ).get(timeout=60)
+            
+            resultados.append({
+                'segmento_id': segmento_id,
+                'resultado': resultado
+            })
+        except Exception as e:
+            resultados.append({
+                'segmento_id': segmento_id,
+                'resultado': {
+                    'exito': False,
+                    'error': str(e)
+                }
+            })
+    
+    return {
+        'total_procesados': len(segmento_ids),
+        'resultados': resultados
+    }
 
 
 @shared_task(bind=True, max_retries=2)

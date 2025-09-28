@@ -5,310 +5,587 @@
 
 {% block content %}
 <div class="content-wrapper">
-<!-- Content Header -->
-<div class="content-header">
-    <div class="container-fluid">
-        <div class="row mb-2">
-            <div class="col-sm-6">
-                <h1>📄 {{ page_title }}</h1>
-            </div>
-            <div class="col-sm-6">
-                <ol class="breadcrumb float-sm-right">
-                    <li class="breadcrumb-item"><a href="{% url 'generador_actas:dashboard' %}">Dashboard</a></li>
-                    <li class="breadcrumb-item"><a href="{% url 'generador_actas:lista_segmentos' %}">Segmentos</a></li>
-                    <li class="breadcrumb-item active">{{ form_title }}</li>
-                </ol>
+    <!-- Content Header -->
+    <div class="content-header">
+        <div class="container-fluid">
+            <div class="row mb-2">
+                <div class="col-sm-6">
+                    <h1>
+                        {% if form.instance.pk %}
+                            <i class="fas fa-edit"></i> Editar Segmento
+                        {% else %}
+                            <i class="fas fa-plus-circle"></i> Crear Segmento
+                        {% endif %}
+                    </h1>
+                </div>
+                <div class="col-sm-6">
+                    <ol class="breadcrumb float-sm-right">
+                        <li class="breadcrumb-item"><a href="{% url 'generador_actas:dashboard' %}">Dashboard</a></li>
+                        <li class="breadcrumb-item"><a href="{% url 'generador_actas:lista_segmentos' %}">Segmentos</a></li>
+                        <li class="breadcrumb-item active">
+                            {% if form.instance.pk %}Editar{% else %}Crear{% endif %}
+                        </li>
+                    </ol>
+                </div>
             </div>
         </div>
     </div>
-</div>
 
-<!-- Main content -->
-<section class="content">
-    <div class="container-fluid">
-        <div class="row">
-            <div class="col-md-8">
-                <div class="card card-primary">
-                    <div class="card-header">
-                        <h3 class="card-title">{{ form_title }}</h3>
-                    </div>
-                    
+    <!-- Main content -->
+    <section class="content">
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-md-12">
                     <form method="post">
                         {% csrf_token %}
-                        <div class="card-body">
-                            
-                            <!-- Información Básica -->
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <div class="form-group">
-                                        <label for="{{ form.nombre.id_for_label }}">
-                                            Nombre del Segmento <span class="text-danger">*</span>
-                                        </label>
-                                        {{ form.nombre }}
-                                        {% if form.nombre.errors %}
-                                            <div class="text-danger">{{ form.nombre.errors }}</div>
-                                        {% endif %}
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="form-group">
-                                        <label for="{{ form.tipo.id_for_label }}">
-                                            Tipo de Segmento <span class="text-danger">*</span>
-                                        </label>
-                                        {{ form.tipo }}
-                                        {% if form.tipo.errors %}
-                                            <div class="text-danger">{{ form.tipo.errors }}</div>
-                                        {% endif %}
-                                    </div>
+                        
+                        <!-- CONFIGURACIÓN AVANZADA -->
+                        <div class="card card-warning collapsed-card">
+                            <div class="card-header">
+                                <h3 class="card-title"><i class="fas fa-cogs"></i> ⚙️ Configuración Avanzada</h3>
+                                <div class="card-tools">
+                                    <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                                        <i class="fas fa-plus"></i>
+                                    </button>
                                 </div>
                             </div>
-
-                            <!-- Descripción -->
-                            <div class="form-group">
-                                <label for="{{ form.descripcion.id_for_label }}">
-                                    Descripción
-                                </label>
-                                {{ form.descripcion }}
-                                <small class="form-text text-muted">
-                                    Describe el propósito y contenido de este segmento.
-                                </small>
-                                {% if form.descripcion.errors %}
-                                    <div class="text-danger">{{ form.descripcion.errors }}</div>
-                                {% endif %}
-                            </div>
-
-                            <!-- Contenido del Prompt -->
-                            <div class="form-group">
-                                <label for="{{ form.contenido_prompt.id_for_label }}">
-                                    Contenido del Prompt <span class="text-danger">*</span>
-                                </label>
-                                {{ form.contenido_prompt }}
-                                <small class="form-text text-muted">
-                                    Instrucciones para la IA. Puede usar variables como {fecha}, {participantes}, etc.
-                                </small>
-                                {% if form.contenido_prompt.errors %}
-                                    <div class="text-danger">{{ form.contenido_prompt.errors }}</div>
-                                {% endif %}
-                            </div>
-
-                            <!-- Configuración Avanzada -->
-                            <div class="row">
-                                <div class="col-md-4">
-                                    <div class="form-group">
-                                        <label for="{{ form.orden.id_for_label }}">
-                                            Orden de Procesamiento
-                                        </label>
-                                        {{ form.orden }}
-                                        <small class="form-text text-muted">
-                                            Orden por defecto en las plantillas (1-100)
-                                        </small>
-                                        {% if form.orden.errors %}
-                                            <div class="text-danger">{{ form.orden.errors }}</div>
-                                        {% endif %}
-                                    </div>
-                                </div>
-                                <div class="col-md-4">
-                                    <div class="form-group">
-                                        <label for="{{ form.max_tokens.id_for_label }}">
-                                            Máximo de Tokens
-                                        </label>
-                                        {{ form.max_tokens }}
-                                        <small class="form-text text-muted">
-                                            Límite de respuesta para este segmento
-                                        </small>
-                                        {% if form.max_tokens.errors %}
-                                            <div class="text-danger">{{ form.max_tokens.errors }}</div>
-                                        {% endif %}
-                                    </div>
-                                </div>
-                                <div class="col-md-4">
-                                    <div class="form-group">
-                                        <label for="{{ form.activo.id_for_label }}">
-                                            Estado
-                                        </label>
-                                        <div class="form-check">
-                                            {{ form.activo }}
-                                            <label class="form-check-label" for="{{ form.activo.id_for_label }}">
-                                                Segmento Activo
-                                            </label>
+                            <div class="card-body" style="display: none;">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label for="{{ form.formato_salida.id_for_label }}">📄 Formato de Salida</label>
+                                            {{ form.formato_salida }}
+                                            <small class="form-text text-muted">Formato en que se mostrará el contenido</small>
                                         </div>
-                                        {% if form.activo.errors %}
-                                            <div class="text-danger">{{ form.activo.errors }}</div>
-                                        {% endif %}
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label for="{{ form.orden_defecto.id_for_label }}">🔢 Orden por Defecto</label>
+                                            {{ form.orden_defecto }}
+                                            <small class="form-text text-muted">Posición por defecto en la plantilla</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        <div class="form-group">
+                                            <label for="{{ form.tiempo_limite_ia.id_for_label }}">⏱️ Tiempo Límite IA (seg)</label>
+                                            {{ form.tiempo_limite_ia }}
+                                            <small class="form-text text-muted">Tiempo máximo para procesar con IA</small>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-group">
+                                            <label for="{{ form.reintentos_ia.id_for_label }}">🔄 Reintentos IA</label>
+                                            {{ form.reintentos_ia }}
+                                            <small class="form-text text-muted">Número de reintentos si falla IA</small>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-group">
+                                            <div class="custom-control">
+                                                {{ form.activo }}
+                                                <label class="custom-control-label" for="{{ form.activo.id_for_label }}">
+                                                    ✅ Activo
+                                                </label>
+                                            </div>
+                                            <div class="custom-control custom-checkbox mt-2">
+                                                {{ form.reutilizable }}
+                                                <label class="custom-control-label" for="{{ form.reutilizable.id_for_label }}">
+                                                    ♻️ Reutilizable
+                                                </label>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
-
-                            <!-- Variables Disponibles -->
-                            <div class="form-group">
-                                <label for="{{ form.variables_requeridas.id_for_label }}">
-                                    Variables Requeridas
-                                </label>
-                                {{ form.variables_requeridas }}
-                                <small class="form-text text-muted">
-                                    Variables necesarias para este segmento (JSON). Ej: ["fecha", "participantes"]
-                                </small>
-                                {% if form.variables_requeridas.errors %}
-                                    <div class="text-danger">{{ form.variables_requeridas.errors }}</div>
-                                {% endif %}
-                            </div>
-
-                            <!-- Configuración Adicional -->
-                            <div class="form-group">
-                                <label for="{{ form.configuracion_adicional.id_for_label }}">
-                                    Configuración Adicional (JSON)
-                                </label>
-                                {{ form.configuracion_adicional }}
-                                <small class="form-text text-muted">
-                                    Parámetros adicionales en formato JSON. Ej: {"temperatura": 0.7, "top_p": 0.9}
-                                </small>
-                                {% if form.configuracion_adicional.errors %}
-                                    <div class="text-danger">{{ form.configuracion_adicional.errors }}</div>
-                                {% endif %}
-                            </div>
-
                         </div>
                         
-                        <div class="card-footer">
-                            <button type="submit" class="btn btn-primary">
-                                <i class="fas fa-save"></i> {{ submit_text }}
-                            </button>
-                            <a href="{% url 'generador_actas:lista_segmentos' %}" class="btn btn-secondary">
-                                <i class="fas fa-times"></i> Cancelar
-                            </a>
-                            {% if object %}
-                            <a href="{% url 'generador_actas:segmento_detail' object.pk %}" class="btn btn-info">
-                                <i class="fas fa-eye"></i> Ver Detalle
-                            </a>
-                            {% endif %}
+                        <!-- INFORMACIÓN BÁSICA -->
+                        <div class="card card-primary">
+                            <div class="card-header">
+                                <h3 class="card-title"><i class="fas fa-info-circle"></i> Información Básica</h3>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label for="{{ form.nombre.id_for_label }}" class="h6">
+                                                <i class="fas fa-tag"></i> Nombre del Segmento <span class="text-danger">*</span>
+                                            </label>
+                                            {{ form.nombre }}
+                                            {% if form.nombre.errors %}
+                                                <div class="text-danger mt-1">
+                                                    {% for error in form.nombre.errors %}
+                                                        <strong>{{ error }}</strong>
+                                                    {% endfor %}
+                                                </div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label for="{{ form.codigo.id_for_label }}" class="h6">
+                                                <i class="fas fa-code"></i> Código <span class="text-danger">*</span>
+                                            </label>
+                                            {{ form.codigo }}
+                                            <small class="form-text text-muted">Código único identificador (MAYÚSCULAS_CON_GUIONES)</small>
+                                            {% if form.codigo.errors %}
+                                                <div class="text-danger mt-1">
+                                                    {% for error in form.codigo.errors %}
+                                                        <strong>{{ error }}</strong>
+                                                    {% endfor %}
+                                                </div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="row">
+                                    <div class="col-md-3">
+                                        <div class="form-group">
+                                            <label for="{{ form.tipo.id_for_label }}" class="h6">
+                                                <i class="fas fa-cogs"></i> Tipo de Segmento <span class="text-danger">*</span>
+                                            </label>
+                                            {{ form.tipo }}
+                                            {% if form.tipo.errors %}
+                                                <div class="text-danger mt-1">
+                                                    {% for error in form.tipo.errors %}
+                                                        <strong>{{ error }}</strong>
+                                                    {% endfor %}
+                                                </div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="col-md-3">
+                                        <div class="form-group">
+                                            <label for="{{ form.categoria.id_for_label }}" class="h6">
+                                                <i class="fas fa-folder"></i> Categoría
+                                            </label>
+                                            {{ form.categoria }}
+                                            {% if form.categoria.errors %}
+                                                <div class="text-danger mt-1">
+                                                    {% for error in form.categoria.errors %}
+                                                        <strong>{{ error }}</strong>
+                                                    {% endfor %}
+                                                </div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="{{ form.descripcion.id_for_label }}" class="h6">
+                                        <i class="fas fa-align-left"></i> Descripción
+                                    </label>
+                                    {{ form.descripcion }}
+                                    <small class="form-text text-muted">Explica el propósito de este segmento</small>
+                                    {% if form.descripcion.errors %}
+                                        <div class="text-danger mt-1">
+                                            {% for error in form.descripcion.errors %}
+                                                <strong>{{ error }}</strong>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
                         </div>
+
+                        <!-- CONTENIDO ESTÁTICO - SIEMPRE VISIBLE -->
+                        <div class="card card-success">
+                            <div class="card-header">
+                                <h3 class="card-title">
+                                    <i class="fas fa-file-alt"></i> ✏️ Contenido Estático
+                                </h3>
+                                <div class="card-tools">
+                                    <span class="badge badge-success">Para segmentos de tipo "estático"</span>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <div class="alert alert-info">
+                                    <i class="fas fa-info-circle"></i> <strong>Solo necesario para segmentos estáticos:</strong> Escribe aquí el texto que aparecerá exactamente igual en todas las actas.
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="{{ form.contenido_estatico.id_for_label }}" class="h5">
+                                        <i class="fas fa-edit"></i> Texto del Segmento
+                                    </label>
+                                    {{ form.contenido_estatico }}
+                                    {% if form.contenido_estatico.errors %}
+                                        <div class="text-danger mt-2">
+                                            {% for error in form.contenido_estatico.errors %}
+                                                <strong>{{ error }}</strong>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                    
+                                    <div class="mt-3 p-3 bg-light border-left-success">
+                                        <h6><i class="fas fa-lightbulb text-warning"></i> Variables que puedes usar:</h6>
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <code>{{fecha}}</code> - Fecha reunión<br>
+                                                <code>{{numero_acta}}</code> - Número de acta<br>
+                                                <code>{{alcalde}}</code> - Nombre alcalde
+                                            </div>
+                                            <div class="col-md-6">
+                                                <code>{{secretario}}</code> - Secretario<br>
+                                                <code>{{hora_inicio}}</code> - Hora inicio<br>
+                                                <code>{{ubicacion}}</code> - Lugar reunión
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- PROMPT PARA IA - SIEMPRE VISIBLE -->
+                        <div class="card card-primary">
+                            <div class="card-header">
+                                <h3 class="card-title">
+                                    <i class="fas fa-robot"></i> 🤖 Prompt para IA
+                                </h3>
+                                <div class="card-tools">
+                                    <span class="badge badge-primary">Para segmentos de tipo "dinámico"</span>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <div class="alert alert-warning">
+                                    <i class="fas fa-robot"></i> <strong>Solo necesario para segmentos dinámicos:</strong> La IA analizará la transcripción y generará contenido según tus instrucciones.
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="{{ form.proveedor_ia.id_for_label }}" class="h6">
+                                        <i class="fas fa-brain"></i> Proveedor de IA
+                                    </label>
+                                    {{ form.proveedor_ia }}
+                                    {% if form.proveedor_ia.errors %}
+                                        <div class="text-danger mt-1">
+                                            {% for error in form.proveedor_ia.errors %}
+                                                <strong>{{ error }}</strong>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="{{ form.prompt_ia.id_for_label }}" class="h5">
+                                        <i class="fas fa-terminal"></i> Instrucciones para la IA
+                                    </label>
+                                    {{ form.prompt_ia }}
+                                    {% if form.prompt_ia.errors %}
+                                        <div class="text-danger mt-2">
+                                            {% for error in form.prompt_ia.errors %}
+                                                <strong>{{ error }}</strong>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                    
+                                    <div class="mt-3 p-3 bg-light border-left-primary">
+                                        <h6><i class="fas fa-lightbulb text-warning"></i> Ejemplo de Prompt Efectivo:</h6>
+                                        <div class="bg-dark text-light p-3 rounded">
+<small>Analiza la transcripción de la reunión municipal y extrae información sobre los participantes.
+
+Necesito generar la sección "PARTICIPANTES" del acta que incluya:
+- titulo: "PARTICIPANTES DE LA REUNIÓN"
+- cuerpo: Lista detallada de asistentes con sus cargos
+- integrantes: Array con nombres completos
+- autoridades: Separar autoridades de funcionarios
+
+Responde ÚNICAMENTE en formato JSON válido, sin explicaciones adicionales.</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- BOTONES DE ACCIÓN -->
+                        <div class="card">
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <button type="submit" class="btn btn-primary btn-lg">
+                                            <i class="fas fa-save"></i>
+                                            {% if form.instance.pk %}
+                                                Guardar Cambios
+                                            {% else %}
+                                                Crear Segmento
+                                            {% endif %}
+                                        </button>
+                                    </div>
+                                    <div class="col-md-6 text-right">
+                                        <a href="{% url 'generador_actas:lista_segmentos' %}" class="btn btn-secondary btn-lg">
+                                            <i class="fas fa-arrow-left"></i> Volver a la Lista
+                                        </a>
+                                        
+                                        {% if form.instance.pk %}
+                                            <a href="{% url 'generador_actas:detalle_segmento' form.instance.pk %}" class="btn btn-info btn-lg ml-2">
+                                                <i class="fas fa-eye"></i> Ver Detalle
+                                            </a>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
                     </form>
                 </div>
             </div>
-            
-            <div class="col-md-4">
-                <!-- Ayuda sobre tipos de segmento -->
-                <div class="card card-info">
-                    <div class="card-header">
-                        <h3 class="card-title">💡 Tipos de Segmento</h3>
-                    </div>
-                    <div class="card-body">
-                        <h6><strong>Tipos Disponibles:</strong></h6>
-                        <ul class="list-unstyled">
-                            <li><strong>Encabezado:</strong> Información inicial (fecha, lugar, etc.)</li>
-                            <li><strong>Agenda:</strong> Puntos a tratar en la reunión</li>
-                            <li><strong>Desarrollo:</strong> Contenido principal de la sesión</li>
-                            <li><strong>Acuerdos:</strong> Decisiones y resoluciones tomadas</li>
-                            <li><strong>Participantes:</strong> Lista de asistentes y roles</li>
-                            <li><strong>Cierre:</strong> Conclusiones y próximos pasos</li>
-                            <li><strong>Anexos:</strong> Documentos y referencias adicionales</li>
-                        </ul>
-                    </div>
-                </div>
-                
-                <!-- Variables comunes -->
-                <div class="card card-success">
-                    <div class="card-header">
-                        <h3 class="card-title">🔧 Variables Comunes</h3>
-                    </div>
-                    <div class="card-body">
-                        <h6><strong>Variables Disponibles:</strong></h6>
-                        <ul class="list-unstyled">
-                            <li><code>{fecha}</code> - Fecha de la sesión</li>
-                            <li><code>{hora}</code> - Hora de inicio</li>
-                            <li><code>{lugar}</code> - Lugar de la reunión</li>
-                            <li><code>{participantes}</code> - Lista de participantes</li>
-                            <li><code>{transcripcion}</code> - Texto completo</li>
-                            <li><code>{temas}</code> - Temas detectados</li>
-                            <li><code>{duracion}</code> - Duración de la sesión</li>
-                        </ul>
-                        
-                        <small class="text-muted">
-                            Use estas variables en su prompt para contenido dinámico.
-                        </small>
-                    </div>
-                </div>
-                
-                <!-- Vista previa -->
-                <div class="card card-warning">
-                    <div class="card-header">
-                        <h3 class="card-title">👁️ Vista Previa</h3>
-                    </div>
-                    <div class="card-body">
-                        <p>Después de guardar, podrá probar este segmento con datos de ejemplo.</p>
-                        <button type="button" class="btn btn-warning btn-sm" disabled>
-                            <i class="fas fa-eye"></i> Probar Segmento
-                        </button>
-                    </div>
-                </div>
-            </div>
         </div>
-    </div>
-</section>
+    </section>
 </div>
+{% endblock %}
+
+{% block extra_scripts %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Auto-completar orden según el tipo
-    const tipoSelect = document.getElementById('{{ form.tipo.id_for_label }}');
-    const ordenInput = document.getElementById('{{ form.orden.id_for_label }}');
+    console.log('✅ Iniciando sistema de auto-completado inteligente');
     
-    if (tipoSelect && ordenInput) {
-        tipoSelect.addEventListener('change', function() {
-            const tipo = this.value;
-            let ordenSugerido = '';
+    // Referencias a campos
+    const nombreField = document.getElementById('id_nombre');
+    const codigoField = document.getElementById('id_codigo');
+    const tipoSelect = document.getElementById('id_tipo');
+    const categoriaSelect = document.getElementById('id_categoria');
+    const descripcionField = document.getElementById('id_descripcion');
+    const contenidoEstaticoField = document.getElementById('id_contenido_estatico');
+    const promptIaField = document.getElementById('id_prompt_ia');
+    
+    // EJEMPLOS PREDEFINIDOS POR CATEGORÍA
+    const ejemplos = {
+        'encabezado': {
+            descripcion: 'Sección de introducción del acta con datos generales de la sesión',
+            estatico: `<h2>ACTA DE SESIÓN ORDINARIA</h2>
+<p><strong>Fecha:</strong> {{fecha_sesion}}</p>
+<p><strong>Hora:</strong> {{hora_inicio}} - {{hora_fin}}</p>
+<p><strong>Lugar:</strong> {{ubicacion}}</p>
+<p><strong>Presidida por:</strong> {{presidente_nombre}}</p>`,
+            prompt: `Analiza la transcripción y extrae la información de encabezado de la sesión.
+
+INFORMACIÓN A EXTRAER:
+- Tipo de sesión (ordinaria, extraordinaria, etc.)
+- Fecha y hora de inicio y fin
+- Lugar de la reunión
+- Persona que preside la sesión
+
+FORMATO DE RESPUESTA:
+Responde únicamente en formato JSON válido:
+{
+  "tipo_sesion": "Ordinaria",
+  "fecha_sesion": "2024-01-15",
+  "hora_inicio": "09:00",
+  "hora_fin": "11:30",
+  "ubicacion": "Sala de Sesiones del GAD Municipal",
+  "presidente_nombre": "Nombre del Presidente"
+}`
+        },
+        'participantes': {
+            descripcion: 'Lista de asistentes y participantes de la sesión con sus roles',
+            estatico: `<h3>PARTICIPANTES</h3>
+<h4>Autoridades Presentes:</h4>
+<ul>
+    <li>{{nombre_alcalde}} - Alcalde</li>
+    <li>{{nombre_vicealcalde}} - Vicealcalde</li>
+    <!-- Agregar más autoridades según necesidad -->
+</ul>
+
+<h4>Funcionarios:</h4>
+<ul>
+    <li>{{nombre_secretario}} - Secretario General</li>
+    <li>{{nombre_director_obras}} - Director de Obras Públicas</li>
+    <!-- Agregar más funcionarios según necesidad -->
+</ul>`,
+            prompt: `Identifica todos los participantes mencionados en la transcripción.
+
+PERSONAS A IDENTIFICAR:
+- Autoridades municipales (alcalde, concejales, vicealcalde)
+- Funcionarios municipales
+- Invitados especiales
+
+FORMATO DE RESPUESTA:
+Responde únicamente en formato JSON válido:
+{
+  "autoridades": [
+    {"nombre": "Nombre Completo", "cargo": "Alcalde"}
+  ],
+  "funcionarios": [
+    {"nombre": "Nombre Completo", "cargo": "Director", "dependencia": "Obras Públicas"}
+  ]
+}`
+        },
+        'agenda': {
+            descripcion: 'Orden del día y puntos tratados en la sesión',
+            estatico: `<h3>ORDEN DEL DÍA</h3>
+<ol>
+    <li>{{punto_1}}</li>
+    <li>{{punto_2}}</li>
+    <li>{{punto_3}}</li>
+    <li>{{punto_4}}</li>
+    <!-- Agregar más puntos según necesidad -->
+</ol>`,
+            prompt: `Extrae el orden del día y los puntos de agenda tratados.
+
+INFORMACIÓN A EXTRAER:
+- Puntos del orden del día en secuencia
+- Títulos completos de cada punto
+- Estado de cada punto (tratado, diferido, etc.)
+
+FORMATO DE RESPUESTA:
+Responde únicamente en formato JSON válido:
+{
+  "puntos_agenda": [
+    {"numero": 1, "titulo": "Aprobación del acta anterior", "estado": "aprobado"}
+  ]
+}`
+        },
+        'decisiones': {
+            descripcion: 'Resoluciones, acuerdos y decisiones tomadas en la sesión',
+            estatico: `<h3>RESOLUCIONES Y ACUERDOS</h3>
+<div class="decision">
+    <h4>{{tipo_decision_1}} No. {{numero_1}}</h4>
+    <p><strong>RESUELVE:</strong> {{resolucion_1}}</p>
+    <p><strong>Votación:</strong> {{votacion_1}}</p>
+</div>
+
+<div class="decision">
+    <h4>{{tipo_decision_2}} No. {{numero_2}}</h4>
+    <p><strong>RESUELVE:</strong> {{resolucion_2}}</p>
+    <p><strong>Votación:</strong> {{votacion_2}}</p>
+</div>`,
+            prompt: `Identifica todas las resoluciones y decisiones tomadas en la sesión.
+
+TIPOS DE DECISIONES:
+- Resoluciones
+- Acuerdos
+- Ordenanzas
+- Aprobaciones
+
+FORMATO DE RESPUESTA:
+Responde únicamente en formato JSON válido:
+{
+  "decisiones": [
+    {
+      "tipo": "Resolución",
+      "numero": "001-2024",
+      "resolucion": "Aprobar la propuesta de...",
+      "votacion": "Aprobado por unanimidad"
+    }
+  ]
+}`
+        },
+        'cierre': {
+            descripcion: 'Información de cierre de la sesión y próximas convocatorias',
+            estatico: `<h3>CIERRE DE SESIÓN</h3>
+<p><strong>Hora de finalización:</strong> {{hora_cierre}}</p>
+<p><strong>Próxima sesión:</strong> {{fecha_proxima_sesion}}</p>
+
+<div class="firmas">
+    <div class="firma-presidente">
+        <p>_________________________</p>
+        <p>{{presidente_nombre}}<br>{{presidente_cargo}}</p>
+    </div>
+    <div class="firma-secretario">
+        <p>_________________________</p>
+        <p>{{secretario_nombre}}<br>Secretario General</p>
+    </div>
+</div>`,
+            prompt: `Extrae la información de cierre de la sesión.
+
+INFORMACIÓN A EXTRAER:
+- Hora exacta de finalización
+- Fecha de próxima sesión (si se menciona)
+- Personas que firman el acta
+
+FORMATO DE RESPUESTA:
+Responde únicamente en formato JSON válido:
+{
+  "hora_cierre": "11:30",
+  "fecha_proxima_sesion": "2024-02-15",
+  "firmantes": [
+    {"nombre": "Nombre Completo", "cargo": "Alcalde"}
+  ]
+}`
+        }
+    };
+
+    // 1. AUTO-GENERAR CÓDIGO DESDE NOMBRE
+    function autoGenerarCodigo() {
+        if (!nombreField || !codigoField || codigoField.value.trim()) return;
+        
+        const nombre = nombreField.value.trim();
+        if (!nombre) return;
+        
+        let codigo = nombre
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '')
+            .toUpperCase()
+            .replace(/[^A-Z0-9\s]/g, '')
+            .replace(/\s+/g, '_')
+            .substring(0, 50);
             
-            switch(tipo) {
-                case 'encabezado':
-                    ordenSugerido = '10';
-                    break;
-                case 'agenda':
-                    ordenSugerido = '20';
-                    break;
-                case 'participantes':
-                    ordenSugerido = '30';
-                    break;
-                case 'desarrollo':
-                    ordenSugerido = '40';
-                    break;
-                case 'acuerdos':
-                    ordenSugerido = '50';
-                    break;
-                case 'cierre':
-                    ordenSugerido = '60';
-                    break;
-                case 'anexos':
-                    ordenSugerido = '70';
-                    break;
+        codigoField.value = codigo;
+        console.log('✅ Código auto-generado:', codigo);
+    }
+
+    // 2. AUTO-RELLENAR EJEMPLOS
+    function autoRellenarEjemplos() {
+        const tipo = tipoSelect ? tipoSelect.value : '';
+        const categoria = categoriaSelect ? categoriaSelect.value : '';
+        
+        if (!tipo || !categoria || !ejemplos[categoria]) return;
+        
+        const ejemplo = ejemplos[categoria];
+        
+        // Descripción
+        if (descripcionField && !descripcionField.value.trim()) {
+            descripcionField.value = ejemplo.descripcion;
+            console.log('✅ Descripción auto-rellenada');
+        }
+        
+        // Contenido según tipo
+        if (tipo === 'estatico' && contenidoEstaticoField && !contenidoEstaticoField.value.trim()) {
+            contenidoEstaticoField.value = ejemplo.estatico;
+            console.log('✅ Contenido estático auto-rellenado');
+        }
+        
+        if (tipo === 'dinamico' && promptIaField && !promptIaField.value.trim()) {
+            promptIaField.value = ejemplo.prompt;
+            console.log('✅ Prompt IA auto-rellenado');
+        }
+    }
+
+    // EVENT LISTENERS
+    if (nombreField) {
+        nombreField.addEventListener('blur', autoGenerarCodigo);
+    }
+    
+    if (tipoSelect) {
+        tipoSelect.addEventListener('change', autoRellenarEjemplos);
+    }
+    
+    if (categoriaSelect) {
+        categoriaSelect.addEventListener('change', autoRellenarEjemplos);
+    }
+
+    // VALIDACIÓN
+    const form = document.querySelector('form[method="post"]');
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            const nombre = nombreField ? nombreField.value.trim() : '';
+            const codigo = codigoField ? codigoField.value.trim() : '';
+            
+            if (!nombre) {
+                alert('❌ El nombre del segmento es obligatorio');
+                e.preventDefault();
+                return false;
             }
             
-            if (ordenSugerido && !ordenInput.value) {
-                ordenInput.value = ordenSugerido;
-            }
+            console.log('✅ Formulario validado');
+            return true;
         });
     }
     
-    // Validar JSON en campos JSON
-    const jsonFields = ['{{ form.variables_requeridas.id_for_label }}', '{{ form.configuracion_adicional.id_for_label }}'];
-    
-    jsonFields.forEach(fieldId => {
-        const field = document.getElementById(fieldId);
-        if (field) {
-            field.addEventListener('blur', function() {
-                const value = this.value.trim();
-                if (value && value !== '{}' && value !== '[]') {
-                    try {
-                        JSON.parse(value);
-                        this.classList.remove('is-invalid');
-                        this.classList.add('is-valid');
-                    } catch (e) {
-                        this.classList.remove('is-valid');
-                        this.classList.add('is-invalid');
-                    }
-                }
-            });
-        }
-    });
+    console.log('✅ Sistema de auto-completado listo');
 });
 </script>
-
-{% endblock content %}
+{% endblock extra_scripts %}

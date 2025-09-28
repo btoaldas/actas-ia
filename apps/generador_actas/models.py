@@ -225,57 +225,87 @@ class ProveedorIA(models.Model):
 class SegmentoPlantilla(models.Model):
     """Segmentos reutilizables para construir plantillas de actas"""
     TIPO_SEGMENTO = [
-        ('estatico', 'Estático'),
-        ('dinamico', 'Dinámico con IA'),
-        ('hibrido', 'Híbrido')
+        ('estatico', 'Estático - Contenido fijo'),
+        ('dinamico', 'Dinámico - Procesado con IA'),
+        ('hibrido', 'Híbrido - Estático + IA opcional')
     ]
     
     CATEGORIA_SEGMENTO = [
         ('encabezado', 'Encabezado'),
         ('titulo', 'Título'),
-        ('fecha', 'Fecha'),
-        ('asistentes', 'Asistentes'),
+        ('fecha_hora', 'Fecha y Hora'), 
+        ('participantes', 'Participantes/Asistencia'),
         ('orden_dia', 'Orden del Día'),
         ('introduccion', 'Introducción'),
-        ('desarrollo', 'Desarrollo'),
-        ('resoluciones', 'Resoluciones'),
-        ('compromisos', 'Compromisos'),
+        ('desarrollo', 'Desarrollo/Contenido'),
+        ('transcripcion', 'Transcripción'),
+        ('resumen', 'Resumen Ejecutivo'),
+        ('acuerdos', 'Acuerdos/Resoluciones'),
+        ('compromisos', 'Compromisos/Tareas'),
+        ('seguimiento', 'Seguimiento'),
         ('cierre', 'Cierre'),
-        ('firmas', 'Firmas'),
-        ('anexos', 'Anexos'),
+        ('firmas', 'Firmas/Validaciones'),
+        ('anexos', 'Anexos/Documentos'),
+        ('legal', 'Marco Legal'),
         ('otros', 'Otros')
     ]
     
-    # Identificación
-    codigo = models.CharField(max_length=50, unique=True, help_text="Código único del segmento")
+    FORMATO_SALIDA = [
+        ('texto', 'Texto plano'),
+        ('html', 'HTML estructurado'),
+        ('markdown', 'Markdown'),
+        ('json', 'JSON estructurado'),
+        ('tabla', 'Tabla/Lista'),
+        ('personalizado', 'Formato personalizado')
+    ]
+    
+    
+    # Identificación y categorización
+    codigo = models.CharField(max_length=50, unique=True, help_text="Código único del segmento (ej: TITULO_ACTA)")
     nombre = models.CharField(max_length=200, help_text="Nombre descriptivo del segmento")
-    descripcion = models.TextField(help_text="Descripción del propósito del segmento")
+    descripcion = models.TextField(help_text="Descripción del propósito y funcionamiento del segmento")
     categoria = models.CharField(max_length=50, choices=CATEGORIA_SEGMENTO, help_text="Categoría del segmento")
     tipo = models.CharField(max_length=20, choices=TIPO_SEGMENTO, help_text="Tipo de procesamiento")
     
-    # Configuración de procesamiento IA
-    prompt_ia = models.TextField(blank=True, help_text="Prompt para segmentos dinámicos")
+    # Configuración para segmentos ESTÁTICOS
+    contenido_estatico = models.TextField(blank=True, help_text="Contenido fijo para segmentos estáticos (admite variables {{variable}})")
+    formato_salida = models.CharField(max_length=20, choices=FORMATO_SALIDA, default='texto', help_text="Formato de salida del contenido")
+    
+    # Configuración para segmentos DINÁMICOS (IA)
+    prompt_ia = models.TextField(blank=True, help_text="Prompt para segmentos dinámicos procesados con IA")
+    prompt_sistema = models.TextField(blank=True, help_text="Prompt de sistema específico (opcional, override del proveedor)")
     proveedor_ia = models.ForeignKey('ProveedorIA', on_delete=models.SET_NULL, null=True, blank=True, 
                                    help_text="Proveedor IA para procesamiento (solo segmentos dinámicos)")
-    estructura_json = models.JSONField(default=dict, blank=True, help_text="Estructura esperada del resultado")
-    componentes = models.JSONField(default=dict, blank=True, help_text="Componentes del segmento")
-    parametros_entrada = models.JSONField(default=list, blank=True, help_text="Parámetros requeridos del contexto")
     
-    # Variables personalizables del usuario
+    # Estructura y validación de resultados
+    estructura_json = models.JSONField(default=dict, blank=True, help_text="Estructura esperada del resultado JSON")
+    validaciones_salida = models.JSONField(default=list, blank=True, help_text="Validaciones a aplicar en la salida")
+    formato_validacion = models.CharField(max_length=50, blank=True, help_text="Patrón regex o formato específico")
+    
+    # Configuración de entrada y contexto
+    parametros_entrada = models.JSONField(default=list, blank=True, help_text="Lista de parámetros requeridos del contexto")
     variables_personalizadas = models.JSONField(default=dict, blank=True, 
-                                               help_text="Variables JSON personalizables (fecha, participantes, etc.)")
+                                               help_text="Variables JSON personalizables por el usuario")
+    contexto_requerido = models.JSONField(default=list, blank=True, help_text="Elementos de contexto requeridos (transcripcion, participantes, etc)")
     
-    # Configuración visual y comportamiento
+    # Comportamiento y reutilización
     orden_defecto = models.IntegerField(default=0, help_text="Orden por defecto en plantillas")
     reutilizable = models.BooleanField(default=True, help_text="Si puede ser usado en múltiples plantillas")
     obligatorio = models.BooleanField(default=False, help_text="Si es obligatorio en todas las plantillas")
     activo = models.BooleanField(default=True, help_text="Si está disponible para uso")
     
-    # Métricas de uso
+    # Configuraciones avanzadas
+    longitud_maxima = models.IntegerField(null=True, blank=True, help_text="Longitud máxima del resultado en caracteres")
+    tiempo_limite_ia = models.IntegerField(default=60, help_text="Tiempo límite para procesamiento IA (segundos)")
+    reintentos_ia = models.IntegerField(default=2, help_text="Número de reintentos en caso de error")
+    
+    # Métricas y monitoreo
     total_usos = models.IntegerField(default=0, help_text="Total de veces que se ha usado")
+    total_errores = models.IntegerField(default=0, help_text="Total de errores en procesamiento")
     ultima_prueba = models.DateTimeField(null=True, blank=True, help_text="Última vez que se probó")
     ultimo_resultado_prueba = models.TextField(blank=True, help_text="Resultado de la última prueba")
-    tiempo_promedio_procesamiento = models.FloatField(default=0.0, help_text="Tiempo promedio de procesamiento en segundos")
+    tiempo_promedio_procesamiento = models.FloatField(default=0.0, help_text="Tiempo promedio de procesamiento (segundos)")
+    tasa_exito = models.FloatField(default=0.0, help_text="Porcentaje de procesamientos exitosos (0-100)")
     
     # Auditoría
     usuario_creacion = models.ForeignKey(User, on_delete=models.PROTECT, related_name='segmentos_creados')
@@ -286,12 +316,22 @@ class SegmentoPlantilla(models.Model):
         verbose_name = "Segmento de Plantilla"
         verbose_name_plural = "Segmentos de Plantilla"
         ordering = ['categoria', 'orden_defecto', 'nombre']
+        indexes = [
+            models.Index(fields=['categoria', 'activo']),
+            models.Index(fields=['tipo', 'activo']),
+            models.Index(fields=['codigo']),
+        ]
     
     def __str__(self):
-        return f"{self.nombre} ({self.get_categoria_display()})"
+        return f"{self.nombre} ({dict(self.CATEGORIA_SEGMENTO).get(self.categoria, self.categoria)})"
     
     def get_absolute_url(self):
-        return reverse('generador_actas:editar_segmento', kwargs={'pk': self.pk})
+        return reverse('generador_actas:detalle_segmento', kwargs={'pk': self.pk})
+    
+    @property
+    def es_estatico(self):
+        """Verifica si el segmento es completamente estático"""
+        return self.tipo == 'estatico'
     
     @property
     def es_dinamico(self):
@@ -299,55 +339,157 @@ class SegmentoPlantilla(models.Model):
         return self.tipo in ['dinamico', 'hibrido']
     
     @property
+    def es_hibrido(self):
+        """Verifica si el segmento es híbrido (estático + IA opcional)"""
+        return self.tipo == 'hibrido'
+    
+    @property
     def tiene_prompt(self):
-        """Verifica si tiene prompt configurado"""
+        """Verifica si tiene prompt configurado para IA"""
         return bool(self.prompt_ia.strip())
+    
+    @property
+    def tiene_contenido_estatico(self):
+        """Verifica si tiene contenido estático configurado"""
+        return bool(self.contenido_estatico.strip())
     
     @property
     def esta_configurado(self):
         """Verifica si el segmento está correctamente configurado"""
-        if self.es_dinamico:
-            return bool(self.prompt_ia.strip() and self.proveedor_ia)
+        if self.es_estatico and not self.tiene_contenido_estatico:
+            return False
+        if self.es_dinamico and (not self.tiene_prompt or not self.proveedor_ia):
+            return False
+        if self.es_hibrido and not self.tiene_contenido_estatico:
+            return False
         return True
+    
+    @property
+    def configuracion_ia_valida(self):
+        """Verifica si la configuración de IA es válida"""
+        if not self.es_dinamico:
+            return True
+        return bool(self.proveedor_ia and self.proveedor_ia.esta_configurado and self.tiene_prompt)
+    
+    @property
+    def estado_salud(self):
+        """Calcula el estado de salud del segmento basado en métricas"""
+        if self.total_usos == 0:
+            return 'sin_uso'
+        
+        if self.total_errores == 0:
+            return 'excelente'
+        
+        tasa_error = (self.total_errores / self.total_usos) * 100
+        
+        if tasa_error < 5:
+            return 'bueno'
+        elif tasa_error < 15:
+            return 'regular'
+        else:
+            return 'problematico'
     
     @property
     def variables_disponibles(self):
         """Obtiene lista de variables disponibles para el segmento"""
-        variables_base = [
-            'fecha_actual', 'hora_actual', 'fecha_reunion', 'tipo_reunion',
-            'numero_acta', 'lugar_reunion', 'participantes'
-        ]
-        variables_custom = list(self.variables_personalizadas.keys()) if self.variables_personalizadas else []
-        return variables_base + variables_custom
-    
-    def generar_json_completo(self, datos_contexto=None):
-        """Genera el JSON completo para enviar a la IA"""
-        if datos_contexto is None:
-            datos_contexto = {}
-            
-        json_segmento = {
-            'segmento_info': {
-                'nombre': self.nombre,
-                'codigo': self.codigo,
-                'tipo': self.tipo,
-                'categoria': self.categoria,
-                'descripcion': self.descripcion
-            },
-            'prompt': self.prompt_ia,
-            'variables_personalizadas': self.variables_personalizadas,
-            'parametros_entrada': self.parametros_entrada,
-            'estructura_esperada': self.estructura_json,
-            'datos_contexto': datos_contexto,
-            'configuracion_ia': {
-                'proveedor': self.proveedor_ia.nombre if self.proveedor_ia else None,
-                'modelo': self.proveedor_ia.modelo if self.proveedor_ia else None
-            }
+        variables_base = {
+            'fecha_actual': {'tipo': 'date', 'descripcion': 'Fecha actual del sistema'},
+            'hora_actual': {'tipo': 'time', 'descripcion': 'Hora actual del sistema'},
+            'fecha_reunion': {'tipo': 'date', 'descripcion': 'Fecha de la reunión'},
+            'hora_reunion': {'tipo': 'time', 'descripcion': 'Hora de la reunión'},
+            'tipo_reunion': {'tipo': 'string', 'descripcion': 'Tipo de reunión'},
+            'numero_acta': {'tipo': 'string', 'descripcion': 'Número del acta'},
+            'lugar_reunion': {'tipo': 'string', 'descripcion': 'Lugar donde se realizó la reunión'},
+            'participantes': {'tipo': 'array', 'descripcion': 'Lista de participantes'},
+            'duracion': {'tipo': 'time', 'descripcion': 'Duración de la reunión'},
+            'transcripcion': {'tipo': 'object', 'descripcion': 'Datos de transcripción completa'}
         }
-        return json_segmento
+        
+        # Agregar variables personalizadas
+        if self.variables_personalizadas:
+            variables_base.update(self.variables_personalizadas)
+        
+        return variables_base
     
-    def actualizar_metricas_uso(self, tiempo_procesamiento=None, resultado_prueba=None):
+    def procesar_contenido_estatico(self, contexto=None):
+        """Procesa el contenido estático reemplazando variables"""
+        if not self.tiene_contenido_estatico:
+            return ""
+        
+        contenido = self.contenido_estatico
+        
+        if contexto:
+            # Reemplazar variables en formato {{variable}}
+            import re
+            variables = re.findall(r'\{\{(\w+)\}\}', contenido)
+            
+            for variable in variables:
+                valor = contexto.get(variable, f'{{{{ERROR: {variable} no encontrado}}}}')
+                contenido = contenido.replace(f'{{{{{variable}}}}}', str(valor))
+        
+        return contenido
+    
+    def generar_prompt_completo(self, contexto=None):
+        """Genera el prompt completo para enviar a la IA"""
+        if not self.es_dinamico:
+            return ""
+        
+        prompt_partes = []
+        
+        # Prompt de sistema si existe
+        if self.prompt_sistema:
+            prompt_partes.append(f"SISTEMA: {self.prompt_sistema}")
+        
+        # Prompt principal
+        if self.prompt_ia:
+            prompt_partes.append(f"INSTRUCCIONES: {self.prompt_ia}")
+        
+        # Contexto de entrada
+        if contexto:
+            prompt_partes.append(f"CONTEXTO: {json.dumps(contexto, ensure_ascii=False, indent=2)}")
+        
+        # Estructura esperada si existe
+        if self.estructura_json:
+            prompt_partes.append(f"FORMATO_RESPUESTA: {json.dumps(self.estructura_json, ensure_ascii=False, indent=2)}")
+        
+        return "\n\n".join(prompt_partes)
+    
+    def validar_resultado(self, resultado):
+        """Valida el resultado según las reglas configuradas"""
+        errores = []
+        
+        # Validar longitud máxima
+        if self.longitud_maxima and len(resultado) > self.longitud_maxima:
+            errores.append(f"Resultado excede longitud máxima de {self.longitud_maxima} caracteres")
+        
+        # Validar formato si está configurado
+        if self.formato_validacion:
+            import re
+            if not re.match(self.formato_validacion, resultado):
+                errores.append(f"Resultado no cumple formato: {self.formato_validacion}")
+        
+        # Validaciones personalizadas
+        if self.validaciones_salida:
+            for validacion in self.validaciones_salida:
+                tipo_val = validacion.get('tipo')
+                if tipo_val == 'contiene_texto':
+                    if validacion.get('valor') not in resultado:
+                        errores.append(f"Resultado debe contener: {validacion.get('valor')}")
+                elif tipo_val == 'longitud_minima':
+                    if len(resultado) < int(validacion.get('valor', 0)):
+                        errores.append(f"Resultado debe tener al menos {validacion.get('valor')} caracteres")
+        
+        return errores
+    
+    def actualizar_metricas_uso(self, tiempo_procesamiento=None, exito=True, error=None):
         """Actualiza las métricas de uso del segmento"""
         self.total_usos += 1
+        if not exito:
+            self.total_errores += 1
+        
+        # Calcular tasa de éxito
+        self.tasa_exito = ((self.total_usos - self.total_errores) / self.total_usos) * 100
+        
         self.ultima_prueba = timezone.now()
         
         if tiempo_procesamiento is not None:
@@ -359,25 +501,147 @@ class SegmentoPlantilla(models.Model):
                     (self.tiempo_promedio_procesamiento * (self.total_usos - 1) + tiempo_procesamiento) / self.total_usos
                 )
         
-        if resultado_prueba is not None:
-            self.ultimo_resultado_prueba = resultado_prueba[:1000]  # Limitar tamaño
+        if error:
+            self.ultimo_resultado_prueba = f"ERROR: {error}"[:1000]
+        elif exito:
+            self.ultimo_resultado_prueba = "Procesamiento exitoso"
         
-        self.save(update_fields=['total_usos', 'ultima_prueba', 'ultimo_resultado_prueba', 'tiempo_promedio_procesamiento'])
+        self.save(update_fields=[
+            'total_usos', 'total_errores', 'tasa_exito', 'ultima_prueba', 
+            'ultimo_resultado_prueba', 'tiempo_promedio_procesamiento'
+        ])
+    
+    def crear_copia(self, nuevo_codigo=None, nuevo_nombre=None):
+        """Crea una copia del segmento con nuevo código y nombre"""
+        nuevo_segmento = SegmentoPlantilla.objects.create(
+            codigo=nuevo_codigo or f"{self.codigo}_COPIA",
+            nombre=nuevo_nombre or f"{self.nombre} (Copia)",
+            descripcion=self.descripcion,
+            categoria=self.categoria,
+            tipo=self.tipo,
+            contenido_estatico=self.contenido_estatico,
+            formato_salida=self.formato_salida,
+            prompt_ia=self.prompt_ia,
+            prompt_sistema=self.prompt_sistema,
+            proveedor_ia=self.proveedor_ia,
+            estructura_json=self.estructura_json,
+            validaciones_salida=self.validaciones_salida,
+            formato_validacion=self.formato_validacion,
+            parametros_entrada=self.parametros_entrada,
+            variables_personalizadas=self.variables_personalizadas,
+            contexto_requerido=self.contexto_requerido,
+            orden_defecto=self.orden_defecto,
+            reutilizable=self.reutilizable,
+            obligatorio=False,  # Las copias no son obligatorias por defecto
+            longitud_maxima=self.longitud_maxima,
+            tiempo_limite_ia=self.tiempo_limite_ia,
+            reintentos_ia=self.reintentos_ia,
+            usuario_creacion=self.usuario_creacion
+        )
+        return nuevo_segmento
     
     @classmethod
     def obtener_variables_comunes(cls):
         """Obtiene variables comunes sugeridas para segmentos"""
         return {
-            'fecha': {'tipo': 'date', 'descripcion': 'Fecha de la reunión', 'ejemplo': '2025-09-14'},
-            'participantes': {'tipo': 'array', 'descripcion': 'Lista de participantes', 'ejemplo': ['Juan Pérez', 'María García']},
-            'lugar': {'tipo': 'string', 'descripcion': 'Lugar de la reunión', 'ejemplo': 'Sala de Juntas Principal'},
+            'fecha': {'tipo': 'date', 'descripcion': 'Fecha de la reunión', 'ejemplo': '2025-09-27'},
             'hora_inicio': {'tipo': 'time', 'descripcion': 'Hora de inicio', 'ejemplo': '09:00'},
             'hora_fin': {'tipo': 'time', 'descripcion': 'Hora de finalización', 'ejemplo': '11:30'},
+            'duracion': {'tipo': 'string', 'descripcion': 'Duración de la reunión', 'ejemplo': '2 horas 30 minutos'},
+            'participantes': {'tipo': 'array', 'descripcion': 'Lista de participantes', 
+                            'ejemplo': ['Juan Pérez - Alcalde', 'María García - Secretaria']},
+            'lugar': {'tipo': 'string', 'descripcion': 'Lugar de la reunión', 'ejemplo': 'Sala de Juntas Principal'},
             'numero_acta': {'tipo': 'string', 'descripcion': 'Número del acta', 'ejemplo': 'ACTA-2025-001'},
-            'tipo_reunion': {'tipo': 'string', 'descripcion': 'Tipo de reunión', 'ejemplo': 'Ordinaria'},
-            'temas_tratados': {'tipo': 'array', 'descripcion': 'Temas principales', 'ejemplo': ['Presupuesto', 'Proyectos']},
-            'decisiones': {'tipo': 'array', 'descripcion': 'Decisiones tomadas', 'ejemplo': ['Aprobar presupuesto', 'Iniciar proyecto']},
-            'proxima_reunion': {'tipo': 'date', 'descripcion': 'Fecha próxima reunión', 'ejemplo': '2025-09-21'}
+            'tipo_reunion': {'tipo': 'string', 'descripcion': 'Tipo de reunión', 'ejemplo': 'Sesión Ordinaria'},
+            'periodo': {'tipo': 'string', 'descripcion': 'Periodo administrativo', 'ejemplo': '2025-2026'},
+            'quorum': {'tipo': 'boolean', 'descripcion': 'Si se alcanzó quórum', 'ejemplo': True},
+            'temas_tratados': {'tipo': 'array', 'descripcion': 'Temas principales tratados', 
+                             'ejemplo': ['Aprobación presupuesto 2025', 'Proyecto vial sector norte']},
+            'decisiones': {'tipo': 'array', 'descripcion': 'Decisiones tomadas', 
+                         'ejemplo': ['Aprobar presupuesto por unanimidad', 'Iniciar licitación proyecto vial']},
+            'compromisos': {'tipo': 'array', 'descripcion': 'Compromisos asumidos',
+                          'ejemplo': ['Presentar informe técnico - 15 días', 'Convocar audiencia pública - 30 días']},
+            'proxima_reunion': {'tipo': 'date', 'descripcion': 'Fecha próxima reunión', 'ejemplo': '2025-10-04'},
+            'transcripcion_completa': {'tipo': 'text', 'descripcion': 'Transcripción completa de la reunión'},
+            'resumen_ejecutivo': {'tipo': 'text', 'descripcion': 'Resumen ejecutivo de la reunión'},
+            'municipio': {'tipo': 'string', 'descripcion': 'Nombre del municipio', 'ejemplo': 'Pastaza'},
+            'provincia': {'tipo': 'string', 'descripcion': 'Provincia', 'ejemplo': 'Pastaza'},
+            'pais': {'tipo': 'string', 'descripcion': 'País', 'ejemplo': 'Ecuador'}
+        }
+    
+    @classmethod
+    def crear_segmento_defecto(cls, categoria, usuario):
+        """Crea un segmento por defecto para una categoría específica"""
+        templates_defecto = {
+            'encabezado': {
+                'codigo': f'ENCAB_{categoria.upper()}',
+                'nombre': 'Encabezado de Acta',
+                'descripcion': 'Encabezado institucional del acta',
+                'tipo': 'estatico',
+                'contenido_estatico': """ACTA N° {{numero_acta}}
+{{tipo_reunion}} DEL GOBIERNO AUTÓNOMO DESCENTRALIZADO MUNICIPAL DE {{municipio}}
+
+Fecha: {{fecha}}
+Hora de inicio: {{hora_inicio}}
+Lugar: {{lugar}}""",
+                'formato_salida': 'texto'
+            },
+            'participantes': {
+                'codigo': f'PART_{categoria.upper()}', 
+                'nombre': 'Lista de Participantes',
+                'descripcion': 'Lista detallada de participantes con cargos',
+                'tipo': 'dinamico',
+                'prompt_ia': 'Genera una lista formal de participantes basada en los datos proporcionados. Incluye nombres completos, cargos y estado de asistencia.',
+                'formato_salida': 'html'
+            },
+            'resumen': {
+                'codigo': f'RESUM_{categoria.upper()}',
+                'nombre': 'Resumen Ejecutivo', 
+                'descripcion': 'Resumen ejecutivo de los temas tratados',
+                'tipo': 'dinamico',
+                'prompt_ia': 'Genera un resumen ejecutivo conciso de los temas principales tratados en la reunión, destacando decisiones importantes y conclusiones.',
+                'formato_salida': 'texto'
+            }
+        }
+        
+        template = templates_defecto.get(categoria, templates_defecto['resumen'])
+        template['categoria'] = categoria
+        template['usuario_creacion'] = usuario
+        
+        return cls.objects.create(**template)
+    
+    @classmethod  
+    def obtener_estadisticas_uso(cls):
+        """Obtiene estadísticas globales de uso de segmentos"""
+        from django.db.models import Avg, Sum, Count, Max, Min
+        
+        stats = cls.objects.aggregate(
+            total_segmentos=Count('id'),
+            total_usos=Sum('total_usos'),
+            total_errores=Sum('total_errores'),
+            tiempo_promedio_global=Avg('tiempo_promedio_procesamiento'),
+            tasa_exito_promedio=Avg('tasa_exito'),
+            ultimo_uso=Max('ultima_prueba')
+        )
+        
+        # Estadísticas por tipo
+        stats_por_tipo = cls.objects.values('tipo').annotate(
+            cantidad=Count('id'),
+            usos=Sum('total_usos'),
+            errores=Sum('total_errores')
+        )
+        
+        # Estadísticas por categoría
+        stats_por_categoria = cls.objects.values('categoria').annotate(
+            cantidad=Count('id'),
+            usos=Sum('total_usos'),
+            activos=Count('id', filter=models.Q(activo=True))
+        )
+        
+        return {
+            'globales': stats,
+            'por_tipo': list(stats_por_tipo),
+            'por_categoria': list(stats_por_categoria)
         }
 
 

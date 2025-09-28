@@ -1,0 +1,507 @@
+{% extends 'base_admin.html' %}
+{% load static %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'generador_actas/css/segmentos.css' %}">
+<style>
+.detail-card { margin-bottom: 20px; }
+.metric-card { text-align: center; }
+.status-badge {
+    font-size: 0.9em;
+    padding: 0.5em 1em;
+}
+.code-preview {
+    background: #f4f4f4;
+    border-left: 4px solid #007bff;
+    padding: 15px;
+    border-radius: 4px;
+    font-family: 'Courier New', monospace;
+    white-space: pre-wrap;
+    max-height: 300px;
+    overflow-y: auto;
+}
+.timeline-item {
+    border-left: 2px solid #dee2e6;
+    padding-left: 15px;
+    margin-bottom: 15px;
+    position: relative;
+}
+.timeline-item::before {
+    content: '';
+    width: 10px;
+    height: 10px;
+    background: #007bff;
+    border-radius: 50%;
+    position: absolute;
+    left: -6px;
+    top: 5px;
+}
+.config-status-ok { color: #28a745; }
+.config-status-warning { color: #ffc107; }
+.config-status-error { color: #dc3545; }
+</style>
+{% endblock %}
+
+{% block content_header %}
+<div class="content-header">
+    <div class="container-fluid">
+        <div class="row mb-2">
+            <div class="col-sm-6">
+                <h1><i class="fas fa-eye"></i> {{ page_title }}</h1>
+            </div>
+            <div class="col-sm-6">
+                <ol class="breadcrumb float-sm-right">
+                    {% for breadcrumb in breadcrumbs %}
+                        {% if breadcrumb.url %}
+                            <li class="breadcrumb-item"><a href="{{ breadcrumb.url }}">{{ breadcrumb.title }}</a></li>
+                        {% else %}
+                            <li class="breadcrumb-item active">{{ breadcrumb.title }}</li>
+                        {% endif %}
+                    {% endfor %}
+                </ol>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Barra de Acciones -->
+    <div class="row mb-3">
+        <div class="col-md-8">
+            <a href="{% url 'generador_actas:editar_segmento' object.pk %}" class="btn btn-primary">
+                <i class="fas fa-edit"></i> Editar
+            </a>
+            
+            {% if object.es_dinamico %}
+            <a href="{% url 'generador_actas:probar_segmento' %}?segmento={{ object.pk }}" class="btn btn-info">
+                <i class="fas fa-vial"></i> Probar Segmento
+            </a>
+            {% endif %}
+            
+            <div class="btn-group">
+                <button type="button" class="btn btn-outline-secondary dropdown-toggle" data-toggle="dropdown">
+                    <i class="fas fa-cog"></i> Más Acciones
+                </button>
+                <div class="dropdown-menu">
+                    <a class="dropdown-item text-danger" href="{% url 'generador_actas:eliminar_segmento' object.pk %}">
+                        <i class="fas fa-trash"></i> Eliminar
+                    </a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 text-right">
+            <a href="{% url 'generador_actas:lista_segmentos' %}" class="btn btn-default">
+                <i class="fas fa-arrow-left"></i> Volver a Lista
+            </a>
+        </div>
+    </div>
+
+    <!-- Información Principal -->
+    <div class="row">
+        <!-- Columna Principal -->
+        <div class="col-md-8">
+            <!-- Información Básica -->
+            <div class="card detail-card">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <i class="fas fa-info-circle"></i> Información General
+                    </h3>
+                    <div class="card-tools">
+                        {% if object.esta_configurado %}
+                            <span class="badge badge-success status-badge">
+                                <i class="fas fa-check-circle"></i> Configurado
+                            </span>
+                        {% else %}
+                            <span class="badge badge-warning status-badge">
+                                <i class="fas fa-exclamation-triangle"></i> Incompleto
+                            </span>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <dl>
+                                <dt>Nombre:</dt>
+                                <dd>{{ object.nombre }}</dd>
+                                
+                                <dt>Código:</dt>
+                                <dd><code>{{ object.codigo }}</code></dd>
+                                
+                                <dt>Categoría:</dt>
+                                <dd>
+                                    <span class="badge badge-secondary">{{ object.get_categoria_display }}</span>
+                                </dd>
+                                
+                                <dt>Tipo:</dt>
+                                <dd>
+                                    <span class="badge badge-{% if object.tipo == 'estatico' %}success{% elif object.tipo == 'dinamico' %}primary{% else %}warning{% endif %}">
+                                        {% if object.tipo == 'estatico' %}
+                                            <i class="fas fa-file-alt"></i> Estático
+                                        {% elif object.tipo == 'dinamico' %}
+                                            <i class="fas fa-robot"></i> Dinámico
+                                        {% else %}
+                                            <i class="fas fa-layer-group"></i> Híbrido
+                                        {% endif %}
+                                    </span>
+                                </dd>
+                            </dl>
+                        </div>
+                        <div class="col-md-6">
+                            <dl>
+                                <dt>Estado:</dt>
+                                <dd>
+                                    {% if object.activo %}
+                                        <span class="badge badge-success">Activo</span>
+                                    {% else %}
+                                        <span class="badge badge-secondary">Inactivo</span>
+                                    {% endif %}
+                                </dd>
+                                
+                                <dt>Orden:</dt>
+                                <dd>{{ object.orden }}</dd>
+                                
+                                <dt>Características:</dt>
+                                <dd>
+                                    {% if object.obligatorio %}
+                                        <span class="badge badge-warning">Obligatorio</span>
+                                    {% endif %}
+                                    {% if object.reutilizable %}
+                                        <span class="badge badge-info">Reutilizable</span>
+                                    {% endif %}
+                                    {% if object.requiere_aprobacion %}
+                                        <span class="badge badge-dark">Requiere Aprobación</span>
+                                    {% endif %}
+                                </dd>
+                                
+                                <dt>Proveedor IA:</dt>
+                                <dd>
+                                    {% if object.proveedor_ia %}
+                                        <span class="badge badge-primary">{{ object.proveedor_ia.nombre }}</span>
+                                    {% else %}
+                                        <span class="text-muted">No configurado</span>
+                                    {% endif %}
+                                </dd>
+                            </dl>
+                        </div>
+                    </div>
+                    
+                    {% if object.descripcion %}
+                    <div class="mt-3">
+                        <dt>Descripción:</dt>
+                        <dd>{{ object.descripcion|linebreaksbr }}</dd>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Contenido del Segmento -->
+            <div class="card detail-card">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <i class="fas fa-file-code"></i> Contenido
+                    </h3>
+                </div>
+                <div class="card-body">
+                    {% if object.es_estatico and object.contenido_estatico %}
+                        <h5>Contenido Estático:</h5>
+                        <div class="code-preview">{{ object.contenido_estatico }}</div>
+                        
+                        {% if object.variables_disponibles %}
+                        <div class="mt-3">
+                            <h6>Variables Disponibles:</h6>
+                            <div class="row">
+                                {% for variable in object.variables_disponibles %}
+                                <div class="col-md-4">
+                                    <code>{{ variable }}</code>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endif %}
+                    {% endif %}
+                    
+                    {% if object.es_dinamico and object.prompt_ia %}
+                        <h5>Prompt para IA:</h5>
+                        <div class="code-preview">{{ object.prompt_ia }}</div>
+                        
+                        {% if object.formato_salida %}
+                        <div class="mt-3">
+                            <h6>Formato de Salida:</h6>
+                            <div class="code-preview">{{ object.formato_salida }}</div>
+                        </div>
+                        {% endif %}
+                        
+                        {% if object.validaciones_salida %}
+                        <div class="mt-3">
+                            <h6>Validaciones de Salida:</h6>
+                            <div class="code-preview">{{ object.validaciones_salida|pprint }}</div>
+                        </div>
+                        {% endif %}
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Configuración Avanzada -->
+            {% if object.es_dinamico %}
+            <div class="card detail-card">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <i class="fas fa-cogs"></i> Configuración IA
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <dl>
+                                <dt>Temperatura:</dt>
+                                <dd>{{ object.temperatura|default:"No configurada" }}</dd>
+                                
+                                <dt>Tokens Máximos:</dt>
+                                <dd>{{ object.max_tokens|default:"Por defecto" }}</dd>
+                                
+                                <dt>Tiempo Límite:</dt>
+                                <dd>{{ object.tiempo_limite_ia|default:"120" }} segundos</dd>
+                            </dl>
+                        </div>
+                        <div class="col-md-6">
+                            <dl>
+                                <dt>Reintentos:</dt>
+                                <dd>{{ object.reintentos_fallidos|default:"3" }}</dd>
+                                
+                                <dt>Configuraciones Adicionales:</dt>
+                                <dd>
+                                    {% if object.configuraciones_adicionales %}
+                                        <pre class="small">{{ object.configuraciones_adicionales|pprint }}</pre>
+                                    {% else %}
+                                        <span class="text-muted">Ninguna</span>
+                                    {% endif %}
+                                </dd>
+                            </dl>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Columna Lateral -->
+        <div class="col-md-4">
+            <!-- Métricas -->
+            <div class="card detail-card metric-card">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <i class="fas fa-chart-bar"></i> Métricas de Uso
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-6">
+                            <div class="info-box bg-info">
+                                <span class="info-box-icon"><i class="fas fa-play"></i></span>
+                                <div class="info-box-content">
+                                    <span class="info-box-text">Usos</span>
+                                    <span class="info-box-number">{{ object.total_usos }}</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="info-box bg-success">
+                                <span class="info-box-icon"><i class="fas fa-check"></i></span>
+                                <div class="info-box-content">
+                                    <span class="info-box-text">Éxito</span>
+                                    <span class="info-box-number">{{ object.tasa_exito|floatformat:1 }}%</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row mt-2">
+                        <div class="col-6">
+                            <div class="info-box bg-warning">
+                                <span class="info-box-icon"><i class="fas fa-exclamation-triangle"></i></span>
+                                <div class="info-box-content">
+                                    <span class="info-box-text">Errores</span>
+                                    <span class="info-box-number">{{ object.total_errores }}</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="info-box bg-primary">
+                                <span class="info-box-icon"><i class="fas fa-clock"></i></span>
+                                <div class="info-box-content">
+                                    <span class="info-box-text">Tiempo</span>
+                                    <span class="info-box-number">{{ object.tiempo_promedio_procesamiento|floatformat:1 }}s</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Estado de Salud -->
+            <div class="card detail-card">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <i class="fas fa-heartbeat"></i> Estado de Salud
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <strong>Estado General:</strong>
+                        {% if object.estado_salud == 'excelente' %}
+                            <span class="badge badge-success">Excelente</span>
+                        {% elif object.estado_salud == 'bueno' %}
+                            <span class="badge badge-info">Bueno</span>
+                        {% elif object.estado_salud == 'regular' %}
+                            <span class="badge badge-warning">Regular</span>
+                        {% else %}
+                            <span class="badge badge-danger">Crítico</span>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mb-2">
+                        <strong>Configuración:</strong>
+                        {% if object.esta_configurado %}
+                            <i class="fas fa-check config-status-ok"></i>
+                            <span class="config-status-ok">Completa</span>
+                        {% else %}
+                            <i class="fas fa-exclamation-triangle config-status-warning"></i>
+                            <span class="config-status-warning">Incompleta</span>
+                        {% endif %}
+                    </div>
+                    
+                    {% if object.es_dinamico %}
+                    <div class="mb-2">
+                        <strong>Proveedor IA:</strong>
+                        {% if object.proveedor_ia %}
+                            <i class="fas fa-check config-status-ok"></i>
+                            <span class="config-status-ok">Configurado</span>
+                        {% else %}
+                            <i class="fas fa-times config-status-error"></i>
+                            <span class="config-status-error">Sin configurar</span>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                    
+                    <div class="mb-2">
+                        <strong>Último Error:</strong>
+                        {% if object.ultimo_error %}
+                            <small class="text-muted">{{ object.fecha_ultimo_error|timesince }}</small>
+                        {% else %}
+                            <span class="text-success">Sin errores</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Información de Auditoría -->
+            <div class="card detail-card">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <i class="fas fa-history"></i> Información de Auditoría
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <div class="timeline-item">
+                        <strong>Creado:</strong><br>
+                        <small>{{ object.fecha_creacion|date:"d/m/Y H:i" }}</small><br>
+                        <small class="text-muted">por {{ object.usuario_creacion.get_full_name|default:object.usuario_creacion.username }}</small>
+                    </div>
+                    
+                    <div class="timeline-item">
+                        <strong>Última actualización:</strong><br>
+                        <small>{{ object.fecha_actualizacion|date:"d/m/Y H:i" }}</small><br>
+                        <small class="text-muted">hace {{ object.fecha_actualizacion|timesince }}</small>
+                    </div>
+                    
+                    {% if object.fecha_ultimo_uso %}
+                    <div class="timeline-item">
+                        <strong>Último uso:</strong><br>
+                        <small>{{ object.fecha_ultimo_uso|date:"d/m/Y H:i" }}</small><br>
+                        <small class="text-muted">hace {{ object.fecha_ultimo_uso|timesince }}</small>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Plantillas que usan este segmento -->
+            {% if plantillas_asociadas %}
+            <div class="card detail-card">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <i class="fas fa-link"></i> Usado en Plantillas
+                    </h3>
+                </div>
+                <div class="card-body">
+                    {% for plantilla in plantillas_asociadas %}
+                    <div class="mb-2">
+                        <a href="{% url 'generador_actas:detalle_plantilla' plantilla.pk %}" class="text-decoration-none">
+                            <i class="fas fa-file-alt"></i> {{ plantilla.nombre }}
+                        </a>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Errores Recientes (si los hay) -->
+    {% if errores_recientes %}
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-danger">
+                    <h3 class="card-title text-white">
+                        <i class="fas fa-exclamation-triangle"></i> Errores Recientes
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Fecha</th>
+                                    <th>Tipo</th>
+                                    <th>Mensaje</th>
+                                    <th>Contexto</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for error in errores_recientes %}
+                                <tr>
+                                    <td>{{ error.fecha|date:"d/m/Y H:i" }}</td>
+                                    <td><span class="badge badge-danger">{{ error.tipo }}</span></td>
+                                    <td>{{ error.mensaje|truncatewords:15 }}</td>
+                                    <td><small>{{ error.contexto|truncatewords:10 }}</small></td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Tooltips
+$(function () {
+    $('[data-toggle="tooltip"]').tooltip()
+});
+
+// Función para probar segmento
+function probarSegmento() {
+    window.location.href = "{% url 'generador_actas:probar_segmento' %}?segmento={{ object.pk }}";
+}
+</script>
+{% endblock %}
