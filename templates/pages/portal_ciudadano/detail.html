@@ -394,13 +394,19 @@
       Swal.fire({
         title: '¿Resetear Acta?',
         html: `
-          <p><strong>Esta acción va a:</strong></p>
+          <p><strong>⚠️ RESET COMPLETO - Esta acción va a:</strong></p>
           <ul style="text-align: left; display: inline-block;">
-            <li>❌ Despublicar el acta del portal ciudadano</li>
-            <li>🗑️ Eliminar todos los archivos físicos (PDF, Word, TXT)</li>
-            <li>✏️ Volver el estado a "En Edición" en el gestor de actas</li>
-            <li>🔄 Permitir regenerar desde cero</li>
+            <li>🔥 <strong>ELIMINAR COMPLETAMENTE</strong> el acta del portal ciudadano</li>
+            <li>🗑️ <strong>BORRAR TODOS</strong> los archivos físicos (PDF, Word, TXT)</li>
+            <li>🧹 <strong>LIMPIAR TODO</strong> el contenido procesado, transcripciones e IA</li>
+            <li>📅 <strong>ELIMINAR</strong> todas las fechas de aprobación y publicación</li>
+            <li>🔓 <strong>DESCONECTAR</strong> del gestor de actas (estado virgen)</li>
+            <li>♻️ <strong>VOLVER AL ESTADO INICIAL</strong> como recién generada</li>
+            <li>🎯 Permitir procesar <strong>completamente desde cero</strong></li>
           </ul>
+          <p style="color: #dc3545; font-weight: bold;">
+            ⚠️ Esta acción NO se puede deshacer - el acta quedará completamente limpia
+          </p>
           <br><strong style="color: #dc3545;">⚠️ Esta acción NO se puede deshacer</strong>
         `,
         icon: 'warning',

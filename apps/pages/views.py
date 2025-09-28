@@ -2540,14 +2540,16 @@ def api_eventos_hoy(request):
 @csrf_exempt
 def reset_acta_publicada(request, pk):
     """
-    Resetea un acta publicada para volver al proceso inicial en gestor de actas.
+    RESET COMPLETO: Elimina TODA la información procesada del acta,
+    dejándola completamente virgen como recién llegada desde generación de actas.
     Solo disponible para administradores.
     """
     import logging
+    import os
     logger = logging.getLogger(__name__)
     
     # Verificar permisos de administrador
-    logger.info(f"Usuario intentando reset: {request.user} (autenticado: {request.user.is_authenticated}, superuser: {getattr(request.user, 'is_superuser', False)}, staff: {getattr(request.user, 'is_staff', False)})")
+    logger.info(f"Usuario intentando reset COMPLETO: {request.user} (autenticado: {request.user.is_authenticated}, superuser: {getattr(request.user, 'is_superuser', False)}, staff: {getattr(request.user, 'is_staff', False)})")
     
     if not request.user.is_authenticated:
         messages.error(request, "❌ Debes iniciar sesión para realizar esta acción")
@@ -2558,100 +2560,194 @@ def reset_acta_publicada(request, pk):
         return redirect('acta_detail', pk=pk)
     
     acta = get_object_or_404(ActaMunicipal, pk=pk, activo=True)
+    numero_acta_backup = acta.numero_acta  # Backup para mensajes
     
     try:
-        import os
+        logger.info(f"🔥 INICIANDO RESET COMPLETO del acta {acta.numero_acta} por usuario {request.user.username}")
         
-        logger.info(f"Iniciando reset del acta {acta.numero_acta} por usuario {request.user.username}")
-        
-        # PASO 1: Eliminar archivos físicos
+        # ═══════════════════════════════════════════════════════════
+        # PASO 1: ELIMINACIÓN TOTAL DE ARCHIVOS FÍSICOS
+        # ═══════════════════════════════════════════════════════════
         archivos_eliminados = []
         
-        # Eliminar archivo PDF
-        if acta.archivo_pdf:
-            try:
-                if os.path.exists(acta.archivo_pdf.path):
-                    os.remove(acta.archivo_pdf.path)
-                    archivos_eliminados.append('PDF')
-                acta.archivo_pdf.delete(save=False)
-            except Exception as e:
-                logger.warning(f"Error eliminando PDF: {str(e)}")
+        # Eliminar TODOS los archivos relacionados al acta
+        archivos_a_eliminar = [
+            ('PDF', acta.archivo_pdf),
+            ('Word', acta.archivo_word), 
+            ('TXT', acta.archivo_txt)
+        ]
         
-        # Eliminar archivo Word
-        if acta.archivo_word:
-            try:
-                if os.path.exists(acta.archivo_word.path):
-                    os.remove(acta.archivo_word.path)
-                    archivos_eliminados.append('Word')
-                acta.archivo_word.delete(save=False)
-            except Exception as e:
-                logger.warning(f"Error eliminando Word: {str(e)}")
+        for tipo, archivo in archivos_a_eliminar:
+            if archivo:
+                try:
+                    if hasattr(archivo, 'path') and os.path.exists(archivo.path):
+                        os.remove(archivo.path)
+                        archivos_eliminados.append(tipo)
+                        logger.info(f"🗑️ Archivo {tipo} eliminado: {archivo.path}")
+                    archivo.delete(save=False)
+                except Exception as e:
+                    logger.error(f"❌ Error eliminando archivo {tipo}: {str(e)}")
         
-        # Eliminar archivo TXT
-        if acta.archivo_txt:
-            try:
-                if os.path.exists(acta.archivo_txt.path):
-                    os.remove(acta.archivo_txt.path)
-                    archivos_eliminados.append('TXT')
-                acta.archivo_txt.delete(save=False)
-            except Exception as e:
-                logger.warning(f"Error eliminando TXT: {str(e)}")
+        # ═══════════════════════════════════════════════════════════
+        # PASO 2: LIMPIEZA COMPLETA DEL ACTA EN PORTAL CIUDADANO
+        # ═══════════════════════════════════════════════════════════
+        logger.info(f"🧹 Limpiando COMPLETAMENTE el acta del portal ciudadano")
         
-        # PASO 2: Resetear campos del acta en portal ciudadano
+        # Resetear TODOS los campos procesados a estado virgen (usando campos reales del modelo)
+        acta.contenido = ""           # Limpiar contenido procesado
+        acta.resumen = ""            # Limpiar resumen
+        acta.orden_del_dia = ""      # Limpiar orden del día
+        acta.acuerdos = ""           # Limpiar acuerdos
+        acta.palabras_clave = ""     # Limpiar palabras clave
+        acta.observaciones = ""      # Limpiar observaciones
+        
+        # Resetear campos de IA
+        acta.transcripcion_ia = False        # Marcar como no procesada por IA
+        acta.precision_ia = None             # Limpiar métricas IA
+        acta.tiempo_procesamiento = None     # Limpiar tiempos
+        
+        # Resetear fechas de proceso
         acta.fecha_publicacion = None
-        acta.activo = False  # Despublicar del portal ciudadano
-        acta.save()
         
-        # PASO 3: Verificar si existe en gestor de actas y resetear estado
+        # Limpiar participantes adicionales
+        acta.asistentes = ""         # Limpiar lista de asistentes
+        acta.ausentes = ""           # Limpiar lista de ausentes
+        
+        # Resetear campos de acceso y estado
+        acta.acceso = 'publico'      # Resetear a público por defecto
+        acta.activo = False          # Despublicar completamente del portal
+        acta.prioridad = 'normal'    # Resetear prioridad a normal
+        
+        acta.save()
+        logger.info(f"✅ Acta portal completamente limpiada")
+        
+        # ═══════════════════════════════════════════════════════════
+        # PASO 3: RESET COMPLETO EN GESTOR DE ACTAS
+        # ═══════════════════════════════════════════════════════════
         try:
-            from gestion_actas.models import GestionActa
-            acta_gestion = GestionActa.objects.filter(acta_portal=acta).first()
+            from gestion_actas.models import GestionActa, EstadoGestionActa
+            
+            # Buscar el acta en gestor de actas
+            acta_gestion = GestionActa.objects.filter(
+                numero_acta=numero_acta_backup
+            ).first()
+            
+            if not acta_gestion:
+                # Buscar por conexión al portal (si existe)
+                acta_gestion = GestionActa.objects.filter(acta_portal=acta).first()
             
             if acta_gestion:
-                # Resetear al estado inicial del gestor de actas
-                from gestion_actas.models import EstadoGestionActa
-                estado_edicion = EstadoGestionActa.objects.filter(codigo='en_edicion').first()
+                logger.info(f"🔄 Reseteando COMPLETAMENTE el acta en gestor de actas")
                 
-                if estado_edicion:
-                    acta_gestion.estado = estado_edicion
-                    acta_gestion.bloqueada_edicion = False
-                    acta_gestion.fecha_enviada_revision = None
-                    acta_gestion.fecha_aprobacion_final = None
-                    acta_gestion.fecha_publicacion = None
-                    acta_gestion.acta_portal = None  # Desconectar del portal ciudadano
-                    
-                    # Limpiar observaciones de revisión
-                    acta_gestion.observaciones = "Acta reseteada para nueva edición"
-                    
-                    acta_gestion.save()
+                # Obtener estado inicial (en edición/borrador)
+                estado_inicial = EstadoGestionActa.objects.filter(
+                    codigo__in=['en_edicion', 'borrador', 'creada']
+                ).first()
                 
-                logger.info(f"Acta {acta.numero_acta} reseteada exitosamente. Archivos eliminados: {', '.join(archivos_eliminados)}")
+                if not estado_inicial:
+                    # Crear estado inicial si no existe
+                    estado_inicial, created = EstadoGestionActa.objects.get_or_create(
+                        codigo='en_edicion',
+                        defaults={
+                            'nombre': 'En Edición',
+                            'descripcion': 'Acta en proceso de edición',
+                            'color': '#6c757d',
+                            'activo': True
+                        }
+                    )
+                    if created:
+                        logger.info(f"📝 Estado 'en_edicion' creado")
+                
+                # RESET COMPLETO DE CAMPOS EN GESTOR (usando campos reales del modelo)
+                acta_gestion.estado = estado_inicial
+                acta_gestion.bloqueada_edicion = False
+                acta_gestion.contenido_editado = ""  # Limpiar contenido editado
+                acta_gestion.observaciones = "🔥 ACTA RESETEADA COMPLETAMENTE - Volver a procesar desde cero"
+                
+                # Limpiar TODAS las fechas de proceso existentes
+                acta_gestion.fecha_enviada_revision = None
+                acta_gestion.fecha_aprobacion_final = None
+                acta_gestion.fecha_publicacion = None
+                
+                # Resetear versión y cambios
+                acta_gestion.version = 1
+                acta_gestion.cambios_realizados = {}
+                
+                # DESCONECTAR del portal ciudadano
+                acta_gestion.acta_portal = None
+                
+                # Limpiar usuario editor
+                acta_gestion.usuario_editor = None
+                
+                acta_gestion.save()
+                logger.info(f"✅ Acta gestor completamente reseteada al estado inicial")
+                
+                # ═══════════════════════════════════════════════════════════
+                # PASO 4: LIMPIAR REGISTROS DE AUDITORÍA Y PROCESAMIENTO
+                # ═══════════════════════════════════════════════════════════
+                try:
+                    # Limpiar registros de visualización
+                    from apps.pages.models import VisualizacionActa, DescargaActa
+                    VisualizacionActa.objects.filter(acta=acta).delete()
+                    DescargaActa.objects.filter(acta=acta).delete()
+                    logger.info(f"🧹 Registros de visualización y descarga eliminados")
+                    
+                    # Limpiar registros de procesamiento de audio (si existen)
+                    try:
+                        from apps.audio_processing.models import ProcesamientoAudio
+                        ProcesamientoAudio.objects.filter(
+                            numero_acta=numero_acta_backup
+                        ).delete()
+                        logger.info(f"🎵 Registros de procesamiento de audio eliminados")
+                    except Exception:
+                        pass  # Si no existe el modelo, continuar
+                    
+                except Exception as e:
+                    logger.warning(f"⚠️ Error limpiando registros de auditoría: {str(e)}")
+                
+                # MENSAJE DE ÉXITO COMPLETO
+                elementos_reseteados = [
+                    "✅ Portal ciudadano (despublicado)",
+                    "✅ Gestor de actas (estado inicial)", 
+                    "✅ Archivos físicos eliminados",
+                    "✅ Contenido y transcripciones",
+                    "✅ Fechas de aprobación y publicación",
+                    "✅ Metadatos de IA y procesamiento",
+                    "✅ Registros de auditoría y descargas"
+                ]
                 
                 messages.success(
                     request, 
-                    f"✅ Acta {acta.numero_acta} reseteada exitosamente. "
-                    f"Archivos eliminados: {', '.join(archivos_eliminados) if archivos_eliminados else 'Ninguno'}. "
-                    f"El acta ha vuelto al estado 'En Edición' en el gestor de actas."
+                    f"🔥 RESET COMPLETO EXITOSO: {numero_acta_backup}\n\n"
+                    f"📋 Elementos completamente eliminados:\n" +
+                    "\n".join(elementos_reseteados) +
+                    f"\n\n📁 Archivos eliminados: {', '.join(archivos_eliminados) if archivos_eliminados else 'Ninguno'}\n\n"
+                    f"🎯 El acta ha vuelto al estado VIRGEN inicial, lista para proceso desde cero."
                 )
+                
             else:
-                logger.warning(f"No se encontró el acta {acta.numero_acta} en gestor de actas")
-                messages.warning(
+                logger.warning(f"⚠️ No se encontró el acta {numero_acta_backup} en gestor de actas")
+                messages.success(
                     request,
-                    f"⚠️ Acta {acta.numero_acta} despublicada del portal ciudadano, "
-                    f"pero no se encontró en el gestor de actas para resetear estado."
+                    f"🔥 RESET COMPLETO DEL PORTAL: {numero_acta_backup}\n\n"
+                    f"✅ Acta completamente eliminada del portal ciudadano\n"
+                    f"📁 Archivos eliminados: {', '.join(archivos_eliminados) if archivos_eliminados else 'Ninguno'}\n\n"
+                    f"⚠️ No se encontró en gestor de actas (puede ser independiente)"
                 )
                 
         except Exception as e:
-            logger.error(f"Error reseteando estado en gestor de actas: {str(e)}")
+            logger.error(f"❌ Error en reset del gestor de actas: {str(e)}")
             messages.error(
                 request,
-                f"❌ Error al resetear estado en gestor de actas: {str(e)}"
+                f"❌ Error al resetear en gestor de actas: {str(e)}\n\n"
+                f"✅ Pero el acta fue limpiada del portal ciudadano exitosamente."
             )
         
-        # PASO 4: Redirect de vuelta a la vista de detalle  
-        return redirect('acta_detail', pk=pk)
+        # REDIRECT AL PORTAL CIUDADANO (ya no existirá el detalle)
+        logger.info(f"🎯 Reset completo finalizado para {numero_acta_backup}")
+        return redirect('portal_ciudadano')
         
     except Exception as e:
-        logger.error(f"Error general en reset del acta {pk}: {str(e)}")
-        messages.error(request, f"❌ Error al resetear el acta: {str(e)}")
-        return redirect('acta_detail', pk=pk)
+        logger.error(f"💥 ERROR GENERAL en reset completo del acta {pk}: {str(e)}")
+        messages.error(request, f"💥 Error crítico al resetear el acta: {str(e)}")
+        return redirect('portal_ciudadano')
