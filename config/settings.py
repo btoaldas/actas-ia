@@ -131,7 +131,7 @@ TEMPLATES = [
                 "apps.auditoria.context_processors.eventos_sistema_context",
                 "apps.auditoria.context_processors.estadisticas_resumen_context",
                 "apps.auditoria.context_processors.ultimas_actas_publicadas_context",
-                "helpers.next_step_context.next_step_button_context",
+                "helpers.next_step_context.step_buttons_context",
             ],
         },
     },

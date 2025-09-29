@@ -1,59 +1,116 @@
 """
-Context processor para manejar el botón dinámico "Siguiente Paso" en el header
+Context processor para manejar botones dinámicos "Anterior" y "Siguiente" en el header
 """
 
 import re
 
-# Definir reglas como lista de tuplas (regex, config)
-NEXT_STEP_RULES = [
-    # Centro de Audio -> Transcripciones
+# Reglas de navegación con soporte a botones anterior y siguiente
+STEP_RULES = [
+    # Centro de Audio
     (re.compile(r'^/audio/$'), {
-        'show': True,
-        'text': 'SIGUIENTE: TRANSCRIPCIONES',
-        'url': '/transcripcion/audios/',
-        'icon': 'fas fa-arrow-right',
-        'class': 'nav-btn-next-audio'
+        'previous': None,  # No hay paso anterior
+        'next': {
+            'show': True,
+            'text': 'SIGUIENTE: TRANSCRIPCIONES',
+            'url': '/transcripcion/audios/',
+            'icon': 'fas fa-arrow-right',
+            'class': 'nav-btn-next-audio'
+        }
     }),
 
-    # Cualquier detalle de audio, ej: /audio/detalle/20/2/
-    (re.compile(r'^/audio/detalle/\d+/$'), {
-        'show': True,
-        'text': 'SIGUIENTE: TRANSCRIPCIONES',
-        'url': '/transcripcion/audios/',
-        'icon': 'fas fa-arrow-right',
-        'class': 'nav-btn-next-audio'
-    }),
-    #/audio/lista/
+    # Lista de Audios
     (re.compile(r'^/audio/lista/$'), {
-        'show': True,
-        'text': 'SIGUIENTE: TRANSCRIPCIONES',
-        'url': '/transcripcion/audios/',
-        'icon': 'fas fa-arrow-right',
-        'class': 'nav-btn-next-audio'
+        'previous': {
+            'show': True,
+            'text': 'ANTERIOR: CENTRO DE AUDIO',
+            'url': '/audio/',
+            'icon': 'fas fa-arrow-left',
+            'class': 'nav-btn-prev-audio'
+        },
+        'next': {
+            'show': True,
+            'text': 'SIGUIENTE: TRANSCRIPCIONES',
+            'url': '/transcripcion/audios/',
+            'icon': 'fas fa-arrow-right',
+            'class': 'nav-btn-next-audio'
+        }
     }),
 
-    # Ejemplo adicional (futuro): Transcripciones -> Actas
+    # Detalle de Audio
+    (re.compile(r'^/audio/detalle/\d+/$'), {
+        'previous': {
+            'show': True,
+            'text': 'ANTERIOR: LISTA DE AUDIOS',
+            'url': '/audio/lista/',
+            'icon': 'fas fa-arrow-left',
+            'class': 'nav-btn-prev-audio'
+        },
+        'next': {
+            'show': True,
+            'text': 'SIGUIENTE: TRANSCRIPCIONES',
+            'url': '/transcripcion/audios/',
+            'icon': 'fas fa-arrow-right',
+            'class': 'nav-btn-next-audio'
+        }
+    }),
+
+    # Transcripciones
     (re.compile(r'^/transcripcion/audios/$'), {
-        'show': True,
-        'text': 'SIGUIENTE: ACTAS GENERADAS',
-        'url': '/generador-actas/',
-        'icon': 'fas fa-arrow-right',
-        'class': 'nav-btn-next-transcription'
+        'previous': {
+            'show': True,
+            'text': 'ANTERIOR: CENTRO DE AUDIO',
+            'url': '/audio/',
+            'icon': 'fas fa-arrow-left',
+            'class': 'nav-btn-prev-transcription'
+        },
+        'next': {
+            'show': True,
+            'text': 'SIGUIENTE: ACTAS GENERADAS',
+            'url': '/generador-actas/',
+            'icon': 'fas fa-arrow-right',
+            'class': 'nav-btn-next-transcription'
+        }
+    }),
+
+    # Generador de Actas
+    (re.compile(r'^/generador-actas/$'), {
+        'previous': {
+            'show': True,
+            'text': 'ANTERIOR: TRANSCRIPCIONES',
+            'url': '/transcripcion/audios/',
+            'icon': 'fas fa-arrow-left',
+            'class': 'nav-btn-prev-actas'
+        },
+        'next': None  # No hay paso siguiente (final del flujo)
+    }),
+
+    # Portal Ciudadano (opcional)
+    (re.compile(r'^/portal-ciudadano/$'), {
+        'previous': {
+            'show': True,
+            'text': 'ANTERIOR: ACTAS GENERADAS',
+            'url': '/generador-actas/',
+            'icon': 'fas fa-arrow-left',
+            'class': 'nav-btn-prev-portal'
+        },
+        'next': None  # No hay paso siguiente
     }),
 ]
 
-def next_step_button_context(request):
+
+def step_buttons_context(request):
     """
-    Determina qué botón "Siguiente Paso" mostrar basado en la página actual
+    Devuelve configuración de botones "Anterior" y "Siguiente" según la ruta actual
     """
     current_path = request.path
-    next_step = {'show': False}
+    step_config = {'previous': {'show': False}, 'next': {'show': False}}
 
-    for pattern, config in NEXT_STEP_RULES:
+    for pattern, config in STEP_RULES:
         if pattern.match(current_path):
-            next_step = config
+            step_config = config
             break
 
     return {
-        'next_step_button': next_step
+        'previous_step_button': step_config.get('previous', {'show': False}),
+        'next_step_button': step_config.get('next', {'show': False}),
     }

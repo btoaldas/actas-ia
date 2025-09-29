@@ -22,7 +22,18 @@
         </a>
       </li>
       
-      <!-- Botón dinámico "Siguiente Paso" -->
+      <!-- Botones dinámicos de navegación -->
+      <!-- Botón "Anterior" -->
+      {% if previous_step_button.show %}
+      <li class="nav-item d-none d-lg-inline-block">
+        <a href="{{ previous_step_button.url }}" class="nav-btn-enhanced {{ previous_step_button.class }} ml-2" style="margin-top: 4px;">
+          <i class="{{ previous_step_button.icon }}"></i> 
+          <span class="font-weight-bold">{{ previous_step_button.text }}</span>
+        </a>
+      </li>
+      {% endif %}
+      
+      <!-- Botón "Siguiente" -->
       {% if next_step_button.show %}
       <li class="nav-item d-none d-lg-inline-block">
         <a href="{{ next_step_button.url }}" class="nav-btn-enhanced {{ next_step_button.class }} ml-2" style="margin-top: 4px;">
@@ -50,7 +61,18 @@
             <small class="d-block text-white-50">Información pública municipal</small>
           </a>
           
-          <!-- Botón dinámico "Siguiente Paso" para móviles -->
+          <!-- Botones dinámicos para móviles -->
+          <!-- Botón "Anterior" para móviles -->
+          {% if previous_step_button.show %}
+          <div class="dropdown-divider"></div>
+          <a class="dropdown-item nav-btn-enhanced {{ previous_step_button.class }}" href="{{ previous_step_button.url }}" style="margin: 5px; border-radius: 15px; padding: 12px 15px;">
+            <i class="{{ previous_step_button.icon }}"></i> 
+            <strong>{{ previous_step_button.text }}</strong>
+            <small class="d-block text-white-50">Regresar al paso anterior</small>
+          </a>
+          {% endif %}
+          
+          <!-- Botón "Siguiente" para móviles -->
           {% if next_step_button.show %}
           <div class="dropdown-divider"></div>
           <a class="dropdown-item nav-btn-enhanced {{ next_step_button.class }}" href="{{ next_step_button.url }}" style="margin: 5px; border-radius: 15px; padding: 12px 15px;">
@@ -298,4 +320,58 @@
         flex-shrink: 0;
       }
     }
+
+    /* === Estilos específicos para botones de navegación === */
+    
+    /* Botones "Anterior" */
+    .nav-btn-prev-audio,
+    .nav-btn-prev-transcription,
+    .nav-btn-prev-actas,
+    .nav-btn-prev-portal {
+      background: linear-gradient(135deg, #6c757d 0%, #495057 100%) !important;
+      border-left: 4px solid #495057 !important;
+    }
+
+    .nav-btn-prev-audio:hover,
+    .nav-btn-prev-transcription:hover,
+    .nav-btn-prev-actas:hover,
+    .nav-btn-prev-portal:hover {
+      background: linear-gradient(135deg, #495057 0%, #343a40 100%) !important;
+      transform: translateX(-3px) !important;
+    }
+
+    /* Botones "Siguiente" */
+    .nav-btn-next-audio {
+      background: linear-gradient(135deg, #007bff 0%, #0056b3 100%) !important;
+      border-left: 4px solid #0056b3 !important;
+    }
+
+    .nav-btn-next-transcription {
+      background: linear-gradient(135deg, #28a745 0%, #1e7e34 100%) !important;
+      border-left: 4px solid #1e7e34 !important;
+    }
+
+    .nav-btn-next-audio:hover {
+      background: linear-gradient(135deg, #0056b3 0%, #004085 100%) !important;
+      transform: translateX(3px) !important;
+    }
+
+    .nav-btn-next-transcription:hover {
+      background: linear-gradient(135deg, #1e7e34 0%, #155724 100%) !important;
+      transform: translateX(3px) !important;
+    }
+
+    /* Iconos con animación */
+    .nav-btn-enhanced i {
+      transition: transform 0.3s ease !important;
+    }
+
+    .nav-btn-enhanced:hover i.fa-arrow-left {
+      transform: translateX(-2px) !important;
+    }
+
+    .nav-btn-enhanced:hover i.fa-arrow-right {
+      transform: translateX(2px) !important;
+    }
+    
   </style>
