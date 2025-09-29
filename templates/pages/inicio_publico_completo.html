@@ -23,6 +23,75 @@
       padding: 0;
     }
     
+    /* Botones flotantes fijos */
+    .floating-auth-buttons {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      z-index: 1000;
+      display: flex;
+      gap: 10px;
+    }
+    
+    .floating-btn {
+      padding: 12px 20px;
+      border-radius: 25px;
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+      -webkit-backdrop-filter: blur(10px);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+    
+    .floating-btn:hover {
+      transform: translateY(-3px) scale(1.05);
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.25);
+      text-decoration: none;
+    }
+    
+    .floating-btn-login {
+      background: rgba(0, 123, 255, 0.9);
+      color: white;
+    }
+    
+    .floating-btn-login:hover {
+      background: rgba(0, 123, 255, 1);
+      color: white;
+    }
+    
+    .floating-btn-register {
+      background: rgba(40, 167, 69, 0.9);
+      color: white;
+    }
+    
+    .floating-btn-register:hover {
+      background: rgba(40, 167, 69, 1);
+      color: white;
+    }
+    
+    /* Responsive para móviles */
+    @media (max-width: 768px) {
+      .floating-auth-buttons {
+        top: 15px;
+        right: 15px;
+        flex-direction: column;
+        gap: 8px;
+      }
+      
+      .floating-btn {
+        padding: 10px 16px;
+        font-size: 12px;
+        min-width: 120px;
+        justify-content: center;
+      }
+    }
+    
     /* Landing page full width */
     .landing-page {
       width: 100vw;
@@ -317,6 +386,7 @@
     
     .tech-category-card {
       background: rgba(255,255,255,0.1);
+      -webkit-backdrop-filter: blur(10px);
       backdrop-filter: blur(10px);
       border: 1px solid rgba(255,255,255,0.2);
       border-radius: 20px;
@@ -411,6 +481,7 @@
     
     .project-card, .team-card, .methodology-card {
       background: rgba(255,255,255,0.1);
+      -webkit-backdrop-filter: blur(10px);
       backdrop-filter: blur(10px);
       border: 1px solid rgba(255,255,255,0.2);
       border-radius: 20px;
@@ -592,6 +663,7 @@
     
     .chart-card {
       background: rgba(255,255,255,0.1);
+      -webkit-backdrop-filter: blur(10px);
       backdrop-filter: blur(10px);
       border: 1px solid rgba(255,255,255,0.2);
       border-radius: 15px;
@@ -816,6 +888,7 @@
     
     .impact-card, .lessons-card, .future-card {
       background: rgba(255,255,255,0.1);
+      -webkit-backdrop-filter: blur(10px);
       backdrop-filter: blur(10px);
       border: 1px solid rgba(255,255,255,0.2);
       border-radius: 15px;
@@ -905,6 +978,7 @@
       border-radius: 15px;
       padding: 40px;
       text-align: center;
+      -webkit-backdrop-filter: blur(10px);
       backdrop-filter: blur(10px);
       border: 1px solid rgba(255,255,255,0.2);
     }
@@ -979,6 +1053,18 @@
 </head>
 
 <body class="landing-page">
+
+<!-- Botones flotantes de autenticación -->
+<div class="floating-auth-buttons">
+  <a href="{% url 'account_login' %}" class="floating-btn floating-btn-login">
+    <i class="fas fa-sign-in-alt"></i>
+    Iniciar Sesión
+  </a>
+  <a href="/accounts/signup/" class="floating-btn floating-btn-register">
+    <i class="fas fa-user-plus"></i>
+    Registrarse
+  </a>
+</div>
 
 <!-- Cinta de Noticias -->
 <div class="news-ticker">
@@ -1097,7 +1183,7 @@
               </div>
               <div class="member-info">
                 <h6>Alberto Alexander Aldas Villacres</h6>
-                <small>Desarrollador Full-Stack</small>
+                <small>Desarrollador full-stack e Infraestructura</small>
               </div>
             </div>
             
@@ -1107,7 +1193,7 @@
               </div>
               <div class="member-info">
                 <h6>Cristian Joel Riofrio Medina</h6>
-                <small>Especialista en IA</small>
+                <small>Gestor de proyecto / Documentador técnico</small>
               </div>
             </div>
             
@@ -1117,7 +1203,7 @@
               </div>
               <div class="member-info">
                 <h6>Ricardo Josué Vaca Miño</h6>
-                <small>Arquitecto de Software</small>
+                <small>Analista de requerimientos / Investigador de usuarios</small>
               </div>
             </div>
           </div>
@@ -2341,160 +2427,6 @@
             </div>
           </div>
           
-        </div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- Conclusiones y Impacto -->
-<section class="conclusions-section">
-  <div class="container-fluid">
-    <div class="row mb-5">
-      <div class="col-12 text-center">
-        <h2 class="display-4 fw-bold text-white mb-3">
-          <i class="fas fa-lightbulb mr-3"></i>
-          Conclusiones e Impacto
-        </h2>
-        <p class="lead text-white-50">Resultados y proyección hacia el futuro</p>
-      </div>
-    </div>
-    
-    <div class="row">
-      <!-- Impacto logrado -->
-      <div class="col-lg-4">
-        <div class="impact-card">
-          <h4 class="text-success mb-4">
-            <i class="fas fa-check-circle mr-2"></i>
-            Impacto Logrado
-          </h4>
-          
-          <div class="achievement-item">
-            <div class="achievement-metric">94%</div>
-            <div class="achievement-label">Reducción en tiempo de procesamiento</div>
-          </div>
-          
-          <div class="achievement-item">
-            <div class="achievement-metric">98.7%</div>
-            <div class="achievement-label">Precisión en transcripción automática</div>
-          </div>
-          
-          <div class="achievement-item">
-            <div class="achievement-metric">100%</div>
-            <div class="achievement-label">Cumplimiento LOTAIP</div>
-          </div>
-          
-          <div class="achievement-item">
-            <div class="achievement-metric">2,847</div>
-            <div class="achievement-label">Ciudadanos beneficiados</div>
-          </div>
-          
-          <div class="achievement-item">
-            <div class="achievement-metric">Zero</div>
-            <div class="achievement-label">Documentos perdidos</div>
-          </div>
-        </div>
-      </div>
-      
-      <!-- Lecciones aprendidas -->
-      <div class="col-lg-4">
-        <div class="lessons-card">
-          <h4 class="text-info mb-4">
-            <i class="fas fa-graduation-cap mr-2"></i>
-            Lecciones Aprendidas
-          </h4>
-          
-          <div class="lesson-item">
-            <i class="fas fa-brain text-primary"></i>
-            <p><strong>IA como Herramienta:</strong> La inteligencia artificial no reemplaza, sino que potencia las capacidades humanas en la administración pública.</p>
-          </div>
-          
-          <div class="lesson-item">
-            <i class="fas fa-users text-success"></i>
-            <p><strong>Adopción Gradual:</strong> La capacitación continua del personal fue clave para la adopción exitosa del sistema.</p>
-          </div>
-          
-          <div class="lesson-item">
-            <i class="fas fa-shield-alt text-warning"></i>
-            <p><strong>Seguridad Integral:</strong> La combinación de múltiples capas de seguridad garantiza la confiabilidad del sistema.</p>
-          </div>
-          
-          <div class="lesson-item">
-            <i class="fas fa-chart-line text-info"></i>
-            <p><strong>Mejora Continua:</strong> El monitoreo constante permite optimizaciones incrementales significativas.</p>
-          </div>
-          
-          <div class="lesson-item">
-            <i class="fas fa-handshake text-purple"></i>
-            <p><strong>Colaboración:</strong> La sinergia entre academia, gobierno y ciudadanía impulsa la innovación.</p>
-          </div>
-        </div>
-      </div>
-      
-      <!-- Proyección futura -->
-      <div class="col-lg-4">
-        <div class="future-card">
-          <h4 class="text-warning mb-4">
-            <i class="fas fa-rocket mr-2"></i>
-            Proyección Futura
-          </h4>
-          
-          <div class="future-goal">
-            <div class="goal-timeline">2025</div>
-            <div class="goal-content">
-              <h6>Expansión Regional</h6>
-              <p>Implementación en 5 municipios adicionales de la región amazónica</p>
-            </div>
-          </div>
-          
-          <div class="future-goal">
-            <div class="goal-timeline">2026</div>
-            <div class="goal-content">
-              <h6>Integración Completa</h6>
-              <p>Conexión con sistemas de obras públicas y participación ciudadana</p>
-            </div>
-          </div>
-          
-          <div class="future-goal">
-            <div class="goal-timeline">2027</div>
-            <div class="goal-content">
-              <h6>IA Avanzada</h6>
-              <p>Análisis predictivo y generación automática de informes ejecutivos</p>
-            </div>
-          </div>
-          
-          <div class="future-goal">
-            <div class="goal-timeline">2028</div>
-            <div class="goal-content">
-              <h6>Estándar Nacional</h6>
-              <p>Modelo de referencia para modernización municipal en Ecuador</p>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-    
-    <!-- Mensaje final -->
-    <div class="row mt-5">
-      <div class="col-12">
-        <div class="final-message-card">
-          <div class="row align-items-center">
-            <div class="col-md-2 text-center">
-              <i class="fas fa-heart fa-4x text-danger mb-3"></i>
-            </div>
-            <div class="col-md-10">
-              <h4 class="text-white mb-3">Un Paso Hacia el Gobierno Digital del Futuro</h4>
-              <p class="text-white-50 mb-4">
-                Este proyecto representa más que una solución tecnológica: es un compromiso con la transparencia, 
-                la eficiencia y el servicio ciudadano. Cada línea de código, cada funcionalidad y cada mejora 
-                están pensadas para construir una administración pública más cercana, más eficiente y más confiable.
-              </p>
-              <p class="text-white">
-                <strong>Gracias por ser parte de esta transformación digital. 
-                Juntos construimos un futuro más transparente para Pastaza y Ecuador.</strong>
-              </p>
-            </div>
-          </div>
         </div>
       </div>
     </div>

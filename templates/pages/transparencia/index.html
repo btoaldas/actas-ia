@@ -3,138 +3,370 @@
 
 {% block title %} Portal de Transparencia Municipal {% endblock title %}
 
+{% block extrastyle %}
+<style>
+  /* Portal de Transparencia Dinámico */
+  .transparencia-hero {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+    min-height: 400px;
+    display: flex;
+    align-items: center;
+    position: relative;
+    overflow: hidden;
+    color: white;
+    margin: -15px -15px 30px -15px;
+  }
+
+  .transparencia-hero::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 100" fill="%23ffffff"><polygon points="1000,100 1000,0 0,100"/></svg>');
+    background-repeat: no-repeat;
+    background-position: bottom;
+    background-size: cover;
+    opacity: 0.1;
+  }
+
+  .transparencia-hero .floating-animation {
+    animation: floating 6s ease-in-out infinite;
+  }
+
+  @keyframes floating {
+    0% { transform: translateY(0px); }
+    50% { transform: translateY(-20px); }
+    100% { transform: translateY(0px); }
+  }
+
+  /* Métricas Compactas para Transparencia */
+  .metrics-transparencia {
+    position: relative;
+    z-index: 10;
+  }
+
+  .metric-transparencia-item {
+    background: rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(15px);
+    -webkit-backdrop-filter: blur(15px);
+    border-radius: 20px;
+    padding: 1.5rem;
+    text-align: center;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    transition: all 0.3s ease;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+
+  .metric-transparencia-item:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
+    background: rgba(255, 255, 255, 0.3);
+  }
+
+  .metric-transparencia-icon {
+    font-size: 2.5rem;
+    margin-bottom: 1rem;
+    color: rgba(255, 255, 255, 0.9);
+  }
+
+  .metric-transparencia-number {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: white;
+    margin-bottom: 0.5rem;
+    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+  }
+
+  .metric-transparencia-label {
+    font-size: 1rem;
+    color: rgba(255, 255, 255, 0.9);
+    font-weight: 500;
+  }
+
+  /* Sección de Gráficos Mejorada */
+  .charts-section-enhanced {
+    background: linear-gradient(135deg, 
+      rgba(255, 255, 255, 0.95) 0%, 
+      rgba(248, 249, 250, 0.95) 50%,
+      rgba(255, 255, 255, 0.95) 100%);
+    border-radius: 25px;
+    padding: 2rem;
+    margin-top: 2rem;
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+    backdrop-filter: blur(15px);
+    -webkit-backdrop-filter: blur(15px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+  }
+
+  /* Cards de Gráficos Mejoradas */
+  .chart-card-enhanced {
+    background: linear-gradient(145deg, #ffffff, #f8f9fa);
+    border-radius: 20px;
+    overflow: hidden;
+    transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.8);
+    position: relative;
+    height: 100%;
+  }
+
+  .chart-card-enhanced:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+  }
+
+  .chart-card-enhanced::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, #667eea, #764ba2, #f093fb);
+    transition: all 0.3s ease;
+    opacity: 0;
+  }
+
+  .chart-card-enhanced:hover::before {
+    opacity: 1;
+  }
+
+  .chart-header-enhanced {
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    padding: 1.5rem;
+    color: white;
+    position: relative;
+  }
+
+  .chart-title-enhanced {
+    font-weight: 700;
+    font-size: 1.3rem;
+    margin: 0;
+    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+  }
+
+  /* Tablas Mejoradas */
+  .table-enhanced {
+    background: white;
+    border-radius: 15px;
+    overflow: hidden;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    border: none;
+  }
+
+  .table-enhanced thead {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: white;
+  }
+
+  .table-enhanced thead th {
+    border: none;
+    padding: 1.2rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-size: 0.9rem;
+  }
+
+  .table-enhanced tbody tr {
+    transition: all 0.3s ease;
+  }
+
+  .table-enhanced tbody tr:hover {
+    background: rgba(102, 126, 234, 0.1);
+    transform: scale(1.02);
+  }
+
+  .table-enhanced tbody td {
+    border: none;
+    padding: 1rem 1.2rem;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  }
+
+  /* Botones de Acción Mejorados */
+  .action-btn-transparencia {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: white;
+    border: none;
+    padding: 0.8rem 1.5rem;
+    border-radius: 25px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+  }
+
+  .action-btn-transparencia:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+    color: white;
+    text-decoration: none;
+  }
+
+  /* Animaciones */
+  .fade-in-up {
+    animation: fadeInUp 0.8s ease-out forwards;
+    opacity: 0;
+  }
+
+  @keyframes fadeInUp {
+    from {
+      opacity: 0;
+      transform: translateY(30px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .stagger-animation {
+    animation-delay: calc(var(--i) * 0.15s);
+  }
+
+  /* Responsive */
+  @media (max-width: 768px) {
+    .transparencia-hero {
+      min-height: 300px;
+      margin: -15px -15px 20px -15px;
+    }
+    
+    .metric-transparencia-number {
+      font-size: 2rem;
+    }
+    
+    .chart-card-enhanced {
+      margin-bottom: 1.5rem;
+    }
+  }
+</style>
+{% endblock extrastyle %}
+
 {% block bodyclass %} hold-transition sidebar-mini {% endblock bodyclass %}
 
 {% block content %}
 <div class="content-wrapper">
-    <!-- Content Header (Page header) -->
-    <div class="content-header">
-        <div class="container-fluid">
-            <div class="row mb-2">
-                <div class="col-sm-6">
-                    <h1 class="m-0">
-                        <i class="fas fa-chart-line mr-2"></i>
-                        Portal de Transparencia Municipal
-                    </h1>
-                </div>
-                <div class="col-sm-6">
-                    <ol class="breadcrumb float-sm-right">
-                        <li class="breadcrumb-item"><a href="{% url 'dashboardv3' %}">Inicio</a></li>
-                        <li class="breadcrumb-item active">Transparencia</li>
-                    </ol>
-                </div>
+    <!-- Hero Header Dinámico de Transparencia -->
+    <section class="transparencia-hero fade-in-up">
+      <div class="container-fluid">
+        <div class="row align-items-center">
+          <div class="col-lg-8">
+            <div class="floating-animation">
+              <h1 class="mb-3" style="font-size: 3rem; font-weight: 700;">
+                <i class="fas fa-chart-line mr-3"></i>Portal de Transparencia
+              </h1>
+              <p class="mb-4" style="font-size: 1.3rem; opacity: 0.9;">
+                Datos abiertos y transparencia municipal para una gestión participativa
+              </p>
+              <div class="d-flex gap-3">
+                <a href="#charts-section" class="btn btn-light btn-lg rounded-pill px-4">
+                  <i class="fas fa-chart-bar mr-2"></i>Ver Métricas
+                </a>
+                <a href="{% url 'portal_ciudadano' %}" class="btn btn-outline-light btn-lg rounded-pill px-4">
+                  <i class="fas fa-globe mr-2"></i>Portal Ciudadano
+                </a>
+              </div>
             </div>
+          </div>
+          <div class="col-lg-4 text-center">
+            <!-- Métricas Compactas de Transparencia -->
+            <div class="metrics-transparencia">
+              <div class="row">
+                <div class="col-6 mb-3 fade-in-up stagger-animation" style="--i: 0;">
+                  <div class="metric-transparencia-item">
+                    <div class="metric-transparencia-icon"><i class="fas fa-file-alt"></i></div>
+                    <div class="metric-transparencia-number">{{ metricas.actas_publicas|default:"0" }}</div>
+                    <div class="metric-transparencia-label">Actas Públicas</div>
+                  </div>
+                </div>
+                <div class="col-6 mb-3 fade-in-up stagger-animation" style="--i: 1;">
+                  <div class="metric-transparencia-item">
+                    <div class="metric-transparencia-icon"><i class="fas fa-eye"></i></div>
+                    <div class="metric-transparencia-number">{{ metricas.visualizaciones|floatformat:0|default:"0" }}</div>
+                    <div class="metric-transparencia-label">Visualizaciones</div>
+                  </div>
+                </div>
+                <div class="col-6 fade-in-up stagger-animation" style="--i: 2;">
+                  <div class="metric-transparencia-item">
+                    <div class="metric-transparencia-icon"><i class="fas fa-percentage"></i></div>
+                    <div class="metric-transparencia-number">{{ metricas.porcentaje_ejecucion|floatformat:1|default:"0" }}%</div>
+                    <div class="metric-transparencia-label">Ejecución</div>
+                  </div>
+                </div>
+                <div class="col-6 fade-in-up stagger-animation" style="--i: 3;">
+                  <div class="metric-transparencia-item">
+                    <div class="metric-transparencia-icon"><i class="fas fa-download"></i></div>
+                    <div class="metric-transparencia-number">{{ metricas.descargas|default:"0" }}</div>
+                    <div class="metric-transparencia-label">Descargas</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
-    </div>
+      </div>
+    </section>
 
     <!-- Main content -->
-    <section class="content">
+    <section class="content" id="charts-section">
         <div class="container-fluid">
-            
-            <!-- Métricas Principales -->
-            <div class="row">
-                <div class="col-lg-3 col-6">
-                    <div class="small-box bg-info">
-                        <div class="inner">
-                            <h3>{{ metricas.actas_publicas }}</h3>
-                            <p>Actas Públicas</p>
-                        </div>
-                        <div class="icon">
-                            <i class="fas fa-file-alt"></i>
-                        </div>
-                        <a href="{% url 'portal_ciudadano' %}" class="small-box-footer">
-                            Ver Portal Ciudadano <i class="fas fa-arrow-circle-right"></i>
-                        </a>
-                    </div>
-                </div>
 
-                <div class="col-lg-3 col-6">
-                    <div class="small-box bg-success">
-                        <div class="inner">
-                            <h3>{{ metricas.visualizaciones|floatformat:0 }}</h3>
-                            <p>Visualizaciones</p>
-                        </div>
-                        <div class="icon">
-                            <i class="fas fa-eye"></i>
-                        </div>
-                        <a href="{% url 'transparencia_indicadores' %}" class="small-box-footer">
-                            Ver Indicadores <i class="fas fa-arrow-circle-right"></i>
-                        </a>
-                    </div>
-                </div>
+            <!-- Sección de Gráficos Mejorada -->
+            <div class="charts-section-enhanced fade-in-up">
+              <div class="text-center mb-4">
+                <h3 style="color: #2c3e50; font-weight: 600;">
+                  <i class="fas fa-chart-bar mr-3" style="color: #667eea;"></i>Análisis de Transparencia Municipal
+                </h3>
+                <p class="text-muted">Visualización de datos y métricas de gestión transparente</p>
+              </div>
 
-                <div class="col-lg-3 col-6">
-                    <div class="small-box bg-warning">
-                        <div class="inner">
-                            <h3>{{ metricas.porcentaje_ejecucion|floatformat:1 }}%</h3>
-                            <p>Ejecución Presupuestal</p>
-                        </div>
-                        <div class="icon">
-                            <i class="fas fa-dollar-sign"></i>
-                        </div>
-                        <a href="{% url 'transparencia_proyectos' %}" class="small-box-footer">
-                            Ver Proyectos <i class="fas fa-arrow-circle-right"></i>
-                        </a>
-                    </div>
-                </div>
-
-                <div class="col-lg-3 col-6">
-                    <div class="small-box bg-danger">
-                        <div class="inner">
-                            <h3>{{ metricas.descargas }}</h3>
-                            <p>Descargas de PDFs</p>
-                        </div>
-                        <div class="icon">
-                            <i class="fas fa-download"></i>
-                        </div>
-                        <a href="{% url 'transparencia_estadisticas' %}" class="small-box-footer">
-                            Ver Estadísticas <i class="fas fa-arrow-circle-right"></i>
-                        </a>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Gráficos Principales -->
-            <div class="row">
+              <div class="row">
                 <!-- Gráfico de Métricas de Transparencia -->
-                <div class="col-md-6">
-                    <div class="card">
-                        <div class="card-header">
-                            <h3 class="card-title">
-                                <i class="fas fa-chart-line mr-2"></i>
-                                Métricas de Transparencia
-                            </h3>
-                            <div class="card-tools">
-                                <button type="button" class="btn btn-tool" data-card-widget="collapse">
-                                    <i class="fas fa-minus"></i>
-                                </button>
-                            </div>
-                        </div>
-                        <div class="card-body">
-                            <div id="metricas-chart" style="height: 300px;"></div>
-                        </div>
+                <div class="col-lg-6 col-md-12 mb-4 fade-in-up stagger-animation" style="--i: 0;">
+                  <div class="chart-card-enhanced">
+                    <div class="chart-header-enhanced">
+                      <h4 class="chart-title-enhanced">
+                        <i class="fas fa-chart-line mr-2"></i>Métricas de Transparencia
+                      </h4>
                     </div>
+                    <div class="p-4">
+                      <div id="metricas-chart" style="height: 350px;"></div>
+                      <div class="mt-3 text-center">
+                        <a href="{% url 'transparencia_indicadores' %}" class="action-btn-transparencia">
+                          <i class="fas fa-eye"></i>Ver Indicadores Detallados
+                        </a>
+                      </div>
+                    </div>
+                  </div>
                 </div>
 
                 <!-- Gráfico de Proyectos por Estado -->
-                <div class="col-md-6">
-                    <div class="card">
-                        <div class="card-header">
-                            <h3 class="card-title">
-                                <i class="fas fa-chart-pie mr-2"></i>
-                                Proyectos por Estado
-                            </h3>
-                            <div class="card-tools">
-                                <button type="button" class="btn btn-tool" data-card-widget="collapse">
-                                    <i class="fas fa-minus"></i>
-                                </button>
-                            </div>
-                        </div>
-                        <div class="card-body">
-                            <div id="proyectos-estado-chart" style="height: 300px;"></div>
-                        </div>
+                <div class="col-lg-6 col-md-12 mb-4 fade-in-up stagger-animation" style="--i: 1;">
+                  <div class="chart-card-enhanced">
+                    <div class="chart-header-enhanced">
+                      <h4 class="chart-title-enhanced">
+                        <i class="fas fa-chart-pie mr-2"></i>Estado de Proyectos
+                      </h4>
                     </div>
+                    <div class="p-4">
+                      <div id="proyectos-estado-chart" style="height: 350px;"></div>
+                      <div class="mt-3 text-center">
+                        <a href="{% url 'transparencia_proyectos' %}" class="action-btn-transparencia">
+                          <i class="fas fa-tasks"></i>Gestionar Proyectos
+                        </a>
+                      </div>
+                    </div>
+                  </div>
                 </div>
+              </div>
             </div>
 
             <!-- Widget de Eventos de Hoy -->

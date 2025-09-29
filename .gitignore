@@ -147,6 +147,8 @@ media/
 
 # Backups de base de datos
 backups/
+scripts/backups/
+scripts/backup/
 *.sql
 *.dump
 *.backup

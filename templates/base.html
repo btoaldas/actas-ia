@@ -1,4 +1,62 @@
 {% load static %}
+
+<style>
+/* Estilo para botones de navegación inspirado en floating-btn */
+.nav-btn-enhanced {
+  padding: 10px 18px !important;
+  margin: 5px 8px !important;
+  border-radius: 20px !important;
+  text-decoration: none !important;
+  font-weight: 600 !important;
+  font-size: 13px !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
+  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.12) !important;
+  -webkit-backdrop-filter: blur(8px) !important;
+  backdrop-filter: blur(8px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.3) !important;
+  background: rgba(255, 255, 255, 0.95) !important;
+}
+
+.nav-btn-enhanced:hover {
+  transform: translateY(-2px) scale(1.03) !important;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2) !important;
+  text-decoration: none !important;
+}
+
+.nav-btn-portal {
+  background: linear-gradient(135deg, rgba(0, 123, 255, 0.9), rgba(0, 86, 179, 0.9)) !important;
+  color: white !important;
+}
+
+.nav-btn-portal:hover {
+  background: linear-gradient(135deg, rgba(0, 123, 255, 1), rgba(0, 86, 179, 1)) !important;
+  color: white !important;
+}
+
+.nav-btn-transparencia {
+  background: linear-gradient(135deg, rgba(23, 162, 184, 0.9), rgba(13, 110, 139, 0.9)) !important;
+  color: white !important;
+}
+
+.nav-btn-transparencia:hover {
+  background: linear-gradient(135deg, rgba(23, 162, 184, 1), rgba(13, 110, 139, 1)) !important;
+  color: white !important;
+}
+
+/* Responsive para móviles */
+@media (max-width: 768px) {
+  .nav-btn-enhanced {
+    padding: 8px 14px !important;
+    margin: 3px 5px !important;
+    font-size: 12px !important;
+    min-width: 100px !important;
+    justify-content: center !important;
+  }
+}
+</style>
   
   <!-- Navbar -->
   <nav class="main-header navbar navbar-expand navbar-white navbar-light">
@@ -12,15 +70,15 @@
         <a href="{% url 'dashboardv3' %}" class="nav-link">Inicio</a>
       </li> -->
       <li class="nav-item d-none d-sm-inline-block">
-        <a href="{% url 'portal_ciudadano' %}" class="nav-link">
-          <i class="fas fa-scroll text-primary"></i> 
+        <a href="{% url 'portal_ciudadano' %}" class="nav-link nav-btn-enhanced nav-btn-portal">
+          <i class="fas fa-scroll"></i> 
           <strong>Actas Públicas</strong>
         </a>
       </li>
       <li class="nav-item d-none d-sm-inline-block">
-        <a href="{% url 'transparencia_index' %}" class="nav-link">
-          <i class="fas fa-eye text-info"></i> 
-          <strong class="text-info">Portal Transparencia</strong>
+        <a href="{% url 'transparencia_index' %}" class="nav-link nav-btn-enhanced nav-btn-transparencia">
+          <i class="fas fa-eye"></i> 
+          <strong>Portal Transparencia</strong>
         </a>
       </li>
       {% if request.user.is_authenticated %}
