@@ -26,9 +26,9 @@
       <!-- Botón "Anterior" -->
       {% if previous_step_button.show %}
       <li class="nav-item d-none d-lg-inline-block">
-        <a href="{{ previous_step_button.url }}" class="nav-btn-enhanced {{ previous_step_button.class }} ml-2" style="margin-top: 4px;">
+        <a href="{{ previous_step_button.url }}" class="nav-btn-step nav-btn-previous ml-2">
           <i class="{{ previous_step_button.icon }}"></i> 
-          <span class="font-weight-bold">{{ previous_step_button.text }}</span>
+          <span>{{ previous_step_button.text }}</span>
         </a>
       </li>
       {% endif %}
@@ -36,9 +36,9 @@
       <!-- Botón "Siguiente" -->
       {% if next_step_button.show %}
       <li class="nav-item d-none d-lg-inline-block">
-        <a href="{{ next_step_button.url }}" class="nav-btn-enhanced {{ next_step_button.class }} ml-2" style="margin-top: 4px;">
+        <a href="{{ next_step_button.url }}" class="nav-btn-step nav-btn-next ml-2">
           <i class="{{ next_step_button.icon }}"></i> 
-          <span class="font-weight-bold">{{ next_step_button.text }}</span>
+          <span>{{ next_step_button.text }}</span>
         </a>
       </li>
       {% endif %}
@@ -65,7 +65,7 @@
           <!-- Botón "Anterior" para móviles -->
           {% if previous_step_button.show %}
           <div class="dropdown-divider"></div>
-          <a class="dropdown-item nav-btn-enhanced {{ previous_step_button.class }}" href="{{ previous_step_button.url }}" style="margin: 5px; border-radius: 15px; padding: 12px 15px;">
+          <a class="dropdown-item nav-btn-step-mobile nav-btn-previous-mobile" href="{{ previous_step_button.url }}">
             <i class="{{ previous_step_button.icon }}"></i> 
             <strong>{{ previous_step_button.text }}</strong>
             <small class="d-block text-white-50">Regresar al paso anterior</small>
@@ -75,7 +75,7 @@
           <!-- Botón "Siguiente" para móviles -->
           {% if next_step_button.show %}
           <div class="dropdown-divider"></div>
-          <a class="dropdown-item nav-btn-enhanced {{ next_step_button.class }}" href="{{ next_step_button.url }}" style="margin: 5px; border-radius: 15px; padding: 12px 15px;">
+          <a class="dropdown-item nav-btn-step-mobile nav-btn-next-mobile" href="{{ next_step_button.url }}">
             <i class="{{ next_step_button.icon }}"></i> 
             <strong>{{ next_step_button.text }}</strong>
             <small class="d-block text-white-50">Continuar al siguiente paso</small>
@@ -372,6 +372,117 @@
 
     .nav-btn-enhanced:hover i.fa-arrow-right {
       transform: translateX(2px) !important;
+    }
+
+    /* === BOTONES DE NAVEGACIÓN DINÁMICA === */
+    
+    /* Estilos base para botones de pasos */
+    .nav-btn-step {
+      padding: 12px 20px !important;
+      border-radius: 25px !important;
+      text-decoration: none !important;
+      font-weight: 600 !important;
+      font-size: 14px !important;
+      display: flex !important;
+      align-items: center !important;
+      gap: 8px !important;
+      transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15) !important;
+      -webkit-backdrop-filter: blur(10px) !important;
+      backdrop-filter: blur(10px) !important;
+      border: 1px solid rgba(255, 255, 255, 0.2) !important;
+      margin-top: 4px !important;
+      color: white !important;
+    }
+    
+    .nav-btn-step:hover {
+      transform: translateY(-3px) scale(1.05) !important;
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.25) !important;
+      text-decoration: none !important;
+      color: white !important;
+    }
+    
+    /* Botón "Anterior" - Color azul */
+    .nav-btn-previous {
+      background: rgba(0, 123, 255, 0.9) !important;
+    }
+    
+    .nav-btn-previous:hover {
+      background: rgba(0, 123, 255, 1) !important;
+    }
+    
+    /* Botón "Siguiente" - Color verde */
+    .nav-btn-next {
+      background: rgba(40, 167, 69, 0.9) !important;
+    }
+    
+    .nav-btn-next:hover {
+      background: rgba(40, 167, 69, 1) !important;
+    }
+    
+    /* Estilos para versión móvil */
+    .nav-btn-step-mobile {
+      margin: 5px !important;
+      border-radius: 15px !important;
+      padding: 12px 15px !important;
+      transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.15) !important;
+      border: 1px solid rgba(255, 255, 255, 0.2) !important;
+      text-decoration: none !important;
+    }
+    
+    .nav-btn-step-mobile:hover {
+      transform: translateY(-2px) !important;
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25) !important;
+      text-decoration: none !important;
+    }
+    
+    /* Botón "Anterior" móvil - Color azul */
+    .nav-btn-previous-mobile {
+      background: rgba(0, 123, 255, 0.9) !important;
+      color: white !important;
+    }
+    
+    .nav-btn-previous-mobile:hover {
+      background: rgba(0, 123, 255, 1) !important;
+      color: white !important;
+    }
+    
+    /* Botón "Siguiente" móvil - Color verde */
+    .nav-btn-next-mobile {
+      background: rgba(40, 167, 69, 0.9) !important;
+      color: white !important;
+    }
+    
+    .nav-btn-next-mobile:hover {
+      background: rgba(40, 167, 69, 1) !important;
+      color: white !important;
+    }
+    
+    /* Animaciones de iconos para botones de pasos */
+    .nav-btn-step i,
+    .nav-btn-step-mobile i {
+      transition: transform 0.3s ease !important;
+    }
+    
+    .nav-btn-previous:hover i.fa-arrow-left,
+    .nav-btn-previous-mobile:hover i.fa-arrow-left {
+      transform: translateX(-2px) !important;
+    }
+    
+    .nav-btn-next:hover i.fa-arrow-right,
+    .nav-btn-next-mobile:hover i.fa-arrow-right {
+      transform: translateX(2px) !important;
+    }
+    
+    /* Responsive para móviles */
+    @media (max-width: 768px) {
+      .nav-btn-step {
+        padding: 10px 16px !important;
+        font-size: 12px !important;
+        min-width: 120px !important;
+        justify-content: center !important;
+      }
     }
     
   </style>
