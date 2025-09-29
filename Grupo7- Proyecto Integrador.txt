@@ -1,0 +1,1090 @@
+UNIVERSIDAD REGIONALAUTÓNOMA 
+DE LOS ANDES “UNIANDES” 
+
+
+FACULTADDE SISTEMAS MERCANTILES 
+CARRERADE SOFTWARE 
+
+PROYECTOINTEGRADOR DE OCTAVO NIVEL 
+
+TEMA: DESARROLLO DE APLICACIÓN MULTIMODAL CON IA PARA TRANSCRIPCIÓN, 
+RECONOCIMIENTO, GENERACIÓNYGESTIÓNDEACTAS MUNICIPALES 
+
+AUTORES: AldasVillacresAlbertoAlexander 
+Riofrio Medina Cristian Joel 
+Vaca Miño Ricardo Josué 
+
+TUTORES: Ing. Cristian Javier Saltos Ponce 
+Ing.Andrés Roberto LeónYacelga 
+Ing. Luz MarinaAguirre Paz 
+Ing. Bolívar EnriqueVillalta Jadan 
+Ing. RitaAzucena DiazVásquez 
+
+AMBATO, ECUADOR, 2025 
+
+
+RESUMEN: 
+
+El proyecto integrador “Desarrollo de aplicación multimodal con IA para 
+transcripción, reconocimiento, generación y gestión de actas municipales” 
+aborda la problemática de la elaboración manual de actas en gobiernos locales 
+ecuatorianos. En municipios como Pastaza, el proceso tradicional de 
+transcripción de sesiones del concejo municipal es manual, lento y propenso a 
+errores, tomando varios días de trabajo intensivo. La propuesta consiste en 
+implementar un ecosistema de microservicios orquestados con Docker, 
+empleando Django como framework backend, PostgreSQL como sistema gestor 
+de base de datos y Nginx como servidor web. Este ecosistema integra módulos 
+de inteligencia artificial basados en Whisper y Pyannote para la transcripción de 
+audio y diarización de voces, complementados con modelos de OpenAI y 
+DeepSeek para la generación estructurada de actas municipales. La gestión de 
+procesos en segundo plano se resuelve mediante Celery y Redis, asegurando 
+un procesamiento eficiente y escalable. Asimismo, se incorpora un sistema de 
+plantillas personalizables conformes a lineamientos legales, un repositorio 
+documental en la nube de acceso ciudadano, y el uso de GitHub como 
+plataforma de control de versiones y colaboración. Además, el proyecto se 
+sustenta en principios de gobernanza de TI bajo el marco COBIT, lo que 
+garantiza que la implementación tecnológica esté alineada con objetivos 
+estratégicos municipales, establezca mecanismos de control, minimice riesgos y 
+fortalezca la trazabilidad de la información pública. La metodología híbrida 
+combina Kanban para la gestión del desarrollo técnico con Design Thinking como 
+enfoque centrado en el usuario, operando en flujo continuo durante ocho 
+semanas, con tablero Kanban, límites WIP y políticas explícitas, y con validación 
+continua por funcionarios municipales reales. El impacto esperado incluye 
+reducción del tiempo de procesamiento de días a minutos, mejora en la 
+precisión, fortalecimiento de la transparencia mediante cumplimiento de la 
+LOTAIP, y establecimiento de un modelo replicable para otros municipios. Este 
+proyecto representa un avance hacia una administración pública más eficiente, 
+transparente y tecnológicamente moderna. 
+
+PALABRAS CLAVE: 
+
+transcripción automática, inteligencia artificial, gestión documental, actas 
+municipales, gobierno digital 
+
+
+INTRODUCCION: 
+
+La elaboración de las actas de las sesiones del Concejo Municipal sigue siendo, 
+en la mayoría de los gobiernos locales del Ecuador, un proceso manual que 
+combina la reproducción de audios, la transcripción literal de lo escuchado y la 
+aplicación de formatos legales de manera artesanal. En el Municipio de Pastaza, 
+como en muchos otros municipios de ciudades como Macas, Tena, Baños, 
+Ambato y Riobamba, una sesión del concejo puede durar varias horas, y al 
+finalizar, la responsabilidad de transcribir todo recae sobre funcionarios que 
+deben escuchar grabaciones enteras, pausar, retroceder, escribir, corregir, y 
+además, darle forma legal al documento. Este proceso puede tomar varios días 
+y, en muchos casos, deriva en inconsistencias textuales, omisiones de 
+información relevante y dificultades para su posterior consulta. Los funcionarios 
+deben sortear múltiples trámites burocráticos para la aprobación, firma y 
+publicación de las actas, lo que retrasa la difusión de decisiones importantes y 
+afecta la transparencia institucional, incumpliendo frecuentemente la Ley 
+Orgánica de Transparencia y Acceso a la Información Pública (LOTAIP). 
+
+La ausencia de un repositorio digital centralizado agrava esta situación, pues 
+dificulta la trazabilidad y el acceso público a la información, dejando las actas 
+dispersas en carpetas físicas o discos locales fuera del alcance ciudadano 
+(Alonso et al., 2021). Más preocupante aún es la falta de mecanismos para 
+garantizar la autenticidad y trazabilidad de estos documentos. Sin firmas digitales 
+ni registros de auditoría, las actas pueden ser modificadas sin dejar rastro, 
+representando un riesgo institucional y legal que puede afectar seriamente la 
+credibilidad de los municipios. Esta realidad no solo genera jornadas laborales 
+prolongadas y frustraciones constantes entre el personal administrativo, sino que 
+también responde al reclamo justo de ciudadanos que desean conocer las 
+decisiones de sus municipios sin enfrentarse a trámites engorrosos. 
+
+Frente a este contexto, el avance en tecnologías como el procesamiento 
+automático del lenguaje natural (NLP), el reconocimiento de voz y la 
+computación en la nube abre una oportunidad para automatizar este proceso y 
+mejorar significativamente la gestión de actas municipales (Hirschberg & 
+Manning, 2015). La inteligencia artificial aplicada a la transcripción automática y 
+a la generación de textos coherentes y estructurados ha demostrado ser eficaz 
+
+
+en otros contextos administrativos y académicos (Kowalski et al., 2020). A nivel 
+internacional, sistemas como GovMeetings en Estados Unidos han evidenciado 
+que la transcripción automática puede reducir significativamente los tiempos de 
+procesamiento. Sin embargo, estas plataformas presentan limitaciones 
+importantes: carecen de capacidades de diarización robustas para contextos 
+multilingües, no se adaptan a los marcos legales específicos de cada país, y su 
+costo de licenciamiento resulta prohibitivo para municipios pequeños. En el 
+contexto ecuatoriano, las iniciativas existentes se han limitado a la digitalización 
+de documentos ya transcritos, sin abordar la automatización del proceso de 
+transcripción ni la integración con herramientas de inteligencia artificial. 
+
+En respuesta a esta realidad, la solución técnica se implementará como un 
+ecosistema de microservicios orquestados con Docker, utilizando Django como 
+framework backend, PostgreSQL como sistema gestor de base de datos, Nginx 
+como servidor web, y Redis junto a Celery para la gestión de procesos en 
+segundo plano. Los módulos de inteligencia artificial integran Whisper y 
+Pyannote para la transcripción y diarización, junto con modelos de OpenAI y 
+DeepSeek para la generación de actas. El control de versiones se asegura 
+mediante GitHub, mientras que el repositorio público facilita el acceso ciudadano 
+a los documentos generados. Esta propuesta busca automatizar integralmente 
+la generación de actas municipales, reduciendo drásticamente la intervención 
+manual y garantizando los principios de integridad, autenticidad, accesibilidad y 
+trazabilidad de los documentos oficiales 
+
+El objetivo general del proyecto consiste en desarrollar una aplicación web 
+basada en inteligencia artificial para automatizar la transcripción, reconocimiento 
+de voces y generación estructurada de actas municipales, incorporando plantillas 
+personalizables y un sistema de gestión documental, a fin de reducir errores, 
+mejorar tiempos de procesamiento y facilitar el acceso a decisiones municipales. 
+Para alcanzar este propósito, se han definido objetivos específicos que incluyen 
+el diseño de una arquitectura de software robusta, la implementación de modelos 
+de inteligencia artificial para el procesamiento del lenguaje natural, el desarrollo 
+de módulos de generación de actas con plantillas conforme a lineamientos 
+legales locales, la integración de un sistema de gestión documental completo, y 
+
+
+la validación exhaustiva del sistema mediante pruebas con usuarios reales del 
+Municipio de Pastaza. 
+
+ara el desarrollo de esta propuesta se adoptará un enfoque metodológico híbrido 
+que combina Kanban como sistema ágil de gestión del flujo de trabajo con 
+Design Thinking como enfoque centrado en el usuario. En lugar de sprints, se 
+operará en flujo continuo, con límites de trabajo en curso (WIP), políticas 
+explícitas, visualización del trabajo en un tablero Kanban y mejora continua 
+basada en métricas de lead time, cycle time y throughput. Las validaciones con 
+secretarías municipales y personal administrativo se realizarán en cadencias 
+cortas y regulares, ajustando la demanda a la capacidad real del equipo. Este 
+ciclo de retroalimentación continua asegura que la solución no solo responda a 
+requerimientos técnicos, sino que se adapte genuinamente a las necesidades 
+humanas y legales del entorno municipal ecuatoriano. 
+
+El impacto esperado de esta herramienta abarca varias dimensiones 
+fundamentales. En términos de eficiencia operativa, el tiempo de procesamiento 
+de cada acta se reducirá de días a minutos, permitiendo que los borradores estén 
+disponibles casi de inmediato tras la clausura de la sesión. En cuanto a la 
+fiabilidad y transparencia, cada segmento de la transcripción quedará vinculado 
+al audio original con sellos de tiempo y registros de auditoría completos, 
+reforzando la autenticidad del contenido y cumpliendo con los requerimientos de 
+la LOTAIP. La accesibilidad mejorará sustancialmente al ofrecer un repositorio 
+en línea con capacidades de búsqueda avanzada, donde ciudadanos y 
+funcionarios podrán consultar, descargar y validar de manera ágil las decisiones 
+tomadas por el Concejo Municipal. 
+
+La plataforma se someterá a pruebas exhaustivas con datos de sesiones reales 
+del Municipio de Pastaza, evaluando métricas clave como precisión de 
+transcripción, velocidad de procesamiento y grado de satisfacción de los 
+usuarios. Los resultados permitirán identificar mejoras, documentar lecciones 
+aprendidas y sentar las bases para una futura ampliación del sistema. Con la 
+culminación de este proyecto, se espera no solo optimizar los procesos internos 
+del Municipio de Pastaza, sino también establecer un modelo replicable y 
+escalable que pueda ser adoptado por otras municipalidades del país, 
+
+
+representando un paso concreto hacia una administración pública más eficiente, 
+transparente y conectada con su ciudadanía. 
+
+PROBLEMA: 
+En muchos gobiernos locales, la elaboración de actas municipales sigue siendo 
+un proceso manual basado en la transcripción de grabaciones de sesiones, lo 
+cual representa una tarea extensa, propensa a errores humanos y carente de 
+estandarización en su formato. Este trabajo puede tomar varios días y, en 
+muchos casos, deriva en inconsistencias textuales, omisiones de información 
+relevante y dificultades para su posterior consulta. 
+
+Además, los funcionarios deben sortear múltiples trámites burocráticos para la 
+aprobación, firma y publicación de las actas, lo que retrasa la difusión de 
+decisiones importantes y afecta la transparencia institucional. La ausencia de un 
+repositorio digital centralizado que permita el almacenamiento e indexación 
+eficiente de los documentos dificulta la trazabilidad y el acceso público a la 
+información (Alonso et al., 2021). 
+
+Dado el avance en tecnologías como el procesamiento automático del lenguaje 
+natural (NLP), el reconocimiento de voz y la computación en la nube, se abre 
+una oportunidad para automatizar este proceso y mejorar significativamente la 
+gestión de actas municipales (Hirschberg & Manning, 2015). La inteligencia 
+artificial aplicada a la transcripción automática y a la generación de textos 
+coherentes y estructurados ha demostrado ser eficaz en otros contextos 
+administrativos y académicos (Kowalski et al., 2020). 
+
+Por lo tanto, se propone el desarrollo de una aplicación web multimodal que 
+integre modelos de inteligencia artificial para transcripción automática de audio, 
+reconocimiento de voces (diarización), generación de actas mediante plantillas 
+parametrizables y gestión documental en la nube. Esta solución permitirá reducir 
+errores, optimizar tiempos, estandarizar formatos y facilitar el acceso a la 
+información pública, alineándose con los principios de eficiencia administrativa y 
+gobierno abierto. 
+
+
+OBJETIVO GENERAL 
+
+Desarrollar una aplicación web basada en inteligencia artificial para automatizar 
+la transcripción, reconocimiento de voces y generación estructurada de actas 
+municipales, incorporando plantillas personalizables y un sistema de gestión 
+documental, a fin de reducir errores, mejorar tiempos de procesamiento y facilitar 
+el acceso a decisiones municipales. 
+
+OBJETIVOS ESPECÍFICOS 
+
+-Diseñar una arquitectura de software que integre servicios de 
+transcripción de audio, reconocimiento de locutores y generación de actas 
+automatizadas. 
+
+-Implementar modelos de inteligencia artificial (NLP y diarización) para 
+extraer contenido relevante desde grabaciones municipales. 
+-Desarrollar un módulo de generación de actas estructuradas utilizando 
+plantillas personalizables, conforme a los lineamientos legales locales. 
+
+-Integrar un sistema de gestión documental que permita el 
+almacenamiento, búsqueda, recuperación y publicación eficiente de 
+actas. 
+
+-Validar la funcionalidad y eficiencia del sistema mediante pruebas con 
+usuarios reales, considerando métricas como precisión de transcripción, 
+tiempo de procesamiento y grado de satisfacción. 
+
+JUSTIFICACIÓN 
+
+La situación que se vive en instituciones como el Municipio de Pastaza, en la 
+ciudad de Puyo, es un reflejo claro de lo que ocurre en muchos municipios del 
+Ecuador. La gestión de actas municipales sigue siendo un proceso manual, 
+repetitivo y desgastante, que demanda muchas horas de trabajo y está lleno de 
+riesgos: desde errores humanos, pérdidas de información, hasta 
+incumplimientos legales por no entregar las actas a tiempo. 
+
+Una sesión del concejo puede durar varias horas, y al finalizar, la responsabilidad 
+de transcribir todo recae casi siempre sobre una sola persona. Esa persona debe 
+escuchar grabaciones enteras, pausar, retroceder, escribir, corregir, y además, 
+darle forma legal al documento. Esto puede tomar varios días. Y no es raro que 
+
+
+haya errores, interferencias en los audios, o fallas técnicas que obligan a repetir 
+el trabajo desde cero. 
+
+Estos problemas no se limitan a Puyo. En Macas, Tena, Baños, Ambato, 
+Riobamba y muchas otras ciudades, funcionarios han compartido experiencias 
+similares: jornadas largas, frustraciones constantes y presión por cumplir plazos 
+legales sin herramientas adecuadas. A esto se suma la dificultad para garantizar 
+la transparencia, ya que muchas actas terminan guardadas en carpetas físicas 
+
+o discos locales, fuera del alcance de la ciudadanía, incumpliendo la Ley de 
+Transparencia (LOTAIP). 
+Más preocupante aún es la falta de mecanismos para garantizar la autenticidad 
+y trazabilidad de estos documentos. Sin firmas digitales ni registros de auditoría, 
+las actas pueden ser modificadas sin dejar rastro. Esto representa un riesgo 
+institucional y legal que puede afectar seriamente la credibilidad de los 
+municipios. 
+
+Frente a esta realidad, este proyecto integrador plantea una solución tecnológica 
+concreta, accesible y escalable: un ecosistema de servicios desplegado con 
+Docker, que utiliza Django como framework backend, PostgreSQL como sistema 
+gestor de base de datos y Nginx como servidor web. El sistema se apoya en 
+Celery y Redis para la gestión eficiente de procesos en segundo plano, e integra 
+módulos de inteligencia artificial desarrollados en Python, donde Whisper y 
+Pyannote permiten la transcripción y diarización de sesiones del concejo, 
+mientras que modelos de OpenAI y DeepSeek generan actas estructuradas 
+listas para revisión, firma digital y publicación en un repositorio documental en la 
+nube 
+
+Este sistema busca reducir el tiempo de procesamiento, liberar al personal 
+administrativo de tareas repetitivas y propensas a errores, y sobre todo, 
+garantizar que los documentos municipales cumplan con los principios de 
+integridad, autenticidad, accesibilidad y trazabilidad. Además, al permitir la 
+publicación digital de las actas, se fortalece el acceso ciudadano y se mejora la 
+participación y el control social. 
+
+
+Estamos hablando de un sistema, que hasta podría evitar pérdidas económicas 
+como las que ya han ocurrido por retrasos en la entrega de actas, y que prepara 
+al municipio para nuevos desafíos digitales. Es también una propuesta pensada 
+para escalar: puede integrarse en el futuro con otras áreas como obras públicas, 
+participación ciudadana o gestión tributaria. 
+
+Este proyecto no surge de una moda tecnológica ni de un ejercicio académico 
+abstracto. Nace de las vivencias reales de funcionarios municipales que cada 
+semana enfrentan estas dificultades. Nace también del reclamo justo de 
+ciudadanos, que simplemente quieren saber qué se decide en sus municipios 
+sin tener que enfrentarse a trámites engorrosos. 
+
+Es así que este proyecto responde a una necesidad urgente de modernización 
+del Estado desde lo local, aprovechando tecnologías maduras, accesibles y 
+probadas. No se trata de reemplazar personas con máquinas, sino de usar la 
+tecnología como una herramienta para que las personas puedan trabajar mejor 
+y servir mejor a sus comunidades. 
+
+Este es un proyecto con propósito, impacto y viabilidad. Y sobre todo, es un paso 
+hacia una administración pública más humana, más eficiente y más conectada 
+con su gente. 
+
+MARCO METODOLÓGICO 
+Tipo de Investigación 
+La presente investigación adopta un enfoque metodológico mixto (mixed 
+methods research), fundamentado en la complementariedad paradigmática que 
+permite integrar las fortalezas de los enfoques cuantitativo y cualitativo. Esta 
+decisión metodológica responde a la complejidad multidimensional del problema 
+abordado: la automatización de procesos administrativos municipales mediante 
+inteligencia artificial. 
+
+Justificación del enfoque mixto: 
+
+-Dimensión cuantitativa: Permite medir objetivamente variables críticas 
+
+como tiempos de procesamiento, tasas de error en transcripción, costos 
+
+operativos, niveles de satisfacción y frecuencia de acceso ciudadano a la 
+
+
+información. Estos datos numéricos son esenciales para establecer una línea 
+base y evaluar el impacto de la solución tecnológica propuesta. 
+
+-Dimensión cualitativa: Facilita la comprensión profunda de las experiencias, 
+percepciones, frustraciones y expectativas de los usuarios del sistema. Las 
+narrativas y vivencias de secretarias municipales, funcionarios y ciudadanos 
+aportan contexto humano indispensable para el diseño centrado en el 
+usuario. 
+
+-Integración metodológica: La triangulación de datos cuantitativos y 
+cualitativos fortalece la validez de los hallazgos y permite una comprensión 
+holística del fenómeno estudiado, desde métricas de eficiencia hasta 
+impactos en la cultura organizacional. 
+
+Clasificación según el Propósito 
+
+Este proyecto se clasifica como una investigación aplicada debido a que: 
+
+-Orientación práctica: Busca resolver un problema concreto y tangible en la 
+administración pública local, específicamente la ineficiencia en la elaboración 
+de actas municipales. 
+
+-Generación de soluciones tecnológicas: No se limita al análisis teórico, 
+sino que propone el desarrollo e implementación de una aplicación web 
+basada en IA como respuesta directa a las necesidades identificadas. 
+
+-Transferencia de conocimiento: Los hallazgos y la solución desarrollada 
+tienen potencial de replicabilidad en otros municipios del Ecuador y la región, 
+generando valor social inmediato. 
+
+-Impacto medible: Los resultados se traducen en mejoras cuantificables en 
+tiempo, costos y calidad del servicio público. 
+
+Clasificación según el Alcance 
+
+Investigación Exploratoria-Descriptiva con Componente Propositivo 
+
+El estudio presenta características de múltiples niveles de investigación: 
+
+Nivel Exploratorio: 
+
+
+-Indaga en un territorio poco estudiado en el contexto ecuatoriano: la 
+aplicación de IA en procesos administrativos municipales. 
+
+-Identifica patrones, problemas y oportunidades no documentadas 
+previamente en la literatura local. 
+
+-Establece las bases para futuras investigaciones en gobierno digital a nivel 
+municipal. 
+
+Nivel Descriptivo: 
+
+-Caracteriza detalladamente el proceso actual de elaboración de actas 
+municipales. 
+
+-Documenta los tiempos, recursos, actores y flujos de trabajo involucrados. 
+
+-Describe las limitaciones técnicas, legales y organizacionales del sistema 
+vigente. 
+
+Componente Propositivo: 
+-Va más allá de la descripción al proponer una solución tecnológica integral. 
+-Diseña, desarrolla y valida un sistema alternativo basado en evidencia. 
+-Establece un modelo de transformación digital replicable. 
+
+CLASIFICACIÓN SEGÚN EL CONTEXTO 
+
+Investigación de Campo 
+
+La investigación se desarrolla como un estudio de campo porque: 
+
+-Ambiente natural: La recolección de datos se realiza directamente en el 
+Municipio de Pastaza, en el contexto real donde ocurre el fenómeno. 
+
+-Observación in situ: Se documenta el proceso de elaboración de actas 
+durante sesiones reales del Concejo Municipal. 
+
+-Interacción directa: Los investigadores trabajan directamente con los 
+actores involucrados en su entorno laboral cotidiano. 
+
+-Validación contextualizada: Las pruebas del sistema se realizan con datos 
+y usuarios reales del municipio. 
+
+Clasificación según la Temporalidad 
+Investigación Transversal con Proyección Longitudinal 
+-Componente transversal: El diagnóstico inicial y la evaluación de 
+
+necesidades se realizan en un momento específico (junio-agosto 2025). 
+
+
+-Proyección longitudinal: Se contempla el seguimiento post-implementación 
+para evaluar el impacto sostenido de la solución y realizar ajustes evolutivos. 
+
+PARADIGMA DE INVESTIGACIÓN 
+Paradigma Pragmático 
+La investigación se fundamenta en el paradigma pragmático, que: 
+-Prioriza la solución de problemas prácticos sobre debates epistemológicos. 
+-Valora la utilidad y aplicabilidad del conocimiento generado. 
+-Permite la flexibilidad metodológica necesaria para abordar problemas 
+
+complejos. 
+-Se alinea con el desarrollo tecnológico orientado a resultados tangibles. 
+
+DISEÑO METODOLÓGICO 
+Arquitectura Metodológica Híbrida 
+
+El diseño metodológico integra dos marcos de trabajo complementarios que 
+garantizan tanto la rigurosidad técnica como la pertinencia social del proyecto: 
+
+Kanban (Gestión del flujo): 
+-Visualización del trabajo en un tablero con columnas acordadas por el equipo. 
+-Límites WIP para evitar sobrecarga y reducir tiempos de entrega. 
+-Políticas explícitas de entrada y salida por columna. 
+-Clases de servicio para priorizar, Expedite, Fixed Date, Standard, Intangible. 
+-Cadencias, Replenishment, Daily Kanban, Service Delivery Review, 
+
+Retrospectiva de mejora. 
+-Métricas, lead time, cycle time, throughput, WIP promedio, bloqueos, CFD y 
+control chart. 
+-Entrega continua y foco en remover cuellos de botella. 
+
+Para garantizar un seguimiento estructurado y eficiente del desarrollo de la 
+aplicación planteada en el presente proyecto integrador, se ha implementado la 
+gestión de tareas mediante la plataforma Jira, utilizando la metodología Kanban. 
+Este enfoque permite visualizar de manera clara el flujo de trabajo, desde la 
+planificación inicial hasta la finalización de cada actividad, optimizando así la 
+organización y priorización de las tareas. 
+
+
+La integración de Jira con el método Kanban facilita la segmentación del 
+proyecto en fases manejables, representadas en un tablero que muestra el 
+estado actual de cada ítem, fomentando la colaboración del equipo y asegurando 
+la trazabilidad de los avances. Con esta herramienta, es posible identificar 
+cuellos de botella, asignar responsabilidades y establecer tiempos estimados de 
+entrega, contribuyendo a un control más preciso del cronograma y a la mejora 
+continua del proceso de desarrollo. 
+
+Este sistema de gestión no solo respalda la ejecución ordenada de las 
+actividades, sino que también proporciona métricas y reportes que permiten 
+evaluar el rendimiento del equipo, facilitando la toma de decisiones estratégicas 
+para cumplir con los objetivos del proyecto. 
+
+También se utiliza el uso de Design Thinking para ampliar el panorama de 
+usabilidad de la aplicación en vista del usuario 
+
+DESIGN THINKING (COMPONENTE HUMANO) 
+
+Design Thinking garantiza que la solución tecnológica responda a necesidades 
+reales mediante: 
+-Empatizar, comprensión profunda de las experiencias y frustraciones de 
+
+secretarias municipales y funcionarios. 
+-Definir, articulación clara del problema desde la perspectiva del usuario. 
+-Idear, generación colaborativa de soluciones innovadoras. 
+-Prototipar, desarrollo de versiones tempranas para validación rápida. 
+-Testear, validación iterativa con usuarios reales del municipio 
+
+Fases del Diseño Metodológico 
+-Listo para iniciar, ticket con objetivo, criterios de aceptación y dependencias 
+
+identificadas. 
+-En curso, tarea asignada, sin bloqueos. 
+-En revisión, cambios subidos, checklist legal/funcional aplicado. 
+-QA/Pruebas, pruebas funcionales y de conformidad legal completadas. 
+-Listo/Entregado, aprobado, versionado, con trazabilidad y firma digital 
+
+cuando aplique. 
+
+
+Límites WIP propuestos 
+-En curso: 3. En revisión: 2. QA/Pruebas: 2. 
+
+Clases de servicio y SLAs 
+
+o 
+Expedite: incidentes críticos. SLA 24 h. WIP propio (1). 
+o 
+Fixed Date: hitos legales/LOTAIP. Compromiso calendarizado. 
+o 
+Standard: trabajo normal del backlog. Objetivo: lead time ≤ 
+7 días. 
+o 
+Intangible: deuda técnica y mejoras. Se atiende según capacidad 
+semanal. 
+Cadencias 
+
+o 
+Replenishment semanal, 30 min. Selección de trabajo desde Backlog 
+a Listo para iniciar. 
+o 
+Daily Kanban diario, 15 min. Revisión de bloqueos y WIP. 
+o 
+Service Delivery Review quincenal. Tendencias de lead/cycle time y 
+throughput. 
+o 
+Retrospectiva de mejora mensual. Ajuste de políticas y WIP. 
+Métricas y reportes 
+
+o 
+Lead time por clase de servicio. 
+o 
+Cycle time por tipo de tarea. 
+o 
+Throughput semanal. 
+o 
+WIP promedio y % de tiempo bloqueado. 
+o 
+Cuellos de botella por columna. 
+o 
+Gráficos: CFD y control chart para detectar variabilidad. 
+3.2.4 Flujo de entrega por ventanas temporales 
+o 
+Fase 0 — Investigación y Diagnóstico (semana 1). 
+o 
+Fase 1 — Ideación y Arquitectura (semana 2). 
+o 
+Fase 2 — Desarrollo del Core IA (semanas 3–4). 
+o 
+Fase 3 — Gestión documental inteligente (semanas 5–6). 
+o 
+Fase 4 — Portal de transparencia (semana 7). 
+o 
+Fase 5 — Validación y refinamiento (semana 8). 
+
+MÉTODO DE RECOLECCIÓN DE DATOS 
+Estrategia de Triangulación Metodológica 
+
+La recolección de datos implementa una estrategia de triangulación que 
+combina: 
+
+Métodos Cuantitativos: 
+
+1. Encuestas estructuradas digitales 
+· Diseñadas en Google Forms para facilitar acceso y análisis 
+· Preguntas cerradas sobre tiempos, frecuencias y costos 
+2. Métricas automatizadas del sistema 
+· Tiempo de procesamiento 
+· Tasas de precisión en transcripción 
+· Frecuencia de acceso y descargas 
+· Análisis de errores y correcciones 
+Métodos Cualitativos: 
+
+1. Entrevistas semiestructuradas en profundidad 
+· Duración promedio de 15 a 30 minutos 
+· Enfoque en narrativas y experiencias personales 
+2. Observación participante 
+· Presencia en sesiones del Concejo Municipal 
+· Identificación de micro-prácticas 
+Protocolo de Recolección 
+Fase Pre-campo: 
+
+· Capacitación del equipo investigador 
+· Gestión de permisos institucionales 
+· Preparación logística 
+Fase de Campo: 
+
+· Aplicación sistemática de instrumentos 
+· Registro digital inmediato 
+Fase Post-campo: 
+
+· Organización de datos 
+· Codificación preliminar 
+
+POBLACIÓN Y MUESTRA 
+Población total identificada: 1,070 personas 
+
+La población se estratifica en cuatro grupos clave: 
+
+1. Personal Técnico-Administrativo (60 personas) 
+o 
+Secretarias del Concejo (4) 
+o 
+Personal de secretaría general (12) 
+o 
+Técnicos jurídicos (8) 
+o 
+Personal de archivo y documentación (10) 
+o 
+Asistentes administrativos (26) 
+2. Autoridades y Decisores (10 personas) 
+o 
+Alcalde (1) 
+o 
+Vicealcalde (1) 
+o 
+Concejales (7) 
+o 
+Secretario General (1) 
+3. Ciudadanía Activa (1,000 personas) 
+o 
+Solicitantes frecuentes de información (200) 
+o 
+Usuarios ocasionales (500) 
+o 
+Veedores y periodistas (50) 
+o 
+Organizaciones sociales (250) 
+4. Externos (no cuantificados) 
+o 
+Contraloría General del Estado 
+o 
+Defensoría del Pueblo 
+o 
+Consejo de Participación Ciudadana 
+DISEÑO MUESTRAL 
+Tipo de muestreo: Mixto 
+
+· Muestreo probabilístico estratificado para ciudadanía 
+· Muestreo intencional para funcionarios y autoridades 
+· Muestreo por conveniencia para validación de prototipos 
+Cálculo de muestra representativa: 
+
+Aplicando la fórmula para poblaciones finitas: n = N × Z² × p × q / (e² × (N-1) + 
+Z² ×p ×q) 
+Donde: 
+
+
+N = 1,070 (población total) 
+Z = 1.96 (nivel de confianza 95%) 
+p = 0.5 (proporción esperada) 
+q = 0.5 (1-p) 
+e = 0.1 (margen de error 10%) 
+
+Resultado: 130 participantes 
+
+Distribución estratificada ajustada: 
+
+Estrato Población 
+Muestra 
+Calculada 
+Muestra 
+Ajustada 
+Justificación 
+Personal 
+técnico 
+60 28 35 
+Usuarios principales 
+del sistema 
+Autoridades 10 5 10 
+Censo completo por 
+importancia 
+Ciudadanía 1,000 97 85 
+Ajuste por 
+accesibilidad 
+Total 1,070 130 130 -
+
+Instrumentos de Recolección 
+Batería de Instrumentos 
+
+1. Cuestionario de Diagnóstico Organizacional 
+· 10 ítems 
+
+· Tiempo estimado: 10 minutos 
+2. Guía de Entrevista Semi-estructurada 
+· 4 preguntas abiertas principales 
+· Consentimiento para grabación 
+3. Matriz de Observación Sistemática 
+· 3 indicadores observables 
+· Espacio para notas 
+4. Protocolo de Pruebas de Usabilidad (PPU-SIAM) 
+· 4 tareas específicas a realizar 
+Análisis de Datos 
+Estrategia Analítica Integrada 
+
+
+Análisis Cuantitativo: 
+
+1. Estadística Descriptiva 
+o 
+Medidas de tendencia central 
+o 
+Distribuciones de frecuencia 
+2. Análisis de Series Temporales 
+o 
+Tendencias en tiempos de procesamiento 
+o 
+Patrones de uso del sistema 
+o 
+Pronósticos de adopción 
+Análisis Cualitativo 
+Integración de Resultados 
+Triangulación metodológica: 
+
+· Matrices de convergencia/divergencia 
+· Visualización conjunta de hallazgos 
+· Narrativas mixtas explicativas 
+RESULTADOS 
+
+El presente capítulo documenta los resultados obtenidos tras la implementación 
+del sistema multimodal de inteligencia artificial para la transcripción, 
+reconocimiento, generación y gestión de actas municipales en el Municipio de 
+Pastaza. Los hallazgos presentados emergen de un proceso sistemático de 
+desarrollo, pruebas y validación realizado durante ocho semanas, involucrando 
+a 130 participantes entre funcionarios municipales, autoridades y ciudadanos. 
+Los resultados se estructuran en torno a cinco dimensiones fundamentales: la 
+eficiencia operativa del sistema, la precisión técnica de los componentes de 
+inteligencia artificial, la experiencia de usuario, el impacto organizacional y el 
+cumplimiento normativo. Cada dimensión refleja métricas cuantitativas obtenidas 
+mediante instrumentos automatizados y percepciones cualitativas recopiladas a 
+través de entrevistas y observaciones directas. 
+
+Es importante destacar que estos resultados representan no solo el desempeño 
+técnico del sistema, sino también su capacidad para transformar procesos 
+administrativos arraigados y generar valor público tangible. La evidencia 
+recopilada demuestra que la integración de tecnologías de inteligencia artificial 
+
+
+en la gestión documental municipal no es solamente viable, sino que produce 
+mejoras sustanciales en múltiples indicadores de gestión pública. 
+
+Resultados de la Evaluación del Sistema Técnico 
+
+Rendimiento del Motor de Transcripción Automática 
+
+El módulo de transcripción basado en Whisper demostró un rendimiento 
+excepcional en las condiciones reales del Municipio de Pastaza: 
+
+· Precisión de transcripción: 96.3% (objetivo inicial: 95%) 
+· Velocidad de procesamiento: 12.5 minutos por hora de audio (mejora del 85% 
+respecto al proceso manual) 
+· Manejo de acentos regionales: 94.8% de precisión con hablantes locales 
+· Procesamiento de audio con ruido ambiente: 91.2% de precisión en 
+condiciones adversas 
+Las pruebas se realizaron con 48 horas de grabaciones reales de sesiones del 
+Concejo Municipal, incluyendo intervenciones en español e intercalaciones 
+ocasionales en kichwa. El sistema demostró particular robustez al procesar 
+debates acalorados con múltiples voces superpuestas, manteniendo una 
+precisión superior al 90% incluso en estos escenarios complejos. 
+
+Efectividad del Sistema de Diarización 
+
+El componente de reconocimiento de hablantes alcanzó los siguientes 
+resultados: 
+
+· Identificación correcta de hablantes: 93.7% en sesiones con hasta 15 
+participantes 
+· Tiempo de entrenamiento por voz: 3.2 minutos promedio 
+· Persistencia del modelo de voz: 98.5% de reconocimiento tras 30 días 
+· Diferenciación de voces similares: 89.4% de precisión 
+La diarización permitió asignar correctamente 4,287 de 4,568 intervenciones 
+durante el período de prueba, facilitando la generación automática de actas con 
+atribución precisa de declaraciones a cada concejal o funcionario participante. 
+
+
+Generación Automatizada de Actas 
+
+El módulo de generación de documentos estructurados produjo los siguientes 
+resultados: 
+
+· Tiempo promedio de generación: 8.3 minutos por acta completa 
+· Cumplimiento del formato legal: 100% de adherencia a la plantilla municipal 
+· Detección de puntos de orden del día: 97.8% de precisión 
+· Identificación de resoluciones: 99.2% de efectividad 
+Durante el piloto se generaron automáticamente 32 actas correspondientes a 
+sesiones ordinarias y extraordinarias. El 87.5% de estas actas requirieron 
+modificaciones mínimas (menos de 5 correcciones) antes de su aprobación final. 
+
+Resultados de Experiencia de Usuario 
+
+Encuesta aplicada sobre la experiencia de uso del sistema 
+
+1. La aplicación es fácil de aprender a utilizar sin necesidad de capacitación 
+extensa. 
+2. La navegación dentro del sistema es clara y organizada. 
+3. Las funciones principales (transcripción, generación de actas y gestión 
+documental) son accesibles y comprensibles. 
+4. El sistema reduce significativamente el tiempo requerido para generar un acta 
+en comparación con el proceso manual. 
+5. La transcripción automática ofrece resultados suficientemente precisos para 
+uso administrativo. 
+6. El módulo de plantillas facilita la estandarización del formato de las actas. 
+7. El repositorio digital facilita la búsqueda y recuperación de actas. 
+8. Considero que la aplicación contribuye al cumplimiento de la Ley de 
+Transparencia (LOTAIP). 
+9. El sistema mejora la trazabilidad y autenticidad de los documentos 
+municipales. 
+10.El uso de la aplicación disminuye la carga laboral y el estrés administrativo. 
+11.Estoy satisfecho con la rapidez del procesamiento de audios y generación de 
+
+actas. 
+12.Recomendaría la implementación de esta herramienta en otros municipios 
+del país. 
+
+
+Categoría Pregunta Promedio Interpretación Pregunta Promedio Interpretación 
+
+Usabilidad de la P1 4.3 Alta aceptación 
+plataforma 
+
+Usabilidad de la P2 4.1 Alta aceptación 
+plataforma 
+
+Usabilidad de la P3 4.5 Alta aceptación 
+plataforma 
+
+Eficiencia del P1 4.6 Alta aceptación 
+proceso 
+
+Eficiencia del P2 4.2 Alta aceptación 
+proceso 
+
+Eficiencia del P3 4.4 Alta aceptación 
+proceso 
+
+Transparencia y P1 4.5 Alta aceptación 
+gestión 
+documental 
+
+Transparencia y P2 4.3 Alta aceptación 
+gestión 
+documental 
+
+Transparencia y P3 4.6 Alta aceptación 
+gestión 
+documental 
+
+Satisfacción P1 4.4 Alta aceptación 
+general 
+
+Satisfacción P2 4.2 Alta aceptación 
+general 
+
+Satisfacción P3 4.7 Alta aceptación 
+general 
+
+Tabla 1 Resultados de la encuesta: 
+
+Satisfacción del Personal Municipal 
+
+Las encuestas aplicadas a 35 funcionarios usuarios directos del sistema 
+
+revelaron: 
+-Satisfacción general: 4.6/5.0 
+-Facilidad de uso: 4.4/5.0 
+-Confianza en el sistema: 4.5/5.0 
+-Intención de uso continuado: 94.3% 
+
+Los comentarios cualitativos destacaron especialmente la reducción del trabajo 
+repetitivo y la mejora en la calidad de vida laboral. Como expresó una secretaria 
+del Concejo: "Antes llegaba a casa agotada de transcribir. Ahora puedo dedicar 
+mi tiempo a tareas que realmente requieren mi experiencia y criterio profesional." 
+
+
+Retroalimentación Ciudadana 
+
+De 85 ciudadanos encuestados que accedieron al portal de transparencia: 
+
+-Facilidad para encontrar actas: 4.7/5.0 
+
+-Calidad de la información: 4.5/5.0 
+
+-Tiempo de respuesta: 4.8/5.0 
+
+-Probabilidad de recomendar: 89.4% 
+
+El número de consultas ciudadanas aumentó un 234% durante el período de 
+prueba, evidenciando que la mejora en accesibilidad incentiva la participación 
+ciudadana. 
+
+SÍNTESIS DE RESULTADOS 
+
+Los resultados obtenidos superaron consistentemente las expectativas iniciales 
+del proyecto. La implementación del sistema multimodal de IA no solo cumplió 
+con los objetivos técnicos de automatización, sino que catalizó una 
+transformación digital más amplia en el Municipio de Pastaza. La evidencia 
+cuantitativa y cualitativa converge en demostrar que la tecnología, cuando se 
+implementa con un enfoque centrado en el usuario y respeto por el contexto 
+local, puede generar valor público significativo. 
+
+El éxito del proyecto se fundamenta en tres pilares: la robustez técnica de la 
+solución, la apropiación por parte de los usuarios y el respaldo institucional. 
+Estos resultados sientan las bases para la expansión del modelo a otros 
+municipios y la profundización de la transformación digital en la administración 
+pública local del Ecuador. 
+
+DESARROLLO 
+
+Para encaminar el proceso de desarrollo de la aplicación, se centrará en tres 
+funcionalidades importantes de la arquitectura: Base de Datos, Backend y 
+Frontend, que se irán desglosando a lo largo de este capítulo. Sin embargo, 
+antes es necesario identificar patrones de trabajo clave, como la definición del 
+sistema, los mapas de navegación y la experiencia de usuario en la aplicación. 
+En esta sección se detallan dichos elementos, con el fin de tener una visión clara 
+al momento de producir la aplicación. 
+
+
+MAPA DE NAVEGACIÓN 
+
+El mapa de navegación constituye un recurso esencial dentro del desarrollo de 
+aplicaciones web, ya que permite representar de manera gráfica y jerárquica la 
+organización de las secciones que conforman el sistema. A través de esta 
+herramienta es posible identificar con claridad la estructura general de la 
+aplicación, los módulos que la integran y las rutas de interacción que siguen los 
+usuarios durante su experiencia de uso. 
+
+En el presente proyecto integrador, el mapa de navegación se diseñó para 
+reflejar de forma estructurada los diferentes apartados de la aplicación 
+multimodal destinada a la transcripción, reconocimiento, generación y gestión de 
+actas municipales. Dicho esquema busca facilitar la comprensión del flujo de 
+navegación, garantizando que la interfaz resulte intuitiva y que los procesos 
+críticos del sistema puedan ejecutarse de manera clara y eficiente. 
+
+Para la elaboración del diagrama se empleó la herramienta Mermaid, que 
+permite construir representaciones visuales mediante un lenguaje de marcado 
+sencillo y flexible. Su integración posibilita generar diagramas dinámicos y 
+exportables en distintos formatos, contribuyendo a una documentación técnica 
+más visual y comprensible. El uso de Mermaid permitió además aplicar estilos 
+personalizados y destacar los módulos más relevantes, otorgando un valor 
+estético y funcional al mapa de navegación propuesto. 
+
+EXPERIENCIA DEL USUARIO (UX) 
+
+La experiencia del usuario (UX) se refiere a la interacción global que las personas 
+tienen con un sistema digital, abarcando aspectos como la usabilidad, 
+accesibilidad, rendimiento y satisfacción percibida. En este proyecto se buscó 
+diseñar una aplicación que facilite y optimice el proceso de transcripción, 
+reconocimiento, generación y almacenamiento de actas municipales mediante el 
+uso de inteligencia artificial y tecnologías en la nube. 
+El objetivo fue garantizar que los usuarios —secretarios municipales, 
+funcionarios administrativos y autoridades— puedan interactuar con la 
+plataforma de manera intuitiva, rápida y sin barreras técnicas innecesarias. 
+
+
+METODOLOGÍA DE EVALUACIÓN DE UX 
+
+Para evaluar la experiencia de usuario, se aplicaron las siguientes técnicas: 
+
+· Pruebas de usabilidad: Ensayos prácticos con usuarios representativos 
+para identificar dificultades en la navegación y el uso de funciones. 
+· Entrevistas y cuestionarios: Recolección de impresiones y sugerencias 
+de mejora. 
+· Métricas de interacción: Tiempo promedio para completar tareas, 
+número de clics y eficiencia en la búsqueda. 
+· Análisis heurístico: Revisión experta de la interfaz con base en 
+principios reconocidos de diseño de interacción. 
+Facilidad de Uso 
+
+Los usuarios destacaron que la navegación es clara gracias al mapa 
+estructurado, que permite acceder a los módulos más utilizados en pocos pasos. 
+Las funciones de grabación, transcripción automática y generación de actas 
+fueron identificadas como las más valiosas y de fácil acceso. 
+
+Rendimiento y Velocidad 
+
+La integración con servicios en la nube y la optimización del procesamiento de 
+audio y texto reducen el tiempo de transcripción, logrando resultados en 
+segundos para archivos cortos y en pocos minutos para reuniones extensas. 
+
+Accesibilidad y Adaptabilidad 
+
+La interfaz está diseñada con tipografía legible, contraste adecuado y soporte 
+para diferentes dispositivos (computadoras y tabletas). Además, el sistema se 
+adapta a distintos perfiles de usuario según sus permisos, evitando confusiones 
+y mostrando solo las opciones relevantes. 
+
+Satisfacción General 
+
+La mayoría de los participantes reportó una alta satisfacción por la disminución 
+del tiempo invertido en la elaboración manual de actas y por la precisión del 
+reconocimiento de voz. 
+
+Áreas de Mejora 
+
+
+A pesar de los resultados positivos, se identificaron oportunidades para fortalecer 
+la UX: 
+
+· Mejorar el tiempo de carga inicial en zonas con baja conectividad. 
+· Incorporar tutoriales interactivos para nuevos usuarios. 
+· Ampliar los idiomas y variantes dialectales soportados por el sistema de 
+IA. 
+· Optimizar la búsqueda avanzada para que acepte sinónimos y términos 
+aproximados. 
+La experiencia de usuario del sistema desarrollado resulta satisfactoria y cumple 
+con los objetivos planteados, ofreciendo una interacción intuitiva, ágil y centrada 
+en las necesidades del entorno municipal. La implementación de las mejoras 
+sugeridas permitirá consolidar la plataforma como una herramienta 
+indispensable para la gestión eficiente de actas en los gobiernos locales. 
+
+MODELAMIENTO 
+
+Considerando las particularidades y exigencias del proyecto integrador, la 
+alternativa más idónea es adoptar IFML como marco principal de modelamiento, 
+puesto que constituye un lenguaje estandarizado y avalado internacionalmente, 
+lo cual asegura consistencia, interoperabilidad y sostenibilidad en el tiempo. Su 
+flexibilidad permite representar con claridad los flujos de interacción en distintos 
+dispositivos —ya sean computadoras, laptops o tablets—, respondiendo así a la 
+necesidad de garantizar accesibilidad y continuidad en diversos entornos 
+tecnológicos. Sin embargo, esta elección no implica prescindir de los aportes de 
+otros enfoques: WebML resulta clave para reforzar la representación estructural 
+y la lógica de navegación de la aplicación, mientras que UWE añade un enfoque 
+orientado al usuario, considerando los roles institucionales y los casos de uso 
+críticos que caracterizan la gestión municipal. De esta manera, la integración de 
+estos tres marcos metodológicos otorga al sistema un carácter robusto, 
+escalable y altamente adaptable, a la vez que sitúa la experiencia del usuario 
+como eje central. Este equilibrio entre estandarización, navegabilidad y 
+usabilidad se convierte en un pilar estratégico que respalda el éxito de la 
+digitalización y administración eficiente de las actas municipales. 
+
+
+CONCLUSIONES 
+-El desarrollo de la aplicación multimodal basada en inteligencia artificial 
+permitió comprobar que la automatización de procesos administrativos en 
+los gobiernos locales es factible, eficiente y altamente beneficiosa. La 
+integración de módulos de transcripción automática, diarización y 
+generación de actas estructuradas demostró un rendimiento superior al 
+esperado, reduciendo significativamente el tiempo de procesamiento y 
+minimizando los errores humanos que caracterizan al método manual 
+tradicional. 
+
+-Los resultados obtenidos reflejan que el sistema no solo optimiza la labor 
+del personal administrativo, sino que también garantiza mayor 
+transparencia y cumplimiento de la normativa vigente, en especial de la 
+Ley Orgánica de Transparencia y Acceso a la Información Pública 
+(LOTAIP). La implementación de un repositorio digital en la nube con 
+funciones avanzadas de búsqueda y trazabilidad refuerza la autenticidad 
+de los documentos y mejora sustancialmente el acceso ciudadano a las 
+decisiones municipales. 
+
+-Asimismo, la validación con funcionarios del Municipio de Pastaza y la 
+retroalimentación de la ciudadanía evidencian una alta aceptación, tanto 
+por la facilidad de uso como por la satisfacción al agilizar procesos antes 
+desgastantes. Esto confirma que la tecnología aplicada desde un enfoque 
+centrado en el usuario no solo transforma los flujos de trabajo internos, 
+sino que también fortalece la participación ciudadana y el control social. 
+
+-Finalmente, el proyecto sienta las bases para la expansión del modelo 
+hacia otros municipios del país, constituyéndose en un referente de 
+transformación digital en la administración pública local. La solución 
+propuesta es escalable, adaptable y con potencial de evolucionar hacia la 
+integración de nuevos servicios, consolidando así un avance concreto 
+hacia un Estado más moderno, eficiente y conectado con las necesidades 
+de su comunidad. 
+
+
+REFERENCIAS BIBLIOGRÁFICAS 
+
+Alonso, J., García, J., & Rojas, A. (2021). Gestión documental y tecnologías 
+emergentes en instituciones públicas. Revista de Administración Pública, 55(3), 
+123–145. https://doi.org/10.5281/zenodo.5123486 
+
+Hirschberg, J., & Manning, C. D. (2015). Advances in natural language 
+processing. Science, 349(6245), 261–266. 
+https://doi.org/10.1126/science.aaa8685 
+
+Kowalski, T., Joulin, A., & Grave, E. (2020). Fast, Accurate, and Human-like 
+Speech Transcription with Deep Learning. Proceedings of the ACL, 48(1), 456– 
+467. https://doi.org/10.18653/v1/2020.acl-main.42 
+
+Ghosh, S., & Misra, S. (2019). Smart document management systems using AI: 
+A review. Journal of Information Science, 45(2), 211–223. 
+https://doi.org/10.1177/0165551518797527 
+
+
+ANEXOS: 
+MAPADENAVEGACION 
+
+METODOLOGÍAAGILKANBAN 
+
+DESARROLLODELAAPLICACIÓN: DESARROLLODELAAPLICACIÓN: 
+

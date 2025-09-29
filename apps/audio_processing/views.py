@@ -24,6 +24,7 @@ from .logging_helper import (
 logger = logging.getLogger(__name__)
 
 
+@login_required
 def centro_audio(request):
     """Vista principal unificada para centro_audio_new.html"""
     from django.db.models import Count, Q

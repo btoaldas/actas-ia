@@ -119,9 +119,9 @@ def user_logout_view(request):
 
 # pages
 def index(request):
-  # Si el usuario NO está autenticado, redirigir al portal ciudadano
+  # Si el usuario NO está autenticado, mostrar página de inicio pública
   if not request.user.is_authenticated:
-    return redirect('portal_ciudadano')
+    return inicio_publico(request)
   
   # Si el usuario SÍ está autenticado, mostrar el dashboard normal
   context = {
@@ -129,6 +129,38 @@ def index(request):
     'segment': 'dashboardv1'
   }
   return render(request, 'pages/index.html', context)
+
+def inicio_publico(request):
+  """Página de inicio para usuarios no autenticados"""
+  from .models import ActaMunicipal
+  from django.db.models import Count
+  from django.utils import timezone
+  
+  # Estadísticas públicas (solo números generales, sin detalles)
+  stats_publicas = {
+    'total_actas_publicas': ActaMunicipal.objects.filter(
+      estado__nombre='publicada',
+      acceso='publico'
+    ).count(),
+    'total_sesiones_ano': ActaMunicipal.objects.filter(
+      estado__nombre='publicada',
+      acceso='publico',
+      fecha_sesion__year=timezone.now().year
+    ).count(),
+  }
+  
+  # Últimas actas públicas (máximo 3)
+  ultimas_actas = ActaMunicipal.objects.filter(
+    estado__nombre='publicada',
+    acceso='publico'
+  ).order_by('-fecha_publicacion')[:3]
+  
+  context = {
+    'stats_publicas': stats_publicas,
+    'ultimas_actas': ultimas_actas,
+    'mostrar_informacion_publica': True,
+  }
+  return render(request, 'pages/inicio_publico_completo.html', context)
 
 def index2(request):
   # Datos simulados para el dashboard de actas municipales

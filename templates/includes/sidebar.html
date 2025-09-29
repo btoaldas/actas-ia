@@ -106,7 +106,52 @@
 
     <!-- Sidebar Menu -->
     <nav class="mt-2">
-      {% include 'includes/menu-list.html' %}
+      {% if request.user.is_authenticated %}
+        {% include 'includes/menu-list.html' %}
+      {% else %}
+        <!-- Menú público limitado para usuarios no autenticados -->
+        <ul class="nav nav-pills nav-sidebar flex-column">
+          <li class="nav-header">ACCESO PÚBLICO</li>
+          
+          <li class="nav-item">
+            <a href="{% url 'portal_ciudadano' %}" class="nav-link">
+              <i class="fas fa-scroll nav-icon text-primary"></i>
+              <p>Portal Ciudadano</p>
+            </a>
+          </li>
+          
+          <li class="nav-item">
+            <a href="{% url 'transparencia_index' %}" class="nav-link">
+              <i class="fas fa-eye nav-icon text-info"></i>
+              <p>Portal Transparencia</p>
+            </a>
+          </li>
+          
+          <!-- <li class="nav-header">AUTENTICACIÓN</li>
+          
+          <li class="nav-item">
+            <a href="{% url 'login' %}" class="nav-link">
+              <i class="fas fa-sign-in-alt nav-icon text-success"></i>
+              <p>Iniciar Sesión</p>
+            </a>
+          </li>
+          
+          <li class="nav-item">
+            <a href="/accounts/signup/" class="nav-link">
+              <i class="fas fa-user-plus nav-icon text-warning"></i>
+              <p>Registrarse</p>
+            </a>
+          </li> -->
+          
+          <!-- Mensaje informativo -->
+          <li class="nav-item">
+            <div class="callout callout-info" style="margin: 1rem; font-size: 0.8rem;">
+              <h5><i class="fas fa-info-circle"></i> Información</h5>
+              <p>Para acceder al sistema completo de gestión de actas, debe <strong>iniciar sesión</strong> con su cuenta autorizada.</p>
+            </div>
+          </li>
+        </ul>
+      {% endif %}
     </nav>
     <!-- /.sidebar-menu -->
   </div>

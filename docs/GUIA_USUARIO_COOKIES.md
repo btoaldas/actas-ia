@@ -154,7 +154,7 @@ Si eres administrador del sistema, verás un **widget de debug (🔧)** que te p
 ## 📞 **Contacto y Soporte**
 
 ### **¿Necesitas ayuda?**
-- 📧 **Email**: soporte@municipio-pastaza.gob.ec
+- 📧 **Email**: soporte@municipio-puyo.gob.ec
 - 📱 **WhatsApp**: [Número del soporte técnico]
 - 🏢 **Presencial**: Oficina de Sistemas - Municipio de Pastaza
 

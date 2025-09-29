@@ -18,7 +18,7 @@ class Command(BaseCommand):
         except User.DoesNotExist:
             usuario = User.objects.create_user(
                 username='admin',
-                email='admin@pastaza.gob.ec',
+                email='admin@puyo.gob.ec',
                 password='AdminPuyo2025!',
                 is_staff=True,
                 is_superuser=True

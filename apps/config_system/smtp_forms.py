@@ -89,7 +89,7 @@ class ConfiguracionSMTPForm(forms.ModelForm):
         email = self.cleaned_data.get('email_remitente')
         if email:
             # Verificar que el dominio sea válido para gobierno
-            dominios_validos = ['puyo.gob.ec', 'pastaza.gob.ec', 'gmail.com', 'outlook.com']
+            dominios_validos = ['puyo.gob.ec', 'puyo.gob.ec', 'gmail.com', 'outlook.com']
             dominio = email.split('@')[1].lower() if '@' in email else ''
             
             if not any(dominio.endswith(d) for d in dominios_validos):

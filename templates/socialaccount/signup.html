@@ -1,288 +1,367 @@
-{% extends "layouts/base.html" %}
 {% load socialaccount %}
 
-{% block title %} Completar Registro - Sistema de Actas Municipales {% endblock %}
-
-{% block stylesheets %}
-<style>
-    .signup-page {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        min-height: 100vh;
-    }
-    .signup-box {
-        width: 450px;
-        margin: 5% auto;
-    }
-    .card {
-        box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-        border: none;
-        border-radius: 10px;
-    }
-    .card-header {
-        background: linear-gradient(45deg, #1e3c72, #2a5298);
-        color: white;
-        text-align: center;
-        border-radius: 10px 10px 0 0;
-        padding: 20px;
-    }
-    .municipio-logo {
-        font-size: 2.5rem;
-        margin-bottom: 10px;
-    }
-    .card-body {
-        padding: 30px;
-    }
-    .provider-info {
-        background: #f8f9fa;
-        border-radius: 8px;
-        padding: 15px;
-        margin-bottom: 20px;
-        border-left: 4px solid #007bff;
-    }
-    .provider-icon {
-        width: 24px;
-        height: 24px;
-        margin-right: 10px;
-    }
-    .form-control {
-        border-radius: 5px;
-        border: 2px solid #e1e5e9;
-        padding: 12px 15px;
-        font-size: 16px;
-        transition: border-color 0.3s;
-    }
-    .form-control:focus {
-        border-color: #667eea;
-        box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
-    }
-    .btn-primary {
-        background: linear-gradient(45deg, #667eea, #764ba2);
-        border: none;
-        border-radius: 5px;
-        padding: 12px 30px;
-        font-size: 16px;
-        font-weight: 600;
-        transition: transform 0.3s;
-        width: 100%;
-    }
-    .btn-primary:hover {
-        transform: translateY(-2px);
-        background: linear-gradient(45deg, #5a67d8, #6b46a3);
-    }
-    .form-group label {
-        font-weight: 600;
-        color: #2d3748;
-        margin-bottom: 8px;
-    }
-    .help-text {
-        font-size: 14px;
-        color: #718096;
-        margin-top: 8px;
-    }
-    .oauth-info {
-        display: flex;
-        align-items: center;
-        margin-bottom: 15px;
-    }
-    .back-link {
-        text-align: center;
-        margin-top: 20px;
-    }
-    .back-link a {
-        color: #667eea;
-        text-decoration: none;
-        font-weight: 500;
-    }
-    .back-link a:hover {
-        text-decoration: underline;
-    }
-</style>
-{% endblock %}
-
-{% block content %}
-<div class="signup-page">
-    <div class="signup-box">
-        <div class="card card-outline card-primary">
-            <div class="card-header">
-                <div class="municipio-logo">
-                    <i class="fas fa-city"></i>
-                </div>
-                <h3 class="mb-0">Municipio de Pastaza</h3>
-                <p class="mb-0">Sistema de Actas Municipales</p>
-                <small>Completar tu registro</small>
-            </div>
-            
-            <div class="card-body">
-                {% if sociallogin %}
-                    <div class="provider-info">
-                        <div class="oauth-info">
-                            {% if sociallogin.account.provider == 'github' %}
-                                <i class="fab fa-github provider-icon" style="font-size: 24px;"></i>
-                                <div>
-                                    <strong>Conectando con GitHub</strong><br>
-                                    <small>{{ sociallogin.account.extra_data.login|default:sociallogin.user.email }}</small>
-                                </div>
-                            {% elif sociallogin.account.provider == 'google' %}
-                                <i class="fab fa-google provider-icon" style="font-size: 24px; color: #db4437;"></i>
-                                <div>
-                                    <strong>Conectando con Google</strong><br>
-                                    <small>{{ sociallogin.user.email }}</small>
-                                </div>
-                            {% endif %}
-                        </div>
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Completar Registro - Sistema de Actas Municipales</title>
+    
+    <!-- AdminLTE CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/admin-lte@3.2/dist/css/adminlte.min.css">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <!-- Bootstrap -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css">
+    
+    <style>
+        .signup-page {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 1rem;
+        }
+        .signup-box {
+            width: 350px;
+            max-width: 90%;
+            margin: 3% auto;
+        }
+        .card {
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            border: none;
+            border-radius: 8px;
+        }
+        .card-header {
+            background: linear-gradient(45deg, #1e3c72, #2a5298);
+            color: white;
+            text-align: center;
+            border-radius: 8px 8px 0 0;
+            padding: 15px;
+        }
+        .card-body {
+            padding: 20px;
+        }
+        .municipio-logo {
+            font-size: 1.8rem;
+            margin-bottom: 5px;
+        }
+        .card-header h3 {
+            font-size: 1.3rem;
+            margin-bottom: 5px;
+        }
+        .card-header p, .card-header small {
+            font-size: 0.9rem;
+            margin-bottom: 3px;
+        }
+        .provider-info {
+            background: #f8f9fa;
+            border-radius: 6px;
+            padding: 12px;
+            margin-bottom: 15px;
+            border-left: 3px solid #007bff;
+        }
+        .oauth-info {
+            display: flex;
+            align-items: center;
+        }
+        .oauth-info strong {
+            font-size: 14px;
+        }
+        .oauth-info small {
+            font-size: 12px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            font-weight: 500;
+            color: #495057;
+            margin-bottom: 5px;
+            font-size: 14px;
+        }
+        .form-control {
+            border-radius: 4px;
+            border: 1px solid #ced4da;
+            padding: 8px 12px;
+            font-size: 14px;
+            height: auto;
+        }
+        .form-control:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.15);
+        }
+        .input-group-text {
+            padding: 8px 12px;
+            font-size: 14px;
+            border-radius: 4px 0 0 4px;
+        }
+        .btn-primary {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            border: none;
+            border-radius: 4px;
+            padding: 10px 20px;
+            font-size: 14px;
+            font-weight: 500;
+        }
+        .btn-primary:hover {
+            background: linear-gradient(45deg, #5a67d8, #6b46a3);
+        }
+        .help-text {
+            font-size: 12px;
+            color: #6c757d;
+            margin-top: 3px;
+        }
+        .text-center {
+            font-size: 13px;
+        }
+        .text-center.mt-3 small {
+            font-size: 12px;
+        }
+        .back-link a {
+            color: #667eea;
+            text-decoration: none;
+            font-size: 13px;
+        }
+        .back-link a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="signup-page">
+        <div class="signup-box">
+            <div class="card">
+                <div class="card-header">
+                    <div class="municipio-logo">
+                        <i class="fas fa-city"></i>
                     </div>
-                {% endif %}
-
-                <p class="text-muted text-center mb-4">
-                    <i class="fas fa-info-circle"></i>
-                    Completa los siguientes datos para acceder al sistema
-                </p>
-
-                <form method="post">
-                    {% csrf_token %}
+                    <h3>Sistema de Actas Municipales</h3>
+                    <p class="mb-0">Municipio de Pastaza - Puyo</p>
+                    <small>Completar Registro</small>
+                </div>
+                
+                <div class="card-body">
+                    {% if form.errors %}
+                        <div class="alert alert-danger">
+                            {{ form.errors }}
+                        </div>
+                    {% endif %}
                     
-                    {% if form.email %}
-                        <div class="form-group">
-                            <label for="{{ form.email.id_for_label }}">
-                                <i class="fas fa-envelope"></i> {{ form.email.label }}
-                            </label>
-                            {{ form.email }}
-                            {% if form.email.errors %}
-                                <div class="text-danger mt-1">
-                                    {% for error in form.email.errors %}
-                                        <small><i class="fas fa-exclamation-circle"></i> {{ error }}</small>
-                                    {% endfor %}
-                                </div>
-                            {% endif %}
-                            <div class="help-text">
-                                <i class="fas fa-shield-alt"></i> Tu email será verificado automáticamente
+                    {% if messages %}
+                        {% for message in messages %}
+                            <div class="alert alert-{{ message.tags }}">
+                                {{ message }}
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+
+                    {% if sociallogin %}
+                        <div class="provider-info">
+                            <div class="oauth-info">
+                                {% if sociallogin.account.provider == 'github' %}
+                                    <i class="fab fa-github" style="font-size: 24px; margin-right: 12px;"></i>
+                                    <div>
+                                        <strong>Conectando con GitHub</strong><br>
+                                        <small>{{ sociallogin.account.extra_data.login|default:sociallogin.user.email }}</small>
+                                    </div>
+                                {% elif sociallogin.account.provider == 'google' %}
+                                    <i class="fab fa-google" style="font-size: 24px; color: #db4437; margin-right: 12px;"></i>
+                                    <div>
+                                        <strong>Conectando con Google</strong><br>
+                                        <small>{{ sociallogin.user.email }}</small>
+                                    </div>
+                                {% endif %}
                             </div>
                         </div>
                     {% endif %}
 
-                    {% if form.username %}
-                        <div class="form-group">
-                            <label for="{{ form.username.id_for_label }}">
-                                <i class="fas fa-user"></i> {{ form.username.label }}
-                            </label>
-                            {{ form.username }}
-                            {% if form.username.errors %}
-                                <div class="text-danger mt-1">
-                                    {% for error in form.username.errors %}
-                                        <small><i class="fas fa-exclamation-circle"></i> {{ error }}</small>
-                                    {% endfor %}
-                                </div>
-                            {% endif %}
-                            <div class="help-text">
-                                <i class="fas fa-info"></i> Será usado para identificarte en el sistema
-                            </div>
-                        </div>
-                    {% endif %}
+                    <p class="text-muted text-center mb-4">
+                        <i class="fas fa-info-circle"></i>
+                        Completa los siguientes datos para acceder al sistema
+                    </p>
 
-                    {% if form.first_name %}
-                        <div class="form-group">
-                            <label for="{{ form.first_name.id_for_label }}">
-                                <i class="fas fa-id-card"></i> {{ form.first_name.label }}
-                            </label>
-                            {{ form.first_name }}
-                            {% if form.first_name.errors %}
-                                <div class="text-danger mt-1">
-                                    {% for error in form.first_name.errors %}
-                                        <small><i class="fas fa-exclamation-circle"></i> {{ error }}</small>
-                                    {% endfor %}
-                                </div>
-                            {% endif %}
-                        </div>
-                    {% endif %}
-
-                    {% if form.last_name %}
-                        <div class="form-group">
-                            <label for="{{ form.last_name.id_for_label }}">
-                                <i class="fas fa-id-card"></i> {{ form.last_name.label }}
-                            </label>
-                            {{ form.last_name }}
-                            {% if form.last_name.errors %}
-                                <div class="text-danger mt-1">
-                                    {% for error in form.last_name.errors %}
-                                        <small><i class="fas fa-exclamation-circle"></i> {{ error }}</small>
-                                    {% endfor %}
-                                </div>
-                            {% endif %}
-                        </div>
-                    {% endif %}
-
-                    <!-- Mostrar otros campos del formulario si existen -->
-                    {% for field in form %}
-                        {% if field.name not in 'email,username,first_name,last_name' %}
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        {% if form.email %}
                             <div class="form-group">
-                                <label for="{{ field.id_for_label }}">
-                                    <i class="fas fa-cog"></i> {{ field.label }}
+                                <label for="{{ form.email.id_for_label }}">
+                                    <i class="fas fa-envelope"></i> {{ form.email.label }}
                                 </label>
-                                {{ field }}
-                                {% if field.errors %}
+                                <div class="input-group">
+                                    <div class="input-group-prepend">
+                                        <span class="input-group-text"><i class="fas fa-envelope"></i></span>
+                                    </div>
+                                    {{ form.email }}
+                                </div>
+                                {% if form.email.errors %}
                                     <div class="text-danger mt-1">
-                                        {% for error in field.errors %}
+                                        {% for error in form.email.errors %}
                                             <small><i class="fas fa-exclamation-circle"></i> {{ error }}</small>
                                         {% endfor %}
                                     </div>
                                 {% endif %}
-                                {% if field.help_text %}
-                                    <div class="help-text">
-                                        <i class="fas fa-info"></i> {{ field.help_text }}
+                                <div class="help-text">
+                                    <i class="fas fa-shield-alt"></i> Tu email será verificado automáticamente
+                                </div>
+                            </div>
+                        {% endif %}
+
+                        {% if form.username %}
+                            <div class="form-group">
+                                <label for="{{ form.username.id_for_label }}">
+                                    <i class="fas fa-user"></i> {{ form.username.label }}
+                                </label>
+                                <div class="input-group">
+                                    <div class="input-group-prepend">
+                                        <span class="input-group-text"><i class="fas fa-user"></i></span>
+                                    </div>
+                                    {{ form.username }}
+                                </div>
+                                {% if form.username.errors %}
+                                    <div class="text-danger mt-1">
+                                        {% for error in form.username.errors %}
+                                            <small><i class="fas fa-exclamation-circle"></i> {{ error }}</small>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                                <div class="help-text">
+                                    <i class="fas fa-info"></i> Será usado para identificarte en el sistema
+                                </div>
+                            </div>
+                        {% endif %}
+
+                        {% if form.first_name %}
+                            <div class="form-group">
+                                <label for="{{ form.first_name.id_for_label }}">
+                                    <i class="fas fa-id-card"></i> {{ form.first_name.label }}
+                                </label>
+                                <div class="input-group">
+                                    <div class="input-group-prepend">
+                                        <span class="input-group-text"><i class="fas fa-id-card"></i></span>
+                                    </div>
+                                    {{ form.first_name }}
+                                </div>
+                                {% if form.first_name.errors %}
+                                    <div class="text-danger mt-1">
+                                        {% for error in form.first_name.errors %}
+                                            <small><i class="fas fa-exclamation-circle"></i> {{ error }}</small>
+                                        {% endfor %}
                                     </div>
                                 {% endif %}
                             </div>
                         {% endif %}
-                    {% endfor %}
 
-                    <div class="form-group mt-4">
-                        <button type="submit" class="btn btn-primary">
-                            <i class="fas fa-check-circle"></i> Completar Registro
+                        {% if form.last_name %}
+                            <div class="form-group">
+                                <label for="{{ form.last_name.id_for_label }}">
+                                    <i class="fas fa-id-card"></i> {{ form.last_name.label }}
+                                </label>
+                                <div class="input-group">
+                                    <div class="input-group-prepend">
+                                        <span class="input-group-text"><i class="fas fa-id-card"></i></span>
+                                    </div>
+                                    {{ form.last_name }}
+                                </div>
+                                {% if form.last_name.errors %}
+                                    <div class="text-danger mt-1">
+                                        {% for error in form.last_name.errors %}
+                                            <small><i class="fas fa-exclamation-circle"></i> {{ error }}</small>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        {% endif %}
+
+                        <!-- Mostrar otros campos del formulario si existen -->
+                        {% for field in form %}
+                            {% if field.name not in 'email,username,first_name,last_name' %}
+                                <div class="form-group">
+                                    <label for="{{ field.id_for_label }}">
+                                        <i class="fas fa-cog"></i> {{ field.label }}
+                                    </label>
+                                    <div class="input-group">
+                                        <div class="input-group-prepend">
+                                            <span class="input-group-text"><i class="fas fa-cog"></i></span>
+                                        </div>
+                                        {{ field }}
+                                    </div>
+                                    {% if field.errors %}
+                                        <div class="text-danger mt-1">
+                                            {% for error in field.errors %}
+                                                <small><i class="fas fa-exclamation-circle"></i> {{ error }}</small>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                    {% if field.help_text %}
+                                        <div class="help-text">
+                                            <i class="fas fa-info"></i> {{ field.help_text }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            {% endif %}
+                        {% endfor %}
+
+                        <button type="submit" class="btn btn-primary btn-block">
+                            <i class="fas fa-check-circle mr-2"></i>
+                            Completar Registro
                         </button>
-                    </div>
-                </form>
+                    </form>
 
-                <div class="back-link">
-                    <a href="{% url 'account_login' %}">
-                        <i class="fas fa-arrow-left"></i> Volver al inicio de sesión
-                    </a>
+                    <div class="back-link">
+                        <a href="{% url 'account_login' %}">
+                            <i class="fas fa-arrow-left"></i> Volver al inicio de sesión
+                        </a>
+                    </div>
+                    
+                    <hr>
+                    
+                    <div class="text-center">
+                        <small class="text-muted">
+                            <i class="fas fa-shield-alt mr-1"></i>
+                            Tu información está protegida y encriptada
+                        </small>
+                    </div>
                 </div>
             </div>
-        </div>
-        
-        <!-- Footer info -->
-        <div class="text-center mt-4">
-            <small style="color: rgba(255,255,255,0.8);">
-                <i class="fas fa-lock"></i> 
-                Tu información está protegida y encriptada
-            </small>
+            
+            <div class="text-center mt-3">
+                <small class="text-white">
+                    © 2025 Municipio de Pastaza - Sistema de Actas Municipales<br>
+                    <i class="fas fa-globe mr-1"></i> puyo.gob.ec
+                </small>
+            </div>
         </div>
     </div>
-</div>
-{% endblock %}
 
-{% block javascript %}
-<script>
-$(document).ready(function() {
-    // Mejorar la experiencia de usuario
-    $('.form-control').addClass('form-control-lg');
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- AdminLTE JS -->
+    <script src="https://cdn.jsdelivr.net/npm/admin-lte@3.2/dist/js/adminlte.min.js"></script>
     
-    // Autocompletar campos si vienen datos del proveedor OAuth
-    {% if sociallogin and sociallogin.user.first_name %}
-        $('#id_first_name').val('{{ sociallogin.user.first_name }}');
-    {% endif %}
-    
-    {% if sociallogin and sociallogin.user.last_name %}
-        $('#id_last_name').val('{{ sociallogin.user.last_name }}');
-    {% endif %}
-    
-    // Focus en el primer campo vacío
-    $('.form-control').each(function() {
-        if ($(this).val() === '') {
-            $(this).focus();
-            return false;
-        }
+    <script>
+    $(document).ready(function() {
+        // Mejorar la experiencia de usuario
+        $('.form-control').addClass('form-control-lg');
+        
+        // Autocompletar campos si vienen datos del proveedor OAuth
+        {% if sociallogin and sociallogin.user.first_name %}
+            $('#id_first_name').val('{{ sociallogin.user.first_name }}');
+        {% endif %}
+        
+        {% if sociallogin and sociallogin.user.last_name %}
+            $('#id_last_name').val('{{ sociallogin.user.last_name }}');
+        {% endif %}
+        
+        // Focus en el primer campo vacío
+        $('.form-control').each(function() {
+            if ($(this).val() === '') {
+                $(this).focus();
+                return false;
+            }
+        });
     });
-});
-</script>
-{% endblock %}
+    </script>
+</body>
+</html>

@@ -371,10 +371,10 @@ docker compose exec actas_web python manage.py migrate
 docker compose exec actas_web python manage.py crear_usuarios_iniciales
 
 # Configurar permisos del sistema
-docker compose exec actas_web python manage.py init_permissions_system
+docker compose exec web python manage.py init_permissions_system
 
 # Recopilar archivos estáticos
-docker compose exec actas_web python manage.py collectstatic --noinput
+docker compose exec web python manage.py collectstatic --noinput
 
 # (OPCIONAL) Cargar datos de demostración
 # docker compose exec actas_web python manage.py loaddata fixtures/demo_data.json
@@ -389,16 +389,28 @@ Si tienes un backup de la base de datos desde tu entorno de desarrollo:
 # scp backup_bd_rocky_linux_XXXXXXXX_XXXXXX.sql root@TU_IP_SERVIDOR:/opt/actas-ia/
 
 # 2. Verificar que PostgreSQL esté listo
-docker compose exec actas_postgres pg_isready -U admin_actas
+docker compose exec db_postgres pg_isready -U admin_actas
 
 # 3. Crear base de datos limpia
-docker compose exec actas_postgres psql -U admin_actas -c "CREATE DATABASE actas_municipales_pastaza;"
+docker compose exec db_postgres psql -U admin_actas -c "CREATE DATABASE actas_municipales_pastaza;"
 
 # 4. Restaurar backup (cambiar por tu archivo específico)
-cat backup_bd_rocky_linux_*.sql | docker compose exec -T actas_postgres psql -U admin_actas -d actas_municipales_pastaza
+cat /opt/actas-ia/backups_inicial/backup_bd_rocky_linux_20250928_171820.sql | docker compose exec -T db_postgres psql -U admin_actas -d actas_municipales_pastaza
 
 # 5. Ejecutar migraciones por si acaso
 docker compose exec actas_web python manage.py migrate
+
+
+
+
+cat /opt/actas-ia/backups_inicial/backup_bd_rocky_linux_20250928_171826.sql | docker compose exec -T db_postgres psql -U admin_actas -d actas_municipales_pastaza
+
+
+
+cat /opt/actas-ia/backups_inicial/backup_bd_rocky_linux_20250928_171833.sql | docker compose exec -T db_postgres psql -U admin_actas -d actas_municipales_pastaza
+
+
+
 
 # 6. Recopilar archivos estáticos
 docker compose exec actas_web python manage.py collectstatic --noinput
@@ -416,7 +428,7 @@ echo "📋 Ver guía completa: GUIA_BACKUP_RESTAURACION_ROCKY.md"
 docker compose ps
 
 # Verificar logs de la aplicación
-docker compose logs --tail=50 actas_web
+docker compose logs --tail=50 web
 
 # Verificar conectividad a la base de datos
 docker compose exec actas_postgres psql -U admin_actas -d actas_municipales_pastaza -c "SELECT version();"

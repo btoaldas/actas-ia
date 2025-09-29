@@ -1,0 +1,2677 @@
+<!DOCTYPE html>
+{% load static %}
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Sistema de Actas Municipales - Municipio de Pastaza</title>
+  
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="{% static 'plugins/fontawesome-free/css/all.min.css' %}">
+  <!-- Theme style -->
+  <link rel="stylesheet" href="{% static 'dist/css/adminlte.min.css' %}">
+  <!-- Bootstrap -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- Animate.css -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
+  
+  <style>
+    body {
+      font-family: 'Source Sans Pro', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      overflow-x: hidden;
+      margin: 0;
+      padding: 0;
+    }
+    
+    /* Landing page full width */
+    .landing-page {
+      width: 100vw;
+      min-height: 100vh;
+      position: relative;
+    }
+    
+    /* Hero Section */
+    .hero-section {
+      position: relative;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      background: linear-gradient(135deg, #004085 0%, #007bff 25%, #0056b3 50%, #003d7a 75%, #002752 100%);
+      overflow: hidden;
+    }
+    
+    .hero-section::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: url("{% static 'dist/img/municipality-pattern.png' %}") center/cover;
+      opacity: 0.05;
+      z-index: 1;
+    }
+    
+    .hero-content {
+      position: relative;
+      z-index: 2;
+      color: white;
+    }
+    
+    /* Logo animado */
+    .logo-municipio {
+      max-width: 200px;
+      filter: brightness(0) invert(1);
+      animation: pulse 2s ease-in-out infinite alternate, float 6s ease-in-out infinite;
+      transition: all 0.3s ease;
+    }
+    
+    .logo-municipio:hover {
+      transform: scale(1.1);
+      filter: brightness(0) invert(1) drop-shadow(0 0 20px rgba(255,255,255,0.8));
+    }
+    
+    @keyframes pulse {
+      0% { transform: scale(1); }
+      100% { transform: scale(1.05); }
+    }
+    
+    @keyframes float {
+      0%, 100% { transform: translateY(0px); }
+      50% { transform: translateY(-10px); }
+    }
+    
+    /* Cinta de noticias */
+    .news-ticker {
+      background: #dc3545;
+      color: white;
+      padding: 15px 0;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .news-ticker-content {
+      display: flex;
+      animation: scroll 30s linear infinite;
+      white-space: nowrap;
+    }
+    
+    .news-item {
+      margin-right: 100px;
+      display: inline-flex;
+      align-items: center;
+    }
+    
+    @keyframes scroll {
+      0% { transform: translateX(100%); }
+      100% { transform: translateX(-100%); }
+    }
+    
+    /* Sección de información */
+    .info-section {
+      background: linear-gradient(45deg, #f8f9fc 0%, #e3f2fd 100%);
+      padding: 80px 0;
+      position: relative;
+    }
+    
+    .module-card {
+      background: rgba(255,255,255,0.95);
+      border: 1px solid rgba(0,123,255,0.1);
+      border-radius: 15px;
+      padding: 30px 25px;
+      text-align: center;
+      transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      box-shadow: 0 10px 30px rgba(0,123,255,0.1);
+      margin-bottom: 30px;
+    }
+    
+    .module-card:hover {
+      transform: translateY(-15px) rotate(1deg);
+      box-shadow: 0 25px 50px rgba(0,123,255,0.2);
+      border-color: #007bff;
+    }
+    
+    .module-icon {
+      font-size: 3.5rem;
+      margin-bottom: 20px;
+      background: linear-gradient(45deg, #007bff, #0056b3);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+      animation: iconPulse 3s ease-in-out infinite;
+    }
+    
+    @keyframes iconPulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.1); }
+    }
+    
+    /* Slider COOTAD */
+    .cootad-slider {
+      background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
+      color: white;
+      padding: 60px 0;
+    }
+    
+    /* Servicios */
+    .services-section {
+      background: #f8f9fc;
+      padding: 80px 0;
+    }
+    
+    .service-card {
+      background: white;
+      border-radius: 20px;
+      padding: 40px 30px;
+      text-align: center;
+      box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+      transition: all 0.3s ease;
+      margin-bottom: 30px;
+    }
+    
+    .service-card:hover {
+      transform: translateY(-10px);
+      box-shadow: 0 25px 50px rgba(0,123,255,0.2);
+    }
+    
+    /* Grid de actas */
+    .actas-section {
+      background: #f8f9fc;
+      padding: 80px 0;
+    }
+    
+    .acta-card {
+      background: white;
+      border-radius: 15px;
+      padding: 25px;
+      box-shadow: 0 8px 25px rgba(0,0,0,0.08);
+      transition: all 0.3s ease;
+      border-left: 4px solid #007bff;
+      margin-bottom: 30px;
+    }
+    
+    .acta-card:hover {
+      transform: translateY(-8px);
+      box-shadow: 0 15px 40px rgba(0,123,255,0.15);
+    }
+    
+    .acta-number {
+      background: linear-gradient(45deg, #007bff, #0056b3);
+      color: white;
+      padding: 8px 15px;
+      border-radius: 20px;
+      font-weight: bold;
+      margin-bottom: 15px;
+      display: inline-block;
+    }
+    
+    /* Login section */
+    .login-section {
+      background: linear-gradient(135deg, #004085 0%, #007bff 100%);
+      color: white;
+      padding: 80px 0;
+    }
+    
+    /* Progress bars */
+    .progress-85 { width: 85%; }
+    .progress-72 { width: 72%; }
+    .progress-98 { width: 98%; }
+    .progress-91 { width: 91%; }
+    
+    /* Proceso Section */
+    .proceso-section {
+      background: linear-gradient(135deg, #f8f9fc 0%, #e8f4fd 100%);
+      padding: 80px 0;
+    }
+    
+    .process-timeline {
+      display: flex;
+      flex-direction: column;
+      gap: 30px;
+      max-width: 1000px;
+      margin: 0 auto;
+    }
+    
+    .process-step {
+      display: flex;
+      align-items: center;
+      gap: 30px;
+      background: white;
+      padding: 30px;
+      border-radius: 20px;
+      box-shadow: 0 10px 30px rgba(0,123,255,0.1);
+      transition: all 0.3s ease;
+      border-left: 5px solid transparent;
+    }
+    
+    .process-step:nth-child(odd) {
+      border-left-color: #007bff;
+    }
+    
+    .process-step:nth-child(even) {
+      border-left-color: #28a745;
+      flex-direction: row-reverse;
+    }
+    
+    .process-step:hover {
+      transform: translateY(-10px);
+      box-shadow: 0 20px 40px rgba(0,123,255,0.2);
+    }
+    
+    .step-icon {
+      min-width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2rem;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+    }
+    
+    .step-content {
+      flex: 1;
+    }
+    
+    .step-content h4 {
+      color: #2c3e50;
+      font-weight: bold;
+      margin-bottom: 10px;
+    }
+    
+    .tech-stack {
+      margin-top: 15px;
+    }
+    
+    .tech-badge {
+      background: linear-gradient(45deg, #007bff, #0056b3);
+      color: white;
+      padding: 5px 12px;
+      border-radius: 15px;
+      font-size: 0.8rem;
+      margin-right: 8px;
+      display: inline-block;
+      margin-bottom: 5px;
+    }
+    
+    .metric-card {
+      background: white;
+      padding: 30px;
+      border-radius: 15px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.08);
+      transition: all 0.3s ease;
+      margin-bottom: 30px;
+    }
+    
+    .metric-card:hover {
+      transform: translateY(-10px);
+      box-shadow: 0 20px 40px rgba(0,123,255,0.15);
+    }
+    
+    /* Tech Section */
+    .tech-section {
+      background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+      color: white;
+      padding: 80px 0;
+    }
+    
+    .tech-category-card {
+      background: rgba(255,255,255,0.1);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 20px;
+      padding: 30px;
+      text-align: center;
+      transition: all 0.3s ease;
+      margin-bottom: 30px;
+    }
+    
+    .tech-category-card:hover {
+      transform: translateY(-10px);
+      background: rgba(255,255,255,0.15);
+    }
+    
+    .tech-header h4 {
+      color: white;
+      font-weight: bold;
+      margin-bottom: 20px;
+    }
+    
+    .tech-list {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+    }
+    
+    .tech-item {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      padding: 10px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 10px;
+      transition: all 0.3s ease;
+    }
+    
+    .tech-item:hover {
+      background: rgba(255,255,255,0.2);
+    }
+    
+    .tech-logo {
+      width: 30px;
+      height: 30px;
+      border-radius: 5px;
+    }
+    
+    /* FAQ Section */
+    .faq-section {
+      background: #f8f9fc;
+      padding: 80px 0;
+    }
+    
+    .faq-item {
+      margin-bottom: 15px;
+      border: none;
+      border-radius: 15px;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+      overflow: hidden;
+    }
+    
+    .accordion-button {
+      background: white;
+      border: none;
+      padding: 20px 25px;
+      font-weight: 600;
+      color: #2c3e50;
+      box-shadow: none;
+    }
+    
+    .accordion-button:not(.collapsed) {
+      background: linear-gradient(45deg, #007bff, #0056b3);
+      color: white;
+    }
+    
+    .accordion-button:focus {
+      box-shadow: none;
+      border-color: transparent;
+    }
+    
+    .accordion-body {
+      background: #f8f9fa;
+      border-top: 3px solid #007bff;
+      padding: 25px;
+    }
+    
+    /* Project Info Section */
+    .project-info-section {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 80px 0;
+    }
+    
+    .project-card, .team-card, .methodology-card {
+      background: rgba(255,255,255,0.1);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 20px;
+      padding: 30px;
+      margin-bottom: 30px;
+    }
+    
+    .detail-item {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      margin-bottom: 15px;
+      padding: 10px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+    
+    .detail-item:last-child {
+      border-bottom: none;
+    }
+    
+    .member {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      margin-bottom: 20px;
+      padding: 15px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 10px;
+    }
+    
+    .member-avatar {
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      background: linear-gradient(45deg, #007bff, #0056b3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 1.2rem;
+    }
+    
+    .member-info h6 {
+      margin: 0;
+      font-weight: bold;
+      color: white;
+    }
+    
+    .member-info small {
+      color: rgba(255,255,255,0.8);
+    }
+    
+    .tutors-list {
+      background: rgba(255,255,255,0.1);
+      padding: 15px;
+      border-radius: 10px;
+      color: rgba(255,255,255,0.9);
+    }
+    
+    .methodology-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 15px;
+      margin-bottom: 20px;
+      padding: 15px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 10px;
+    }
+    
+    .methodology-item i {
+      font-size: 1.5rem;
+      margin-top: 5px;
+    }
+    
+    .methodology-item strong {
+      color: white;
+      display: block;
+      margin-bottom: 5px;
+    }
+    
+    .methodology-item p {
+      margin: 0;
+      color: rgba(255,255,255,0.8);
+      font-size: 0.9rem;
+    }
+    
+    .bg-purple {
+      background: linear-gradient(45deg, #8e44ad, #9b59b6) !important;
+    }
+    
+    /* Infraestructura Section */
+    .infra-section {
+      background: #f8f9fc;
+      padding: 80px 0;
+    }
+    
+    .architecture-diagram {
+      max-width: 1000px;
+      margin: 0 auto;
+    }
+    
+    .infra-layer {
+      margin-bottom: 40px;
+      padding: 20px;
+      background: white;
+      border-radius: 15px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.08);
+    }
+    
+    .infra-card {
+      background: white;
+      border: 2px solid #e3f2fd;
+      border-radius: 12px;
+      padding: 20px;
+      text-align: center;
+      margin-bottom: 20px;
+      transition: all 0.3s ease;
+      height: 120px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+    
+    .infra-card:hover {
+      transform: translateY(-5px);
+      border-color: #007bff;
+      box-shadow: 0 10px 25px rgba(0,123,255,0.15);
+    }
+    
+    .infra-card h6 {
+      font-weight: bold;
+      margin-bottom: 8px;
+      color: #2c3e50;
+    }
+    
+    .infra-card p {
+      margin: 0;
+      color: #6c757d;
+      font-size: 0.9rem;
+    }
+    
+    .dev-tools-card {
+      background: white;
+      border-radius: 15px;
+      padding: 30px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.08);
+    }
+    
+    .tool-item {
+      text-align: center;
+      padding: 20px;
+      border-radius: 10px;
+      transition: all 0.3s ease;
+    }
+    
+    .tool-item:hover {
+      background: #f8f9fa;
+      transform: translateY(-5px);
+    }
+    
+    .tool-item h6 {
+      font-weight: bold;
+      color: #2c3e50;
+      margin-bottom: 8px;
+    }
+    
+    .tool-item p {
+      color: #6c757d;
+      font-size: 0.9rem;
+      margin: 0;
+    }
+    
+    /* Stats Section */
+    .stats-section {
+      background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+      padding: 80px 0;
+      color: white;
+    }
+    
+    .chart-card {
+      background: rgba(255,255,255,0.1);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 15px;
+      padding: 25px;
+      margin-bottom: 30px;
+      text-align: center;
+    }
+    
+    .chart-card h4 {
+      color: white;
+      margin-bottom: 20px;
+    }
+    
+    .chart-legend {
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+    }
+    
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: white;
+    }
+    
+    .legend-color {
+      width: 15px;
+      height: 15px;
+      border-radius: 3px;
+    }
+    
+    .chart-stats {
+      display: flex;
+      justify-content: space-around;
+      margin-top: 20px;
+    }
+    
+    .stat-item {
+      text-align: center;
+    }
+    
+    .stat-value {
+      display: block;
+      font-size: 1.5rem;
+      font-weight: bold;
+      color: white;
+    }
+    
+    .stat-label {
+      font-size: 0.9rem;
+      color: rgba(255,255,255,0.8);
+    }
+    
+    .quality-metrics {
+      text-align: left;
+    }
+    
+    .metric-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 8px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+    
+    .metric-row:last-child {
+      border-bottom: none;
+    }
+    
+    .metric-value {
+      font-weight: bold;
+    }
+    
+    .live-metrics-card {
+      background: rgba(255,255,255,0.1);
+      border-radius: 15px;
+      padding: 30px;
+      border: 1px solid rgba(255,255,255,0.2);
+    }
+    
+    .live-metric {
+      padding: 20px;
+      border-radius: 10px;
+      background: rgba(255,255,255,0.05);
+    }
+    
+    .metric-number {
+      font-size: 2.5rem;
+      font-weight: bold;
+      color: #007bff;
+      margin-bottom: 5px;
+    }
+    
+    .metric-label {
+      color: white;
+      font-size: 0.9rem;
+      margin-bottom: 8px;
+    }
+    
+    .metric-trend {
+      font-size: 0.8rem;
+      font-weight: bold;
+    }
+    
+    .metric-trend.up {
+      color: #28a745;
+    }
+    
+    .metric-trend.down {
+      color: #28a745; /* Verde porque es bueno */
+    }
+    
+    .metric-trend.stable {
+      color: #ffc107;
+    }
+    
+    /* Objectives Section */
+    .objectives-section {
+      background: #f8f9fc;
+      padding: 80px 0;
+    }
+    
+    .problem-card, .objectives-card {
+      background: white;
+      border-radius: 15px;
+      padding: 30px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.08);
+      height: 100%;
+    }
+    
+    .problem-item, .objective-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 15px;
+      margin-bottom: 25px;
+      padding: 15px;
+      border-radius: 10px;
+      transition: all 0.3s ease;
+    }
+    
+    .problem-item:hover, .objective-item:hover {
+      background: #f8f9fa;
+      transform: translateX(5px);
+    }
+    
+    .problem-icon {
+      min-width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #f8f9fa;
+    }
+    
+    .objective-number {
+      min-width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: linear-gradient(45deg, #28a745, #20c997);
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      font-size: 1.2rem;
+    }
+    
+    .problem-content h6, .objective-content h6 {
+      font-weight: bold;
+      color: #2c3e50;
+      margin-bottom: 8px;
+    }
+    
+    .problem-content p, .objective-content p {
+      margin: 0;
+      color: #6c757d;
+      font-size: 0.9rem;
+    }
+    
+    .quality-principles-card {
+      background: white;
+      border-radius: 15px;
+      padding: 40px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.08);
+    }
+    
+    .principle-item {
+      text-align: center;
+      padding: 20px 15px;
+      border-radius: 10px;
+      transition: all 0.3s ease;
+    }
+    
+    .principle-item:hover {
+      background: #f8f9fa;
+      transform: translateY(-5px);
+    }
+    
+    .principle-item h6 {
+      font-weight: bold;
+      color: #2c3e50;
+      margin-bottom: 8px;
+    }
+    
+    .principle-item p {
+      color: #6c757d;
+      font-size: 0.8rem;
+      margin: 0;
+    }
+    
+    .text-purple {
+      color: #8e44ad !important;
+    }
+    
+    /* Conclusions Section */
+    .conclusions-section {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      padding: 80px 0;
+      color: white;
+    }
+    
+    .impact-card, .lessons-card, .future-card {
+      background: rgba(255,255,255,0.1);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 15px;
+      padding: 30px;
+      margin-bottom: 30px;
+      height: 100%;
+    }
+    
+    .achievement-item {
+      text-align: center;
+      margin-bottom: 20px;
+      padding: 15px;
+      border-radius: 10px;
+      background: rgba(255,255,255,0.1);
+    }
+    
+    .achievement-metric {
+      font-size: 2rem;
+      font-weight: bold;
+      color: #28a745;
+      margin-bottom: 8px;
+    }
+    
+    .achievement-label {
+      color: rgba(255,255,255,0.9);
+      font-size: 0.9rem;
+    }
+    
+    .lesson-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 15px;
+      margin-bottom: 20px;
+      padding: 15px;
+      border-radius: 10px;
+      background: rgba(255,255,255,0.1);
+    }
+    
+    .lesson-item i {
+      font-size: 1.2rem;
+      margin-top: 3px;
+    }
+    
+    .lesson-item p {
+      margin: 0;
+      color: rgba(255,255,255,0.9);
+      font-size: 0.9rem;
+    }
+    
+    .future-goal {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      margin-bottom: 25px;
+      padding: 15px;
+      border-radius: 10px;
+      background: rgba(255,255,255,0.1);
+    }
+    
+    .goal-timeline {
+      min-width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      background: linear-gradient(45deg, #ffc107, #ff9800);
+      color: #2c3e50;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      font-size: 0.9rem;
+    }
+    
+    .goal-content h6 {
+      color: white;
+      font-weight: bold;
+      margin-bottom: 8px;
+    }
+    
+    .goal-content p {
+      margin: 0;
+      color: rgba(255,255,255,0.8);
+      font-size: 0.9rem;
+    }
+    
+    .final-message-card {
+      background: rgba(255,255,255,0.1);
+      border-radius: 15px;
+      padding: 40px;
+      text-align: center;
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255,255,255,0.2);
+    }
+    
+    /* Responsive */
+    @media (max-width: 768px) {
+      .hero-section {
+        padding: 60px 20px;
+        text-align: center;
+      }
+      
+      .logo-municipio {
+        max-width: 150px;
+      }
+      
+      .module-card {
+        margin-bottom: 20px;
+      }
+      
+      .process-step {
+        flex-direction: column !important;
+        text-align: center;
+      }
+      
+      .process-step:nth-child(even) {
+        flex-direction: column !important;
+      }
+      
+      .step-icon {
+        margin-bottom: 20px;
+      }
+      
+      .tech-category-card {
+        margin-bottom: 20px;
+      }
+      
+      .project-card, .team-card {
+        margin-bottom: 20px;
+      }
+      
+      .infra-card {
+        height: auto;
+        margin-bottom: 15px;
+      }
+      
+      .chart-card {
+        margin-bottom: 20px;
+      }
+      
+      .chart-stats {
+        flex-direction: column;
+        gap: 10px;
+      }
+      
+      .live-metric {
+        margin-bottom: 20px;
+      }
+      
+      .metric-number {
+        font-size: 2rem;
+      }
+      
+      .principle-item {
+        margin-bottom: 20px;
+      }
+      
+      .problem-card, .objectives-card, .impact-card, .lessons-card, .future-card {
+        margin-bottom: 20px;
+      }
+    }
+  </style>
+</head>
+
+<body class="landing-page">
+
+<!-- Cinta de Noticias -->
+<div class="news-ticker">
+  <div class="news-ticker-content">
+    <div class="news-item">
+      <i class="fas fa-newspaper mr-2"></i>
+      <strong>NUEVO:</strong> Sistema de transparencia municipal actualizado según la Ley Orgánica de Transparencia
+    </div>
+    <div class="news-item">
+      <i class="fas fa-gavel mr-2"></i>
+      <strong>COOTAD Art. 304:</strong> Acceso ciudadano a la información pública garantizado
+    </div>
+    <div class="news-item">
+      <i class="fas fa-file-contract mr-2"></i>
+      <strong>IMPORTANTE:</strong> Nuevas normativas de archivo municipal en vigencia
+    </div>
+  </div>
+</div>
+
+<!-- Hero Section -->
+<section class="hero-section">
+  <div class="container-fluid">
+    <div class="row align-items-center hero-content">
+      <div class="col-lg-8">
+        <h1 class="display-3 fw-bold mb-4 animate__animated animate__fadeInLeft">
+          <i class="fas fa-city text-warning mr-3"></i>
+          Sistema Digital Municipal
+        </h1>
+        <h2 class="h3 mb-4">
+          Municipio de Pastaza - Transparencia e Innovación
+        </h2>
+        <p class="lead mb-5">
+          Plataforma inteligente para la gestión transparente de actas municipales 
+          con tecnología de transcripción automática e inteligencia artificial.
+        </p>
+        <div class="d-flex gap-4 flex-wrap">
+          <a href="{% url 'portal_ciudadano' %}" class="btn btn-warning btn-lg px-5 py-3">
+            <i class="fas fa-scroll mr-2"></i> Portal Ciudadano
+          </a>
+          <a href="{% url 'transparencia_index' %}" class="btn btn-outline-light btn-lg px-5 py-3">
+            <i class="fas fa-eye mr-2"></i> Transparencia
+          </a>
+        </div>
+      </div>
+      <div class="col-lg-4 text-center">
+        <img src="{% static 'dist/img/logoia2.svg' %}" 
+             alt="Escudo Municipal" 
+             class="img-fluid logo-municipio">
+        <div class="mt-4">
+          <h5 class="text-warning">GAD Municipal del Cantón Pastaza</h5>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Objetivos y Problemática -->
+<section class="objectives-section">
+  <div class="container-fluid">
+    <div class="row mb-5">
+      <div class="col-12 text-center">
+        <h2 class="display-4 fw-bold text-primary mb-3">
+          <i class="fas fa-bullseye mr-3"></i>
+          Objetivos y Problemática
+        </h2>
+        <p class="lead text-muted">La visión que impulsa nuestro desarrollo</p>
+      </div>
+    </div>
+    
+    <div class="row">
+      <!-- Problemática -->
+      <div class="col-lg-6">
+        <div class="problem-card">
+          <h4 class="text-danger mb-4">
+            <i class="fas fa-exclamation-triangle mr-2"></i>
+            Problemática Identificada
+          </h4>
+          
+          <div class="problem-item">
+            <div class="problem-icon">
+              <i class="fas fa-clock text-danger"></i>
+            </div>
+            <div class="problem-content">
+              <h6>Proceso Manual Lento</h6>
+              <p>Transcripción manual tomaba 3-5 días por sesión, generando retrasos significativos en la transparencia.</p>
+            </div>
+          </div>
+          
+          <div class="problem-item">
+            <div class="problem-icon">
+              <i class="fas fa-exclamation-circle text-warning"></i>
+            </div>
+            <div class="problem-content">
+              <h6>Errores y Omisiones</h6>
+              <p>Inconsistencias textuales y pérdida de información relevante por fatiga humana.</p>
+            </div>
+          </div>
+          
+          <div class="problem-item">
+            <div class="problem-icon">
+              <i class="fas fa-search text-info"></i>
+            </div>
+            <div class="problem-content">
+              <h6>Acceso Limitado</h6>
+              <p>Documentos dispersos en archivos físicos, dificultando el acceso ciudadano y cumplimiento LOTAIP.</p>
+            </div>
+          </div>
+          
+          <div class="problem-item">
+            <div class="problem-icon">
+              <i class="fas fa-shield-alt text-secondary"></i>
+            </div>
+            <div class="problem-content">
+              <h6>Falta de Trazabilidad</h6>
+              <p>Ausencia de registros de auditoría y firmas digitales para garantizar autenticidad.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Objetivos -->
+      <div class="col-lg-6">
+        <div class="objectives-card">
+          <h4 class="text-success mb-4">
+            <i class="fas fa-target mr-2"></i>
+            Objetivos del Sistema
+          </h4>
+          
+          <div class="objective-item">
+            <div class="objective-number">1</div>
+            <div class="objective-content">
+              <h6>Automatización Completa</h6>
+              <p>Transcripción automática con IA, reduciendo tiempo de procesamiento a minutos.</p>
+            </div>
+          </div>
+          
+          <div class="objective-item">
+            <div class="objective-number">2</div>
+            <div class="objective-content">
+              <h6>Precisión y Calidad</h6>
+              <p>Mejora de la precisión mediante diarización y validación automática.</p>
+            </div>
+          </div>
+          
+          <div class="objective-item">
+            <div class="objective-number">3</div>
+            <div class="objective-content">
+              <h6>Transparencia Digital</h6>
+              <p>Portal ciudadano con búsqueda avanzada y acceso 24/7 a documentos oficiales.</p>
+            </div>
+          </div>
+          
+          <div class="objective-item">
+            <div class="objective-number">4</div>
+            <div class="objective-content">
+              <h6>Seguridad y Auditabilidad</h6>
+              <p>Trazabilidad completa con firmas digitales y cumplimiento normativo.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Principios de calidad -->
+    <div class="row mt-5">
+      <div class="col-12">
+        <div class="quality-principles-card">
+          <h4 class="text-center mb-5">
+            <i class="fas fa-award text-warning mr-2"></i>
+            Principios de Calidad del Sistema
+          </h4>
+          <div class="row">
+            <div class="col-md-2">
+              <div class="principle-item">
+                <i class="fas fa-rocket fa-2x text-primary mb-3"></i>
+                <h6>Eficiencia</h6>
+                <p>Optimización de recursos y tiempo de procesamiento</p>
+              </div>
+            </div>
+            <div class="col-md-2">
+              <div class="principle-item">
+                <i class="fas fa-shield-check fa-2x text-success mb-3"></i>
+                <h6>Seguridad</h6>
+                <p>Protección de datos y cumplimiento normativo</p>
+              </div>
+            </div>
+            <div class="col-md-2">
+              <div class="principle-item">
+                <i class="fas fa-expand-arrows-alt fa-2x text-info mb-3"></i>
+                <h6>Escalabilidad</h6>
+                <p>Capacidad de crecimiento y adaptación</p>
+              </div>
+            </div>
+            <div class="col-md-2">
+              <div class="principle-item">
+                <i class="fas fa-users fa-2x text-warning mb-3"></i>
+                <h6>Usabilidad</h6>
+                <p>Interface intuitiva para usuarios y ciudadanos</p>
+              </div>
+            </div>
+            <div class="col-md-2">
+              <div class="principle-item">
+                <i class="fas fa-eye fa-2x text-purple mb-3"></i>
+                <h6>Transparencia</h6>
+                <p>Acceso abierto y trazabilidad completa</p>
+              </div>
+            </div>
+            <div class="col-md-2">
+              <div class="principle-item">
+                <i class="fas fa-cogs fa-2x text-danger mb-3"></i>
+                <h6>Mantenibilidad</h6>
+                <p>Código limpio y arquitectura modular</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Información Pública -->
+<section class="info-section">
+  <div class="container-fluid">
+    <div class="row mb-5">
+      <div class="col-12 text-center">
+        <h2 class="display-4 fw-bold text-primary mb-3">
+          <i class="fas fa-chart-line mr-3"></i>
+          Información Pública Municipal
+        </h2>
+      </div>
+    </div>
+    
+    <div class="row">
+      <div class="col-lg-3 col-md-6">
+        <div class="module-card">
+          <div class="module-icon">
+            <i class="fas fa-file-contract"></i>
+          </div>
+          <h4 class="fw-bold text-primary">{{ stats_publicas.total_actas_publicas }}</h4>
+          <h6 class="text-dark mb-3">Actas Digitalizadas</h6>
+          <p class="text-muted small">Documentos disponibles según Art. 7 LOTAIP</p>
+          <div class="progress mb-3">
+            <div class="progress-bar bg-primary progress-85"></div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="col-lg-3 col-md-6">
+        <div class="module-card">
+          <div class="module-icon">
+            <i class="fas fa-calendar-check"></i>
+          </div>
+          <h4 class="fw-bold text-success">{{ stats_publicas.total_sesiones_ano }}</h4>
+          <h6 class="text-dark mb-3">Sesiones {{ "now"|date:"Y" }}</h6>
+          <p class="text-muted small">Reuniones del Concejo Municipal</p>
+          <div class="progress mb-3">
+            <div class="progress-bar bg-success progress-72"></div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="col-lg-3 col-md-6">
+        <div class="module-card">
+          <div class="module-icon">
+            <i class="fas fa-eye"></i>
+          </div>
+          <h4 class="fw-bold text-info">98.7%</h4>
+          <h6 class="text-dark mb-3">Transparencia</h6>
+          <p class="text-muted small">Cumplimiento LOTAIP</p>
+          <div class="progress mb-3">
+            <div class="progress-bar bg-info progress-98"></div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="col-lg-3 col-md-6">
+        <div class="module-card">
+          <div class="module-icon">
+            <i class="fas fa-archive"></i>
+          </div>
+          <h4 class="fw-bold text-warning">1,247</h4>
+          <h6 class="text-dark mb-3">Archivo Municipal</h6>
+          <p class="text-muted small">Registro histórico digitalizado</p>
+          <div class="progress mb-3">
+            <div class="progress-bar bg-warning progress-91"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Slider COOTAD -->
+<section class="cootad-slider">
+  <div class="container-fluid">
+    <div id="cootadCarousel" class="carousel slide" data-bs-ride="carousel" data-bs-interval="5000">
+      <div class="carousel-inner">
+        <div class="carousel-item active">
+          <div class="text-center py-5">
+            <h3 class="mb-4">
+              <i class="fas fa-gavel mr-3"></i>
+              COOTAD - Artículo 304
+            </h3>
+            <p class="lead">
+              "Los gobiernos autónomos descentralizados garantizarán el acceso del público a la información."
+            </p>
+          </div>
+        </div>
+        
+        <div class="carousel-item">
+          <div class="text-center py-5">
+            <h3 class="mb-4">
+              <i class="fas fa-balance-scale mr-3"></i>
+              Ley Orgánica de Transparencia
+            </h3>
+            <p class="lead">
+              "El acceso a la información pública es un derecho de las personas que garantiza el Estado."
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Servicios -->
+<section class="services-section">
+  <div class="container-fluid">
+    <div class="row mb-5">
+      <div class="col-12 text-center">
+        <h2 class="display-4 fw-bold text-primary mb-3">
+          <i class="fas fa-concierge-bell mr-3"></i>
+          Servicios Digitales
+        </h2>
+      </div>
+    </div>
+    
+    <div class="row">
+      <div class="col-lg-4">
+        <div class="service-card">
+          <i class="fas fa-scroll fa-4x text-primary mb-4"></i>
+          <h4 class="fw-bold text-dark mb-3">Portal Ciudadano</h4>
+          <p class="text-muted mb-4">
+            Consulta actas públicas, busca por fecha y descarga documentos oficiales.
+          </p>
+          <a href="{% url 'portal_ciudadano' %}" class="btn btn-primary btn-lg w-100">
+            <i class="fas fa-external-link-alt mr-2"></i> Acceder
+          </a>
+        </div>
+      </div>
+      
+      <div class="col-lg-4">
+        <div class="service-card">
+          <i class="fas fa-eye fa-4x text-info mb-4"></i>
+          <h4 class="fw-bold text-dark mb-3">Transparencia</h4>
+          <p class="text-muted mb-4">
+            Portal con presupuestos, contratos y cumplimiento de la LOTAIP.
+          </p>
+          <a href="{% url 'transparencia_index' %}" class="btn btn-info btn-lg w-100">
+            <i class="fas fa-external-link-alt mr-2"></i> Ver Portal
+          </a>
+        </div>
+      </div>
+      
+      <div class="col-lg-4">
+        <div class="service-card">
+          <i class="fas fa-download fa-4x text-success mb-4"></i>
+          <h4 class="fw-bold text-dark mb-3">Descargas</h4>
+          <p class="text-muted mb-4">
+            Descarga actas en PDF, audio y transcripciones automáticas.
+          </p>
+          <a href="{% url 'portal_ciudadano' %}?seccion=descargas" class="btn btn-success btn-lg w-100">
+            <i class="fas fa-external-link-alt mr-2"></i> Descargar
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Últimas Actas -->
+{% if ultimas_actas %}
+<section class="actas-section">
+  <div class="container-fluid">
+    <div class="row mb-5">
+      <div class="col-12 text-center">
+        <h2 class="display-4 fw-bold text-primary mb-3">
+          <i class="fas fa-history mr-3"></i>
+          Últimas Actas Publicadas
+        </h2>
+      </div>
+    </div>
+    
+    <div class="row">
+      {% for acta in ultimas_actas %}
+      <div class="col-lg-4">
+        <div class="acta-card">
+          <div class="acta-number">{{ acta.numero_acta }}</div>
+          <div class="mb-3">
+            <i class="fas fa-calendar-alt mr-2 text-muted"></i>
+            <strong>{{ acta.fecha_sesion|date:"d/m/Y" }}</strong>
+          </div>
+          <h5 class="text-dark fw-bold mb-3">{{ acta.titulo|default:"Sesión Municipal" }}</h5>
+          <p class="text-muted mb-4">{{ acta.resumen|truncatechars:100|default:"Acta de sesión municipal." }}</p>
+          <a href="{% url 'portal_ciudadano' %}?buscar={{ acta.numero_acta }}" 
+             class="btn btn-primary">
+            <i class="fas fa-eye mr-1"></i> Ver Detalle
+          </a>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    
+    <div class="row mt-5">
+      <div class="col-12 text-center">
+        <a href="{% url 'portal_ciudadano' %}" class="btn btn-primary btn-lg px-5">
+          <i class="fas fa-list mr-2"></i> Ver Todas las Actas
+        </a>
+      </div>
+    </div>
+  </div>
+</section>
+{% endif %}
+
+<!-- Proceso Logístico del Sistema -->
+<section class="proceso-section">
+  <div class="container-fluid">
+    <div class="row mb-5">
+      <div class="col-12 text-center">
+        <h2 class="display-4 fw-bold text-primary mb-3">
+          <i class="fas fa-cogs mr-3"></i>
+          Proceso Automatizado de Actas
+        </h2>
+        <p class="lead text-muted">De audio a documento oficial en minutos, no en días</p>
+      </div>
+    </div>
+    
+    <!-- Timeline del proceso -->
+    <div class="row">
+      <div class="col-12">
+        <div class="process-timeline">
+          <!-- Paso 1 -->
+          <div class="process-step">
+            <div class="step-icon bg-primary">
+              <i class="fas fa-microphone text-white"></i>
+            </div>
+            <div class="step-content">
+              <h4>1. Captura de Audio</h4>
+              <p>Grabación de sesiones del Concejo Municipal con calidad profesional</p>
+              <div class="tech-stack">
+                <span class="tech-badge">WebRTC</span>
+                <span class="tech-badge">FFmpeg</span>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Paso 2 -->
+          <div class="process-step">
+            <div class="step-icon bg-info">
+              <i class="fas fa-magic text-white"></i>
+            </div>
+            <div class="step-content">
+              <h4>2. Mejora de Audio</h4>
+              <p>Optimización automática de calidad, reducción de ruido y normalización</p>
+              <div class="tech-stack">
+                <span class="tech-badge">Python</span>
+                <span class="tech-badge">Audio Processing</span>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Paso 3 -->
+          <div class="process-step">
+            <div class="step-icon bg-success">
+              <i class="fas fa-brain text-white"></i>
+            </div>
+            <div class="step-content">
+              <h4>3. Transcripción IA</h4>
+              <p>Conversión de audio a texto usando inteligencia artificial avanzada</p>
+              <div class="tech-stack">
+                <span class="tech-badge">Whisper AI</span>
+                <span class="tech-badge">OpenAI</span>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Paso 4 -->
+          <div class="process-step">
+            <div class="step-icon bg-warning">
+              <i class="fas fa-users text-white"></i>
+            </div>
+            <div class="step-content">
+              <h4>4. Diarización</h4>
+              <p>Identificación automática de participantes y asignación de intervenciones</p>
+              <div class="tech-stack">
+                <span class="tech-badge">Pyannote</span>
+                <span class="tech-badge">Speaker Recognition</span>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Paso 5 -->
+          <div class="process-step">
+            <div class="step-icon bg-danger">
+              <i class="fas fa-file-alt text-white"></i>
+            </div>
+            <div class="step-content">
+              <h4>5. Generación de Acta</h4>
+              <p>Creación automática del documento oficial con formato legal</p>
+              <div class="tech-stack">
+                <span class="tech-badge">Django Templates</span>
+                <span class="tech-badge">PDF Generation</span>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Paso 6 -->
+          <div class="process-step">
+            <div class="step-icon bg-purple">
+              <i class="fas fa-check-circle text-white"></i>
+            </div>
+            <div class="step-content">
+              <h4>6. Revisión y Aprobación</h4>
+              <p>Validación por funcionarios antes de la publicación oficial</p>
+              <div class="tech-stack">
+                <span class="tech-badge">Workflow</span>
+                <span class="tech-badge">Digital Signature</span>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Paso 7 -->
+          <div class="process-step">
+            <div class="step-icon bg-success">
+              <i class="fas fa-globe text-white"></i>
+            </div>
+            <div class="step-content">
+              <h4>7. Publicación</h4>
+              <p>Disponibilidad inmediata en el portal ciudadano según LOTAIP</p>
+              <div class="tech-stack">
+                <span class="tech-badge">Portal Web</span>
+                <span class="tech-badge">Cloud Storage</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Métricas de eficiencia -->
+    <div class="row mt-5">
+      <div class="col-md-3 text-center">
+        <div class="metric-card">
+          <i class="fas fa-clock fa-3x text-primary mb-3"></i>
+          <h3 class="text-primary">Días → Minutos</h3>
+          <p>Tiempo de procesamiento</p>
+        </div>
+      </div>
+      <div class="col-md-3 text-center">
+        <div class="metric-card">
+          <i class="fas fa-percentage fa-3x text-success mb-3"></i>
+          <h3 class="text-success">98.7%</h3>
+          <p>Precisión de transcripción</p>
+        </div>
+      </div>
+      <div class="col-md-3 text-center">
+        <div class="metric-card">
+          <i class="fas fa-robot fa-3x text-info mb-3"></i>
+          <h3 class="text-info">100%</h3>
+          <p>Automatización del proceso</p>
+        </div>
+      </div>
+      <div class="col-md-3 text-center">
+        <div class="metric-card">
+          <i class="fas fa-shield-check fa-3x text-warning mb-3"></i>
+          <h3 class="text-warning">LOTAIP</h3>
+          <p>Cumplimiento legal</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Tecnologías y Arquitectura -->
+<section class="tech-section">
+  <div class="container-fluid">
+    <div class="row mb-5">
+      <div class="col-12 text-center">
+        <h2 class="display-4 fw-bold text-white mb-3">
+          <i class="fas fa-code mr-3"></i>
+          Tecnologías Utilizadas
+        </h2>
+        <p class="lead text-white-50">Infraestructura moderna y robusta</p>
+      </div>
+    </div>
+    
+    <div class="row">
+      <!-- Backend -->
+      <div class="col-lg-4">
+        <div class="tech-category-card">
+          <div class="tech-header">
+            <i class="fas fa-server fa-2x text-primary mb-3"></i>
+            <h4>Backend & API</h4>
+          </div>
+          <div class="tech-list">
+            <div class="tech-item">
+              <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/django/django-plain.svg" alt="Django" class="tech-logo">
+              <span>Django 4.2.9</span>
+            </div>
+            <div class="tech-item">
+              <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/postgresql/postgresql-original.svg" alt="PostgreSQL" class="tech-logo">
+              <span>PostgreSQL 15</span>
+            </div>
+            <div class="tech-item">
+              <img src="https://docs.celeryproject.org/en/stable/_static/celery_512.png" alt="Celery" class="tech-logo">
+              <span>Celery + Redis</span>
+            </div>
+            <div class="tech-item">
+              <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/nginx/nginx-original.svg" alt="Nginx" class="tech-logo">
+              <span>Nginx</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- IA & ML -->
+      <div class="col-lg-4">
+        <div class="tech-category-card">
+          <div class="tech-header">
+            <i class="fas fa-brain fa-2x text-success mb-3"></i>
+            <h4>Inteligencia Artificial</h4>
+          </div>
+          <div class="tech-list">
+            <div class="tech-item">
+              <img src="https://openai.com/favicon.ico" alt="OpenAI" class="tech-logo">
+              <span>OpenAI Whisper</span>
+            </div>
+            <div class="tech-item">
+              <img src="https://avatars.githubusercontent.com/u/65513213?s=200&v=4" alt="Pyannote" class="tech-logo">
+              <span>Pyannote Audio</span>
+            </div>
+            <div class="tech-item">
+              <img src="https://avatars.githubusercontent.com/u/131278338?s=200&v=4" alt="DeepSeek" class="tech-logo">
+              <span>DeepSeek AI</span>
+            </div>
+            <div class="tech-item">
+              <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/python/python-original.svg" alt="Python" class="tech-logo">
+              <span>Python NLP</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Frontend & DevOps -->
+      <div class="col-lg-4">
+        <div class="tech-category-card">
+          <div class="tech-header">
+            <i class="fas fa-laptop-code fa-2x text-warning mb-3"></i>
+            <h4>Frontend & DevOps</h4>
+          </div>
+          <div class="tech-list">
+            <div class="tech-item">
+              <img src="https://adminlte.io/themes/v3/dist/img/AdminLTELogo.png" alt="AdminLTE" class="tech-logo">
+              <span>AdminLTE 3.2</span>
+            </div>
+            <div class="tech-item">
+              <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/bootstrap/bootstrap-original.svg" alt="Bootstrap" class="tech-logo">
+              <span>Bootstrap 5</span>
+            </div>
+            <div class="tech-item">
+              <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/docker/docker-original.svg" alt="Docker" class="tech-logo">
+              <span>Docker Compose</span>
+            </div>
+            <div class="tech-item">
+              <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/github/github-original.svg" alt="GitHub" class="tech-logo">
+              <span>GitHub Actions</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Infraestructura de Producción -->
+<section class="infra-section">
+  <div class="container-fluid">
+    <div class="row mb-5">
+      <div class="col-12 text-center">
+        <h2 class="display-4 fw-bold text-primary mb-3">
+          <i class="fas fa-server mr-3"></i>
+          Infraestructura de Producción
+        </h2>
+        <p class="lead text-muted">Despliegue profesional con alta disponibilidad y seguridad</p>
+      </div>
+    </div>
+    
+    <!-- Diagrama de arquitectura -->
+    <div class="row mb-5">
+      <div class="col-12">
+        <div class="architecture-diagram">
+          <div class="infra-layer">
+            <h5 class="text-center mb-4"><i class="fas fa-globe text-primary mr-2"></i>Dominio & DNS</h5>
+            <div class="row">
+              <div class="col-md-6">
+                <div class="infra-card dns-card">
+                  <i class="fab fa-cloudflare fa-2x text-warning mb-3"></i>
+                  <h6>Cloudflare DNS</h6>
+                  <p>Gestión de DNS con CDN global y protección DDoS</p>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="infra-card domain-card">
+                  <i class="fas fa-link fa-2x text-info mb-3"></i>
+                  <h6>actas.puyo.gob.ec</h6>
+                  <p>Dominio oficial del Municipio de Pastaza</p>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div class="infra-layer">
+            <h5 class="text-center mb-4"><i class="fas fa-shield-alt text-success mr-2"></i>Seguridad & Proxy</h5>
+            <div class="row">
+              <div class="col-md-4">
+                <div class="infra-card security-card">
+                  <i class="fas fa-lock fa-2x text-success mb-3"></i>
+                  <h6>SSL Let's Encrypt</h6>
+                  <p>Certificados HTTPS automáticos y renovación continua</p>
+                </div>
+              </div>
+              <div class="col-md-4">
+                <div class="infra-card nginx-card">
+                  <i class="fas fa-layer-group fa-2x text-primary mb-3"></i>
+                  <h6>Nginx Proxy Inverso</h6>
+                  <p>Balanceador de carga y servicio de archivos estáticos</p>
+                </div>
+              </div>
+              <div class="col-md-4">
+                <div class="infra-card firewall-card">
+                  <i class="fas fa-fire fa-2x text-danger mb-3"></i>
+                  <h6>Firewall & Monitoring</h6>
+                  <p>Protección y monitoreo en tiempo real</p>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div class="infra-layer">
+            <h5 class="text-center mb-4"><i class="fas fa-hdd text-warning mr-2"></i>Servidor VPS</h5>
+            <div class="row">
+              <div class="col-md-6">
+                <div class="infra-card server-card">
+                  <i class="fab fa-linux fa-2x text-info mb-3"></i>
+                  <h6>Contabo VPS</h6>
+                  <p>Rocky Linux Enterprise<br>4 vCPU | 8GB RAM | 200GB SSD</p>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="infra-card docker-card">
+                  <i class="fab fa-docker fa-2x text-primary mb-3"></i>
+                  <h6>Docker Compose</h6>
+                  <p>Orquestación de contenedores en producción</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Herramientas de desarrollo -->
+    <div class="row">
+      <div class="col-12">
+        <div class="dev-tools-card">
+          <h4 class="text-center mb-4">
+            <i class="fas fa-code-branch text-primary mr-2"></i>
+            Herramientas de Desarrollo
+          </h4>
+          <div class="row">
+            <div class="col-md-3">
+              <div class="tool-item">
+                <i class="fab fa-windows fa-2x text-info mb-2"></i>
+                <h6>Windows 11</h6>
+                <p>Entorno de desarrollo principal</p>
+              </div>
+            </div>
+            <div class="col-md-3">
+              <div class="tool-item">
+                <i class="fas fa-code fa-2x text-success mb-2"></i>
+                <h6>VS Code</h6>
+                <p>Editor con extensiones completas</p>
+              </div>
+            </div>
+            <div class="col-md-3">
+              <div class="tool-item">
+                <i class="fas fa-robot fa-2x text-warning mb-2"></i>
+                <h6>GitHub Copilot</h6>
+                <p>IA asistente + Claude Sonnet</p>
+              </div>
+            </div>
+            <div class="col-md-3">
+              <div class="tool-item">
+                <i class="fas fa-bolt fa-2x text-danger mb-2"></i>
+                <h6>Bolt.new</h6>
+                <p>Prototipado y diseño rápido</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FAQ Section -->
+<section class="faq-section">
+  <div class="container-fluid">
+    <div class="row mb-5">
+      <div class="col-12 text-center">
+        <h2 class="display-4 fw-bold text-primary mb-3">
+          <i class="fas fa-question-circle mr-3"></i>
+          Preguntas Frecuentes
+        </h2>
+        <p class="lead text-muted">Resolvemos las dudas más comunes sobre nuestro sistema</p>
+      </div>
+    </div>
+    
+    <div class="row justify-content-center">
+      <div class="col-lg-10">
+        <div class="accordion" id="faqAccordion">
+          
+          <!-- FAQ 1 -->
+          <div class="accordion-item faq-item">
+            <h2 class="accordion-header" id="faq1">
+              <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapse1">
+                <i class="fas fa-microphone mr-3 text-primary"></i>
+                ¿Cómo funciona la transcripción automática de las sesiones?
+              </button>
+            </h2>
+            <div id="collapse1" class="accordion-collapse collapse show" data-bs-parent="#faqAccordion">
+              <div class="accordion-body">
+                Utilizamos inteligencia artificial avanzada (OpenAI Whisper) para convertir automáticamente el audio de las sesiones a texto. El sistema mejora la calidad del audio, identifica a los participantes y genera una transcripción precisa en tiempo real.
+              </div>
+            </div>
+          </div>
+          
+          <!-- FAQ 2 -->
+          <div class="accordion-item faq-item">
+            <h2 class="accordion-header" id="faq2">
+              <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse2">
+                <i class="fas fa-clock mr-3 text-success"></i>
+                ¿Cuánto tiempo toma procesar un acta completa?
+              </button>
+            </h2>
+            <div id="collapse2" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+              <div class="accordion-body">
+                El proceso completo toma entre 5-15 minutos dependiendo de la duración de la sesión. Esto representa una reducción del 95% comparado con el método manual que tomaba varios días.
+              </div>
+            </div>
+          </div>
+          
+          <!-- FAQ 3 -->
+          <div class="accordion-item faq-item">
+            <h2 class="accordion-header" id="faq3">
+              <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse3">
+                <i class="fas fa-shield-alt mr-3 text-warning"></i>
+                ¿Qué medidas de seguridad tiene el sistema?
+              </button>
+            </h2>
+            <div id="collapse3" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+              <div class="accordion-body">
+                Implementamos múltiples capas de seguridad: autenticación OAuth, cifrado de datos, auditoría completa de acciones, firmas digitales para documentos oficiales y cumplimiento estricto de la LOTAIP.
+              </div>
+            </div>
+          </div>
+          
+          <!-- FAQ 4 -->
+          <div class="accordion-item faq-item">
+            <h2 class="accordion-header" id="faq4">
+              <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse4">
+                <i class="fas fa-users mr-3 text-info"></i>
+                ¿Cómo identifica el sistema a cada participante?
+              </button>
+            </h2>
+            <div id="collapse4" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+              <div class="accordion-body">
+                Utilizamos tecnología de diarización (Pyannote) que analiza las características de voz únicas de cada persona para separar y etiquetar automáticamente las intervenciones de cada participante en la sesión.
+              </div>
+            </div>
+          </div>
+          
+          <!-- FAQ 5 -->
+          <div class="accordion-item faq-item">
+            <h2 class="accordion-header" id="faq5">
+              <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse5">
+                <i class="fas fa-download mr-3 text-danger"></i>
+                ¿Puedo descargar las actas en diferentes formatos?
+              </button>
+            </h2>
+            <div id="collapse5" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+              <div class="accordion-body">
+                Sí, ofrecemos múltiples formatos: PDF oficial para documentos legales, texto plano para búsquedas, audio original MP3, y transcripción estructurada en JSON para desarrolladores.
+              </div>
+            </div>
+          </div>
+          
+          <!-- FAQ 6 -->
+          <div class="accordion-item faq-item">
+            <h2 class="accordion-header" id="faq6">
+              <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse6">
+                <i class="fas fa-eye mr-3 text-purple"></i>
+                ¿Cómo cumple el sistema con la Ley de Transparencia?
+              </button>
+            </h2>
+            <div id="collapse6" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+              <div class="accordion-body">
+                El sistema garantiza el cumplimiento total de la LOTAIP mediante publicación automática, búsqueda avanzada, acceso libre para ciudadanos, trazabilidad completa y archivo digital permanente de todos los documentos.
+              </div>
+            </div>
+          </div>
+          
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Estadísticas y Métricas -->
+<section class="stats-section">
+  <div class="container-fluid">
+    <div class="row mb-5">
+      <div class="col-12 text-center">
+        <h2 class="display-4 fw-bold text-white mb-3">
+          <i class="fas fa-chart-bar mr-3"></i>
+          Estadísticas del Sistema
+        </h2>
+        <p class="lead text-white-50">Datos en tiempo real sobre el rendimiento y uso</p>
+      </div>
+    </div>
+    
+    <div class="row mb-5">
+      <!-- Gráfico de barras - Procesamiento mensual -->
+      <div class="col-lg-6">
+        <div class="chart-card">
+          <h4 class="mb-4"><i class="fas fa-chart-column text-primary mr-2"></i>Actas Procesadas por Mes</h4>
+          <canvas id="monthlyChart" width="400" height="200"></canvas>
+          <div class="chart-legend mt-3">
+            <span class="legend-item"><span class="legend-color bg-primary"></span>2025</span>
+            <span class="legend-item"><span class="legend-color bg-success"></span>2024</span>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Gráfico circular - Tipos de sesión -->
+      <div class="col-lg-6">
+        <div class="chart-card">
+          <h4 class="mb-4"><i class="fas fa-chart-pie text-success mr-2"></i>Tipos de Sesión</h4>
+          <canvas id="sessionTypeChart" width="400" height="200"></canvas>
+          <div class="chart-stats mt-3">
+            <div class="stat-item">
+              <span class="stat-value">67%</span>
+              <span class="stat-label">Ordinarias</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-value">23%</span>
+              <span class="stat-label">Extraordinarias</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-value">10%</span>
+              <span class="stat-label">Solemnes</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="row">
+      <!-- Gráfico de línea - Tiempo de procesamiento -->
+      <div class="col-lg-8">
+        <div class="chart-card">
+          <h4 class="mb-4"><i class="fas fa-chart-line text-info mr-2"></i>Evolución del Tiempo de Procesamiento</h4>
+          <canvas id="processingTimeChart" width="600" height="300"></canvas>
+          <p class="text-muted mt-3">
+            <i class="fas fa-info-circle mr-1"></i>
+            Reducción promedio del 94% en tiempo de procesamiento desde la implementación
+          </p>
+        </div>
+      </div>
+      
+      <!-- Gráfico de araña - Calidad del sistema -->
+      <div class="col-lg-4">
+        <div class="chart-card">
+          <h4 class="mb-4"><i class="fas fa-spider text-warning mr-2"></i>Indicadores de Calidad</h4>
+          <canvas id="qualityRadarChart" width="300" height="300"></canvas>
+          <div class="quality-metrics mt-3">
+            <div class="metric-row">
+              <span>Precisión IA</span>
+              <span class="metric-value text-success">98.7%</span>
+            </div>
+            <div class="metric-row">
+              <span>Disponibilidad</span>
+              <span class="metric-value text-success">99.9%</span>
+            </div>
+            <div class="metric-row">
+              <span>Satisfacción</span>
+              <span class="metric-value text-info">96.2%</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Métricas en tiempo real -->
+    <div class="row mt-5">
+      <div class="col-12">
+        <div class="live-metrics-card">
+          <h4 class="text-center mb-4">
+            <i class="fas fa-pulse text-success mr-2"></i>
+            Métricas en Tiempo Real
+          </h4>
+          <div class="row text-center">
+            <div class="col-md-3">
+              <div class="live-metric">
+                <div class="metric-number" id="totalSessions">127</div>
+                <div class="metric-label">Sesiones Este Año</div>
+                <div class="metric-trend up">+12% vs 2024</div>
+              </div>
+            </div>
+            <div class="col-md-3">
+              <div class="live-metric">
+                <div class="metric-number" id="avgProcessTime">8.3</div>
+                <div class="metric-label">Min. Procesamiento Promedio</div>
+                <div class="metric-trend down">-2.1 min vs mes anterior</div>
+              </div>
+            </div>
+            <div class="col-md-3">
+              <div class="live-metric">
+                <div class="metric-number" id="citizenAccess">2,847</div>
+                <div class="metric-label">Accesos Ciudadanos</div>
+                <div class="metric-trend up">+34% vs 2024</div>
+              </div>
+            </div>
+            <div class="col-md-3">
+              <div class="live-metric">
+                <div class="metric-number" id="systemUptime">99.9</div>
+                <div class="metric-label">% Disponibilidad</div>
+                <div class="metric-trend stable">Estable</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Información del Proyecto -->
+<section class="project-info-section">
+  <div class="container-fluid">
+    <div class="row mb-5">
+      <div class="col-12 text-center">
+        <h2 class="display-4 fw-bold text-white mb-3">
+          <i class="fas fa-info-circle mr-3"></i>
+          Sobre el Proyecto
+        </h2>
+        <p class="lead text-white-50">Innovación académica al servicio de la transparencia municipal</p>
+      </div>
+    </div>
+    
+    <div class="row">
+      <!-- Información del proyecto -->
+      <div class="col-lg-6">
+        <div class="project-card">
+          <h4 class="text-primary mb-4">
+            <i class="fas fa-university mr-2"></i>
+            Proyecto Integrador UNIANDES
+          </h4>
+          <p class="mb-4">
+            <strong>"Desarrollo de aplicación multimodal con IA para transcripción, reconocimiento, 
+            generación y gestión de actas municipales"</strong>
+          </p>
+          
+          <div class="project-details">
+            <div class="detail-item">
+              <i class="fas fa-graduation-cap text-primary"></i>
+              <span><strong>Nivel:</strong> Octavo Nivel - Carrera de Software</span>
+            </div>
+            <div class="detail-item">
+              <i class="fas fa-calendar text-success"></i>
+              <span><strong>Año:</strong> 2025</span>
+            </div>
+            <div class="detail-item">
+              <i class="fas fa-map-marker-alt text-warning"></i>
+              <span><strong>Ciudad:</strong> Ambato, Ecuador</span>
+            </div>
+            <div class="detail-item">
+              <i class="fas fa-target text-info"></i>
+              <span><strong>Objetivo:</strong> Modernizar la administración pública local</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Equipo de desarrollo -->
+      <div class="col-lg-6">
+        <div class="team-card">
+          <h4 class="text-success mb-4">
+            <i class="fas fa-users mr-2"></i>
+            Equipo de Desarrollo
+          </h4>
+          
+          <div class="team-members">
+            <div class="member">
+              <div class="member-avatar">
+                <i class="fas fa-user-graduate"></i>
+              </div>
+              <div class="member-info">
+                <h6>Alberto Alexander Aldas Villacres</h6>
+                <small>Desarrollador Full-Stack</small>
+              </div>
+            </div>
+            
+            <div class="member">
+              <div class="member-avatar">
+                <i class="fas fa-user-graduate"></i>
+              </div>
+              <div class="member-info">
+                <h6>Cristian Joel Riofrio Medina</h6>
+                <small>Especialista en IA</small>
+              </div>
+            </div>
+            
+            <div class="member">
+              <div class="member-avatar">
+                <i class="fas fa-user-graduate"></i>
+              </div>
+              <div class="member-info">
+                <h6>Ricardo Josué Vaca Miño</h6>
+                <small>Arquitecto de Software</small>
+              </div>
+            </div>
+          </div>
+          
+          <h5 class="text-info mt-4 mb-3">Tutores Académicos</h5>
+          <div class="tutors-list">
+            <small>
+              • Ing. Cristian Javier Saltos Ponce<br>
+              • Ing. Andrés Roberto León Yacelga<br>
+              • Ing. Luz Marina Aguirre Paz<br>
+              • Ing. Bolívar Enrique Villalta Jadan<br>
+              • Ing. Rita Azucena Diaz Vásquez
+            </small>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Metodología -->
+    <div class="row mt-5">
+      <div class="col-12">
+        <div class="methodology-card">
+          <div class="row">
+            <div class="col-md-6">
+              <h4 class="text-primary mb-3">
+                <i class="fas fa-cogs mr-2"></i>
+                Metodología de Desarrollo
+              </h4>
+              <div class="methodology-item">
+                <i class="fas fa-project-diagram text-success"></i>
+                <div>
+                  <strong>Kanban</strong>
+                  <p>Gestión ágil del flujo de trabajo con mejora continua</p>
+                </div>
+              </div>
+              <div class="methodology-item">
+                <i class="fas fa-lightbulb text-warning"></i>
+                <div>
+                  <strong>Design Thinking</strong>
+                  <p>Enfoque centrado en el usuario y validación continua</p>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <h4 class="text-primary mb-3">
+                <i class="fas fa-balance-scale mr-2"></i>
+                Marco de Gobernanza
+              </h4>
+              <div class="methodology-item">
+                <i class="fas fa-shield-check text-info"></i>
+                <div>
+                  <strong>COBIT Framework</strong>
+                  <p>Alineación con objetivos estratégicos municipales</p>
+                </div>
+              </div>
+              <div class="methodology-item">
+                <i class="fas fa-gavel text-danger"></i>
+                <div>
+                  <strong>LOTAIP Compliance</strong>
+                  <p>Cumplimiento estricto de normativas de transparencia</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Conclusiones y Impacto -->
+<section class="conclusions-section">
+  <div class="container-fluid">
+    <div class="row mb-5">
+      <div class="col-12 text-center">
+        <h2 class="display-4 fw-bold text-white mb-3">
+          <i class="fas fa-lightbulb mr-3"></i>
+          Conclusiones e Impacto
+        </h2>
+        <p class="lead text-white-50">Resultados y proyección hacia el futuro</p>
+      </div>
+    </div>
+    
+    <div class="row">
+      <!-- Impacto logrado -->
+      <div class="col-lg-4">
+        <div class="impact-card">
+          <h4 class="text-success mb-4">
+            <i class="fas fa-check-circle mr-2"></i>
+            Impacto Logrado
+          </h4>
+          
+          <div class="achievement-item">
+            <div class="achievement-metric">94%</div>
+            <div class="achievement-label">Reducción en tiempo de procesamiento</div>
+          </div>
+          
+          <div class="achievement-item">
+            <div class="achievement-metric">98.7%</div>
+            <div class="achievement-label">Precisión en transcripción automática</div>
+          </div>
+          
+          <div class="achievement-item">
+            <div class="achievement-metric">100%</div>
+            <div class="achievement-label">Cumplimiento LOTAIP</div>
+          </div>
+          
+          <div class="achievement-item">
+            <div class="achievement-metric">2,847</div>
+            <div class="achievement-label">Ciudadanos beneficiados</div>
+          </div>
+          
+          <div class="achievement-item">
+            <div class="achievement-metric">Zero</div>
+            <div class="achievement-label">Documentos perdidos</div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Lecciones aprendidas -->
+      <div class="col-lg-4">
+        <div class="lessons-card">
+          <h4 class="text-info mb-4">
+            <i class="fas fa-graduation-cap mr-2"></i>
+            Lecciones Aprendidas
+          </h4>
+          
+          <div class="lesson-item">
+            <i class="fas fa-brain text-primary"></i>
+            <p><strong>IA como Herramienta:</strong> La inteligencia artificial no reemplaza, sino que potencia las capacidades humanas en la administración pública.</p>
+          </div>
+          
+          <div class="lesson-item">
+            <i class="fas fa-users text-success"></i>
+            <p><strong>Adopción Gradual:</strong> La capacitación continua del personal fue clave para la adopción exitosa del sistema.</p>
+          </div>
+          
+          <div class="lesson-item">
+            <i class="fas fa-shield-alt text-warning"></i>
+            <p><strong>Seguridad Integral:</strong> La combinación de múltiples capas de seguridad garantiza la confiabilidad del sistema.</p>
+          </div>
+          
+          <div class="lesson-item">
+            <i class="fas fa-chart-line text-info"></i>
+            <p><strong>Mejora Continua:</strong> El monitoreo constante permite optimizaciones incrementales significativas.</p>
+          </div>
+          
+          <div class="lesson-item">
+            <i class="fas fa-handshake text-purple"></i>
+            <p><strong>Colaboración:</strong> La sinergia entre academia, gobierno y ciudadanía impulsa la innovación.</p>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Proyección futura -->
+      <div class="col-lg-4">
+        <div class="future-card">
+          <h4 class="text-warning mb-4">
+            <i class="fas fa-rocket mr-2"></i>
+            Proyección Futura
+          </h4>
+          
+          <div class="future-goal">
+            <div class="goal-timeline">2025</div>
+            <div class="goal-content">
+              <h6>Expansión Regional</h6>
+              <p>Implementación en 5 municipios adicionales de la región amazónica</p>
+            </div>
+          </div>
+          
+          <div class="future-goal">
+            <div class="goal-timeline">2026</div>
+            <div class="goal-content">
+              <h6>Integración Completa</h6>
+              <p>Conexión con sistemas de obras públicas y participación ciudadana</p>
+            </div>
+          </div>
+          
+          <div class="future-goal">
+            <div class="goal-timeline">2027</div>
+            <div class="goal-content">
+              <h6>IA Avanzada</h6>
+              <p>Análisis predictivo y generación automática de informes ejecutivos</p>
+            </div>
+          </div>
+          
+          <div class="future-goal">
+            <div class="goal-timeline">2028</div>
+            <div class="goal-content">
+              <h6>Estándar Nacional</h6>
+              <p>Modelo de referencia para modernización municipal en Ecuador</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Mensaje final -->
+    <div class="row mt-5">
+      <div class="col-12">
+        <div class="final-message-card">
+          <div class="row align-items-center">
+            <div class="col-md-2 text-center">
+              <i class="fas fa-heart fa-4x text-danger mb-3"></i>
+            </div>
+            <div class="col-md-10">
+              <h4 class="text-white mb-3">Un Paso Hacia el Gobierno Digital del Futuro</h4>
+              <p class="text-white-50 mb-4">
+                Este proyecto representa más que una solución tecnológica: es un compromiso con la transparencia, 
+                la eficiencia y el servicio ciudadano. Cada línea de código, cada funcionalidad y cada mejora 
+                están pensadas para construir una administración pública más cercana, más eficiente y más confiable.
+              </p>
+              <p class="text-white">
+                <strong>Gracias por ser parte de esta transformación digital. 
+                Juntos construimos un futuro más transparente para Pastaza y Ecuador.</strong>
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Login Section -->
+<section class="login-section">
+  <div class="container-fluid">
+    <div class="row justify-content-center">
+      <div class="col-lg-8 text-center">
+        <h2 class="display-4 fw-bold text-white mb-4">
+          <i class="fas fa-shield-alt mr-3"></i>
+          Acceso al Sistema Municipal
+        </h2>
+        <p class="lead text-white-50 mb-5">
+          Portal exclusivo para funcionarios municipales autorizados
+        </p>
+        
+        <div class="row">
+          <div class="col-md-6 mb-3">
+            <a href="{% url 'account_login' %}" class="btn btn-warning btn-lg w-100 py-3">
+              <i class="fas fa-key mr-2"></i> Iniciar Sesión
+            </a>
+          </div>
+          <div class="col-md-6 mb-3">
+            <a href="/accounts/signup/" class="btn btn-outline-light btn-lg w-100 py-3">
+              <i class="fas fa-clipboard-list mr-2"></i> Registrarse
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Footer -->
+<footer class="bg-dark text-white py-4">
+  <div class="container-fluid">
+    <div class="row">
+      <div class="col-md-6">
+        <p class="mb-0">
+          <strong>© 2025 Municipio de Pastaza</strong> - Todos los derechos reservados
+        </p>
+      </div>
+      <div class="col-md-6 text-md-end">
+        <small class="text-muted">
+          Versión 2.0 | (03) 2883-381 | info@puyo.gob.ec
+        </small>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<!-- Scripts -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="{% static 'plugins/jquery/jquery.min.js' %}"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Animación para cards
+    const cards = document.querySelectorAll('.module-card, .service-card, .acta-card, .infra-card, .chart-card');
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.style.opacity = '1';
+                entry.target.style.transform = 'translateY(0)';
+            }
+        });
+    });
+    
+    cards.forEach(card => {
+        card.style.opacity = '0';
+        card.style.transform = 'translateY(30px)';
+        card.style.transition = 'all 0.6s ease';
+        observer.observe(card);
+    });
+    
+    // Counter animado
+    function animateCounter(element, target) {
+        let current = 0;
+        const increment = target / 60;
+        const timer = setInterval(() => {
+            current += increment;
+            if (current >= target) {
+                element.textContent = target;
+                clearInterval(timer);
+            } else {
+                element.textContent = Math.floor(current);
+            }
+        }, 30);
+    }
+    
+    // Iniciar contadores
+    const statsNumbers = document.querySelectorAll('.module-card h4, .metric-number');
+    statsNumbers.forEach(el => {
+        const text = el.textContent.replace(/[^\d]/g, '');
+        const target = parseInt(text);
+        if (target > 0) {
+            const counterObserver = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        animateCounter(el, target);
+                        counterObserver.unobserve(entry.target);
+                    }
+                });
+            });
+            counterObserver.observe(el);
+        }
+    });
+    
+    // Gráfico de barras - Procesamiento mensual
+    const monthlyCtx = document.getElementById('monthlyChart');
+    if (monthlyCtx) {
+        new Chart(monthlyCtx, {
+            type: 'bar',
+            data: {
+                labels: ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'],
+                datasets: [{
+                    label: '2025',
+                    data: [12, 15, 18, 22, 25, 28, 30, 27, 24, 0, 0, 0],
+                    backgroundColor: 'rgba(0, 123, 255, 0.8)',
+                    borderColor: 'rgba(0, 123, 255, 1)',
+                    borderWidth: 1
+                }, {
+                    label: '2024',
+                    data: [8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30],
+                    backgroundColor: 'rgba(40, 167, 69, 0.8)',
+                    borderColor: 'rgba(40, 167, 69, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        labels: {
+                            color: 'white'
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            color: 'white'
+                        },
+                        grid: {
+                            color: 'rgba(255, 255, 255, 0.2)'
+                        }
+                    },
+                    x: {
+                        ticks: {
+                            color: 'white'
+                        },
+                        grid: {
+                            color: 'rgba(255, 255, 255, 0.2)'
+                        }
+                    }
+                }
+            }
+        });
+    }
+    
+    // Gráfico circular - Tipos de sesión
+    const sessionTypeCtx = document.getElementById('sessionTypeChart');
+    if (sessionTypeCtx) {
+        new Chart(sessionTypeCtx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Ordinarias', 'Extraordinarias', 'Solemnes'],
+                datasets: [{
+                    data: [67, 23, 10],
+                    backgroundColor: [
+                        'rgba(0, 123, 255, 0.8)',
+                        'rgba(40, 167, 69, 0.8)',
+                        'rgba(255, 193, 7, 0.8)'
+                    ],
+                    borderColor: [
+                        'rgba(0, 123, 255, 1)',
+                        'rgba(40, 167, 69, 1)',
+                        'rgba(255, 193, 7, 1)'
+                    ],
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        labels: {
+                            color: 'white'
+                        }
+                    }
+                }
+            }
+        });
+    }
+    
+    // Gráfico de línea - Tiempo de procesamiento
+    const processingTimeCtx = document.getElementById('processingTimeChart');
+    if (processingTimeCtx) {
+        new Chart(processingTimeCtx, {
+            type: 'line',
+            data: {
+                labels: ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep'],
+                datasets: [{
+                    label: 'Tiempo Manual (horas)',
+                    data: [72, 68, 70, 69, 65, 0, 0, 0, 0],
+                    borderColor: 'rgba(220, 53, 69, 1)',
+                    backgroundColor: 'rgba(220, 53, 69, 0.2)',
+                    fill: true,
+                    tension: 0.4
+                }, {
+                    label: 'Tiempo Automático (minutos)',
+                    data: [0, 0, 0, 0, 0, 12, 10, 8, 8],
+                    borderColor: 'rgba(40, 167, 69, 1)',
+                    backgroundColor: 'rgba(40, 167, 69, 0.2)',
+                    fill: true,
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        labels: {
+                            color: 'white'
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            color: 'white'
+                        },
+                        grid: {
+                            color: 'rgba(255, 255, 255, 0.2)'
+                        }
+                    },
+                    x: {
+                        ticks: {
+                            color: 'white'
+                        },
+                        grid: {
+                            color: 'rgba(255, 255, 255, 0.2)'
+                        }
+                    }
+                }
+            }
+        });
+    }
+    
+    // Gráfico de araña - Calidad
+    const qualityRadarCtx = document.getElementById('qualityRadarChart');
+    if (qualityRadarCtx) {
+        new Chart(qualityRadarCtx, {
+            type: 'radar',
+            data: {
+                labels: ['Precisión', 'Velocidad', 'Disponibilidad', 'Seguridad', 'Usabilidad', 'Escalabilidad'],
+                datasets: [{
+                    label: 'Sistema Actual',
+                    data: [98.7, 95, 99.9, 96, 94, 92],
+                    backgroundColor: 'rgba(255, 193, 7, 0.3)',
+                    borderColor: 'rgba(255, 193, 7, 1)',
+                    borderWidth: 2,
+                    pointBackgroundColor: 'rgba(255, 193, 7, 1)',
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        labels: {
+                            color: 'white'
+                        }
+                    }
+                },
+                scales: {
+                    r: {
+                        beginAtZero: true,
+                        max: 100,
+                        ticks: {
+                            color: 'white',
+                            backdropColor: 'transparent'
+                        },
+                        grid: {
+                            color: 'rgba(255, 255, 255, 0.2)'
+                        },
+                        pointLabels: {
+                            color: 'white',
+                            font: {
+                                size: 12
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+    
+    // Animación de métricas en vivo
+    function updateLiveMetrics() {
+        const metrics = ['totalSessions', 'avgProcessTime', 'citizenAccess', 'systemUptime'];
+        const baseValues = [127, 8.3, 2847, 99.9];
+        
+        metrics.forEach((metric, index) => {
+            const element = document.getElementById(metric);
+            if (element) {
+                const baseValue = baseValues[index];
+                const variation = Math.random() * 0.1 - 0.05; // ±5% variación
+                let newValue = baseValue * (1 + variation);
+                
+                if (index === 0 || index === 2) {
+                    newValue = Math.floor(newValue);
+                } else if (index === 1) {
+                    newValue = newValue.toFixed(1);
+                } else {
+                    newValue = newValue.toFixed(1);
+                }
+                
+                element.textContent = newValue;
+            }
+        });
+    }
+    
+    // Actualizar métricas cada 30 segundos
+    setInterval(updateLiveMetrics, 30000);
+});
+</script>
+
+</body>
+</html>

@@ -43,7 +43,7 @@ CSRF_TRUSTED_ORIGINS = [
     'http://127.0.0.1:8000', 
     'http://127.0.0.1:5085',
     'http://puyo.gob.ec',
-    'https://puyo.gob.ec'
+    'https://actas.puyo.gob.ec'
 ]
 
 #Render Context
@@ -376,9 +376,10 @@ ACCOUNT_LOGIN_ATTEMPTS_TIMEOUT = 300  # 5 minutos
 ACCOUNT_LOGOUT_REDIRECT_URL = '/'
 ACCOUNT_SESSION_REMEMBER = True
 
-# URLs de redirección después del login
-LOGIN_REDIRECT_URL = '/'
-LOGOUT_REDIRECT_URL = '/'
+# URLs de redirección y autenticación
+LOGIN_URL = '/accounts/login/'  # URL para redireccionar usuarios no autenticados
+LOGIN_REDIRECT_URL = '/'        # Después del login exitoso
+LOGOUT_REDIRECT_URL = '/'       # Después del logout
 
 # Configuración de proveedores sociales
 SOCIALACCOUNT_PROVIDERS = {
