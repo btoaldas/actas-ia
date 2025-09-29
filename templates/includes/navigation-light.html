@@ -22,6 +22,16 @@
         </a>
       </li>
       
+      <!-- Botón dinámico "Siguiente Paso" -->
+      {% if next_step_button.show %}
+      <li class="nav-item d-none d-lg-inline-block">
+        <a href="{{ next_step_button.url }}" class="nav-btn-enhanced {{ next_step_button.class }} ml-2" style="margin-top: 4px;">
+          <i class="{{ next_step_button.icon }}"></i> 
+          <span class="font-weight-bold">{{ next_step_button.text }}</span>
+        </a>
+      </li>
+      {% endif %}
+      
       <!-- Menú dropdown para pantallas medianas y pequeñas -->
       <li class="nav-item dropdown d-lg-none">
         <a class="nav-link dropdown-toggle btn btn-outline-primary btn-sm ml-2" data-toggle="dropdown" href="#" role="button" aria-expanded="false">
@@ -39,6 +49,16 @@
             <strong>Portal Transparencia</strong>
             <small class="d-block text-white-50">Información pública municipal</small>
           </a>
+          
+          <!-- Botón dinámico "Siguiente Paso" para móviles -->
+          {% if next_step_button.show %}
+          <div class="dropdown-divider"></div>
+          <a class="dropdown-item nav-btn-enhanced {{ next_step_button.class }}" href="{{ next_step_button.url }}" style="margin: 5px; border-radius: 15px; padding: 12px 15px;">
+            <i class="{{ next_step_button.icon }}"></i> 
+            <strong>{{ next_step_button.text }}</strong>
+            <small class="d-block text-white-50">Continuar al siguiente paso</small>
+          </a>
+          {% endif %}
         </div>
       </li>
       

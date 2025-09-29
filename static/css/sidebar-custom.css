@@ -1,0 +1,79 @@
+/* Estilos para el botón dinámico "Siguiente Paso" */
+.nav-btn-next-audio {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+  color: white !important;
+  border-radius: 8px !important;
+  padding: 8px 16px !important;
+  transition: all 0.3s ease !important;
+  text-decoration: none !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  font-size: 12px !important;
+  letter-spacing: 0.5px !important;
+  border: none !important;
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3) !important;
+  animation: nav-btn-glow 2s ease-in-out infinite alternate !important;
+}
+
+.nav-btn-next-audio:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4) !important;
+  color: white !important;
+  text-decoration: none !important;
+}
+
+.nav-btn-next-audio:focus,
+.nav-btn-next-audio:active {
+  color: white !important;
+  text-decoration: none !important;
+  outline: none !important;
+}
+
+/* Animación sutil de glow para llamar la atención */
+@keyframes nav-btn-glow {
+  0% { 
+    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+  }
+  100% { 
+    box-shadow: 0 2px 12px rgba(102, 126, 234, 0.5);
+  }
+}
+
+/* Responsive - En móviles también funciona */
+@media (max-width: 991px) {
+  .nav-btn-next-audio {
+    font-size: 14px !important;
+    padding: 12px 15px !important;
+    border-radius: 15px !important;
+    margin: 5px !important;
+  }
+  
+  .nav-btn-next-audio small {
+    color: rgba(255, 255, 255, 0.8) !important;
+  }
+}
+
+/* Asegurar que no interfiera con otros estilos */
+.navbar-nav .nav-item .nav-btn-next-audio {
+  margin-top: 4px;
+}
+
+/* Clase base mejorada para compatibilidad */
+.nav-btn-enhanced.nav-btn-next-audio {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+}
+
+/* En dropdown también */
+.dropdown-item.nav-btn-next-audio {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+  color: white !important;
+  border-radius: 15px !important;
+  margin: 5px !important;
+  padding: 12px 15px !important;
+}
+
+.dropdown-item.nav-btn-next-audio:hover {
+  background: linear-gradient(135deg, #5a6fd8 0%, #6a42a0 100%) !important;
+  color: white !important;
+}

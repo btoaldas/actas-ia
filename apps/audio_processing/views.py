@@ -62,7 +62,7 @@ def centro_audio(request):
         'tipos_reunion': tipos_reunion,
         'es_demo': es_demo,
     }
-    return render(request, 'audio_processing/centro_audio_new.html', context)
+    return render(request, 'audio_processing/centro_audio_modernized.html', context)
 
 
 # (El API legacy de procesamiento ha sido retirado en favor de la nueva versión compatible con centro_audio_new)

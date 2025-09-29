@@ -1,0 +1,1669 @@
+{% extends "layouts/base.html" %}
+{% load static %}
+
+{% block title %}Centro de Procesamiento de Audio - {{ title }}{% endblock %}
+
+{% block extrastyle %}
+  <!-- Animate.css -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
+  <!-- Custom Audio Center Styles -->
+  <style>
+    /* Estilos modernos basados en inicio_publico_completo.html */
+    .audio-center-modern {
+      background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+      min-height: 100vh;
+    }
+    
+    /* Botón Siguiente Paso - Esquina superior derecha */
+    .next-step-button {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      z-index: 1050;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      border: none;
+      border-radius: 25px;
+      padding: 12px 25px;
+      color: white;
+      font-weight: 600;
+      font-size: 14px;
+      text-decoration: none;
+      box-shadow: 0 8px 30px rgba(102, 126, 234, 0.3);
+      transition: all 0.3s ease;
+      animation: pulse 2s infinite;
+    }
+    
+    .next-step-button:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 12px 40px rgba(102, 126, 234, 0.4);
+      color: white;
+      text-decoration: none;
+    }
+    
+    @keyframes pulse {
+      0% { box-shadow: 0 8px 30px rgba(102, 126, 234, 0.3); }
+      50% { box-shadow: 0 8px 30px rgba(102, 126, 234, 0.6); }
+      100% { box-shadow: 0 8px 30px rgba(102, 126, 234, 0.3); }
+    }
+    
+    /* Header moderno */
+    .content-header-modern {
+      background: white;
+      border-radius: 15px;
+      margin-bottom: 2rem;
+      padding: 2rem;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .content-header-modern::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+    }
+    
+    .page-title-modern {
+      font-size: 2.2rem;
+      font-weight: 700;
+      color: #2c3e50;
+      margin: 0;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+    
+    .page-subtitle {
+      color: #7f8c8d;
+      font-size: 1.1rem;
+      margin: 0.5rem 0 0 0;
+    }
+    
+    /* Cards modernos */
+    .info-box-modern {
+      background: white;
+      border-radius: 15px;
+      padding: 2rem;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+      transition: all 0.3s ease;
+      border: none;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .info-box-modern::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+    }
+    
+    .info-box-modern.info::before {
+      background: linear-gradient(90deg, #3498db 0%, #2980b9 100%);
+    }
+    
+    .info-box-modern.success::before {
+      background: linear-gradient(90deg, #27ae60 0%, #2ecc71 100%);
+    }
+    
+    .info-box-modern.warning::before {
+      background: linear-gradient(90deg, #f39c12 0%, #e67e22 100%);
+    }
+    
+    .info-box-modern.danger::before {
+      background: linear-gradient(90deg, #e74c3c 0%, #c0392b 100%);
+    }
+    
+    .info-box-modern:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 8px 30px rgba(0,0,0,0.15);
+    }
+    
+    .info-icon-modern {
+      width: 60px;
+      height: 60px;
+      border-radius: 15px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      color: white;
+      margin-bottom: 1rem;
+    }
+    
+    .info-number-modern {
+      font-size: 2.5rem;
+      font-weight: 700;
+      color: #2c3e50;
+      margin: 0;
+    }
+    
+    .info-text-modern {
+      color: #7f8c8d;
+      font-size: 0.9rem;
+      font-weight: 500;
+      margin: 0;
+    }
+    
+    /* Cards de funcionalidad modernos */
+    .feature-card-modern {
+      background: white;
+      border-radius: 20px;
+      padding: 2rem;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+      transition: all 0.3s ease;
+      border: none;
+      position: relative;
+      overflow: hidden;
+      height: 100%;
+    }
+    
+    .feature-card-modern::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+    }
+    
+    .feature-card-modern.recording::before {
+      background: linear-gradient(90deg, #e74c3c 0%, #c0392b 100%);
+    }
+    
+    .feature-card-modern.upload::before {
+      background: linear-gradient(90deg, #3498db 0%, #2980b9 100%);
+    }
+    
+    .feature-card-modern:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 12px 40px rgba(0,0,0,0.15);
+    }
+    
+    .feature-header-modern {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+    
+    .feature-icon-modern {
+      width: 50px;
+      height: 50px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      color: white;
+    }
+    
+    .feature-title-modern {
+      font-size: 1.3rem;
+      font-weight: 600;
+      color: #2c3e50;
+      margin: 0;
+    }
+    
+    .feature-description {
+      color: #7f8c8d;
+      margin-bottom: 1.5rem;
+      line-height: 1.6;
+    }
+    
+    /* Botones modernos */
+    .btn-modern {
+      border-radius: 12px;
+      padding: 12px 24px;
+      font-weight: 600;
+      border: none;
+      transition: all 0.3s ease;
+      text-transform: none;
+    }
+    
+    .btn-modern.btn-danger {
+      background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+      color: white;
+    }
+    
+    .btn-modern.btn-primary {
+      background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+      color: white;
+    }
+    
+    .btn-modern:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+    }
+    
+    /* Formulario de upload moderno */
+    .upload-area-modern {
+      border: 2px dashed #bdc3c7;
+      border-radius: 15px;
+      padding: 3rem 2rem;
+      text-align: center;
+      background: #f8f9fa;
+      transition: all 0.3s ease;
+      cursor: pointer;
+    }
+    
+    .upload-area-modern:hover,
+    .upload-area-modern.dragover {
+      border-color: #3498db;
+      background: #e3f2fd;
+      transform: scale(1.02);
+    }
+    
+    .upload-icon-modern {
+      font-size: 3rem;
+      color: #95a5a6;
+      margin-bottom: 1rem;
+    }
+    
+    .upload-area-modern:hover .upload-icon-modern {
+      color: #3498db;
+    }
+    
+    /* Lista de archivos recientes */
+    .recent-files-modern {
+      background: white;
+      border-radius: 15px;
+      padding: 2rem;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+    }
+    
+    .file-item-modern {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      padding: 1rem;
+      border-radius: 10px;
+      margin-bottom: 0.5rem;
+      transition: all 0.3s ease;
+    }
+    
+    .file-item-modern:hover {
+      background: rgba(52, 152, 219, 0.05);
+    }
+    
+    .file-icon-modern {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      color: white;
+    }
+    
+    .file-info-modern h6 {
+      margin: 0 0 0.25rem 0;
+      font-weight: 600;
+      color: #2c3e50;
+    }
+    
+    .file-info-modern p {
+      margin: 0;
+      color: #7f8c8d;
+      font-size: 0.8rem;
+    }
+    
+    .file-status-modern {
+      padding: 0.25rem 0.75rem;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+    
+    .file-status-modern.completado {
+      background: rgba(39, 174, 96, 0.1);
+      color: #27ae60;
+    }
+    
+    .file-status-modern.procesando {
+      background: rgba(243, 156, 18, 0.1);
+      color: #f39c12;
+    }
+    
+    .file-status-modern.error {
+      background: rgba(231, 76, 60, 0.1);
+      color: #e74c3c;
+    }
+    
+    /* Responsive */
+    @media (max-width: 768px) {
+      .next-step-button {
+        position: relative;
+        top: auto;
+        right: auto;
+        margin-bottom: 1rem;
+        display: block;
+        text-align: center;
+      }
+      
+      .page-title-modern {
+        font-size: 1.8rem;
+        flex-direction: column;
+        text-align: center;
+        gap: 0.5rem;
+      }
+      
+      .info-number-modern {
+        font-size: 2rem;
+      }
+      
+      .feature-card-modern {
+        margin-bottom: 2rem;
+      }
+    }
+    
+    /* Animaciones de entrada */
+    .animate-on-scroll {
+      opacity: 0;
+      transform: translateY(30px);
+      transition: all 0.6s ease;
+    }
+    
+    .animate-on-scroll.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    
+    /* Mejoras para gestión de participantes */
+    .participant-row {
+      background: #f8f9fa;
+      border: 2px solid #e9ecef !important;
+      transition: all 0.3s ease;
+      position: relative;
+    }
+    
+    .participant-row:hover {
+      background: #e3f2fd;
+      border-color: #2196f3 !important;
+      box-shadow: 0 4px 15px rgba(33, 150, 243, 0.1);
+    }
+    
+    .participant-row .participant-order {
+      background: #f8f9fa !important;
+      border: 2px solid #007bff !important;
+      font-size: 16px !important;
+      font-weight: bold !important;
+      text-align: center !important;
+      color: #007bff !important;
+    }
+    
+    .participant-row .participant-order:focus {
+      border-color: #0056b3 !important;
+      box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25) !important;
+    }
+    
+    .participant-row .form-label {
+      font-weight: 600;
+      color: #495057;
+      margin-bottom: 0.5rem;
+    }
+    
+    .participant-row .input-group-text {
+      border: none;
+    }
+    
+    .participant-row::before {
+      content: '';
+      position: absolute;
+      left: -2px;
+      top: -2px;
+      bottom: -2px;
+      width: 4px;
+      background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+      border-radius: 2px 0 0 2px;
+    }
+    
+    /* Mejorar botón de eliminar */
+    .remove-participant {
+      border-radius: 8px !important;
+      transition: all 0.3s ease !important;
+    }
+    
+    .remove-participant:hover {
+      background: #dc3545 !important;
+      transform: scale(1.05);
+      box-shadow: 0 4px 15px rgba(220, 53, 69, 0.3) !important;
+    }
+    
+    /* Header de gestión de participantes */
+    .participant-section-header {
+      background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+      color: white;
+      padding: 1rem;
+      border-radius: 8px;
+      margin-bottom: 1rem;
+    }
+    
+    .participant-counter {
+      background: rgba(255, 255, 255, 0.2);
+      padding: 0.25rem 0.75rem;
+      border-radius: 15px;
+      font-size: 0.9rem;
+      font-weight: bold;
+    }
+    
+    /* Responsive para participantes */
+    @media (max-width: 768px) {
+      .participant-row .row {
+        flex-direction: column;
+      }
+      
+      .participant-row [class*="col-md-"] {
+        width: 100% !important;
+        max-width: 100% !important;
+        margin-bottom: 1rem;
+      }
+    }
+
+    /* === Sección de Participantes Principal === */
+    .card-participants {
+      border: none;
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+      border-radius: 15px;
+      margin-bottom: 2rem;
+      background: linear-gradient(135deg, #fff 0%, #f8f9fa 100%);
+    }
+
+    .card-participants .card-header {
+      background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+      border-radius: 15px 15px 0 0;
+      border: none;
+      color: white;
+      padding: 1.5rem;
+    }
+
+    .card-participants .card-title {
+      font-size: 1.3rem;
+      font-weight: 600;
+      margin-bottom: 0;
+    }
+
+    .card-participants .participant-counter {
+      background: rgba(255, 255, 255, 0.2);
+      padding: 0.5rem 1rem;
+      border-radius: 25px;
+      font-size: 0.9rem;
+      backdrop-filter: blur(10px);
+      margin-left: 0;
+    }
+    
+    /* Breadcrumb moderno */
+    .breadcrumb-modern {
+      background: transparent;
+      padding: 0;
+      margin: 0;
+    }
+    
+    .breadcrumb-modern .breadcrumb-item {
+      color: #7f8c8d;
+    }
+    
+    .breadcrumb-modern .breadcrumb-item a {
+      color: #3498db;
+      text-decoration: none;
+    }
+    
+    .breadcrumb-modern .breadcrumb-item.active {
+      color: #2c3e50;
+      font-weight: 600;
+    }
+  </style>
+{% endblock extrastyle %}
+
+{% block bodyclass %} hold-transition sidebar-mini layout-fixed audio-center-modern {% endblock bodyclass %}
+
+{% block content %}
+
+
+<!-- Content Wrapper. Contains page content -->
+<div class="content-wrapper">
+  <!-- Content Header (Page header) -->
+  <div class="content-header">
+    <div class="container-fluid">
+      <div class="content-header-modern animate__animated animate__fadeInDown">
+        <div class="row">
+          <div class="col-sm-8">
+            <h1 class="page-title-modern">
+              <i class="fas fa-microphone-alt"></i>
+              Centro de Procesamiento de Audio
+            </h1>
+            <p class="page-subtitle">Procesa, transcribe y analiza archivos de audio con Inteligencia Artificial</p>
+          </div>
+          <div class="col-sm-4">
+            <ol class="breadcrumb breadcrumb-modern float-sm-right">
+              <li class="breadcrumb-item"><a href="/">Inicio</a></li>
+              <li class="breadcrumb-item active">Centro de Audio</li>
+            </ol>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main content -->
+  <section class="content">
+    <div class="container-fluid">
+      
+      <!-- Estadísticas modernizadas -->
+      <div class="row animate__animated animate__fadeInUp">
+        <div class="col-12 col-sm-6 col-md-3">
+          <div class="info-box-modern info">
+            <div class="info-icon-modern" style="background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);">
+              <i class="fas fa-cog"></i>
+            </div>
+            <h3 class="info-number-modern">{{ stats.total|default:0 }}</h3>
+            <p class="info-text-modern">Total Procesos</p>
+          </div>
+        </div>
+        
+        <div class="col-12 col-sm-6 col-md-3">
+          <div class="info-box-modern success">
+            <div class="info-icon-modern" style="background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);">
+              <i class="fas fa-check"></i>
+            </div>
+            <h3 class="info-number-modern">{{ stats.completed|default:0 }}</h3>
+            <p class="info-text-modern">Completados</p>
+          </div>
+        </div>
+        
+        <div class="col-12 col-sm-6 col-md-3">
+          <div class="info-box-modern warning">
+            <div class="info-icon-modern" style="background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);">
+              <i class="fas fa-spinner fa-spin"></i>
+            </div>
+            <h3 class="info-number-modern">{{ stats.processing|default:0 }}</h3>
+            <p class="info-text-modern">Procesando</p>
+          </div>
+        </div>
+        
+        <div class="col-12 col-sm-6 col-md-3">
+          <div class="info-box-modern danger">
+            <div class="info-icon-modern" style="background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);">
+              <i class="fas fa-exclamation-triangle"></i>
+            </div>
+            <h3 class="info-number-modern">{{ stats.error|default:0 }}</h3>
+            <p class="info-text-modern">Errores</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Funcionalidades principales -->
+      <div class="row animate__animated animate__fadeInUp animate__delay-1s">
+        <!-- Recording Card -->
+        <div class="col-md-6">
+          <div class="feature-card-modern recording">
+            <div class="feature-header-modern">
+              <div class="feature-icon-modern" style="background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);">
+                <i class="fas fa-microphone"></i>
+              </div>
+              <h3 class="feature-title-modern">Grabar Audio en Vivo</h3>
+            </div>
+            
+            <p class="feature-description">
+              Graba audio directamente desde tu micrófono con calidad profesional. 
+              Ideal para sesiones en tiempo real y grabaciones espontáneas.
+            </p>
+            
+            <div class="recording-controls">
+              <button id="recordButton" class="btn btn-modern btn-danger btn-lg btn-block">
+                <i class="fas fa-circle mr-2"></i>
+                Iniciar Grabación
+              </button>
+              
+              <div id="recordingStatus" class="alert alert-info mt-3" style="display: none;">
+                <i class="fas fa-circle text-danger"></i>
+                <span class="ml-2">Grabando...</span>
+                <span id="recordingTimer" class="float-right font-weight-bold">00:00</span>
+              </div>
+              
+              <div id="audioPlayer" class="mt-3" style="display: none;">
+                <div class="card card-outline card-success">
+                  <div class="card-header">
+                    <h6 class="card-title">
+                      <i class="fas fa-headphones"></i> Audio grabado
+                    </h6>
+                  </div>
+                  <div class="card-body">
+                    <audio controls class="w-100" preload="metadata"></audio>
+                    <div class="mt-2">
+                      <small class="text-muted">Audio grabado listo para procesar</small>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <button id="processRecordedAudio" class="btn btn-modern btn-primary mt-3 btn-block" style="display: none;">
+                <i class="fas fa-brain mr-2"></i>
+                Procesar Grabación con IA
+              </button>
+              
+              <!-- Formulario completo para audio grabado -->
+              <div id="recordingMetadataForm" style="display: none;" class="mt-4">
+                <div class="card card-outline card-success">
+                  <div class="card-header">
+                    <h3 class="card-title">
+                      <i class="fas fa-cogs mr-2"></i>
+                      Configuración para Audio Grabado
+                    </h3>
+                  </div>
+                  <div class="card-body">
+                    <!-- Primera fila -->
+                    <div class="row">
+                      <div class="col-md-6">
+                        <div class="form-group">
+                          <label for="titulo_grabacion">Nombre del Proceso</label>
+                          <input type="text" class="form-control" id="titulo_grabacion" name="titulo_grabacion" 
+                                 placeholder="Ej: Grabación del 29 de Septiembre" value="Grabación en vivo">
+                        </div>
+                      </div>
+                      <div class="col-md-6">
+                        <div class="form-group">
+                          <label for="tipo_reunion_grabacion">Tipo de Reunión</label>
+                          <select class="form-control" id="tipo_reunion_grabacion" name="tipo_reunion_grabacion">
+                            <option value="">Seleccionar tipo...</option>
+                            <option value="reunion_trabajo" selected>Reunión de Trabajo</option>
+                            <option value="conferencia">Conferencia</option>
+                            <option value="entrevista">Entrevista</option>
+                            <option value="seminario">Seminario</option>
+                            <option value="llamada">Llamada</option>
+                            <option value="otro">Otro</option>
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- Ubicación y Fecha para grabación -->
+                    <div class="row">
+                      <div class="col-md-6">
+                        <div class="form-group">
+                          <label for="ubicacion_grabacion">Ubicación</label>
+                          <input type="text" class="form-control" id="ubicacion_grabacion" name="ubicacion_grabacion"
+                                 placeholder="Ej: Sala de Juntas A, Online, etc.">
+                        </div>
+                      </div>
+                      <div class="col-md-6">
+                        <div class="form-group">
+                          <label for="fecha_reunion_grabacion">Fecha de la Reunión</label>
+                          <input type="datetime-local" class="form-control" id="fecha_reunion_grabacion" name="fecha_reunion_grabacion">
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- Descripción y Etiquetas para grabación -->
+                    <div class="row">
+                      <div class="col-md-8">
+                        <div class="form-group">
+                          <label for="descripcion_grabacion">Descripción</label>
+                          <textarea class="form-control" id="descripcion_grabacion" name="descripcion_grabacion" rows="3"
+                                    placeholder="Descripción del audio grabado en vivo"></textarea>
+                        </div>
+                      </div>
+                      <div class="col-md-4">
+                        <div class="form-group">
+                          <label for="etiquetas_grabacion">Etiquetas</label>
+                          <input type="text" class="form-control" id="etiquetas_grabacion" name="etiquetas_grabacion"
+                                 placeholder="grabacion, vivo, importante" value="grabacion,vivo">
+                        </div>
+                        <div class="form-group">
+                          <div class="custom-control custom-switch">
+                            <input type="checkbox" class="custom-control-input" id="confidencial_grabacion" name="confidencial_grabacion">
+                            <label class="custom-control-label" for="confidencial_grabacion">Contenido Confidencial</label>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- Botón de procesamiento para grabación -->
+                    <div class="row">
+                      <div class="col-12">
+                        <button type="button" id="submitRecordedAudio" class="btn btn-modern btn-primary btn-lg btn-block">
+                          <i class="fas fa-brain mr-2"></i>
+                          <span class="btn-text">Procesar Audio Grabado con IA</span>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Upload Card -->
+        <div class="col-md-6">
+          <div class="feature-card-modern upload">
+            <div class="feature-header-modern">
+              <div class="feature-icon-modern" style="background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);">
+                <i class="fas fa-cloud-upload-alt"></i>
+              </div>
+              <h3 class="feature-title-modern">Subir Archivo de Audio</h3>
+            </div>
+            
+            <p class="feature-description">
+              Sube archivos de audio existentes en múltiples formatos. 
+              Nuestro sistema procesa MP3, WAV, M4A y más formatos.
+            </p>
+            
+            <form id="audioUploadForm" enctype="multipart/form-data" method="post">
+              {% csrf_token %}
+              <div class="upload-area-modern" id="uploadArea">
+                <div class="upload-icon-modern">
+                  <i class="fas fa-cloud-upload-alt"></i>
+                </div>
+                <h5>Arrastra tu archivo aquí</h5>
+                <p class="text-muted">o haz clic para seleccionar</p>
+                <input type="file" id="audioFile" name="archivo_audio" accept="audio/*" style="display: none;">
+                <small class="text-muted">Formatos soportados: MP3, WAV, M4A, OGG</small>
+              </div>
+              
+              <!-- Formulario de metadatos COMPLETO -->
+              <div id="metadataForm" style="display: none;" class="mt-4">
+                <div class="card card-outline card-success">
+                  <div class="card-header">
+                    <h3 class="card-title">
+                      <i class="fas fa-cogs mr-2"></i>
+                      Configuración del Procesamiento
+                    </h3>
+                  </div>
+                  <div class="card-body">
+                    <!-- Primera fila -->
+                    <div class="row">
+                      <div class="col-md-6">
+                        <div class="form-group">
+                          <label for="titulo">Nombre del Proceso</label>
+                          <input type="text" class="form-control" id="titulo" name="titulo" 
+                                 placeholder="Ej: Reunión del 15 de Enero">
+                        </div>
+                      </div>
+                      <div class="col-md-6">
+                        <div class="form-group">
+                          <label for="tipo_reunion">Tipo de Reunión</label>
+                          <select class="form-control" id="tipo_reunion" name="tipo_reunion">
+                            <option value="">Seleccionar tipo...</option>
+                            <option value="reunion_trabajo">Reunión de Trabajo</option>
+                            <option value="conferencia">Conferencia</option>
+                            <option value="entrevista">Entrevista</option>
+                            <option value="seminario">Seminario</option>
+                            <option value="llamada">Llamada</option>
+                            <option value="otro">Otro</option>
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- Ubicación y Fecha -->
+                    <div class="row">
+                      <div class="col-md-6">
+                        <div class="form-group">
+                          <label for="ubicacion">Ubicación</label>
+                          <input type="text" class="form-control" id="ubicacion" name="ubicacion"
+                                 placeholder="Ej: Sala de Juntas A, Online, etc.">
+                        </div>
+                      </div>
+                      <div class="col-md-6">
+                        <div class="form-group">
+                          <label for="fecha_reunion">Fecha de la Reunión</label>
+                          <input type="datetime-local" class="form-control" id="fecha_reunion" name="fecha_reunion">
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- Cuarta fila - Descripción y Etiquetas -->
+                    <div class="row">
+                      <div class="col-md-8">
+                        <div class="form-group">
+                          <label for="descripcion">Descripción</label>
+                          <textarea class="form-control" id="descripcion" name="descripcion" rows="3"
+                                    placeholder="Descripción opcional del contenido del audio"></textarea>
+                        </div>
+                      </div>
+                      <div class="col-md-4">
+                        <div class="form-group">
+                          <label for="etiquetas">Etiquetas</label>
+                          <input type="text" class="form-control" id="etiquetas" name="etiquetas"
+                                 placeholder="trabajo, importante, urgente">
+                        </div>
+                        <div class="form-group">
+                          <div class="custom-control custom-switch">
+                            <input type="checkbox" class="custom-control-input" id="confidencial" name="confidencial">
+                            <label class="custom-control-label" for="confidencial">Contenido Confidencial</label>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- Botón de procesamiento -->
+                    <div class="row">
+                      <div class="col-12">
+                        <button type="submit" class="btn btn-modern btn-primary btn-lg btn-block">
+                          <i class="fas fa-brain mr-2"></i>
+                          <span class="btn-text">Procesar Audio con IA</span>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sección de Participantes para ambos tipos de procesamiento -->
+      <div class="row animate__animated animate__fadeInUp animate__delay-1s">
+        <div class="col-12">
+          <div class="card card-modern card-participants">
+            <div class="card-header">
+              <h3 class="card-title">
+                <i class="fas fa-users mr-2"></i>
+                Gestión de Participantes
+              </h3>
+              <div class="card-tools">
+                <div class="participant-counter" id="participantCounterMain">
+                  <i class="fas fa-user-friends mr-1"></i>
+                  <span class="count">0</span> participantes
+                </div>
+              </div>
+            </div>
+            <div class="card-body">
+              <div class="participant-section-header mb-3">
+                <div class="d-flex justify-content-between align-items-center">
+                  <div>
+                    <h5 class="mb-1">
+                      <i class="fas fa-users-cog mr-2"></i>
+                      Configuración de Participantes
+                    </h5>
+                    <p class="text-muted mb-0">
+                      Esta información se utilizará para cualquier tipo de procesamiento de audio que realices.
+                    </p>
+                  </div>
+                  <button type="button" id="addParticipantMain" class="btn btn-primary">
+                    <i class="fas fa-plus mr-1"></i> Agregar Participante
+                  </button>
+                </div>
+              </div>
+
+              <!-- Lista de participantes dinámicos -->
+              <div id="participantsListMain">
+                <!-- Los participantes se agregarán dinámicamente aquí -->
+              </div>
+              
+              <!-- Participantes en texto libre (backup) -->
+              <div class="mt-4">
+                <div class="card card-outline card-info">
+                  <div class="card-header">
+                    <h6 class="card-title mb-0">
+                      <i class="fas fa-edit mr-1"></i>
+                      Participantes en Texto Libre (Opcional)
+                    </h6>
+                  </div>
+                  <div class="card-body">
+                    <textarea class="form-control" id="participantesMain" name="participantes_texto" rows="3"
+                              placeholder="Lista adicional de participantes en formato libre. Ej: Juan Pérez (Alcalde), María González (Secretaria), etc."></textarea>
+                    <small class="text-muted">
+                      Este campo es opcional y complementario a la lista detallada de arriba. 
+                      Útil para agregar participantes adicionales rápidamente.
+                    </small>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Archivos recientes -->
+      {% if recent_processes %}
+      <div class="row animate__animated animate__fadeInUp animate__delay-2s">
+        <div class="col-12">
+          <div class="recent-files-modern">
+            <h4 class="mb-4">
+              <i class="fas fa-history mr-2"></i>
+              Procesamientos Recientes
+            </h4>
+            
+            {% for proceso in recent_processes %}
+            <div class="file-item-modern">
+              <div class="file-icon-modern" style="background: 
+                {% if proceso.estado == 'completado' %}linear-gradient(135deg, #27ae60 0%, #2ecc71 100%)
+                {% elif proceso.estado == 'error' %}linear-gradient(135deg, #e74c3c 0%, #c0392b 100%)
+                {% else %}linear-gradient(135deg, #f39c12 0%, #e67e22 100%){% endif %};">
+                <i class="fas fa-{% if proceso.estado == 'completado' %}check{% elif proceso.estado == 'error' %}times{% else %}spinner fa-spin{% endif %}"></i>
+              </div>
+              <div class="file-info-modern flex-grow-1">
+                <h6>{{ proceso.titulo|truncatechars:40 }}</h6>
+                <p>{{ proceso.created_at|timesince }} atrás • {{ proceso.duracion|default:"--" }}</p>
+              </div>
+              <div class="file-status-modern {{ proceso.estado }}">
+                {{ proceso.get_estado_display|default:proceso.estado|capfirst }}
+              </div>
+              <div class="ml-3">
+                <a href="/audio/detalle/{{ proceso.id }}/" class="btn btn-sm btn-outline-primary">
+                  <i class="fas fa-eye"></i>
+                </a>
+              </div>
+            </div>
+            {% endfor %}
+            
+            <div class="text-center mt-4">
+              <a href="/audio/lista/" class="btn btn-modern btn-primary">
+                <i class="fas fa-list mr-2"></i>
+                Ver Todos los Procesamientos
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+      {% endif %}
+
+    </div>
+  </section>
+</div>
+
+<!-- JavaScript completo con TODAS las funcionalidades -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // ===== VARIABLES GLOBALES =====
+    let mediaRecorder;
+    let audioChunks = [];
+    let recordingTimer;
+    let recordingStartTime;
+    let selectedAudioFile = null;
+    let participantsCounter = 0;
+    let participantsCounterGrabacion = 0;
+    
+    // ===== REFERENCIAS A ELEMENTOS =====
+    const recordButton = document.getElementById('recordButton');
+    const recordingStatus = document.getElementById('recordingStatus');
+    const recordingTimerElement = document.getElementById('recordingTimer');
+    const audioPlayer = document.getElementById('audioPlayer');
+    const processRecordedAudio = document.getElementById('processRecordedAudio');
+    const recordingMetadataForm = document.getElementById('recordingMetadataForm');
+    const submitRecordedAudio = document.getElementById('submitRecordedAudio');
+    
+    // Upload elements
+    const uploadArea = document.getElementById('uploadArea');
+    const audioFile = document.getElementById('audioFile');
+    const metadataForm = document.getElementById('metadataForm');
+    const audioUploadForm = document.getElementById('audioUploadForm');
+    
+    // Participantes elements
+    const participantsList = document.getElementById('participantsList');
+    const addParticipantBtn = document.getElementById('addParticipant');
+    const participantsListGrabacion = document.getElementById('participantsListGrabacion');
+    const addParticipantGrabacionBtn = document.getElementById('addParticipantGrabacion');
+    
+    // ===== FUNCIONALIDAD DE GRABACIÓN COMPLETA =====
+    
+    recordButton.addEventListener('click', async function() {
+        if (!mediaRecorder || mediaRecorder.state === 'inactive') {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                mediaRecorder = new MediaRecorder(stream);
+                audioChunks = [];
+                
+                mediaRecorder.ondataavailable = function(event) {
+                    audioChunks.push(event.data);
+                };
+                
+                mediaRecorder.onstop = function() {
+                    const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                    
+                    // Crear un objeto File en lugar de solo un Blob
+                    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+                    selectedAudioFile = new File([audioBlob], `grabacion_${timestamp}.webm`, { 
+                        type: 'audio/webm' 
+                    });
+                    
+                    // Mostrar reproductor
+                    const audioUrl = URL.createObjectURL(audioBlob);
+                    const audio = audioPlayer.querySelector('audio');
+                    if (audio) {
+                        audio.src = audioUrl;
+                        audioPlayer.style.display = 'block';
+                    }
+                    
+                    // IMPORTANTE: Mostrar formulario completo en lugar del botón simple
+                    if (recordingMetadataForm) {
+                        recordingMetadataForm.style.display = 'block';
+                        
+                        // Establecer fecha actual
+                        const now = new Date();
+                        now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+                        document.getElementById('fecha_reunion_grabacion').value = now.toISOString().slice(0, 16);
+                    }
+                    
+                    // Ocultar botón simple de procesamiento
+                    if (processRecordedAudio) {
+                        processRecordedAudio.style.display = 'none';
+                    }
+                    
+                    // Limpiar chunks para próxima grabación
+                    audioChunks = [];
+                    
+                    console.log('Grabación completada, formulario completo mostrado');
+                };
+                
+                mediaRecorder.start();
+                startRecording();
+                
+            } catch (error) {
+                console.error('Error al acceder al micrófono:', error);
+                alert('Error al acceder al micrófono. Verifica los permisos.');
+            }
+        } else {
+            mediaRecorder.stop();
+            stopRecording();
+        }
+    });
+
+    function startRecording() {
+        recordButton.innerHTML = '<i class="fas fa-stop mr-2"></i>Detener Grabación';
+        recordButton.classList.remove('btn-danger');
+        recordButton.classList.add('btn-warning');
+        if (recordingStatus) recordingStatus.style.display = 'block';
+        
+        recordingStartTime = Date.now();
+        recordingTimer = setInterval(updateTimer, 1000);
+    }
+
+    function stopRecording() {
+        recordButton.innerHTML = '<i class="fas fa-circle mr-2"></i>Iniciar Grabación';
+        recordButton.classList.remove('btn-warning');
+        recordButton.classList.add('btn-danger');
+        if (recordingStatus) recordingStatus.style.display = 'none';
+        
+        if (recordingTimer) {
+            clearInterval(recordingTimer);
+        }
+        
+        // Parar todas las pistas de audio
+        if (mediaRecorder && mediaRecorder.stream) {
+            mediaRecorder.stream.getTracks().forEach(track => track.stop());
+        }
+    }
+
+    function updateTimer() {
+        const elapsed = Math.floor((Date.now() - recordingStartTime) / 1000);
+        const minutes = Math.floor(elapsed / 60).toString().padStart(2, '0');
+        const seconds = (elapsed % 60).toString().padStart(2, '0');
+        if (recordingTimerElement) {
+            recordingTimerElement.textContent = `${minutes}:${seconds}`;
+        }
+    }
+    
+    // ===== GESTIÓN DE PARTICIPANTES PARA UPLOAD =====
+    
+    function createParticipantRow(participant = null, container = 'upload') {
+        const isGrabacion = container === 'grabacion';
+        const counter = isGrabacion ? ++participantsCounterGrabacion : ++participantsCounter;
+        const participantId = participant ? participant.id : counter;
+        
+        const participantHtml = `
+            <div class="participant-row border rounded p-3 mb-3" data-participant-id="${participantId}">
+                <div class="row align-items-end">
+                    <div class="col-md-2">
+                        <div class="form-group">
+                            <label class="font-weight-bold text-primary">
+                                <i class="fas fa-sort-numeric-up"></i> Orden de Intervención
+                            </label>
+                            <div class="input-group">
+                                <div class="input-group-prepend">
+                                    <span class="input-group-text bg-primary text-white">
+                                        <i class="fas fa-hashtag"></i>
+                                    </span>
+                                </div>
+                                <input type="number" class="form-control participant-order font-weight-bold text-center" 
+                                       value="${participant ? participant.orden : counter}" 
+                                       min="1" max="20" 
+                                       style="font-size: 16px; background-color: #f8f9fa;">
+                            </div>
+                            <small class="text-muted">Posición en la reunión</small>
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="form-group">
+                            <label>Nombres</label>
+                            <input type="text" class="form-control participant-name" 
+                                   value="${participant ? participant.nombres : ''}" 
+                                   placeholder="Nombres">
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="form-group">
+                            <label>Apellidos</label>
+                            <input type="text" class="form-control participant-lastname" 
+                                   value="${participant ? participant.apellidos : ''}" 
+                                   placeholder="Apellidos">
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="form-group">
+                            <label>Cargo</label>
+                            <input type="text" class="form-control participant-position" 
+                                   value="${participant ? participant.cargo : ''}" 
+                                   placeholder="Cargo">
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="form-group">
+                            <label>Institución</label>
+                            <input type="text" class="form-control participant-institution" 
+                                   value="${participant ? participant.institucion : ''}" 
+                                   placeholder="Institución">
+                        </div>
+                    </div>
+                    <div class="col-md-1">
+                        <div class="form-group">
+                            <button type="button" class="btn btn-danger btn-sm remove-participant w-100" 
+                                    title="Eliminar participante">
+                                <i class="fas fa-trash"></i>
+                                <span class="d-none d-md-inline ml-1">Eliminar</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        const targetList = isGrabacion ? participantsListGrabacion : participantsList;
+        if (targetList) {
+            targetList.insertAdjacentHTML('beforeend', participantHtml);
+            
+            // Agregar evento para eliminar
+            const newRow = targetList.lastElementChild;
+            const removeBtn = newRow.querySelector('.remove-participant');
+            removeBtn.addEventListener('click', function() {
+                newRow.remove();
+                updateParticipantCounter(isGrabacion ? 'grabacion' : 'upload');
+            });
+            
+            // Actualizar contador
+            updateParticipantCounter(isGrabacion ? 'grabacion' : 'upload');
+        }
+    }
+
+    function updateParticipantCounter(container = 'upload') {
+        const isGrabacion = container === 'grabacion';
+        const targetList = isGrabacion ? participantsListGrabacion : participantsList;
+        const counterElement = document.getElementById(isGrabacion ? 'participantCounterGrabacion' : 'participantCounter');
+        
+        if (targetList && counterElement) {
+            const count = targetList.querySelectorAll('.participant-row').length;
+            const countSpan = counterElement.querySelector('.count');
+            if (countSpan) {
+                countSpan.textContent = count;
+            }
+        }
+    }
+
+    function getParticipantsData(container = 'upload') {
+        const participants = [];
+        const targetList = container === 'grabacion' ? participantsListGrabacion : participantsList;
+        
+        if (!targetList) return [];
+        
+        const participantRows = targetList.querySelectorAll('.participant-row');
+        
+        participantRows.forEach(row => {
+            const nombres = row.querySelector('.participant-name').value.trim();
+            const apellidos = row.querySelector('.participant-lastname').value.trim();
+            const cargo = row.querySelector('.participant-position').value.trim();
+            const institucion = row.querySelector('.participant-institution').value.trim();
+            const orden = parseInt(row.querySelector('.participant-order').value) || 1;
+            
+            if (nombres || apellidos) { // Solo agregar si tiene al menos nombre o apellido
+                participants.push({
+                    nombres,
+                    apellidos,
+                    cargo,
+                    institucion,
+                    orden
+                });
+            }
+        });
+        
+        // Ordenar por orden
+        participants.sort((a, b) => a.orden - b.orden);
+        
+        return participants;
+    }
+
+    // Nueva función para obtener participantes de la sección principal
+    function getParticipantsDataMain() {
+        const participants = [];
+        const mainParticipants = document.querySelectorAll('#participantsListMain .participant-row');
+        
+        mainParticipants.forEach((row, index) => {
+            const nombre = row.querySelector('[name*="[nombre]"]')?.value.trim() || '';
+            const cargo = row.querySelector('[name*="[cargo]"]')?.value.trim() || '';
+            const organizacion = row.querySelector('[name*="[organizacion]"]')?.value.trim() || '';
+            const orden = parseInt(row.querySelector('[name*="[orden]"]')?.value) || (index + 1);
+            
+            if (nombre) { // Solo agregar si tiene nombre
+                participants.push({
+                    nombres: nombre.split(' ')[0] || '', // Primer nombre
+                    apellidos: nombre.split(' ').slice(1).join(' ') || '', // Resto como apellidos
+                    cargo: cargo,
+                    institucion: organizacion,
+                    orden: orden
+                });
+            }
+        });
+        
+        // Ordenar por orden
+        participants.sort((a, b) => a.orden - b.orden);
+        
+        return participants;
+    }
+
+    // Eventos para agregar participantes
+    if (addParticipantBtn) {
+        addParticipantBtn.addEventListener('click', function() {
+            createParticipantRow(null, 'upload');
+        });
+    }
+    
+    if (addParticipantGrabacionBtn) {
+        addParticipantGrabacionBtn.addEventListener('click', function() {
+            createParticipantRow(null, 'grabacion');
+        });
+    }
+
+    // Agregar un participante por defecto en cada formulario
+    createParticipantRow(null, 'upload');
+    createParticipantRow(null, 'grabacion');
+    
+    // ===== FUNCIONALIDAD DE UPLOAD COMPLETA =====
+    
+    uploadArea.addEventListener('click', function() {
+        audioFile.click();
+    });
+    
+    uploadArea.addEventListener('dragover', function(e) {
+        e.preventDefault();
+        this.classList.add('dragover');
+    });
+    
+    uploadArea.addEventListener('dragleave', function(e) {
+        e.preventDefault();
+        this.classList.remove('dragover');
+    });
+    
+    uploadArea.addEventListener('drop', function(e) {
+        e.preventDefault();
+        this.classList.remove('dragover');
+        
+        const files = e.dataTransfer.files;
+        if (files.length > 0) {
+            handleFileSelection(files[0]);
+        }
+    });
+    
+    audioFile.addEventListener('change', function(e) {
+        if (e.target.files.length > 0) {
+            const file = e.target.files[0];
+            setTimeout(() => {
+                handleFileSelection(file);
+            }, 100);
+        }
+    });
+    
+    function handleFileSelection(file) {
+        console.log('Archivo seleccionado:', file.name, file.type, file.size);
+        
+        if (file.type.startsWith('audio/')) {
+            selectedAudioFile = file;
+            
+            // Actualizar UI del área de upload
+            uploadArea.innerHTML = `
+                <div class="upload-icon-modern">
+                    <i class="fas fa-file-audio text-success"></i>
+                </div>
+                <h5 class="text-success">Archivo seleccionado</h5>
+                <p class="text-muted">${file.name}</p>
+                <small class="text-muted">Tamaño: ${(file.size / 1024 / 1024).toFixed(2)} MB</small>
+            `;
+            
+            // Mostrar formulario de metadatos COMPLETO
+            if (metadataForm) {
+                metadataForm.style.display = 'block';
+            }
+            
+            // Ocultar reproductor de grabación si estaba visible
+            if (audioPlayer) {
+                audioPlayer.style.display = 'none';
+            }
+            
+            // Ocultar formulario de grabación si estaba visible
+            if (recordingMetadataForm) {
+                recordingMetadataForm.style.display = 'none';
+            }
+            
+            console.log('Archivo preparado para procesamiento:', file.name);
+        } else {
+            alert('Por favor selecciona un archivo de audio válido.');
+        }
+    }
+    
+    // ===== ENVÍO DEL FORMULARIO DE UPLOAD =====
+    
+    audioUploadForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        if (!selectedAudioFile && !audioFile.files.length) {
+            alert('Por favor graba o selecciona un archivo de audio primero.');
+            return;
+        }
+        
+        // Usar archivo seleccionado o del input
+        const fileToUpload = selectedAudioFile || audioFile.files[0];
+        
+        console.log('Enviando archivo desde upload:', fileToUpload.name);
+        
+        const formData = new FormData();
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+        
+        // Datos del formulario COMPLETO
+        formData.append('archivo', fileToUpload);
+        formData.append('nombre_proceso', document.getElementById('titulo')?.value || 'Procesamiento de audio');
+        formData.append('tipo_reunion', document.getElementById('tipo_reunion')?.value || 'reunion_trabajo');
+        formData.append('participantes_texto', document.getElementById('participantesMain')?.value || '');
+        formData.append('ubicacion', document.getElementById('ubicacion')?.value || '');
+        formData.append('descripcion', document.getElementById('descripcion')?.value || '');
+        formData.append('etiquetas', document.getElementById('etiquetas')?.value || 'audio,procesamiento');
+        formData.append('confidencial', document.getElementById('confidencial')?.checked || false);
+        formData.append('fecha_reunion', document.getElementById('fecha_reunion')?.value || '');
+        
+        // Datos de participantes detallados de la sección PRINCIPAL
+        const participantsDataMain = getParticipantsDataMain();
+        formData.append('participantes_detallados', JSON.stringify(participantsDataMain));
+        formData.append('csrfmiddlewaretoken', csrfToken);
+        
+        submitAudioFile(formData, 'upload');
+    });
+    
+    // ===== ENVÍO DEL FORMULARIO DE GRABACIÓN =====
+    
+    if (submitRecordedAudio) {
+        submitRecordedAudio.addEventListener('click', function(e) {
+            e.preventDefault();
+            
+            if (!selectedAudioFile) {
+                alert('No hay audio grabado para procesar.');
+                return;
+            }
+            
+            console.log('Enviando audio grabado:', selectedAudioFile.name);
+            
+            const formData = new FormData();
+            const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+            
+            // Datos del formulario de grabación COMPLETO
+            formData.append('archivo', selectedAudioFile);
+            formData.append('nombre_proceso', document.getElementById('titulo_grabacion')?.value || 'Grabación en vivo');
+            formData.append('tipo_reunion', document.getElementById('tipo_reunion_grabacion')?.value || 'reunion_trabajo');
+            formData.append('participantes_texto', document.getElementById('participantesMain')?.value || '');
+            formData.append('ubicacion', document.getElementById('ubicacion_grabacion')?.value || '');
+            formData.append('descripcion', document.getElementById('descripcion_grabacion')?.value || 'Audio grabado en vivo');
+            formData.append('etiquetas', document.getElementById('etiquetas_grabacion')?.value || 'grabacion,vivo');
+            formData.append('confidencial', document.getElementById('confidencial_grabacion')?.checked || false);
+            formData.append('fecha_reunion', document.getElementById('fecha_reunion_grabacion')?.value || '');
+            
+            // Datos de participantes detallados de la sección PRINCIPAL
+            const participantsDataMain = getParticipantsDataMain();
+            formData.append('participantes_detallados', JSON.stringify(participantsDataMain));
+            formData.append('csrfmiddlewaretoken', csrfToken);
+            
+            submitAudioFile(formData, 'grabacion');
+        });
+    }
+    
+    // ===== FUNCIÓN DE ENVÍO UNIFICADA =====
+    
+    function submitAudioFile(formData, source = 'upload') {
+        console.log('Enviando datos al servidor desde:', source);
+        console.log('Participantes:', JSON.parse(formData.get('participantes_detallados')));
+        
+        // Mostrar loading en el botón correspondiente
+        const submitButton = source === 'grabacion' ? submitRecordedAudio : document.querySelector('button[type="submit"]');
+        
+        const originalText = submitButton ? submitButton.innerHTML : '';
+        
+        if (submitButton) {
+            submitButton.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Procesando...';
+            submitButton.disabled = true;
+        }
+        
+        fetch('/audio/api/procesar/', {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            }
+        })
+        .then(response => {
+            console.log('Respuesta del servidor:', response.status);
+            return response.json();
+        })
+        .then(data => {
+            console.log('Datos recibidos:', data);
+            
+            if (data.status === 'success' || data.success) {
+                // Mostrar mensaje de éxito
+                showAlert('success', '¡Archivo enviado correctamente! Redirigiendo al panel de procesamiento...');
+                
+                // Redirigir al detalle del procesamiento
+                const procesamientoId = data.procesamiento_id || data.id;
+                if (procesamientoId) {
+                    setTimeout(() => {
+                        window.location.href = `/audio/detalle/${procesamientoId}/`;
+                    }, 2000);
+                } else {
+                    // Si no hay ID, simplemente recargar la página para ver el nuevo proceso
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 2000);
+                }
+                
+                // Limpiar formulario
+                resetForm();
+                
+            } else {
+                throw new Error(data.message || 'Error en el procesamiento');
+            }
+        })
+        .catch(error => {
+            console.error('Error en el procesamiento:', error);
+            showAlert('danger', `Error al procesar el audio: ${error.message}`);
+        })
+        .finally(() => {
+            // Restaurar botón
+            if (submitButton) {
+                submitButton.innerHTML = originalText;
+                submitButton.disabled = false;
+            }
+        });
+    }
+    
+    // ===== FUNCIONES DE UTILIDAD =====
+    
+    function showAlert(type, message) {
+        const alertHtml = `
+            <div class="alert alert-${type} alert-dismissible animate__animated animate__fadeInDown">
+                <button type="button" class="close" data-dismiss="alert">×</button>
+                <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-triangle'} mr-2"></i>
+                ${message}
+            </div>
+        `;
+        document.querySelector('.content').insertAdjacentHTML('afterbegin', alertHtml);
+        
+        // Auto-dismiss después de 5 segundos
+        setTimeout(() => {
+            const alert = document.querySelector('.alert');
+            if (alert) {
+                alert.remove();
+            }
+        }, 5000);
+    }
+    
+    function resetForm() {
+        selectedAudioFile = null;
+        
+        if (audioUploadForm) audioUploadForm.reset();
+        if (metadataForm) metadataForm.style.display = 'none';
+        if (recordingMetadataForm) recordingMetadataForm.style.display = 'none';
+        if (audioPlayer) audioPlayer.style.display = 'none';
+        if (processRecordedAudio) processRecordedAudio.style.display = 'none';
+        
+        // Limpiar participantes
+        if (participantsList) participantsList.innerHTML = '';
+        if (participantsListGrabacion) participantsListGrabacion.innerHTML = '';
+        
+        // Reinicializar contadores y agregar participante por defecto
+        participantsCounter = 0;
+        participantsCounterGrabacion = 0;
+        createParticipantRow(null, 'upload');
+        createParticipantRow(null, 'grabacion');
+        
+        // Restaurar área de upload
+        uploadArea.innerHTML = `
+            <div class="upload-icon-modern">
+                <i class="fas fa-cloud-upload-alt"></i>
+            </div>
+            <h5>Arrastra tu archivo aquí</h5>
+            <p class="text-muted">o haz clic para seleccionar</p>
+            <small class="text-muted">Formatos soportados: MP3, WAV, M4A, OGG</small>
+        `;
+    }
+
+    // ===== GESTIÓN DE PARTICIPANTES PRINCIPAL =====
+    let participantsCounterMain = 0;
+
+    function createParticipantRowMain() {
+        participantsCounterMain++;
+        
+        const participantHtml = `
+            <div class="participant-row" data-participant-id="${participantsCounterMain}">
+                <div class="row">
+                    <div class="col-md-2">
+                        <div class="form-group">
+                            <div class="order-label">
+                                <i class="fas fa-sort-numeric-down"></i>
+                                Orden
+                            </div>
+                            <input type="number" 
+                                   class="form-control participant-order-input" 
+                                   name="participantes_detallados[${participantsCounterMain}][orden]" 
+                                   value="${participantsCounterMain}" 
+                                   min="1" 
+                                   placeholder="#${participantsCounterMain}">
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label class="form-label">
+                                <i class="fas fa-user"></i>
+                                Nombre Completo
+                            </label>
+                            <input type="text" 
+                                   class="form-control" 
+                                   name="participantes_detallados[${participantsCounterMain}][nombre]" 
+                                   placeholder="Nombre del participante">
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="form-group">
+                            <label class="form-label">
+                                <i class="fas fa-briefcase"></i>
+                                Cargo
+                            </label>
+                            <input type="text" 
+                                   class="form-control" 
+                                   name="participantes_detallados[${participantsCounterMain}][cargo]" 
+                                   placeholder="Cargo o función">
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="form-group">
+                            <label class="form-label">
+                                <i class="fas fa-building"></i>
+                                Organización
+                            </label>
+                            <input type="text" 
+                                   class="form-control" 
+                                   name="participantes_detallados[${participantsCounterMain}][organizacion]" 
+                                   placeholder="Organización">
+                        </div>
+                    </div>
+                </div>
+                <button type="button" class="remove-participant" onclick="removeParticipantMain(${participantsCounterMain})">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        `;
+        
+        document.getElementById('participantsListMain').insertAdjacentHTML('beforeend', participantHtml);
+        updateParticipantCounterMain();
+    }
+
+    function removeParticipantMain(participantId) {
+        const participantRow = document.querySelector(`[data-participant-id="${participantId}"]`);
+        if (participantRow) {
+            participantRow.remove();
+            updateParticipantCounterMain();
+        }
+    }
+
+    function updateParticipantCounterMain() {
+        const count = document.querySelectorAll('#participantsListMain .participant-row').length;
+        const counter = document.querySelector('#participantCounterMain .count');
+        if (counter) {
+            counter.textContent = count;
+        }
+    }
+
+    // Evento para agregar participante principal
+    document.getElementById('addParticipantMain').addEventListener('click', function() {
+        createParticipantRowMain();
+    });
+
+    // Agregar un participante inicial en la sección principal
+    createParticipantRowMain();
+    
+    // ===== ANIMACIONES DE ENTRADA =====
+    
+    const observerOptions = {
+        threshold: 0.1,
+        rootMargin: '0px 0px -50px 0px'
+    };
+    
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.classList.add('visible');
+            }
+        });
+    }, observerOptions);
+    
+    document.querySelectorAll('.animate-on-scroll').forEach(el => {
+        observer.observe(el);
+    });
+    
+    console.log('Centro de Audio modernizado cargado COMPLETAMENTE con gestión de participantes');
+});
+</script>
+{% endblock content %}
